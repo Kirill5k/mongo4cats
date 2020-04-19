@@ -9,7 +9,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "mongo4cats",
     libraryDependencies ++= Seq(
-      scalaMongoDb,
+      mongodb,
       catsCore,
       catsEffect,
       catsEffectTest % Test,
