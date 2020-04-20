@@ -13,6 +13,7 @@ lazy val root = (project in file("."))
       catsCore,
       catsEffect,
       catsEffectTest % Test,
-      scalaTest % Test
+      scalaTest % Test,
+      embeddedMongo % Test
     )
   )
