@@ -2,6 +2,7 @@ package mongo4cats.client
 
 import cats.effect.{Resource, Sync}
 import cats.implicits._
+import mongo4cats.database.MongoDbDatabase
 import org.mongodb.scala.connection.ClusterSettings
 import org.mongodb.scala.{MongoClient, MongoClientSettings, ServerAddress}
 
@@ -9,9 +10,12 @@ final case class MongoServerAddress(host: String, port: Int)
 
 import scala.jdk.CollectionConverters._
 
-class MongoDbClient[F[_]: Sync] private (client: MongoClient) {
-  def close(): F[Unit] =
-    Sync[F].delay(client.close())
+final class MongoDbClient[F[_]: Sync] private (
+    private val client: MongoClient
+) {
+
+  def getDatabase(name: String): F[MongoDbDatabase[F]] =
+    Sync[F].delay(client.getDatabase(name)).flatMap(MongoDbDatabase.make)
 }
 
 object MongoDbClient {
@@ -28,5 +32,5 @@ object MongoDbClient {
     clientResource(MongoClient(connectionString))
 
   private def clientResource[F[_]: Sync](client: => MongoClient): Resource[F, MongoDbClient[F]] =
-    Resource.make(Sync[F].delay(client).map(c => new MongoDbClient[F](c)))(_.close())
+    Resource.fromAutoCloseable(Sync[F].delay(client)).map(c => new MongoDbClient[F](c))
 }
