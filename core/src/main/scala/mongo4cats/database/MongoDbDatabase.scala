@@ -4,6 +4,7 @@ import cats.effect.{Async, Sync}
 import cats.implicits._
 import org.mongodb.scala.{Document, MongoDatabase}
 import helpers._
+import org.mongodb.scala.model.CreateCollectionOptions
 
 class MongoDbDatabase[F[_]: Async] private(
     private val database: MongoDatabase
@@ -20,6 +21,11 @@ class MongoDbDatabase[F[_]: Async] private(
   def collectionNames(): F[Iterable[String]] =
     Async[F].async { k =>
       database.listCollectionNames().subscribe(multipleItemsObserver[String](k))
+    }
+
+  def createCollection(name: String): F[Unit] =
+    Async[F].async { k =>
+      database.createCollection(name).subscribe(singleItemObserver[Unit](k))
     }
 }
 
