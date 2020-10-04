@@ -1,13 +1,16 @@
 package mongo4cats.database
 
-import cats.effect.{Async, Sync}
+import cats.effect.{Async, Concurrent, Sync}
+import fs2.concurrent.Queue
 import org.bson.conversions.Bson
 import org.mongodb.scala.{Document, MongoCollection, Observer}
 import org.mongodb.scala.result.InsertOneResult
 import org.mongodb.scala.model.Filters._
 import helpers._
+import mongo4cats.errors.OperationError
+import org.reactivestreams.{Subscriber, Subscription}
 
-final class MongoCollectionF[F[_]: Async] private(
+final class MongoCollectionF[F[_]: Concurrent] private(
     private val collection: MongoCollection[Document]
 ) {
 
@@ -54,10 +57,18 @@ final class MongoCollectionF[F[_]: Async] private(
     Async[F].async { k =>
       collection.countDocuments().subscribe(singleItemObserver[Long](k))
     }
+
+  def stream(): fs2.Stream[F, Document] = {
+    for {
+      q <- fs2.Stream.eval(Queue.noneTerminated[F, Document])
+      _ <- fs2.Stream.eval(Sync[F].delay(collection.find().subscribe(streamObserver(q))))
+      doc <- q.dequeue
+    } yield doc
+  }
 }
 
 object MongoCollectionF {
 
-  def make[F[_]: Async](collection: MongoCollection[Document]): F[MongoCollectionF[F]] =
+  def make[F[_]: Concurrent](collection: MongoCollection[Document]): F[MongoCollectionF[F]] =
     Sync[F].delay(new MongoCollectionF[F](collection))
 }

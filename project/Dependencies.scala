@@ -4,6 +4,7 @@ object Dependencies {
   object Versions {
     lazy val mongodb        = "4.0.2"
     lazy val catsEffect     = "2.1.3"
+    lazy val fs2            = "2.4.4"
     lazy val catsEffectTest = "0.4.0"
     lazy val scalaTest      = "3.1.1"
     lazy val embeddedMongo  = "2.2.0"
@@ -12,6 +13,7 @@ object Dependencies {
   object Libraries {
     lazy val mongodb    = "org.mongodb.scala" %% "mongo-scala-driver" % Versions.mongodb
     lazy val catsEffect = "org.typelevel"     %% "cats-effect"        % Versions.catsEffect
+    lazy val fs2        = "co.fs2"            %% "fs2-core"           % Versions.fs2
 
     lazy val scalaTest      = "org.scalatest"       %% "scalatest"                     % Versions.scalaTest
     lazy val catsEffectTest = "com.codecommit"      %% "cats-effect-testing-scalatest" % Versions.catsEffectTest
@@ -20,7 +22,8 @@ object Dependencies {
 
   lazy val core = Seq(
     Libraries.mongodb,
-    Libraries.catsEffect
+    Libraries.catsEffect,
+    Libraries.fs2
   )
 
   lazy val test = Seq(
