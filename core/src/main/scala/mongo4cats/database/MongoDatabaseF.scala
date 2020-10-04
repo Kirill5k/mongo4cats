@@ -6,17 +6,17 @@ import org.mongodb.scala.{Document, MongoDatabase}
 import helpers._
 import org.mongodb.scala.model.CreateCollectionOptions
 
-class MongoDbDatabase[F[_]: Async] private(
+class MongoDatabaseF[F[_]: Async] private(
     private val database: MongoDatabase
 ) {
 
   def name: F[String] =
     Sync[F].pure(database.name)
 
-  def getCollection[T](name: String): F[MongoDbCollection[F]] =
+  def getCollection[T](name: String): F[MongoCollectionF[F]] =
     Sync[F]
       .delay(database.getCollection[Document](name))
-      .flatMap(MongoDbCollection.make[F])
+      .flatMap(MongoCollectionF.make[F])
 
   def collectionNames(): F[Iterable[String]] =
     Async[F].async { k =>
@@ -29,7 +29,7 @@ class MongoDbDatabase[F[_]: Async] private(
     }
 }
 
-object MongoDbDatabase {
-  def make[F[_]: Async](database: MongoDatabase): F[MongoDbDatabase[F]] =
-    Sync[F].delay(new MongoDbDatabase[F](database))
+object MongoDatabaseF {
+  def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
+    Sync[F].delay(new MongoDatabaseF[F](database))
 }

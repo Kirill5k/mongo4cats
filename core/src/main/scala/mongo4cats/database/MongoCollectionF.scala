@@ -7,7 +7,7 @@ import org.mongodb.scala.result.InsertOneResult
 import org.mongodb.scala.model.Filters._
 import helpers._
 
-final class MongoDbCollection[F[_]: Async] private (
+final class MongoCollectionF[F[_]: Async] private(
     private val collection: MongoCollection[Document]
 ) {
 
@@ -56,8 +56,8 @@ final class MongoDbCollection[F[_]: Async] private (
     }
 }
 
-object MongoDbCollection {
+object MongoCollectionF {
 
-  def make[F[_]: Async](collection: MongoCollection[Document]): F[MongoDbCollection[F]] =
-    Sync[F].delay(new MongoDbCollection[F](collection))
+  def make[F[_]: Async](collection: MongoCollection[Document]): F[MongoCollectionF[F]] =
+    Sync[F].delay(new MongoCollectionF[F](collection))
 }
