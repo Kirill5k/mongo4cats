@@ -8,6 +8,5 @@ object errors {
     override def getMessage: String = message
   }
 
-  final case class InsertionError(message: String) extends MongoError
-  final case class FindError(message: String) extends MongoError
+  final case class OperationError(message: String) extends MongoError
 }

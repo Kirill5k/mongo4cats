@@ -1,56 +1,63 @@
 package mongo4cats.database
 
 import cats.effect.{Async, Sync}
-import mongo4cats.errors.{FindError, InsertionError}
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.{MongoCollection, Observer}
+import org.bson.conversions.Bson
+import org.mongodb.scala.{Document, MongoCollection, Observer}
 import org.mongodb.scala.result.InsertOneResult
 import org.mongodb.scala.model.Filters._
+import helpers._
 
-final case class DocumentId(value: String) extends AnyVal
-
-final class MongoDbCollection[F[_]: Async, T] private(
+final class MongoDbCollection[F[_]: Async] private (
     private val collection: MongoCollection[Document]
 ) {
 
-  def insertOne(item: T): F[DocumentId] =
+  private val NoLimit: Int           = 0
+  private val NaturalOrderSort: Bson = Document("$natural" -> 1)
+
+  def insertOne(document: Document): F[InsertOneResult] =
     Async[F].async { k =>
-      collection.insertOne(toDocument(item)).subscribe(new Observer[InsertOneResult] {
-        private var res: InsertOneResult = _
-
-        override def onNext(result: InsertOneResult): Unit =
-          res = result
-
-        override def onError(e: Throwable): Unit =
-          k(Left(InsertionError(e.getMessage)))
-
-        override def onComplete(): Unit =
-          k(Right(DocumentId(res.getInsertedId.asString().getValue)))
-      })
+      collection
+        .insertOne(document)
+        .subscribe(singleItemObserver[InsertOneResult](k))
     }
 
-  def findOne(id: DocumentId): F[T] =
-   Async[F].async { k =>
-     collection.find(equal("_id", id.value)).first().subscribe(new Observer[Document] {
-       private var res: Document = _
+  def findFirst(filters: Bson): F[Document] =
+    Async[F].async { k =>
+      collection
+        .find(filters)
+        .first()
+        .subscribe(singleItemObserver(k))
+    }
 
-       override def onNext(result: Document): Unit =
-        res = result
+  def findMany(
+      filters: Bson,
+      limit: Int = NoLimit,
+      sort: Bson = NaturalOrderSort
+  ): F[Iterable[Document]] =
+    Async[F].async { k =>
+      collection
+        .find(filters)
+        .sort(sort)
+        .limit(limit)
+        .subscribe(multipleItemsObserver(k))
+    }
 
-       override def onError(e: Throwable): Unit =
-         k(Left(FindError(e.getMessage)))
+  def findAll(
+      limit: Int = NoLimit,
+      sort: Bson = NaturalOrderSort
+  ): F[Iterable[Document]] =
+    Async[F].async { k =>
+      collection.find().sort(sort).limit(limit).subscribe(multipleItemsObserver(k))
+    }
 
-       override def onComplete(): Unit =
-         k(Right(fromDocument(res)))
-     })
-   }
-
-  private def toDocument(t: T): Document = ???
-  private def fromDocument(document: Document): T = ???
+  def count(): F[Long] =
+    Async[F].async { k =>
+      collection.countDocuments().subscribe(singleItemObserver[Long](k))
+    }
 }
 
 object MongoDbCollection {
 
-  def make[F[_]: Async, T](collection: MongoCollection[Document]): F[MongoDbCollection[F, T]] =
-    Sync[F].delay(new MongoDbCollection[F, T](collection))
+  def make[F[_]: Async](collection: MongoCollection[Document]): F[MongoDbCollection[F]] =
+    Sync[F].delay(new MongoDbCollection[F](collection))
 }
