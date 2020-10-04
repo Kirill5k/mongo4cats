@@ -9,4 +9,5 @@ object errors {
   }
 
   final case class InsertionError(message: String) extends MongoError
+  final case class FindError(message: String) extends MongoError
 }
