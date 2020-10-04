@@ -1,12 +1,11 @@
 package mongo4cats.database
 
-import cats.effect.{Async, Sync}
+import cats.effect.{Async, Concurrent, Sync}
 import cats.implicits._
+import mongo4cats.database.helpers._
 import org.mongodb.scala.{Document, MongoDatabase}
-import helpers._
-import org.mongodb.scala.model.CreateCollectionOptions
 
-class MongoDatabaseF[F[_]: Async] private(
+class MongoDatabaseF[F[_]: Concurrent] private(
     private val database: MongoDatabase
 ) {
 
@@ -30,6 +29,6 @@ class MongoDatabaseF[F[_]: Async] private(
 }
 
 object MongoDatabaseF {
-  def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
+  def make[F[_]: Concurrent](database: MongoDatabase): F[MongoDatabaseF[F]] =
     Sync[F].delay(new MongoDatabaseF[F](database))
 }

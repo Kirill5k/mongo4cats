@@ -1,9 +1,9 @@
 package mongo4cats.database
 
 import cats.effect.Concurrent
-import fs2.concurrent.{NoneTerminatedQueue, Queue}
+import fs2.concurrent.NoneTerminatedQueue
 import mongo4cats.errors.OperationError
-import org.mongodb.scala.{Document, Observer}
+import org.mongodb.scala.Observer
 
 import scala.util.Either
 

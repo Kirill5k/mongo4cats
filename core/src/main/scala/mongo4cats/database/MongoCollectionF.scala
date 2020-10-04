@@ -2,13 +2,10 @@ package mongo4cats.database
 
 import cats.effect.{Async, Concurrent, Sync}
 import fs2.concurrent.Queue
+import mongo4cats.database.helpers._
 import org.bson.conversions.Bson
-import org.mongodb.scala.{Document, MongoCollection, Observer}
 import org.mongodb.scala.result.InsertOneResult
-import org.mongodb.scala.model.Filters._
-import helpers._
-import mongo4cats.errors.OperationError
-import org.reactivestreams.{Subscriber, Subscription}
+import org.mongodb.scala.{Document, MongoCollection}
 
 final class MongoCollectionF[F[_]: Concurrent] private(
     private val collection: MongoCollection[Document]

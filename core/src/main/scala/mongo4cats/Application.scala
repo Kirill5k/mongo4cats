@@ -13,6 +13,8 @@ class Application extends IOApp {
       for {
         db <- client.getDatabase("mydb")
         collection <- db.getCollection[Document]("mycoll")
+        count <- collection.count()
+      _ <- IO(println(s"$count items in collection"))
       } yield ExitCode.Success
     }
 }
