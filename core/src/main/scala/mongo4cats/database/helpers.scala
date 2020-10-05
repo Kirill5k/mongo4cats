@@ -2,7 +2,6 @@ package mongo4cats.database
 
 import cats.effect.Concurrent
 import fs2.concurrent.NoneTerminatedQueue
-import mongo4cats.errors.OperationError
 import org.mongodb.scala.Observer
 
 import scala.util.Either
@@ -15,7 +14,7 @@ private[database] object helpers {
       override def onNext(res: Void): Unit = ()
 
       override def onError(e: Throwable): Unit =
-        callback(Left(OperationError(e.getMessage)))
+        callback(Left(e))
 
       override def onComplete(): Unit =
         callback(Right(()))
@@ -29,7 +28,7 @@ private[database] object helpers {
         result = res
 
       override def onError(e: Throwable): Unit =
-        callback(Left(OperationError(e.getMessage)))
+        callback(Left(e))
 
       override def onComplete(): Unit =
         callback(Right(result))
@@ -43,7 +42,7 @@ private[database] object helpers {
         results = result :: results
 
       override def onError(e: Throwable): Unit =
-        callback(Left(OperationError(e.getMessage)))
+        callback(Left(e))
 
       override def onComplete(): Unit =
         callback(Right(results.reverse))
@@ -57,7 +56,7 @@ private[database] object helpers {
       }
 
       override def onError(e: Throwable): Unit = {
-        queue.enqueue(fs2.Stream.raiseError(OperationError(e.getMessage)))
+        queue.enqueue(fs2.Stream.raiseError(e))
         ()
       }
 
