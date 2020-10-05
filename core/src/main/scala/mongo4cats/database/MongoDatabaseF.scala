@@ -24,7 +24,7 @@ class MongoDatabaseF[F[_]: Concurrent] private(
 
   def createCollection(name: String): F[Unit] =
     Async[F].async { k =>
-      database.createCollection(name).subscribe(singleItemObserver[Unit](k))
+      database.createCollection(name).subscribe(voidObserver(k))
     }
 }
 

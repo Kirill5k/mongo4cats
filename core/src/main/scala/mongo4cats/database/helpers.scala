@@ -9,6 +9,18 @@ import scala.util.Either
 
 private[database] object helpers {
 
+  def voidObserver(callback: Either[Throwable, Unit] => Unit): Observer[Void] =
+    new Observer[Void] {
+
+      override def onNext(res: Void): Unit = ()
+
+      override def onError(e: Throwable): Unit =
+        callback(Left(OperationError(e.getMessage)))
+
+      override def onComplete(): Unit =
+        callback(Right(()))
+    }
+
   def singleItemObserver[A](callback: Either[Throwable, A] => Unit): Observer[A] =
     new Observer[A] {
       private var result: A = _

@@ -3,7 +3,6 @@ package mongo4cats.client
 import cats.effect.{Concurrent, Resource, Sync}
 import cats.implicits._
 import mongo4cats.database.MongoDatabaseF
-import org.mongodb.scala.connection.ClusterSettings
 import org.mongodb.scala.{MongoClient, MongoClientSettings, ServerAddress}
 
 final case class MongoServerAddress(host: String, port: Int)
@@ -23,7 +22,9 @@ object MongoClientF {
     val servers = serverAddresses.map(s => new ServerAddress(s.host, s.port)).toList.asJava
     val settings = MongoClientSettings
       .builder()
-      .applyToClusterSettings((builder: ClusterSettings.Builder) => builder.hosts(servers))
+      .applyToClusterSettings { builder =>
+        val _ = builder.hosts(servers)
+      }
       .build()
     clientResource(MongoClient(settings))
   }
