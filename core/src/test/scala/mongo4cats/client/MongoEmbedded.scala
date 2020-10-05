@@ -5,6 +5,7 @@ import de.flapdoodle.embed.mongo.config.{MongodConfigBuilder, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.process.runtime.Network
 
+
 trait MongoEmbedded {
 
   def withRunningMongoEmbedded[A](host: String = "localhost", port: Int = 12345)(test: => A): A = {

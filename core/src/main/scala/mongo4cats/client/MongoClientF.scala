@@ -5,8 +5,6 @@ import cats.implicits._
 import mongo4cats.database.MongoDatabaseF
 import org.mongodb.scala.{MongoClient, MongoClientSettings, ServerAddress}
 
-final case class MongoServerAddress(host: String, port: Int)
-
 import scala.jdk.CollectionConverters._
 
 final class MongoClientF[F[_]: Concurrent] private(
@@ -18,12 +16,11 @@ final class MongoClientF[F[_]: Concurrent] private(
 }
 
 object MongoClientF {
-  def fromServerAddress[F[_]: Concurrent](serverAddresses: MongoServerAddress*): Resource[F, MongoClientF[F]] = {
-    val servers = serverAddresses.map(s => new ServerAddress(s.host, s.port)).toList.asJava
+  def fromServerAddress[F[_]: Concurrent](serverAddresses: ServerAddress*): Resource[F, MongoClientF[F]] = {
     val settings = MongoClientSettings
       .builder()
       .applyToClusterSettings { builder =>
-        val _ = builder.hosts(servers)
+        val _ = builder.hosts(serverAddresses.toList.asJava)
       }
       .build()
     clientResource(MongoClient(settings))

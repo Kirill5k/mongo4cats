@@ -2,6 +2,7 @@ package mongo4cats.client
 
 import cats.effect.IO
 import cats.implicits._
+import org.mongodb.scala.ServerAddress
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -27,7 +28,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with MongoEmbedded {
 
     "connect to a db via server address string" in {
       withRunningMongoEmbedded() {
-        val server = MongoServerAddress("localhost", 12345)
+        val server = new ServerAddress("localhost", 12345)
         val result = MongoClientF.fromServerAddress[IO](server).use { client =>
           for {
             db <- client.getDatabase("test-db")
@@ -41,7 +42,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with MongoEmbedded {
 
     "return error when port is invalid" in {
       withRunningMongoEmbedded() {
-        val server = MongoServerAddress("localhost", 123)
+        val server = new ServerAddress("localhost", 123)
         val result = MongoClientF.fromServerAddress[IO](server).use { client =>
           for {
             db <- client.getDatabase("test-db")
