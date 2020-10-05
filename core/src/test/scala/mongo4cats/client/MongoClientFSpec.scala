@@ -2,6 +2,7 @@ package mongo4cats.client
 
 import cats.effect.IO
 import cats.implicits._
+import mongo4cats.MongoEmbedded
 import org.mongodb.scala.ServerAddress
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
