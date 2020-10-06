@@ -14,12 +14,27 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with MongoEmbedded {
 
   "A MongoDatabaseF" should {
 
+    "create new collection" in {
+      withEmbeddedMongoClient { client =>
+        val result = for {
+          db    <- client.getDatabase("foo")
+          _     <- db.createCollection("c1")
+          _     <- db.createCollection("c2")
+          names <- db.collectionNames()
+        } yield names
+
+        result.unsafeRunSync() must be(List("c2", "c1"))
+      }
+    }
   }
 
   def withEmbeddedMongoClient[A](test: MongoClientF[IO] => A): A =
     withRunningMongoEmbedded() {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12345").use { client =>
-        IO(test(client))
-      }.unsafeRunSync()
+      MongoClientF
+        .fromConnectionString[IO]("mongodb://localhost:12345")
+        .use { client =>
+          IO(test(client))
+        }
+        .unsafeRunSync()
     }
 }

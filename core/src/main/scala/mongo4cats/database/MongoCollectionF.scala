@@ -7,7 +7,9 @@ import org.bson.conversions.Bson
 import org.mongodb.scala.result.InsertOneResult
 import org.mongodb.scala.{Document, MongoCollection}
 
-final class MongoCollectionF[F[_]: Concurrent, T] private(
+import scala.reflect.ClassTag
+
+final class MongoCollectionF[F[_]: Concurrent, T: ClassTag] private(
     private val collection: MongoCollection[T]
 ) {
 
@@ -75,6 +77,6 @@ final class MongoCollectionF[F[_]: Concurrent, T] private(
 
 object MongoCollectionF {
 
-  def make[F[_]: Concurrent, T](collection: MongoCollection[T]): F[MongoCollectionF[F, T]] =
+  def make[F[_]: Concurrent, T: ClassTag](collection: MongoCollection[T]): F[MongoCollectionF[F, T]] =
     Sync[F].delay(new MongoCollectionF[F, T](collection))
 }
