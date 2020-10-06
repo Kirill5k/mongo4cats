@@ -2,20 +2,22 @@ package mongo4cats.database
 
 import cats.effect.{Async, Concurrent, Sync}
 import cats.implicits._
+import mongo4cats.database.codecs.MongoCodecRegistry
 import mongo4cats.database.helpers._
-import org.mongodb.scala.{Document, MongoDatabase}
+import org.bson.codecs.configuration.CodecRegistries.fromRegistries
+import org.mongodb.scala.MongoDatabase
 
-class MongoDatabaseF[F[_]: Concurrent] private(
+final class MongoDatabaseF[F[_]: Concurrent] private(
     private val database: MongoDatabase
 ) {
 
   def name: F[String] =
     Sync[F].pure(database.name)
 
-  def getCollection[T](name: String): F[MongoCollectionF[F]] =
+  def getCollection[T](name: String)(implicit codec: MongoCodecRegistry[T]): F[MongoCollectionF[F, T]] =
     Sync[F]
-      .delay(database.getCollection[Document](name))
-      .flatMap(MongoCollectionF.make[F])
+      .delay(database.withCodecRegistry(fromRegistries(codec.get)).getCollection[T](name))
+      .flatMap(MongoCollectionF.make[F, T])
 
   def collectionNames(): F[Iterable[String]] =
     Async[F].async { k =>

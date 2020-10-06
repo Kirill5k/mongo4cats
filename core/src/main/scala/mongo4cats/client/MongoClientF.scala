@@ -12,7 +12,9 @@ final class MongoClientF[F[_]: Concurrent] private(
 ) {
 
   def getDatabase(name: String): F[MongoDatabaseF[F]] =
-    Sync[F].delay(client.getDatabase(name)).flatMap(MongoDatabaseF.make[F])
+    Sync[F]
+      .delay(client.getDatabase(name))
+      .flatMap(MongoDatabaseF.make[F])
 }
 
 object MongoClientF {

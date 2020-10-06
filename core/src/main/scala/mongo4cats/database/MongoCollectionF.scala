@@ -7,21 +7,30 @@ import org.bson.conversions.Bson
 import org.mongodb.scala.result.InsertOneResult
 import org.mongodb.scala.{Document, MongoCollection}
 
-final class MongoCollectionF[F[_]: Concurrent] private(
-    private val collection: MongoCollection[Document]
+final class MongoCollectionF[F[_]: Concurrent, T] private(
+    private val collection: MongoCollection[T]
 ) {
 
   private val NoLimit: Int           = 0
   private val NaturalOrderSort: Bson = Document("$natural" -> 1)
 
-  def insertOne(document: Document): F[InsertOneResult] =
+
+  //aggregate
+  //projections
+  //update
+  //insertMany
+  //bulk
+  //delete
+  //case classes
+
+  def insertOne(document: T): F[InsertOneResult] =
     Async[F].async { k =>
       collection
         .insertOne(document)
         .subscribe(singleItemObserver[InsertOneResult](k))
     }
 
-  def findFirst(filters: Bson): F[Document] =
+  def findFirst(filters: Bson): F[T] =
     Async[F].async { k =>
       collection
         .find(filters)
@@ -33,7 +42,7 @@ final class MongoCollectionF[F[_]: Concurrent] private(
       filters: Bson,
       limit: Int = NoLimit,
       sort: Bson = NaturalOrderSort
-  ): F[Iterable[Document]] =
+  ): F[Iterable[T]] =
     Async[F].async { k =>
       collection
         .find(filters)
@@ -45,7 +54,7 @@ final class MongoCollectionF[F[_]: Concurrent] private(
   def findAll(
       limit: Int = NoLimit,
       sort: Bson = NaturalOrderSort
-  ): F[Iterable[Document]] =
+  ): F[Iterable[T]] =
     Async[F].async { k =>
       collection.find().sort(sort).limit(limit).subscribe(multipleItemsObserver(k))
     }
@@ -55,9 +64,9 @@ final class MongoCollectionF[F[_]: Concurrent] private(
       collection.countDocuments().subscribe(singleItemObserver[Long](k))
     }
 
-  def stream(): fs2.Stream[F, Document] = {
+  def stream(): fs2.Stream[F, T] = {
     for {
-      q <- fs2.Stream.eval(Queue.noneTerminated[F, Document])
+      q <- fs2.Stream.eval(Queue.noneTerminated[F, T])
       _ <- fs2.Stream.eval(Sync[F].delay(collection.find().subscribe(streamObserver(q))))
       doc <- q.dequeue
     } yield doc
@@ -66,6 +75,6 @@ final class MongoCollectionF[F[_]: Concurrent] private(
 
 object MongoCollectionF {
 
-  def make[F[_]: Concurrent](collection: MongoCollection[Document]): F[MongoCollectionF[F]] =
-    Sync[F].delay(new MongoCollectionF[F](collection))
+  def make[F[_]: Concurrent, T](collection: MongoCollection[T]): F[MongoCollectionF[F, T]] =
+    Sync[F].delay(new MongoCollectionF[F, T](collection))
 }
