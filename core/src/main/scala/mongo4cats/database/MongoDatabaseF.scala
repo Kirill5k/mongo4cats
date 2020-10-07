@@ -18,7 +18,7 @@ final class MongoDatabaseF[F[_]: Concurrent] private(
   def getCollection[T: ClassTag](name: String)(implicit codec: MongoCodecRegistry[T]): F[MongoCollectionF[F, T]] =
     Sync[F]
       .delay(database.withCodecRegistry(codec.get).getCollection[T](name))
-      .flatMap(MongoCollectionF.make[F, T] _)
+      .flatMap(MongoCollectionF.make[F, T])
 
   def collectionNames(): F[Iterable[String]] =
     Async[F].async { k =>

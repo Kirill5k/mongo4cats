@@ -2,20 +2,20 @@ package mongo4cats.client
 
 import cats.effect.IO
 import cats.implicits._
-import mongo4cats.MongoEmbedded
+import mongo4cats.EmbeddedMongo
 import org.mongodb.scala.ServerAddress
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.ExecutionContext
 
-class MongoClientFSpec extends AnyWordSpec with Matchers with MongoEmbedded {
+class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
   implicit val cs = IO.contextShift(ExecutionContext.global)
 
   "A MongoDbClient" should {
     "connect to a db via connection string" in {
-      withRunningMongoEmbedded() {
+      withRunningEmbeddedMongo() {
         val result = MongoClientF.fromConnectionString[IO]("mongodb://localhost:12345").use { client =>
           for {
             db <- client.getDatabase("test-db")
@@ -28,7 +28,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with MongoEmbedded {
     }
 
     "connect to a db via server address string" in {
-      withRunningMongoEmbedded() {
+      withRunningEmbeddedMongo() {
         val server = new ServerAddress("localhost", 12345)
         val result = MongoClientF.fromServerAddress[IO](server).use { client =>
           for {
@@ -42,7 +42,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with MongoEmbedded {
     }
 
     "return error when port is invalid" in {
-      withRunningMongoEmbedded() {
+      withRunningEmbeddedMongo() {
         val server = new ServerAddress("localhost", 123)
         val result = MongoClientF.fromServerAddress[IO](server).use { client =>
           for {

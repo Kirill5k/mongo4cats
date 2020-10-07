@@ -5,7 +5,7 @@ import fs2.concurrent.Queue
 import mongo4cats.database.helpers._
 import org.bson.conversions.Bson
 import org.mongodb.scala.result.InsertOneResult
-import org.mongodb.scala.{Document, MongoCollection}
+import org.mongodb.scala.{Document, MongoCollection, MongoNamespace}
 
 import scala.reflect.ClassTag
 
@@ -16,6 +16,8 @@ final class MongoCollectionF[F[_]: Concurrent, T: ClassTag] private(
   private val NoLimit: Int           = 0
   private val NaturalOrderSort: Bson = Document("$natural" -> 1)
 
+  def namespace: MongoNamespace =
+    collection.namespace
 
   //aggregate
   //projections
