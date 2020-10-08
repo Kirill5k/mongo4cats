@@ -4,7 +4,7 @@ import cats.effect.{Async, Concurrent, Sync}
 import fs2.concurrent.Queue
 import mongo4cats.database.helpers.{multipleItemsObserver, singleItemObserver, streamObserver}
 import org.bson.conversions.Bson
-import org.mongodb.scala.{FindObservable, MongoCollection}
+import org.mongodb.scala.{FindObservable}
 
 import scala.reflect.ClassTag
 

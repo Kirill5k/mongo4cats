@@ -17,13 +17,18 @@ final class MongoCollectionF[T: ClassTag] private(
   def namespace: MongoNamespace =
     collection.namespace
 
+  //watch
   //aggregate
-  //projections
   //update
   //insertMany
   //bulk
   //delete
   //case classes
+
+  def drop[F[_]: Async](): F[Unit] =
+    Async[F].async { k =>
+      collection.drop().subscribe(voidObserver(k))
+    }
 
   def insertOne[F[_]: Async](document: T): F[InsertOneResult] =
     Async[F].async { k =>
@@ -32,7 +37,7 @@ final class MongoCollectionF[T: ClassTag] private(
         .subscribe(singleItemObserver[InsertOneResult](k))
     }
 
-  def find: QueryBuilder[T] =
+  def find(): QueryBuilder[T] =
     QueryBuilder(collection.find())
 
   def find(filter: Bson): QueryBuilder[T] =
@@ -41,6 +46,11 @@ final class MongoCollectionF[T: ClassTag] private(
   def count[F[_]: Async](): F[Long] =
     Async[F].async { k =>
       collection.countDocuments().subscribe(singleItemObserver[Long](k))
+    }
+
+  def count[F[_]: Async](filter: Bson): F[Long] =
+    Async[F].async { k =>
+      collection.countDocuments(filter).subscribe(singleItemObserver[Long](k))
     }
 }
 
