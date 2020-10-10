@@ -14,16 +14,16 @@ final class QueryBuilder[T: reflect.ClassTag] private (
 ) {
 
   def sort(sort: Bson): QueryBuilder[T] =
-    QueryBuilder(observable, Sort(sort) :: commands)
+    QueryBuilder[T](observable, CollectionFindCommand.Sort[T](sort) :: commands)
 
   def find(filter: Bson): QueryBuilder[T] =
-    QueryBuilder(observable, Find(filter) :: commands)
+    QueryBuilder[T](observable, CollectionFindCommand.Find[T](filter) :: commands)
 
   def projection(projection: Bson): QueryBuilder[T] =
-    QueryBuilder(observable, Projection(projection) :: commands)
+    QueryBuilder[T](observable, CollectionFindCommand.Projection[T](projection) :: commands)
 
   def limit(limit: Int): QueryBuilder[T] =
-    QueryBuilder(observable, Limit(limit) :: commands)
+    QueryBuilder[T](observable, CollectionFindCommand.Limit[T](limit) :: commands)
 
   def first[F[_]: Async](): F[T] =
     Async[F].async { k =>

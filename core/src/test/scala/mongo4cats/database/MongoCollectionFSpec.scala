@@ -5,6 +5,8 @@ import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import mongo4cats.database.codecs._
+import org.mongodb.scala.bson.Document
 
 import scala.concurrent.ExecutionContext
 
@@ -14,6 +16,20 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
 
   "A MongoCollectionF" should {
 
+    "store new document in db" in {
+      withEmbeddedMongoDatabase { db =>
+        val result = for {
+          coll <- db.getCollection[Document]("coll")
+          insertResult <- coll.insertOne[IO](document())
+          documents <- coll.find.all[IO]()
+        } yield (insertResult, documents)
+
+        val (_, documents) = result.unsafeRunSync()
+
+        documents must have size 1
+        documents.head.getString("name") must be ("test-doc-1")
+      }
+    }
   }
 
   def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => A): A =
@@ -25,4 +41,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         }
         .unsafeRunSync()
     }
+
+  def document(name: String = "test-doc-1"): Document =
+    Document("name" -> name, "type" -> "database", "count" -> 1, "info" -> Document("x" -> 203, "y" -> 102))
 }

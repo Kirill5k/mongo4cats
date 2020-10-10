@@ -3,7 +3,7 @@ package mongo4cats.database
 import cats.effect.IO
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
-import org.bson.Document
+import org.mongodb.scala.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

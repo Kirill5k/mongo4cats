@@ -106,7 +106,7 @@ final class MongoCollectionF[T: ClassTag] private(
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
     doAsync(collection.insertMany(documents, options))
 
-  def find(): QueryBuilder[T] =
+  def find: QueryBuilder[T] =
     QueryBuilder(collection.find())
 
   def find(filter: Bson): QueryBuilder[T] =

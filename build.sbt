@@ -11,6 +11,6 @@ lazy val root = (project in file("."))
 
 lazy val core = (project in file("core"))
   .settings(
-    name := "core",
+    name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core ++ Dependencies.test
   )
