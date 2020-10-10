@@ -24,10 +24,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
           documents <- coll.find.all[IO]()
         } yield (insertResult, documents)
 
-        val (_, documents) = result.unsafeRunSync()
+        val (insertRes, documents) = result.unsafeRunSync()
 
         documents must have size 1
         documents.head.getString("name") must be ("test-doc-1")
+        insertRes.wasAcknowledged() must be (true)
       }
     }
   }
