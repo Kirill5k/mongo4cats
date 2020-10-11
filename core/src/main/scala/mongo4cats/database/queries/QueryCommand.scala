@@ -2,14 +2,15 @@ package mongo4cats.database.queries
 
 import com.mongodb.client.model
 import org.bson.conversions.Bson
-import org.mongodb.scala.{DistinctObservable, FindObservable, Observable}
+import org.mongodb.scala.{ChangeStreamObservable, DistinctObservable, FindObservable, Observable}
 
-private[queries] sealed trait QueryCommand[O[_] <: Observable[_], T] {
+sealed private[queries] trait QueryCommand[O[_] <: Observable[_], T] {
   def run(observable: O[T]): O[T]
 }
 
-private[queries] sealed trait DistinctCommand[T] extends QueryCommand[DistinctObservable, T]
-private[queries] sealed trait FindCommand[T] extends QueryCommand[FindObservable, T]
+sealed private[queries] trait DistinctCommand[T] extends QueryCommand[DistinctObservable, T]
+sealed private[queries] trait FindCommand[T]     extends QueryCommand[FindObservable, T]
+sealed private[queries] trait WatchCommand[T]    extends QueryCommand[ChangeStreamObservable, T]
 
 private[queries] object FindCommand {
   final case class Limit[T](n: Int) extends FindCommand[T] {
@@ -50,4 +51,3 @@ private[queries] object DistinctCommand {
       observable.collation(collation)
   }
 }
-

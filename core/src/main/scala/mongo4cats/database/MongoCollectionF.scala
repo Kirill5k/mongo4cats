@@ -2,7 +2,7 @@ package mongo4cats.database
 
 import cats.effect.Async
 import mongo4cats.database.helpers._
-import mongo4cats.database.queries.{DistinctQueryBuilder, FindQueryBuilder}
+import mongo4cats.database.queries.{DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import org.mongodb.scala.model._
 import org.mongodb.scala.result._
@@ -24,6 +24,12 @@ final class MongoCollectionF[T: ClassTag] private(
   //aggregate
   //case classes
   //createIndexes
+
+  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[T] =
+    WatchQueryBuilder(collection.watch(pipeline))
+
+  def watch: WatchQueryBuilder[T] =
+    WatchQueryBuilder(collection.watch())
 
   def distinct(fieldName: String): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](collection.distinct(fieldName))
