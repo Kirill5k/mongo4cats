@@ -2,7 +2,7 @@ package mongo4cats.database
 
 import cats.effect.Async
 import mongo4cats.database.helpers._
-import mongo4cats.database.queries.QueryBuilder
+import mongo4cats.database.queries.{DistinctQueryBuilder, FindQueryBuilder}
 import org.bson.conversions.Bson
 import org.mongodb.scala.model._
 import org.mongodb.scala.result._
@@ -20,13 +20,26 @@ final class MongoCollectionF[T: ClassTag] private(
   //watch
   //aggregate
   //bulk
-  //findOneAndReplace
-  //findOneAndDelete
-  //findOneAndUpdate
   //case classes
   //createIndexes
-  //distinct
 
+  def findOneAndDelete[F[_]: Async](filter: Bson): F[T] =
+    doAsync(collection.findOneAndDelete(filter))
+
+  def findOneAndDelete[F[_]: Async](filter: Bson, options: FindOneAndDeleteOptions): F[T] =
+    doAsync(collection.findOneAndDelete(filter, options))
+
+  def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson): F[T] =
+    doAsync(collection.findOneAndUpdate(filter, update))
+
+  def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T] =
+    doAsync(collection.findOneAndUpdate(filter, update, options))
+
+  def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T): F[T] =
+    doAsync(collection.findOneAndReplace(filter, replacement))
+
+  def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[T] =
+    doAsync(collection.findOneAndReplace(filter, replacement, options))
 
   def dropIndex[F[_]: Async](name: String): F[Unit] =
     doAsyncVoid(collection.dropIndex(name))
@@ -106,13 +119,19 @@ final class MongoCollectionF[T: ClassTag] private(
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
     doAsync(collection.insertMany(documents, options))
 
-  def find: QueryBuilder[T] =
-    QueryBuilder(collection.find())
+  def distinct(fieldName: String): DistinctQueryBuilder[T] =
+    DistinctQueryBuilder(collection.distinct(fieldName))
 
-  def find(filter: Bson): QueryBuilder[T] =
-    QueryBuilder(collection.find(filter))
+  def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
+    DistinctQueryBuilder(collection.distinct(fieldName, filter))
 
-  def count[F[_]: Async](): F[Long] =
+  def find: FindQueryBuilder[T] =
+    FindQueryBuilder(collection.find())
+
+  def find(filter: Bson): FindQueryBuilder[T] =
+    FindQueryBuilder(collection.find(filter))
+
+  def count[F[_]: Async]: F[Long] =
     doAsync(collection.countDocuments())
 
   def count[F[_]: Async](filter: Bson): F[Long] =
