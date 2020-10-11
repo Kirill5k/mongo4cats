@@ -2,9 +2,10 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    lazy val mongodb        = "4.0.2"
+    lazy val mongodb        = "4.1.0"
     lazy val catsEffect     = "2.1.3"
     lazy val fs2            = "2.4.4"
+
     lazy val catsEffectTest = "0.4.0"
     lazy val scalaTest      = "3.1.1"
     lazy val embeddedMongo  = "2.2.0"
