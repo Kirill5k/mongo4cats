@@ -1,7 +1,8 @@
 package mongo4cats.database.queries
 
-import cats.effect.Async
-import mongo4cats.database.helpers.singleItemObserver
+import cats.effect.{Async, Concurrent, Sync}
+import fs2.concurrent.Queue
+import mongo4cats.database.helpers.{multipleItemsObserver, singleItemObserver, streamObserver}
 import org.bson.conversions.Bson
 import org.mongodb.scala.FindObservable
 
@@ -15,8 +16,8 @@ final class FindQueryBuilder[T: reflect.ClassTag] private(
   def sort(sort: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Sort[T](sort) :: commands)
 
-  def find(filter: Bson): FindQueryBuilder[T] =
-    FindQueryBuilder[T](observable, FindCommand.Find[T](filter) :: commands)
+  def filter(filter: Bson): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Filter[T](filter) :: commands)
 
   def projection(projection: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Projection[T](projection) :: commands)
@@ -28,6 +29,18 @@ final class FindQueryBuilder[T: reflect.ClassTag] private(
     Async[F].async { k =>
       applyCommands().first().subscribe(singleItemObserver(k))
     }
+
+  def all[F[_]: Async]: F[Iterable[T]] =
+    Async[F].async { k =>
+      applyCommands().subscribe(multipleItemsObserver[T](k))
+    }
+
+  def stream[F[_]: Concurrent]: fs2.Stream[F, T] =
+    for {
+      q   <- fs2.Stream.eval(Queue.noneTerminated[F, T])
+      _   <- fs2.Stream.eval(Sync[F].delay(applyCommands().subscribe(streamObserver[F, T](q))))
+      doc <- q.dequeue
+    } yield doc
 }
 
 object FindQueryBuilder {

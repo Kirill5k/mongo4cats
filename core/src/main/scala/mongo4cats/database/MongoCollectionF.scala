@@ -23,6 +23,18 @@ final class MongoCollectionF[T: ClassTag] private(
   //case classes
   //createIndexes
 
+  def distinct(fieldName: String): DistinctQueryBuilder[T] =
+    DistinctQueryBuilder[T](collection.distinct(fieldName))
+
+  def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
+    DistinctQueryBuilder[T](collection.distinct(fieldName, filter))
+
+  def find: FindQueryBuilder[T] =
+    FindQueryBuilder[T](collection.find())
+
+  def find(filter: Bson): FindQueryBuilder[T] =
+    FindQueryBuilder[T](collection.find(filter))
+
   def findOneAndDelete[F[_]: Async](filter: Bson): F[T] =
     doAsync(collection.findOneAndDelete(filter))
 
@@ -118,18 +130,6 @@ final class MongoCollectionF[T: ClassTag] private(
 
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
     doAsync(collection.insertMany(documents, options))
-
-  def distinct(fieldName: String): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder(collection.distinct(fieldName))
-
-  def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder(collection.distinct(fieldName, filter))
-
-  def find: FindQueryBuilder[T] =
-    FindQueryBuilder(collection.find())
-
-  def find(filter: Bson): FindQueryBuilder[T] =
-    FindQueryBuilder(collection.find(filter))
 
   def count[F[_]: Async]: F[Long] =
     doAsync(collection.countDocuments())

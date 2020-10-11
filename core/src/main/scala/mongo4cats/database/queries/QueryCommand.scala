@@ -22,7 +22,7 @@ private[queries] object FindCommand {
       observable.sort(order)
   }
 
-  final case class Find[T](filter: Bson) extends FindCommand[T] {
+  final case class Filter[T](filter: Bson) extends FindCommand[T] {
     override def run(observable: FindObservable[T]): FindObservable[T] =
       observable.filter(filter)
   }
