@@ -20,9 +20,6 @@ final class MongoCollectionF[T: ClassTag] private(
   def documentClass: Class[T] =
     collection.documentClass
 
-  //case classes
-  //createIndexes
-
   def aggregate(pipeline: Seq[Bson]): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(collection.aggregate(pipeline))
 
