@@ -1,8 +1,7 @@
 package mongo4cats.database
 
-import cats.effect.Concurrent
-import fs2.concurrent.NoneTerminatedQueue
-import org.mongodb.scala.Observer
+import org.mongodb.scala.{Observable, Observer, Subscription}
+import org.reactivestreams.{Publisher, Subscriber, Subscription => RSSubscription}
 
 import scala.util.Either
 
@@ -48,21 +47,17 @@ private[database] object helpers {
         callback(Right(results.reverse))
     }
 
-  def streamObserver[F[_]: Concurrent, A](queue: NoneTerminatedQueue[F, A]): Observer[A] =
-    new Observer[A] {
-      override def onNext(result: A): Unit = {
-        queue.enqueue(fs2.Stream.emit(Some(result)))
-        ()
+  def unicastPublisher[T](observable: Observable[T]): Publisher[T] = (s: Subscriber[_ >: T]) => {
+    observable.subscribe(new Observer[T] {
+      override def onSubscribe(sub: Subscription): Unit = {
+        s.onSubscribe(new RSSubscription {
+          def request(n: Long): Unit = sub.request(n)
+          def cancel(): Unit = sub.unsubscribe()
+        })
       }
-
-      override def onError(e: Throwable): Unit = {
-        queue.enqueue(fs2.Stream.raiseError(e))
-        ()
-      }
-
-      override def onComplete(): Unit = {
-        queue.enqueue(fs2.Stream.emit(None))
-        ()
-      }
-    }
+      def onNext(result: T): Unit = s.onNext(result)
+      def onError(e: Throwable): Unit = s.onError(e)
+      def onComplete(): Unit = s.onComplete()
+    })
+  }
 }

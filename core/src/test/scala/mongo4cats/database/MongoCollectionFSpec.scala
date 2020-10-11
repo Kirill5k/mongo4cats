@@ -320,6 +320,20 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
           found.getString("name") must be ("d4")
         }
       }
+
+      "stream" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            coll <- db.getCollection[Document]("coll")
+            _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
+            res  <- coll.find.stream[IO].compile.toList
+          } yield res
+
+          val found = result.unsafeRunSync()
+
+          found must have size 4
+        }
+      }
     }
 
     "distinct" should {

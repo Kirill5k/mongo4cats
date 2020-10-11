@@ -11,9 +11,10 @@ object Dependencies {
   }
 
   object Libraries {
-    lazy val mongodb    = "org.mongodb.scala" %% "mongo-scala-driver" % Versions.mongodb
-    lazy val catsEffect = "org.typelevel"     %% "cats-effect"        % Versions.catsEffect
-    lazy val fs2        = "co.fs2"            %% "fs2-core"           % Versions.fs2
+    lazy val mongodb            = "org.mongodb.scala" %% "mongo-scala-driver"   % Versions.mongodb
+    lazy val catsEffect         = "org.typelevel"     %% "cats-effect"          % Versions.catsEffect
+    lazy val fs2Core            = "co.fs2"            %% "fs2-core"             % Versions.fs2
+    lazy val fs2ReactiveStreams = "co.fs2"            %% "fs2-reactive-streams" % Versions.fs2
 
     lazy val scalaTest      = "org.scalatest"       %% "scalatest"                     % Versions.scalaTest
     lazy val catsEffectTest = "com.codecommit"      %% "cats-effect-testing-scalatest" % Versions.catsEffectTest
@@ -23,7 +24,8 @@ object Dependencies {
   lazy val core = Seq(
     Libraries.mongodb,
     Libraries.catsEffect,
-    Libraries.fs2
+    Libraries.fs2Core,
+    Libraries.fs2ReactiveStreams
   )
 
   lazy val test = Seq(

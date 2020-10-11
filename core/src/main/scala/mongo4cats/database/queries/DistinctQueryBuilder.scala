@@ -1,9 +1,9 @@
 package mongo4cats.database.queries
 
-import cats.effect.{Async, Concurrent, Sync}
+import cats.effect.{Async, ConcurrentEffect}
+import fs2.interop.reactivestreams._
 import com.mongodb.client.model
-import fs2.concurrent.Queue
-import mongo4cats.database.helpers.{multipleItemsObserver, singleItemObserver, streamObserver}
+import mongo4cats.database.helpers.{multipleItemsObserver, singleItemObserver, unicastPublisher}
 import org.bson.conversions.Bson
 import org.mongodb.scala.DistinctObservable
 
@@ -33,12 +33,8 @@ final class DistinctQueryBuilder[T: reflect.ClassTag] private (
       applyCommands().subscribe(multipleItemsObserver[T](k))
     }
 
-  def stream[F[_]: Concurrent]: fs2.Stream[F, T] =
-    for {
-      q   <- fs2.Stream.eval(Queue.noneTerminated[F, T])
-      _   <- fs2.Stream.eval(Sync[F].delay(applyCommands().subscribe(streamObserver[F, T](q))))
-      doc <- q.dequeue
-    } yield doc
+  def stream[F[_]: ConcurrentEffect]: fs2.Stream[F, T] =
+    unicastPublisher[T](applyCommands()).toStream[F]
 }
 
 object DistinctQueryBuilder {
