@@ -17,9 +17,11 @@ final class MongoCollectionF[T: ClassTag] private(
   def namespace: MongoNamespace =
     collection.namespace
 
+  def documentClass: Class[T] =
+    collection.documentClass
+
   //watch
   //aggregate
-  //bulk
   //case classes
   //createIndexes
 
