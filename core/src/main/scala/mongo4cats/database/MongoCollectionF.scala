@@ -143,14 +143,10 @@ final class MongoCollectionF[T: ClassTag] private(
     doAsync(collection.countDocuments(filter, options))
 
   private def doAsync[F[_]: Async, R](observable: => SingleObservable[R]): F[R] =
-    Async[F].async { k =>
-      observable.subscribe(singleItemObserver[R](k))
-    }
+    Async[F].async(singleItemAsync(observable))
 
   private def doAsyncVoid[F[_]: Async](observable: => SingleObservable[Void]): F[Unit] =
-    Async[F].async { k =>
-      observable.subscribe(voidObserver(k))
-    }
+    Async[F].async(voidAsync(observable))
 }
 
 object MongoCollectionF {

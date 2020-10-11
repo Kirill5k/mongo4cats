@@ -21,14 +21,10 @@ final class MongoDatabaseF[F[_]: Concurrent] private(
       .map(MongoCollectionF.apply[T])
 
   def collectionNames(): F[Iterable[String]] =
-    Async[F].async { k =>
-      database.listCollectionNames().subscribe(multipleItemsObserver[String](k))
-    }
+    Async[F].async(multipleItemsAsync(database.listCollectionNames()))
 
   def createCollection(name: String): F[Unit] =
-    Async[F].async { k =>
-      database.createCollection(name).subscribe(voidObserver(k))
-    }
+    Async[F].async(voidAsync(database.createCollection(name)))
 }
 
 object MongoDatabaseF {

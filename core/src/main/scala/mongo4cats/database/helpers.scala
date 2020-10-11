@@ -7,45 +7,48 @@ import scala.util.Either
 
 private[database] object helpers {
 
-  def voidObserver(callback: Either[Throwable, Unit] => Unit): Observer[Void] =
-    new Observer[Void] {
+  def voidAsync(observable: Observable[Void]): (Either[Throwable, Unit] => Unit) => Unit = k => {
+    observable.subscribe(new Observer[Void] {
 
       override def onNext(res: Void): Unit = ()
 
       override def onError(e: Throwable): Unit =
-        callback(Left(e))
+        k(Left(e))
 
       override def onComplete(): Unit =
-        callback(Right(()))
-    }
+        k(Right(()))
+    })
+  }
 
-  def singleItemObserver[A](callback: Either[Throwable, A] => Unit): Observer[A] =
-    new Observer[A] {
-      private var result: A = _
+  def multipleItemsAsync[T](observable: Observable[T]): (Either[Throwable, Iterable[T]] => Unit) => Unit = k => {
+    observable.subscribe(new Observer[T] {
+      private var results: List[T] = Nil
 
-      override def onNext(res: A): Unit =
-        result = res
-
-      override def onError(e: Throwable): Unit =
-        callback(Left(e))
-
-      override def onComplete(): Unit =
-        callback(Right(result))
-    }
-
-  def multipleItemsObserver[A](callback: Either[Throwable, Iterable[A]] => Unit): Observer[A] =
-    new Observer[A] {
-      private var results: List[A] = Nil
-
-      override def onNext(result: A): Unit =
+      override def onNext(result: T): Unit =
         results = result :: results
 
       override def onError(e: Throwable): Unit =
-        callback(Left(e))
+        k(Left(e))
 
       override def onComplete(): Unit =
-        callback(Right(results.reverse))
-    }
+        k(Right(results.reverse))
+    })
+  }
+
+  def singleItemAsync[T](observable: Observable[T]): (Either[Throwable, T] => Unit) => Unit = k => {
+    observable.subscribe(new Observer[T] {
+      private var result: T = _
+
+      override def onNext(res: T): Unit =
+        result = res
+
+      override def onError(e: Throwable): Unit =
+        k(Left(e))
+
+      override def onComplete(): Unit =
+        k(Right(result))
+    })
+  }
 
   def unicastPublisher[T](observable: Observable[T]): Publisher[T] = (s: Subscriber[_ >: T]) => {
     observable.subscribe(new Observer[T] {
