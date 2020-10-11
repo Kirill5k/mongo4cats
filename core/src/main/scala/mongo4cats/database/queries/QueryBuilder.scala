@@ -80,25 +80,25 @@ final case class WatchQueryBuilder[T: ClassTag] private (
 ) extends QueryBuilder[ChangeStreamObservable, T] {
 
   def batchSize(size: Int): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.BatchSize(size) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.BatchSize[T](size) :: commands)
 
   def collation(collation: model.Collation): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.Collation(collation) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.Collation[T](collation) :: commands)
 
   def fullDocument(fullDocument: changestream.FullDocument): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.FullDocument(fullDocument) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.FullDocument[T](fullDocument) :: commands)
 
   def maxAwaitTime(duration: Duration): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.MaxAwaitTime(duration) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.MaxAwaitTime[T](duration) :: commands)
 
   def resumeAfter(after: Document): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.ResumeAfter(after) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.ResumeAfter[T](after) :: commands)
 
   def startAfter(after: Document): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.StartAfter(after) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.StartAfter[T](after) :: commands)
 
   def startAtOperationTime(operationTime: BsonTimestamp): WatchQueryBuilder[T] =
-    WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime(operationTime) :: commands)
+    WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime[T](operationTime) :: commands)
 
   def first[F[_]: Async]: F[ChangeStreamDocument[T]] =
     Async[F].async(singleItemAsync(applyCommands().first()))
@@ -113,28 +113,28 @@ final case class AggregateQueryBuilder[T: ClassTag] private (
 ) extends QueryBuilder[AggregateObservable, T] {
 
   def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.AllowDiskUse(allowDiskUse) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.AllowDiskUse[T](allowDiskUse) :: commands)
 
   def maxTime(duration: Duration): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.MaxTime(duration) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.MaxTime[T](duration) :: commands)
 
   def maxAwaitTime(duration: Duration): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.MaxAwaitTime(duration) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.MaxAwaitTime[T](duration) :: commands)
 
   def bypassDocumentValidation(bypassDocumentValidation: Boolean): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.BypassDocumentValidation(bypassDocumentValidation) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.BypassDocumentValidation[T](bypassDocumentValidation) :: commands)
 
   def collation(collation: model.Collation): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Collation(collation) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.Collation[T](collation) :: commands)
 
   def comment(comment: String): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Comment(comment) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.Comment[T](comment) :: commands)
 
   def hint(hint: Bson): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Hint(hint) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.Hint[T](hint) :: commands)
 
   def batchSize(batchSize: Int): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(observable, AggregateCommand.BatchSize(batchSize) :: commands)
+    AggregateQueryBuilder(observable, AggregateCommand.BatchSize[T](batchSize) :: commands)
 
   def first[F[_]: Async]: F[T] =
     Async[F].async(singleItemAsync(applyCommands().first()))

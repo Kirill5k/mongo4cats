@@ -5,7 +5,6 @@ import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import mongo4cats.database.codecs._
 import org.mongodb.scala.bson.Document
 import org.mongodb.scala.model.Filters
 import org.mongodb.scala.model.Updates

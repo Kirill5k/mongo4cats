@@ -45,114 +45,114 @@ final class MongoCollectionF[T: ClassTag] private(
     FindQueryBuilder[T](collection.find(filter))
 
   def findOneAndDelete[F[_]: Async](filter: Bson): F[T] =
-    doAsync(collection.findOneAndDelete(filter))
+    async(collection.findOneAndDelete(filter))
 
   def findOneAndDelete[F[_]: Async](filter: Bson, options: FindOneAndDeleteOptions): F[T] =
-    doAsync(collection.findOneAndDelete(filter, options))
+    async(collection.findOneAndDelete(filter, options))
 
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson): F[T] =
-    doAsync(collection.findOneAndUpdate(filter, update))
+    async(collection.findOneAndUpdate(filter, update))
 
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T] =
-    doAsync(collection.findOneAndUpdate(filter, update, options))
+    async(collection.findOneAndUpdate(filter, update, options))
 
   def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T): F[T] =
-    doAsync(collection.findOneAndReplace(filter, replacement))
+    async(collection.findOneAndReplace(filter, replacement))
 
   def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[T] =
-    doAsync(collection.findOneAndReplace(filter, replacement, options))
+    async(collection.findOneAndReplace(filter, replacement, options))
 
   def dropIndex[F[_]: Async](name: String): F[Unit] =
-    doAsyncVoid(collection.dropIndex(name))
+    asyncVoid(collection.dropIndex(name))
 
   def dropIndex[F[_]: Async](keys: Bson): F[Unit] =
-    doAsyncVoid(collection.dropIndex(keys))
+    asyncVoid(collection.dropIndex(keys))
 
   def dropIndex[F[_]: Async](keys: Bson, options: DropIndexOptions): F[Unit] =
-    doAsyncVoid(collection.dropIndex(keys, options))
+    asyncVoid(collection.dropIndex(keys, options))
 
   def dropIndexes[F[_]: Async](options: DropIndexOptions): F[Unit] =
-    doAsyncVoid(collection.dropIndexes(options))
+    asyncVoid(collection.dropIndexes(options))
 
   def dropIndexes[F[_]: Async](): F[Unit] =
-    doAsyncVoid(collection.dropIndexes())
+    asyncVoid(collection.dropIndexes())
 
   def drop[F[_]: Async](): F[Unit] =
-    doAsyncVoid(collection.drop())
+    asyncVoid(collection.drop())
 
   def createIndex[F[_]: Async](filters: Bson): F[String] =
-    doAsync(collection.createIndex(filters))
+    async(collection.createIndex(filters))
 
   def createIndex[F[_]: Async](filter: Bson, options: IndexOptions): F[String] =
-    doAsync(collection.createIndex(filter, options))
+    async(collection.createIndex(filter, options))
 
   def updateMany[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
-    doAsync(collection.updateMany(filters, update))
+    async(collection.updateMany(filters, update))
 
   def updateMany[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    doAsync(collection.updateMany(filters, update))
+    async(collection.updateMany(filters, update))
 
   def updateMany[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
-    doAsync(collection.updateMany(filter, update, options))
+    async(collection.updateMany(filter, update, options))
 
   def updateMany[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    doAsync(collection.updateMany(filter, update, options))
+    async(collection.updateMany(filter, update, options))
 
   def updateOne[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
-    doAsync(collection.updateOne(filters, update))
+    async(collection.updateOne(filters, update))
 
   def updateOne[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    doAsync(collection.updateOne(filters, update))
+    async(collection.updateOne(filters, update))
 
   def updateOne[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
-    doAsync(collection.updateOne(filter, update, options))
+    async(collection.updateOne(filter, update, options))
 
   def updateOne[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    doAsync(collection.updateOne(filter, update, options))
+    async(collection.updateOne(filter, update, options))
 
   def replaceOne[F[_]: Async](filters: Bson, replacement: T): F[UpdateResult] =
-    doAsync(collection.replaceOne(filters, replacement))
+    async(collection.replaceOne(filters, replacement))
 
   def replaceOne[F[_]: Async](filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult] =
-    doAsync(collection.replaceOne(filter, replacement, options))
+    async(collection.replaceOne(filter, replacement, options))
 
   def deleteOne[F[_]: Async](filters: Bson): F[DeleteResult] =
-    doAsync(collection.deleteOne(filters))
+    async(collection.deleteOne(filters))
 
   def deleteOne[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
-    doAsync(collection.deleteOne(filter, options))
+    async(collection.deleteOne(filter, options))
 
   def deleteMany[F[_]: Async](filters: Bson): F[DeleteResult] =
-    doAsync(collection.deleteMany(filters))
+    async(collection.deleteMany(filters))
 
   def deleteMany[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
-    doAsync(collection.deleteMany(filter, options))
+    async(collection.deleteMany(filter, options))
 
   def insertOne[F[_]: Async](document: T): F[InsertOneResult] =
-    doAsync(collection.insertOne(document))
+    async(collection.insertOne(document))
 
   def insertOne[F[_]: Async](document: T, options: InsertOneOptions): F[InsertOneResult] =
-    doAsync(collection.insertOne(document, options))
+    async(collection.insertOne(document, options))
 
   def insertMany[F[_]: Async](documents: Seq[T]): F[InsertManyResult] =
-    doAsync(collection.insertMany(documents))
+    async(collection.insertMany(documents))
 
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
-    doAsync(collection.insertMany(documents, options))
+    async(collection.insertMany(documents, options))
 
   def count[F[_]: Async]: F[Long] =
-    doAsync(collection.countDocuments())
+    async(collection.countDocuments())
 
   def count[F[_]: Async](filter: Bson): F[Long] =
-    doAsync(collection.countDocuments(filter))
+    async(collection.countDocuments(filter))
 
   def count[F[_]: Async](filter: Bson, options: CountOptions): F[Long] =
-    doAsync(collection.countDocuments(filter, options))
+    async(collection.countDocuments(filter, options))
 
-  private def doAsync[F[_]: Async, R](observable: => SingleObservable[R]): F[R] =
+  private def async[F[_]: Async, R](observable: => SingleObservable[R]): F[R] =
     Async[F].async(singleItemAsync(observable))
 
-  private def doAsyncVoid[F[_]: Async](observable: => SingleObservable[Void]): F[Unit] =
+  private def asyncVoid[F[_]: Async](observable: => SingleObservable[Void]): F[Unit] =
     Async[F].async(voidAsync(observable))
 }
 
