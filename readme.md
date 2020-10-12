@@ -1,1 +1,1 @@
-Mongo DB client built on top of Cats and Cats Effect libraries
+Mongo DB client wrapper compatible with Cats Effect ans FS2
