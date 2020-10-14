@@ -3,7 +3,6 @@ package mongo4cats.database
 import cats.effect.IO
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
-import org.mongodb.scala.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -33,7 +32,7 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
         val result = for {
           db         <- client.getDatabase("foo")
           _          <- db.createCollection("c1")
-          collection <- db.getCollection[Document]("c1")
+          collection <- db.getCollection("c1")
         } yield collection.namespace
 
         val namespace = result.unsafeRunSync()

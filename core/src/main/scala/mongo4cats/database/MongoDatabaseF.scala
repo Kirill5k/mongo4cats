@@ -19,7 +19,9 @@ package mongo4cats.database
 import cats.effect.{Async, Concurrent, Sync}
 import cats.implicits._
 import mongo4cats.database.helpers._
+import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.MongoDatabase
+import org.mongodb.scala.bson.Document
 
 import scala.reflect.ClassTag
 
@@ -30,9 +32,14 @@ final class MongoDatabaseF[F[_]: Concurrent] private (
   def name: F[String] =
     Sync[F].pure(database.name)
 
-  def getCollection[T: ClassTag](name: String): F[MongoCollectionF[T]] =
+  def getCollection(name: String): F[MongoCollectionF[Document]] =
     Sync[F]
-      .delay(database.getCollection[T](name).withDocumentClass[T]())
+      .delay(database.getCollection[Document](name))
+      .map(MongoCollectionF.apply[Document])
+
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
+    Sync[F]
+      .delay(database.getCollection[T](name).withCodecRegistry(codecRegistry).withDocumentClass[T]())
       .map(MongoCollectionF.apply[T])
 
   def collectionNames(): F[Iterable[String]] =

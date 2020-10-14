@@ -9,8 +9,20 @@ import org.mongodb.scala.bson.{Document, ObjectId}
 import org.mongodb.scala.model.Filters
 import org.mongodb.scala.model.Updates
 import org.mongodb.scala.model.Sorts
+import org.mongodb.scala.bson.codecs.Macros._
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 
 import scala.concurrent.ExecutionContext
+
+
+final case class PersonInfo(x: Int, y: Int)
+final case class Person(_id: ObjectId, name: String, info: PersonInfo)
+
+object Person {
+  def apply(name: String, info: PersonInfo): Person =
+    Person(new ObjectId(), name, info)
+}
 
 class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
@@ -23,7 +35,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "store new document in db" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               insertResult <- coll.insertOne[IO](document())
               documents    <- coll.find.all[IO]
             } yield (insertResult, documents)
@@ -41,7 +53,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "store several documents in db" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               insertResult <- coll.insertMany[IO](List(document(), document("test-doc-2")))
               documents    <- coll.find.all[IO]
             } yield (insertResult, documents)
@@ -60,7 +72,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "return count of all documents in collection" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll  <- db.getCollection[Document]("coll")
+              coll  <- db.getCollection("coll")
               _     <- coll.insertMany[IO](List(document(), document("test-doc-2"), document("test-doc-3")))
               count <- coll.count[IO]
             } yield count
@@ -72,7 +84,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "return 0 for empty collection" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll  <- db.getCollection[Document]("coll")
+              coll  <- db.getCollection("coll")
               count <- coll.count[IO]
             } yield count
 
@@ -83,7 +95,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "apply filters" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll  <- db.getCollection[Document]("coll")
+              coll  <- db.getCollection("coll")
               _     <- coll.insertMany[IO](List(document(), document("test-doc-2"), document("test-doc-3")))
               count <- coll.count[IO](Filters.equal("name", "test-doc-2"))
             } yield count
@@ -97,7 +109,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "delete multiple docs in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
               deleteResult <- coll.deleteMany[IO](Filters.equal("name", "test-doc-1"))
               count        <- coll.count[IO]
@@ -115,7 +127,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "delete one docs in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
               deleteResult <- coll.deleteOne[IO](Filters.equal("name", "test-doc-1"))
               count        <- coll.count[IO]
@@ -133,7 +145,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "replace doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document()))
               updateResult <- coll.replaceOne[IO](Filters.equal("name", "test-doc-1"), document("test-doc-2"))
               docs         <- coll.find.all[IO]
@@ -153,7 +165,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "update one doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
               updateResult <- coll.updateOne[IO](Filters.equal("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
               docs         <- coll.find.all[IO]
@@ -171,7 +183,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "update many docs in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Document]("coll")
+              coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
               updateResult <- coll.updateMany[IO](Filters.equal("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
               docs         <- coll.find.all[IO]
@@ -191,7 +203,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "delete one doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll      <- db.getCollection[Document]("coll")
+              coll      <- db.getCollection("coll")
               _         <- coll.insertMany[IO](List(document(), document(), document()))
               deleteRes <- coll.deleteOne[IO](Filters.equal("name", "test-doc-1"))
               docs      <- coll.find.all[IO]
@@ -207,7 +219,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "delete many docs in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll      <- db.getCollection[Document]("coll")
+              coll      <- db.getCollection("coll")
               _         <- coll.insertMany[IO](List(document(), document(), document()))
               deleteRes <- coll.deleteMany[IO](Filters.equal("name", "test-doc-1"))
               docs      <- coll.find.all[IO]
@@ -225,7 +237,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "find and replace doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document()))
               old  <- coll.findOneAndReplace[IO](Filters.equal("name", "test-doc-1"), document("test-doc-2"))
               docs <- coll.find.all[IO]
@@ -244,7 +256,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "find and update doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document()))
               old  <- coll.findOneAndUpdate[IO](Filters.equal("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
               docs <- coll.find.all[IO]
@@ -263,7 +275,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "find and delete doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document()))
               old  <- coll.findOneAndDelete[IO](Filters.equal("name", "test-doc-1"))
               docs <- coll.find.all[IO]
@@ -281,7 +293,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "find docs by field" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
               res  <- coll.find.filter(Filters.eq("name", "d1")).all[IO]
             } yield res
@@ -295,7 +307,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "all with sort and limit" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
               res  <- coll.find.sort(Sorts.descending("name")).limit(3).all[IO]
             } yield res
@@ -310,7 +322,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "first with sort and limit" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
               res  <- coll.find.sort(Sorts.descending("name")).limit(3).first[IO]
             } yield res
@@ -324,7 +336,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "stream" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
               res  <- coll.find.stream[IO].compile.toList
             } yield res
@@ -340,7 +352,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         "find distinct docs by field" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection[Document]("coll")
+              coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
               res  <- coll.distinct("info").all[IO]
             } yield res
@@ -354,11 +366,13 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
     }
 
     "working with case classes" should {
+      val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY )
+
       "insertOne" should {
         "store new person in db" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection[Person]("coll")
+              coll         <- db.getCollection[Person]("coll", personCodecRegistry)
               insertResult <- coll.insertOne[IO](person())
               people    <- coll.find.all[IO]
             } yield (insertResult, people)
@@ -387,16 +401,6 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
   def document(name: String = "test-doc-1"): Document =
     Document("name" -> name, "info" -> Document("x" -> 203, "y" -> 102))
 
-
   def person(name: String = "test-person-1"): Person =
     Person(name, PersonInfo(203, 102))
-
-  final case class PersonInfo(x: Int, y: Int)
-  final case class Person(_id: ObjectId, name: String, info: PersonInfo)
-
-  object Person {
-    def apply(name: String, info: PersonInfo): Person =
-      Person(new ObjectId(), name, info)
-  }
-
 }
