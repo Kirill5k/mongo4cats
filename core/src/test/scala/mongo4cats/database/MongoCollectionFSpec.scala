@@ -302,7 +302,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
           val found = result.unsafeRunSync()
 
           found must have size 3
-          found.map(_.getString("name")) must be (List("d4", "d3", "d2"))
+          found.map(_.getString("name")) must be(List("d4", "d3", "d2"))
         }
       }
 
@@ -316,7 +316,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
 
           val found = result.unsafeRunSync()
 
-          found.getString("name") must be ("d4")
+          found.getString("name") must be("d4")
         }
       }
 

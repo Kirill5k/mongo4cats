@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Mongo DB client wrapper for Cats Effect & Fs2
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mongo4cats.database.queries
 
 import com.mongodb.client.model
@@ -12,10 +28,10 @@ sealed private[queries] trait QueryCommand[O[_] <: Observable[_], T] {
   def run(observable: O[T]): O[T]
 }
 
-sealed private[queries] trait DistinctCommand[T] extends QueryCommand[DistinctObservable, T]
-sealed private[queries] trait FindCommand[T]     extends QueryCommand[FindObservable, T]
-sealed private[queries] trait WatchCommand[T]    extends QueryCommand[ChangeStreamObservable, T]
-sealed private[queries] trait AggregateCommand[T]    extends QueryCommand[AggregateObservable, T]
+sealed private[queries] trait DistinctCommand[T]  extends QueryCommand[DistinctObservable, T]
+sealed private[queries] trait FindCommand[T]      extends QueryCommand[FindObservable, T]
+sealed private[queries] trait WatchCommand[T]     extends QueryCommand[ChangeStreamObservable, T]
+sealed private[queries] trait AggregateCommand[T] extends QueryCommand[AggregateObservable, T]
 
 private[queries] object FindCommand {
   final case class Limit[T](n: Int) extends FindCommand[T] {
@@ -126,7 +142,7 @@ private[queries] object AggregateCommand {
 
   final case class Hint[T](hint: Bson) extends AggregateCommand[T] {
     override def run(observable: AggregateObservable[T]): AggregateObservable[T] =
-     observable.hint(hint)
+      observable.hint(hint)
   }
 
   final case class BatchSize[T](batchSize: Int) extends AggregateCommand[T] {
