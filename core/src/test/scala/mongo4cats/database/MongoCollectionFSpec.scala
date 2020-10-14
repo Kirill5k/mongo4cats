@@ -15,7 +15,6 @@ import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 
 import scala.concurrent.ExecutionContext
 
-
 final case class PersonInfo(x: Int, y: Int)
 final case class Person(_id: ObjectId, name: String, info: PersonInfo)
 
@@ -366,7 +365,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
     }
 
     "working with case classes" should {
-      val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY )
+      val personCodecRegistry = fromRegistries(
+        fromProviders(classOf[Person]),
+        fromProviders(classOf[PersonInfo]),
+        DEFAULT_CODEC_REGISTRY
+      )
 
       "insertOne" should {
         "store new person in db" in {
@@ -374,7 +377,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll         <- db.getCollection[Person]("coll", personCodecRegistry)
               insertResult <- coll.insertOne[IO](person())
-              people    <- coll.find.all[IO]
+              people       <- coll.find.all[IO]
             } yield (insertResult, people)
 
             val (insertRes, people) = result.unsafeRunSync()
