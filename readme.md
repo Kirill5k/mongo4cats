@@ -48,12 +48,12 @@ import mongo4cats.client.MongoClientF
 import org.mongodb.scala.bson.codecs.Macros._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
-import org.mongodb.scala.bson.Document
-import org.mongodb.scala.model.{Filters, Sorts}
+import org.mongodb.scala.bson.ObjectId
+
 
 object Example extends IOApp {
 
-  final case class Person(firstName: String, lastName: String)
+  final case class Person(_id: ObjectId, firstName: String, lastName: String)
 
   val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY)
 
@@ -62,7 +62,7 @@ object Example extends IOApp {
       for {
         db   <- client.getDatabase("db")
         coll <- db.getCollection[Person]("collection", personCodecRegistry)
-        _    <- coll.insertOne[IO](Person("John", "Bloggs"))
+        _    <- coll.insertOne[IO](Person(new ObjectId(), "John", "Bloggs"))
         docs <- coll.find.stream[IO].compile.toList
         _    <- IO(println(docs))
       } yield ExitCode.Success
