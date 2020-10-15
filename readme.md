@@ -3,7 +3,17 @@ mongo4cats
 
 Mongo DB scala client wrapper compatible with Cats Effect ans FS2
 
-### Quick Start Example
+### Dependencies
+
+Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
+
+```
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.0"
+```
+
+### Quick Start Examples
+
+#### Working with documents
 
 ```scala
 import cats.effect.{ExitCode, IO, IOApp}
@@ -30,10 +40,33 @@ object Example extends IOApp {
 }
 ```
 
-### Dependencies
+#### Working with case classes
 
-Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
+```scala
+import cats.effect.{ExitCode, IO, IOApp}
+import mongo4cats.client.MongoClientF
+import org.mongodb.scala.bson.codecs.Macros._
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.bson.Document
+import org.mongodb.scala.model.{Filters, Sorts}
 
+object Example extends IOApp {
+
+  final case class Person(firstName: String, lastName: String)
+
+  val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY)
+
+  override def run(args: List[String]): IO[ExitCode] =
+    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+      for {
+        db   <- client.getDatabase("db")
+        coll <- db.getCollection[Person]("collection", personCodecRegistry)
+        _    <- coll.insertOne[IO](Person("John", "Bloggs"))
+        docs <- coll.find.stream[IO].compile.toList
+        _    <- IO(println(docs))
+      } yield ExitCode.Success
+    }
+}
 ```
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.0"
-```
+
