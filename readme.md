@@ -20,7 +20,7 @@ object Example extends IOApp {
         coll <- db.getCollection("collection")
         _    <- coll.insertMany[IO]((0 to 10).map(i => Document("name" -> s"doc-$i")).toList)
         docs <- coll.find
-          .filter(Filters.regex("name", "doc-\\\d+"))
+          .filter(Filters.regex("name", "doc-\\d+"))
           .sort(Sorts.descending("name"))
           .limit(5)
           .all[IO]
