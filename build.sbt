@@ -22,6 +22,7 @@ lazy val commonSettings = Seq(
   organizationName := "Mongo DB client wrapper for Cats Effect & FS2",
   startYear := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+  headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
   scalafmtOnCompile := true
 )
