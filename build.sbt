@@ -4,7 +4,12 @@ ThisBuild / homepage := Some(url("https://github.com/kirill5k/mongo4cats"))
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
 ThisBuild / developers := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
 ThisBuild / publishMavenStyle := true
+ThisBuild / publishTo := Some(
+  if (isSnapshot.value) Opts.resolver.sonatypeSnapshots
+  else Opts.resolver.sonatypeStaging
+)
 
 lazy val noPublish = Seq(
   publish := {},
@@ -13,13 +18,6 @@ lazy val noPublish = Seq(
   publish / skip := true
 )
 
-lazy val root = (project in file("."))
-  .settings(noPublish)
-  .settings(
-    name := "mongo4cats"
-  )
-  .aggregate(`mongo4cats-core`)
-
 lazy val commonSettings = Seq(
   organizationName := "Mongo DB client wrapper for Cats Effect & FS2",
   startYear := Some(2020),
@@ -27,6 +25,13 @@ lazy val commonSettings = Seq(
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
   scalafmtOnCompile := true
 )
+
+lazy val root = (project in file("."))
+  .settings(noPublish)
+  .settings(
+    name := "mongo4cats"
+  )
+  .aggregate(`mongo4cats-core`)
 
 lazy val `mongo4cats-core` = (project in file("core"))
   .settings(commonSettings)
