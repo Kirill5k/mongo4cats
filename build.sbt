@@ -1,5 +1,10 @@
-ThisBuild / scalaVersion     := "2.13.3"
-ThisBuild / organization     := "io.github.kirill5k"
+ThisBuild / scalaVersion := "2.13.3"
+ThisBuild / organization := "io.github.kirill5k"
+ThisBuild / homepage := Some(url("https://github.com/kirill5k/mongo4cats"))
+ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
+ThisBuild / developers := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
+ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / publishMavenStyle := true
 
 lazy val noPublish = Seq(
   publish := {},
