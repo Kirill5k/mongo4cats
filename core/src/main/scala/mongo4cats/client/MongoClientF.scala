@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Mongo DB client wrapper for Cats Effect & FS2
+ * Copyright 2020 Kirill5k
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
