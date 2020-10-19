@@ -19,7 +19,7 @@ package mongo4cats.client
 import cats.effect.IO
 import cats.implicits._
 import mongo4cats.EmbeddedMongo
-import org.mongodb.scala.ServerAddress
+import org.mongodb.scala.{MongoTimeoutException, ServerAddress}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -80,11 +80,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .unsafeRunSync()
 
         result.isLeft must be(true)
-        result.leftMap(_.getMessage) must be(
-          Left(
-            "Timed out after 30000 ms while waiting for a server that matches ReadPreferenceServerSelector{readPreference=primary}. Client view of cluster state is {type=UNKNOWN, servers=[{address=localhost:123, type=UNKNOWN, state=CONNECTING, exception={com.mongodb.MongoSocketOpenException: Exception opening socket}, caused by {java.net.ConnectException: Connection refused}}]"
-          )
-        )
+        result.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) must be(Left(-3))
       }
     }
   }
