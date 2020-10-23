@@ -70,3 +70,4 @@ object Example extends IOApp {
 }
 ```
 
+Refer to the official documentation for more sophisticated examples on working with case classes: https://mongodb.github.io/mongo-scala-driver/2.9/bson/macros/
