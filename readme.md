@@ -10,7 +10,7 @@ Mongo DB scala client wrapper compatible with [Cats Effect](https://typelevel.or
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.0"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.1"
 ```
 
 ### Quick Start Examples
