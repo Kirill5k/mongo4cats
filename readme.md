@@ -1,7 +1,9 @@
 mongo4cats
 ==========
 
-Mongo DB scala client wrapper compatible with Cats Effect ans FS2
+<a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
+
+Mongo DB scala client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/)
 
 ### Dependencies
 
