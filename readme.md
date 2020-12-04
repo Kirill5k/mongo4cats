@@ -3,14 +3,15 @@ mongo4cats
 
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
-Mongo DB scala client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/)
+Mongo DB scala client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
+Supports Scala 2.12 and 2.13.
 
 ### Dependencies
 
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.1"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.3"
 ```
 
 ### Quick Start Examples
