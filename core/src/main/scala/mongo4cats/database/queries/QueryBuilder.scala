@@ -41,7 +41,7 @@ private[queries] trait QueryBuilder[O[_] <: Observable[_], T] {
 
 final case class FindQueryBuilder[T: ClassTag] private (
     protected val observable: FindObservable[T],
-    protected val commands: List[FindCommand[T]] = Nil
+    protected val commands: List[FindCommand[T]]
 ) extends QueryBuilder[FindObservable, T] {
 
   def sort(sort: Bson): FindQueryBuilder[T] =
@@ -68,7 +68,7 @@ final case class FindQueryBuilder[T: ClassTag] private (
 
 final case class DistinctQueryBuilder[T: ClassTag] private (
     protected val observable: DistinctObservable[T],
-    protected val commands: List[DistinctCommand[T]] = Nil
+    protected val commands: List[DistinctCommand[T]]
 ) extends QueryBuilder[DistinctObservable, T] {
 
   def filter(filter: Bson): DistinctQueryBuilder[T] =
@@ -92,7 +92,7 @@ final case class DistinctQueryBuilder[T: ClassTag] private (
 
 final case class WatchQueryBuilder[T: ClassTag] private (
     protected val observable: ChangeStreamObservable[T],
-    protected val commands: List[WatchCommand[T]] = Nil
+    protected val commands: List[WatchCommand[T]]
 ) extends QueryBuilder[ChangeStreamObservable, T] {
 
   def batchSize(size: Int): WatchQueryBuilder[T] =
@@ -125,7 +125,7 @@ final case class WatchQueryBuilder[T: ClassTag] private (
 
 final case class AggregateQueryBuilder[T: ClassTag] private (
     protected val observable: AggregateObservable[T],
-    protected val commands: List[AggregateCommand[T]] = Nil
+    protected val commands: List[AggregateCommand[T]]
 ) extends QueryBuilder[AggregateObservable, T] {
 
   def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[T] =

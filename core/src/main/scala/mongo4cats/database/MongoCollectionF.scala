@@ -37,25 +37,25 @@ final class MongoCollectionF[T: ClassTag] private (
     collection.documentClass
 
   def aggregate(pipeline: Seq[Bson]): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(collection.aggregate(pipeline))
+    AggregateQueryBuilder(collection.aggregate(pipeline), Nil)
 
   def watch(pipeline: Seq[Bson]): WatchQueryBuilder[T] =
-    WatchQueryBuilder(collection.watch(pipeline))
+    WatchQueryBuilder(collection.watch(pipeline), Nil)
 
   def watch: WatchQueryBuilder[T] =
-    WatchQueryBuilder(collection.watch())
+    WatchQueryBuilder(collection.watch(), Nil)
 
   def distinct(fieldName: String): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder[T](collection.distinct(fieldName))
+    DistinctQueryBuilder[T](collection.distinct(fieldName), Nil)
 
   def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder[T](collection.distinct(fieldName, filter))
+    DistinctQueryBuilder[T](collection.distinct(fieldName, filter), Nil)
 
   def find: FindQueryBuilder[T] =
-    FindQueryBuilder[T](collection.find())
+    FindQueryBuilder[T](collection.find(), Nil)
 
   def find(filter: Bson): FindQueryBuilder[T] =
-    FindQueryBuilder[T](collection.find(filter))
+    FindQueryBuilder[T](collection.find(filter), Nil)
 
   def findOneAndDelete[F[_]: Async](filter: Bson): F[T] =
     async(collection.findOneAndDelete(filter))

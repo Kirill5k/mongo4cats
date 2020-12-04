@@ -1,7 +1,11 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 
-ThisBuild / scalaVersion := "2.13.3"
+lazy val scala212               = "2.12.10"
+lazy val scala213               = "2.13.3"
+lazy val supportedScalaVersions = List(scala212, scala213)
+
+ThisBuild / scalaVersion := scala213
 ThisBuild / organization := "io.github.kirill5k"
 ThisBuild / homepage := Some(url("https://github.com/kirill5k/mongo4cats"))
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
@@ -39,13 +43,15 @@ lazy val commonSettings = Seq(
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
-  scalafmtOnCompile := true
+  scalafmtOnCompile := true,
+  crossScalaVersions := supportedScalaVersions
 )
 
 lazy val root = (project in file("."))
   .settings(noPublish)
   .settings(
-    name := "mongo4cats"
+    name := "mongo4cats",
+    crossScalaVersions := Nil
   )
   .aggregate(`mongo4cats-core`)
 
