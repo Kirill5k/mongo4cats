@@ -16,7 +16,7 @@
 
 package mongo4cats.database
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.scalatest.matchers.must.Matchers
@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
-  implicit val cs = IO.contextShift(ExecutionContext.global)
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   "A MongoDatabaseF" should {
 
@@ -36,10 +36,10 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           db    <- client.getDatabase("foo")
           _     <- db.createCollection("c1")
           _     <- db.createCollection("c2")
-          names <- db.collectionNames()
+          names <- db.collectionNames
         } yield names
 
-        result.unsafeRunSync() must be(List("c2", "c1"))
+        result.unsafeRunSync() mustBe List("c2", "c1")
       }
     }
 
@@ -53,8 +53,8 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
         val namespace = result.unsafeRunSync()
 
-        namespace.getDatabaseName must be("foo")
-        namespace.getCollectionName must be("c1")
+        namespace.getDatabaseName mustBe "foo"
+        namespace.getCollectionName mustBe "c1"
       }
     }
   }

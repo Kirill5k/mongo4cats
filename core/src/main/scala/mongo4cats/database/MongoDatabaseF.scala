@@ -25,24 +25,32 @@ import org.mongodb.scala.bson.Document
 
 import scala.reflect.ClassTag
 
-final class MongoDatabaseF[F[_]: Concurrent] private (
+trait MongoDatabaseF[F[_]] {
+  def name: F[String]
+  def getCollection(name: String): F[MongoCollectionF[Document]]
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
+  def collectionNames: F[Iterable[String]]
+  def createCollection(name: String): F[Unit]
+}
+
+final private class LiveMongoDatabaseF[F[_]](
     private val database: MongoDatabase
-) {
+)(implicit
+    val F: Concurrent[F]
+) extends MongoDatabaseF[F] {
 
   def name: F[String] =
-    Sync[F].pure(database.name)
+    database.name.pure[F]
 
   def getCollection(name: String): F[MongoCollectionF[Document]] =
-    Sync[F]
-      .delay(database.getCollection[Document](name))
+    F.delay(database.getCollection[Document](name))
       .map(MongoCollectionF.apply[Document])
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
-    Sync[F]
-      .delay(database.getCollection[T](name).withCodecRegistry(codecRegistry).withDocumentClass[T]())
+    F.delay(database.getCollection[T](name).withCodecRegistry(codecRegistry).withDocumentClass[T]())
       .map(MongoCollectionF.apply[T])
 
-  def collectionNames(): F[Iterable[String]] =
+  def collectionNames: F[Iterable[String]] =
     Async[F].async(multipleItemsAsync(database.listCollectionNames()))
 
   def createCollection(name: String): F[Unit] =
@@ -51,5 +59,5 @@ final class MongoDatabaseF[F[_]: Concurrent] private (
 
 object MongoDatabaseF {
   def make[F[_]: Concurrent](database: MongoDatabase): F[MongoDatabaseF[F]] =
-    Sync[F].delay(new MongoDatabaseF[F](database))
+    Sync[F].delay(new LiveMongoDatabaseF[F](database))
 }

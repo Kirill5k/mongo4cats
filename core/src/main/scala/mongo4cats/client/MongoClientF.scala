@@ -23,14 +23,16 @@ import org.mongodb.scala.{MongoClient, MongoClientSettings, ServerAddress}
 
 import scala.jdk.CollectionConverters._
 
-final class MongoClientF[F[_]: Concurrent] private (
+trait MongoClientF[F[_]] {
+  def getDatabase(name: String): F[MongoDatabaseF[F]]
+}
+
+final private class LiveMongoClientF[F[_]] (
     private val client: MongoClient
-) {
+)(implicit val F: Concurrent[F]) extends MongoClientF[F] {
 
   def getDatabase(name: String): F[MongoDatabaseF[F]] =
-    Sync[F]
-      .delay(client.getDatabase(name))
-      .flatMap(MongoDatabaseF.make[F])
+    F.delay(client.getDatabase(name)).flatMap(MongoDatabaseF.make[F])
 }
 
 object MongoClientF {
@@ -48,5 +50,5 @@ object MongoClientF {
     clientResource(MongoClient(connectionString))
 
   private def clientResource[F[_]: Concurrent](client: => MongoClient): Resource[F, MongoClientF[F]] =
-    Resource.fromAutoCloseable(Sync[F].delay(client)).map(c => new MongoClientF[F](c))
+    Resource.fromAutoCloseable(Sync[F].delay(client)).map(c => new LiveMongoClientF[F](c))
 }
