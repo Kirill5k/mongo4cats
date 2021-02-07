@@ -27,9 +27,10 @@ trait MongoClientF[F[_]] {
   def getDatabase(name: String): F[MongoDatabaseF[F]]
 }
 
-final private class LiveMongoClientF[F[_]] (
+final private class LiveMongoClientF[F[_]](
     private val client: MongoClient
-)(implicit val F: Concurrent[F]) extends MongoClientF[F] {
+)(implicit val F: Concurrent[F])
+    extends MongoClientF[F] {
 
   def getDatabase(name: String): F[MongoDatabaseF[F]] =
     F.delay(client.getDatabase(name)).flatMap(MongoDatabaseF.make[F])

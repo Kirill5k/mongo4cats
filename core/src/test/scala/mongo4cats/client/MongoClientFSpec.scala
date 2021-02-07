@@ -37,7 +37,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
-              names <- db.collectionNames()
+              names <- db.collectionNames
             } yield names
           }
           .attempt
@@ -55,7 +55,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
-              names <- db.collectionNames()
+              names <- db.collectionNames
             } yield names
           }
           .attempt
@@ -73,7 +73,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
-              names <- db.collectionNames()
+              names <- db.collectionNames
             } yield names
           }
           .attempt
