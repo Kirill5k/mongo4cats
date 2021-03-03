@@ -1,8 +1,8 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 
-lazy val scala212               = "2.12.10"
-lazy val scala213               = "2.13.3"
+lazy val scala212               = "2.12.13"
+lazy val scala213               = "2.13.5"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion := scala213

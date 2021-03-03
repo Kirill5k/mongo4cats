@@ -55,11 +55,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               documents    <- coll.find.all[IO]
             } yield (insertResult, documents)
 
-            val (insertRes, documents) = result.unsafeRunSync()
-
-            documents must have size 1
-            documents.head.getString("name") must be("test-doc-1")
-            insertRes.wasAcknowledged() must be(true)
+            result.map { case (insertRes, documents) =>
+              documents must have size 1
+              documents.head.getString("name") mustBe "test-doc-1"
+              insertRes.wasAcknowledged() mustBe true
+            }
           }
         }
       }
@@ -73,12 +73,12 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               documents    <- coll.find.all[IO]
             } yield (insertResult, documents)
 
-            val (insertRes, documents) = result.unsafeRunSync()
-
-            documents must have size 2
-            documents.map(_.getString("name")) must be(List("test-doc-1", "test-doc-2"))
-            insertRes.wasAcknowledged() must be(true)
-            insertRes.getInsertedIds() must have size 2
+            result.map { case (insertRes, documents) =>
+              documents must have size 2
+              documents.map(_.getString("name")) mustBe List("test-doc-1", "test-doc-2")
+              insertRes.wasAcknowledged() mustBe true
+              insertRes.getInsertedIds() must have size 2
+            }
           }
         }
       }
@@ -92,7 +92,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               count <- coll.count[IO]
             } yield count
 
-            result.unsafeRunSync() must be(3)
+            result.map(_ mustBe 3)
           }
         }
 
@@ -103,7 +103,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               count <- coll.count[IO]
             } yield count
 
-            result.unsafeRunSync() must be(0)
+            result.map(_ mustBe 0)
           }
         }
 
@@ -115,7 +115,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               count <- coll.count[IO](Filters.equal("name", "test-doc-2"))
             } yield count
 
-            result.unsafeRunSync() must be(1)
+            result.map(_ mustBe 1)
           }
         }
       }
@@ -130,10 +130,10 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               count        <- coll.count[IO]
             } yield (deleteResult, count)
 
-            val (deleteRes, count) = result.unsafeRunSync()
-
-            count must be(0)
-            deleteRes.getDeletedCount must be(3)
+            result.map { case (deleteRes, count) =>
+              count mustBe 0
+              deleteRes.getDeletedCount mustBe 3
+            }
           }
         }
       }
@@ -148,10 +148,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               count        <- coll.count[IO]
             } yield (deleteResult, count)
 
-            val (deleteRes, count) = result.unsafeRunSync()
+            result.map { case (deleteRes, count) =>
+              count mustBe 2
+              deleteRes.getDeletedCount mustBe 1
+            }
 
-            count must be(2)
-            deleteRes.getDeletedCount must be(1)
           }
         }
       }
@@ -166,12 +167,12 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
-            val (updateRes, docs) = result.unsafeRunSync()
-
-            docs must have size 1
-            docs.head.getString("name") must be("test-doc-2")
-            updateRes.getMatchedCount must be(1)
-            updateRes.getModifiedCount must be(1)
+            result.map { case (updateRes, docs) =>
+              docs must have size 1
+              docs.head.getString("name") mustBe "test-doc-2"
+              updateRes.getMatchedCount mustBe 1
+              updateRes.getModifiedCount mustBe 1
+            }
           }
         }
       }
@@ -186,12 +187,13 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
-            val (updateRes, docs) = result.unsafeRunSync()
+            result.map { case (updateRes, docs) =>
+              docs must have size 3
+              docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2", "test-doc-1")
+              updateRes.getMatchedCount mustBe 1
+              updateRes.getModifiedCount mustBe 1
+            }
 
-            docs must have size 3
-            docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2", "test-doc-1")
-            updateRes.getMatchedCount must be(1)
-            updateRes.getModifiedCount must be(1)
           }
         }
 
@@ -204,12 +206,12 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
-            val (updateRes, docs) = result.unsafeRunSync()
-
-            docs must have size 3
-            docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2")
-            updateRes.getMatchedCount must be(3)
-            updateRes.getModifiedCount must be(3)
+            result.map { case (updateRes, docs) =>
+              docs must have size 3
+              docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2")
+              updateRes.getMatchedCount mustBe 3
+              updateRes.getModifiedCount mustBe 3
+            }
           }
         }
       }
@@ -224,10 +226,10 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
-            val (deleteRes, docs) = result.unsafeRunSync()
-
-            docs must have size 2
-            deleteRes.getDeletedCount must be(1)
+            result.map { case (deleteRes, docs) =>
+              docs must have size 2
+              deleteRes.getDeletedCount mustBe 1
+            }
           }
         }
 
@@ -240,10 +242,10 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
-            val (deleteRes, docs) = result.unsafeRunSync()
-
-            docs must have size 0
-            deleteRes.getDeletedCount must be(3)
+            result.map { case (deleteRes, docs) =>
+              docs must have size 0
+              deleteRes.getDeletedCount mustBe 3
+            }
           }
         }
       }
@@ -258,11 +260,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
-            val (old, docs) = result.unsafeRunSync()
-
-            docs must have size 1
-            docs.head.getString("name") must be("test-doc-2")
-            old.getString("name") must be("test-doc-1")
+            result.map { case (old, docs) =>
+              docs must have size 1
+              docs.head.getString("name") mustBe "test-doc-2"
+              old.getString("name") mustBe "test-doc-1"
+            }
           }
         }
       }
@@ -277,11 +279,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
-            val (old, docs) = result.unsafeRunSync()
-
-            docs must have size 1
-            docs.head.getString("name") must be("test-doc-2")
-            old.getString("name") must be("test-doc-1")
+            result.map { case (old, docs) =>
+              docs must have size 1
+              docs.head.getString("name") mustBe "test-doc-2"
+              old.getString("name") mustBe "test-doc-1"
+            }
           }
         }
       }
@@ -296,10 +298,10 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
-            val (old, docs) = result.unsafeRunSync()
-
-            docs must have size 0
-            old.getString("name") must be("test-doc-1")
+            result.map { case (old, docs) =>
+              docs must have size 0
+              old.getString("name") mustBe "test-doc-1"
+            }
           }
         }
       }
@@ -313,9 +315,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               res  <- coll.find.filter(Filters.eq("name", "d1")).all[IO]
             } yield res
 
-            val found = result.unsafeRunSync()
-
-            found must have size 1
+            result.map(_ must have size 1)
           }
         }
 
@@ -327,10 +327,10 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               res  <- coll.find.sort(Sorts.descending("name")).limit(3).all[IO]
             } yield res
 
-            val found = result.unsafeRunSync()
-
-            found must have size 3
-            found.map(_.getString("name")) must be(List("d4", "d3", "d2"))
+            result.map { found =>
+              found must have size 3
+              found.map(_.getString("name")) mustBe (List("d4", "d3", "d2"))
+            }
           }
         }
 
@@ -342,9 +342,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               res  <- coll.find.sort(Sorts.descending("name")).limit(3).first[IO]
             } yield res
 
-            val found = result.unsafeRunSync()
-
-            found.getString("name") must be("d4")
+            result.map(_.getString("name") mustBe "d4")
           }
         }
 
@@ -356,9 +354,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               res  <- coll.find.stream[IO].compile.toList
             } yield res
 
-            val found = result.unsafeRunSync()
-
-            found must have size 4
+            result.map(_ must have size 4)
           }
         }
       }
@@ -372,9 +368,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               res  <- coll.distinct("info").all[IO]
             } yield res
 
-            val distinct = result.unsafeRunSync()
-
-            distinct must have size 1
+            result.map(_ must have size 1)
           }
         }
       }
@@ -396,23 +390,23 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
               people       <- coll.find.all[IO]
             } yield (insertResult, people)
 
-            val (insertRes, people) = result.unsafeRunSync()
-
-            people must have size 1
-            people.head.name must be("test-person-1")
-            insertRes.wasAcknowledged() must be(true)
+            result.map { case (insertRes, people) =>
+              people must have size 1
+              people.head.name mustBe "test-person-1"
+              insertRes.wasAcknowledged() mustBe true
+            }
           }
         }
       }
     }
   }
 
-  def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => A): A =
+  def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => IO[A]): A =
     withRunningEmbeddedMongo() {
       MongoClientF
         .fromConnectionString[IO]("mongodb://localhost:12345")
         .use { client =>
-          client.getDatabase("db").flatMap(db => IO(test(db)))
+          client.getDatabase("db").flatMap(test)
         }
         .unsafeRunSync()
     }
