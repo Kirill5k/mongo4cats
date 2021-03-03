@@ -26,7 +26,7 @@ import org.mongodb.scala.bson.Document
 import scala.reflect.ClassTag
 
 trait MongoDatabaseF[F[_]] {
-  def name: F[String]
+  def name: String
   def getCollection(name: String): F[MongoCollectionF[Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
   def collectionNames: F[Iterable[String]]
@@ -39,8 +39,8 @@ final private class LiveMongoDatabaseF[F[_]](
     val F: Concurrent[F]
 ) extends MongoDatabaseF[F] {
 
-  def name: F[String] =
-    database.name.pure[F]
+  def name: String =
+    database.name
 
   def getCollection(name: String): F[MongoCollectionF[Document]] =
     F.delay(database.getCollection[Document](name))

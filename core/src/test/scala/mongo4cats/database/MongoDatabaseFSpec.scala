@@ -19,8 +19,13 @@ package mongo4cats.database
 import cats.effect.{ContextShift, IO}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.mongodb.scala.bson.codecs.Macros._
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.bson.ObjectId
 
 import scala.concurrent.ExecutionContext
 
@@ -29,6 +34,14 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   "A MongoDatabaseF" should {
+
+    "return db name" in {
+      withEmbeddedMongoClient { client =>
+        client.getDatabase("foo").map { db =>
+          db.name mustBe "foo"
+        }
+      }
+    }
 
     "create new collections and return collection names" in {
       withEmbeddedMongoClient { client =>
@@ -39,33 +52,51 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           names <- db.collectionNames
         } yield names
 
-        result.unsafeRunSync() mustBe List("c2", "c1")
+        result.map(_ mustBe List("c2", "c1"))
       }
     }
 
-    "return collection by name" in {
+    "return document collection by name" in {
       withEmbeddedMongoClient { client =>
         val result = for {
           db         <- client.getDatabase("foo")
           _          <- db.createCollection("c1")
           collection <- db.getCollection("c1")
-        } yield collection.namespace
+        } yield collection
 
-        val namespace = result.unsafeRunSync()
+        result.map { col =>
+          col.namespace.getDatabaseName mustBe "foo"
+          col.namespace.getCollectionName mustBe "c1"
+          col.documentClass mustBe classOf[Document]
+        }
+      }
+    }
 
-        namespace.getDatabaseName mustBe "foo"
-        namespace.getCollectionName mustBe "c1"
+    "return specific class collection by name" in {
+      final case class Person(_id: ObjectId, firstName: String, lastName: String)
+      val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY)
+
+      withEmbeddedMongoClient { client =>
+        val result = for {
+          db         <- client.getDatabase("foo")
+          _          <- db.createCollection("c1")
+          collection <- db.getCollection[Person]("c1", personCodecRegistry)
+        } yield collection
+
+        result.map { col =>
+          col.namespace.getDatabaseName mustBe "foo"
+          col.namespace.getCollectionName mustBe "c1"
+          col.documentClass mustBe classOf[Person]
+        }
       }
     }
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => A): A =
+  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
     withRunningEmbeddedMongo() {
       MongoClientF
         .fromConnectionString[IO]("mongodb://localhost:12345")
-        .use { client =>
-          IO(test(client))
-        }
+        .use(test)
         .unsafeRunSync()
     }
 }
