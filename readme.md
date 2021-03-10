@@ -68,7 +68,7 @@ object Example extends IOApp {
           .sort(Sorts.descending("name"))
           .limit(5)
           .all[IO]
-        _ <- IO(println(docs.toList))
+        _ <- IO(println(docs))
       } yield ExitCode.Success
     }
 }
