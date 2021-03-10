@@ -16,6 +16,37 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.1.5"
 
 ### Quick Start Examples
 
+#### Working with JSON
+
+```scala
+import cats.effect.{ExitCode, IO, IOApp}
+import mongo4cats.client.MongoClientF
+import org.mongodb.scala.bson.Document
+import org.mongodb.scala.model.{Filters, Updates}
+
+object Example extends IOApp {
+
+  val json =
+    """{
+      |"firstName": "John",
+      |"lastName": "Bloggs",
+      |"dob": "1970-01-01"
+      |}""".stripMargin
+  
+  override def run(args: List[String]): IO[ExitCode] =
+    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+      for {
+        db      <- client.getDatabase("db")
+        coll    <- db.getCollection("collection")
+        _       <- coll.insertOne[IO](Document(json))
+        old     <- coll.findOneAndUpdate[IO](Filters.equal("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
+        updated <- coll.find.first[IO]
+        _       <- IO(println(old.toJson(), updated.toJson()))
+      } yield ExitCode.Success
+    }
+}
+```
+
 #### Working with documents
 
 ```scala

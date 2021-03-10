@@ -43,7 +43,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .attempt
           .unsafeRunSync()
 
-        result mustBe(Right(Nil))
+        result mustBe (Right(Nil))
       }
     }
 
@@ -61,7 +61,7 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .attempt
           .unsafeRunSync()
 
-        result mustBe(Right(Nil))
+        result mustBe (Right(Nil))
       }
     }
 
@@ -79,8 +79,8 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           .attempt
           .unsafeRunSync()
 
-        result.isLeft mustBe(true)
-        result.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe(Left(-3))
+        result.isLeft mustBe true
+        result.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe (Left(-3))
       }
     }
   }

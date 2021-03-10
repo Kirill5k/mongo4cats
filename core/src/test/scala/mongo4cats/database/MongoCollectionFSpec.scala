@@ -399,6 +399,34 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
         }
       }
     }
+
+    "working with json" should {
+
+      "findOneAndUpdate" should {
+        "find and update doc in coll" in {
+          withEmbeddedMongoDatabase { db =>
+            val json =
+              """{
+                |"firstName": "John",
+                |"lastName": "Bloggs",
+                |"dob": "1970-01-01"
+                |}""".stripMargin
+
+            val result = for {
+              coll    <- db.getCollection("coll")
+              _       <- coll.insertOne[IO](Document(json))
+              old     <- coll.findOneAndUpdate[IO](Filters.equal("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
+              updated <- coll.find.first[IO]
+            } yield (old, updated)
+
+            result.map { case (old, updated) =>
+              old.getObjectId("_id") mustBe updated.getObjectId("_id")
+              old.getString("lastName") mustBe updated.getString("lastName")
+            }
+          }
+        }
+      }
+    }
   }
 
   def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => IO[A]): A =
