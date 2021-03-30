@@ -16,7 +16,8 @@
 
 package mongo4cats.database
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.mongodb.scala.bson.collection.immutable.Document
@@ -27,11 +28,9 @@ import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistr
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.ObjectId
 
-import scala.concurrent.ExecutionContext
-
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
-  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val runTime = IORuntime.global
 
   "A MongoDatabaseF" should {
 

@@ -17,17 +17,16 @@
 package mongo4cats.client
 
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import mongo4cats.EmbeddedMongo
 import org.mongodb.scala.{MongoTimeoutException, ServerAddress}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.ExecutionContext
-
 class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
-  implicit val cs = IO.contextShift(ExecutionContext.global)
+  implicit val runTime = IORuntime.global
 
   "A MongoDbClient" should {
     "connect to a db via connection string" in {

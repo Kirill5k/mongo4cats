@@ -17,6 +17,7 @@
 package mongo4cats.database
 
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.scalatest.matchers.must.Matchers
@@ -29,8 +30,6 @@ import org.mongodb.scala.bson.codecs.Macros._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 
-import scala.concurrent.ExecutionContext
-
 final case class PersonInfo(x: Int, y: Int)
 final case class Person(_id: ObjectId, name: String, info: PersonInfo)
 
@@ -41,7 +40,7 @@ object Person {
 
 class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
-  implicit val cs = IO.contextShift(ExecutionContext.global)
+  implicit val runTime = IORuntime.global
 
   "A MongoCollectionF" when {
 

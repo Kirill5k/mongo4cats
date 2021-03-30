@@ -36,493 +36,403 @@ final class MongoCollectionF[T: ClassTag] private (
   def documentClass: Class[T] =
     collection.documentClass
 
-  /**
-   * Aggregates documents according to the specified aggregation pipeline.
-   * [[http://docs.mongodb.org/manual/aggregation/ Aggregation]]
-   * @param pipeline the aggregate pipeline
-   */
+  /** Aggregates documents according to the specified aggregation pipeline.
+    * [[http://docs.mongodb.org/manual/aggregation/ Aggregation]]
+    * @param pipeline the aggregate pipeline
+    */
   def aggregate(pipeline: Seq[Bson]): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(collection.aggregate(pipeline), Nil)
 
-  /**
-   * Creates a change stream for this collection.
-   *
-   * @param pipeline the aggregation pipeline to apply to the change stream
-   * @since 2.2
-   * @note Requires MongoDB 3.6 or greater
-   */
+  /** Creates a change stream for this collection.
+    *
+    * @param pipeline the aggregation pipeline to apply to the change stream
+    * @since 2.2
+    * @note Requires MongoDB 3.6 or greater
+    */
   def watch(pipeline: Seq[Bson]): WatchQueryBuilder[T] =
     WatchQueryBuilder(collection.watch(pipeline), Nil)
 
-  /**
-   * Creates a change stream for this collection.
-   * @since 2.2
-   * @note Requires MongoDB 3.6 or greater
-   */
+  /** Creates a change stream for this collection.
+    * @since 2.2
+    * @note Requires MongoDB 3.6 or greater
+    */
   def watch: WatchQueryBuilder[T] =
     WatchQueryBuilder(collection.watch(), Nil)
 
-  /**
-   * Gets the distinct values of the specified field name.
-   * [[http://docs.mongodb.org/manual/reference/command/distinct/ Distinct]]
-   * @param fieldName the field name
-   */
+  /** Gets the distinct values of the specified field name.
+    * [[http://docs.mongodb.org/manual/reference/command/distinct/ Distinct]]
+    * @param fieldName the field name
+    */
   def distinct(fieldName: String): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](collection.distinct(fieldName), Nil)
 
-  /**
-   * Gets the distinct values of the specified field name.
-   *
-   * [[http://docs.mongodb.org/manual/reference/command/distinct/ Distinct]]
-   * @param fieldName the field name
-   * @param filter  the query filter
-   */
+  /** Gets the distinct values of the specified field name.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/distinct/ Distinct]]
+    * @param fieldName the field name
+    * @param filter  the query filter
+    */
   def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](collection.distinct(fieldName, filter), Nil)
 
-  /**
-   * Finds all documents in the collection.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
-   */
+  /** Finds all documents in the collection.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
+    */
   def find: FindQueryBuilder[T] =
     FindQueryBuilder[T](collection.find(), Nil)
 
-  /**
-   * Finds all documents in the collection.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
-   * @param filter the query filter
-   */
+  /** Finds all documents in the collection.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
+    * @param filter the query filter
+    */
   def find(filter: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](collection.find(filter), Nil)
 
-  /**
-   * Atomically find a document and remove it.
-   *
-   * @param filter  the query filter to find the document with
-   * @note If no documents matched the query filter, then null will be returned
-   */
+  /** Atomically find a document and remove it.
+    *
+    * @param filter  the query filter to find the document with
+    * @note If no documents matched the query filter, then null will be returned
+    */
   def findOneAndDelete[F[_]: Async](filter: Bson): F[T] =
     async(collection.findOneAndDelete(filter))
 
-  /**
-   * Atomically find a document and remove it.
-   *
-   * @param filter  the query filter to find the document with
-   * @param options the options to apply to the operation
-   * @note If no documents matched the query filter, then null will be returned
-   */
+  /** Atomically find a document and remove it.
+    *
+    * @param filter  the query filter to find the document with
+    * @param options the options to apply to the operation
+    * @note If no documents matched the query filter, then null will be returned
+    */
   def findOneAndDelete[F[_]: Async](filter: Bson, options: FindOneAndDeleteOptions): F[T] =
     async(collection.findOneAndDelete(filter, options))
 
-  /**
-   * Atomically find a document and update it.
-   *
-   * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
-   *                can be of any type for which a `Codec` is registered
-   * @note If no documents matched the query filter, then null will be returned
-   */
+  /** Atomically find a document and update it.
+    *
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @note If no documents matched the query filter, then null will be returned
+    */
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson): F[T] =
     async(collection.findOneAndUpdate(filter, update))
 
-  /**
-   * Atomically find a document and update it.
-   *
-   * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
-   *                can be of any type for which a `Codec` is registered
-   * @param options the options to apply to the operation
-   * @note Depending on the value of the `returnOriginal` property,
-   *       this will either be the document as it was before the update or as it is after the update.  If no documents matched the
-   *       query filter, then null will be returned
-   */
+  /** Atomically find a document and update it.
+    *
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @param options the options to apply to the operation
+    * @note Depending on the value of the `returnOriginal` property,
+    *       this will either be the document as it was before the update or as it is after the update.  If no documents matched the
+    *       query filter, then null will be returned
+    */
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T] =
     async(collection.findOneAndUpdate(filter, update, options))
 
-  /**
-   * Atomically find a document and replace it.
-   *
-   * @param filter      the query filter to apply the the replace operation
-   * @param replacement the replacement document
-   * @note If no documents matched the query filter, then null will be returned
-   */
+  /** Atomically find a document and replace it.
+    *
+    * @param filter      the query filter to apply the the replace operation
+    * @param replacement the replacement document
+    * @note If no documents matched the query filter, then null will be returned
+    */
   def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T): F[T] =
     async(collection.findOneAndReplace(filter, replacement))
 
-  /**
-   * Atomically find a document and replace it.
-   *
-   * @param filter      the query filter to apply the the replace operation
-   * @param replacement the replacement document
-   * @param options     the options to apply to the operation
-   * @note  Depending on the value of the `returnOriginal` property,
-   *        this will either be the document as it was before the update or as it is after the update.
-   *        If no documents matched the query filter, then null will be returned
-   */
+  /** Atomically find a document and replace it.
+    *
+    * @param filter      the query filter to apply the the replace operation
+    * @param replacement the replacement document
+    * @param options     the options to apply to the operation
+    * @note  Depending on the value of the `returnOriginal` property,
+    *        this will either be the document as it was before the update or as it is after the update.
+    *        If no documents matched the query filter, then null will be returned
+    */
   def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[T] =
     async(collection.findOneAndReplace(filter, replacement, options))
 
-  /**
-   * Drops the given index.
-   *
-   * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
-   * @param name the name of the index to remove
-   */
+  /** Drops the given index.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
+    * @param name the name of the index to remove
+    */
   def dropIndex[F[_]: Async](name: String): F[Unit] =
     asyncVoid(collection.dropIndex(name))
 
-  /**
-   * Drops the index given the keys used to create it.
-   *
-   * @param keys the keys of the index to remove
-   */
+  /** Drops the index given the keys used to create it.
+    *
+    * @param keys the keys of the index to remove
+    */
   def dropIndex[F[_]: Async](keys: Bson): F[Unit] =
     asyncVoid(collection.dropIndex(keys))
 
-  /**
-   * Drops the index given the keys used to create it.
-   *
-   * @param keys the keys of the index to remove
-   * @param options options to use when dropping indexes
-   * @since 2.2
-   */
+  /** Drops the index given the keys used to create it.
+    *
+    * @param keys the keys of the index to remove
+    * @param options options to use when dropping indexes
+    * @since 2.2
+    */
   def dropIndex[F[_]: Async](keys: Bson, options: DropIndexOptions): F[Unit] =
     asyncVoid(collection.dropIndex(keys, options))
 
-  /**
-   * Drop all the indexes on this collection, except for the default on _id.
-   *
-   * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
-   * @param options options to use when dropping indexes
-   * @since 2.2
-   */
+  /** Drop all the indexes on this collection, except for the default on _id.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
+    * @param options options to use when dropping indexes
+    * @since 2.2
+    */
   def dropIndexes[F[_]: Async](options: DropIndexOptions): F[Unit] =
     asyncVoid(collection.dropIndexes(options))
 
-  /**
-   * Drop all the indexes on this collection, except for the default on _id.
-   *
-   * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
-   */
+  /** Drop all the indexes on this collection, except for the default on _id.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
+    */
   def dropIndexes[F[_]: Async](): F[Unit] =
     asyncVoid(collection.dropIndexes())
 
-  /**
-   * Drops this collection from the Database.
-   *
-   * [[http://docs.mongodb.org/manual/reference/command/drop/ Drop Collection]]
-   */
+  /** Drops this collection from the Database.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/drop/ Drop Collection]]
+    */
   def drop[F[_]: Async](): F[Unit] =
     asyncVoid(collection.drop())
 
-  /**
-   * [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
-   * @param filters an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
-   */
+  /** [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
+    * @param filters an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
+    */
   def createIndex[F[_]: Async](filters: Bson): F[String] =
     async(collection.createIndex(filters))
 
-  /**
-   * [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
-   * @param filter  an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param options the options for the index
-   */
+  /** [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
+    * @param filter  an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param options the options for the index
+    */
   def createIndex[F[_]: Async](filter: Bson, options: IndexOptions): F[String] =
     async(collection.createIndex(filter, options))
 
-  /**
-   * Update all documents in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
-   *                can be of any type for which a `Codec` is registered
-   */
+  /** Update all documents in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    */
   def updateMany[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
     async(collection.updateMany(filters, update))
 
-  /**
-   * Update all documents in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a pipeline describing the update.
-   * @since 2.7
-   * @note Requires MongoDB 4.2 or greater
-   */
+  /** Update all documents in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a pipeline describing the update.
+    * @since 2.7
+    * @note Requires MongoDB 4.2 or greater
+    */
   def updateMany[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
     async(collection.updateMany(filters, update))
 
-  /**
-   * Update all documents in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
-   *                can be of any type for which a `Codec` is registered
-   * @param options the options to apply to the update operation
-   */
+  /** Update all documents in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @param options the options to apply to the update operation
+    */
   def updateMany[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     async(collection.updateMany(filter, update, options))
 
-  /**
-   * Update all documents in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a pipeline describing the update.
-   * @param options the options to apply to the update operation
-   * @since 2.7
-   * @note Requires MongoDB 4.2 or greater
-   */
+  /** Update all documents in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a pipeline describing the update.
+    * @param options the options to apply to the update operation
+    * @since 2.7
+    * @note Requires MongoDB 4.2 or greater
+    */
   def updateMany[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
     async(collection.updateMany(filter, update, options))
 
-  /**
-   * Update a single document in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
-   *                can be of any type for which a `Codec` is registered
-   */
+  /** Update a single document in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    */
   def updateOne[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
     async(collection.updateOne(filters, update))
 
-  /**
-   * Update a single document in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a pipeline describing the update
-   * @since 2.7
-   * @note Requires MongoDB 4.2 or greater
-   */
+  /** Update a single document in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filters a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a pipeline describing the update
+    * @since 2.7
+    * @note Requires MongoDB 4.2 or greater
+    */
   def updateOne[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
     async(collection.updateOne(filters, update))
 
-  /**
-   * Update a single document in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
-   *                can be of any type for which a `Codec` is registered
-   * @param options the options to apply to the update operation
-   */
+  /** Update a single document in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @param options the options to apply to the update operation
+    */
   def updateOne[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     async(collection.updateOne(filter, update, options))
 
-  /**
-   * Update a single document in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
-   * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
-   * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
-   *                registered
-   * @param update  a pipeline describing the update.
-   * @param options the options to apply to the update operation
-   * @since 2.7
-   * @note Requires MongoDB 4.2 or greater
-   */
+  /** Update a single document in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/ Updates]]
+    * [[http://docs.mongodb.org/manual/reference/operator/update/ Update Operators]]
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a pipeline describing the update.
+    * @param options the options to apply to the update operation
+    * @since 2.7
+    * @note Requires MongoDB 4.2 or greater
+    */
   def updateOne[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
     async(collection.updateOne(filter, update, options))
 
-  /**
-   * Replace a document in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document Replace]]
-   * @param filters     the query filter to apply the the replace operation
-   * @param replacement the replacement document
-   */
+  /** Replace a document in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document Replace]]
+    * @param filters     the query filter to apply the the replace operation
+    * @param replacement the replacement document
+    */
   def replaceOne[F[_]: Async](filters: Bson, replacement: T): F[UpdateResult] =
     async(collection.replaceOne(filters, replacement))
 
-  /**
-   * Replace a document in the collection according to the specified arguments.
-   *
-   * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document Replace]]
-   * @param filter      the query filter to apply the the replace operation
-   * @param replacement the replacement document
-   * @param options     the options to apply to the replace operation
-   */
+  /** Replace a document in the collection according to the specified arguments.
+    *
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document Replace]]
+    * @param filter      the query filter to apply the the replace operation
+    * @param replacement the replacement document
+    * @param options     the options to apply to the replace operation
+    */
   def replaceOne[F[_]: Async](filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult] =
     async(collection.replaceOne(filter, replacement, options))
 
-  /**
-   * Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
-   * modified.
-   *
-   * @param filters the query filter to apply the the delete operation
-   */
+  /** Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
+    * modified.
+    *
+    * @param filters the query filter to apply the the delete operation
+    */
   def deleteOne[F[_]: Async](filters: Bson): F[DeleteResult] =
     async(collection.deleteOne(filters))
 
-  /**
-   * Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
-   * modified.
-   *
-   * @param filter the query filter to apply the the delete operation
-   * @param options the options to apply to the delete operation
-   * @since 1.2
-   */
+  /** Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
+    * modified.
+    *
+    * @param filter the query filter to apply the the delete operation
+    * @param options the options to apply to the delete operation
+    * @since 1.2
+    */
   def deleteOne[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
     async(collection.deleteOne(filter, options))
 
-  /**
-   * Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
-   *
-   * @param filters the query filter to apply the the delete operation
-   */
+  /** Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
+    *
+    * @param filters the query filter to apply the the delete operation
+    */
   def deleteMany[F[_]: Async](filters: Bson): F[DeleteResult] =
     async(collection.deleteMany(filters))
 
-  /**
-   * Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
-   *
-   * @param filter the query filter to apply the the delete operation
-   * @param options the options to apply to the delete operation
-   * @since 1.2
-   */
+  /** Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
+    *
+    * @param filter the query filter to apply the the delete operation
+    * @param options the options to apply to the delete operation
+    * @since 1.2
+    */
   def deleteMany[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
     async(collection.deleteMany(filter, options))
 
-  /**
-   * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
-   *
-   * @param document the document to insert
-   */
+  /** Inserts the provided document. If the document is missing an identifier, the driver should generate one.
+    *
+    * @param document the document to insert
+    */
   def insertOne[F[_]: Async](document: T): F[InsertOneResult] =
     async(collection.insertOne(document))
 
-  /**
-   * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
-   *
-   * @param document the document to insert
-   * @param options  the options to apply to the operation
-   * @since 1.1
-   */
+  /** Inserts the provided document. If the document is missing an identifier, the driver should generate one.
+    *
+    * @param document the document to insert
+    * @param options  the options to apply to the operation
+    * @since 1.1
+    */
   def insertOne[F[_]: Async](document: T, options: InsertOneOptions): F[InsertOneResult] =
     async(collection.insertOne(document, options))
 
-  /**
-   * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
-   * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
-   *
-   * @param documents the documents to insert
-   */
+  /** Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
+    * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
+    *
+    * @param documents the documents to insert
+    */
   def insertMany[F[_]: Async](documents: Seq[T]): F[InsertManyResult] =
     async(collection.insertMany(documents))
 
-  /**
-   * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
-   * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
-   *
-   * @param documents the documents to insert
-   * @param options   the options to apply to the operation
-   */
+  /** Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
+    * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
+    *
+    * @param documents the documents to insert
+    * @param options   the options to apply to the operation
+    */
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
     async(collection.insertMany(documents, options))
 
-  /**
-   * Counts the number of documents in the collection.
-   *
-   * '''Note:'''
-   * For a fast count of the total documents in a collection see [[estimatedDocumentCount()]]
-   * When migrating from `count()` to `countDocuments()` the following query operators must be replaced:
-   *
-   * {{{
-   * +-------------+--------------------------------+
-   * | Operator    | Replacement                    |
-   * +=============+================================+
-   * | \$where      |  \$expr                         |
-   * +-------------+--------------------------------+
-   * | \$near       |  \$geoWithin with \$center       |
-   * +-------------+--------------------------------+
-   * | \$nearSphere |  \$geoWithin with \$centerSphere |
-   * +-------------+--------------------------------+
-   * }}}
-   *
-   * @since 2.4
-   */
+  /** Counts the number of documents in the collection.
+    *
+    * @since 2.4
+    */
   def count[F[_]: Async]: F[Long] =
     async(collection.countDocuments())
 
-  /**
-   * Counts the number of documents in the collection according to the given options.
-   *
-   * '''Note:'''
-   * For a fast count of the total documents in a collection see [[estimatedDocumentCount()]]
-   * When migrating from `count()` to `countDocuments()` the following query operators must be replaced:
-   *
-   * {{{
-   * +-------------+--------------------------------+
-   * | Operator    | Replacement                    |
-   * +=============+================================+
-   * | \$where      |  \$expr                         |
-   * +-------------+--------------------------------+
-   * | \$near       |  \$geoWithin with \$center       |
-   * +-------------+--------------------------------+
-   * | \$nearSphere |  \$geoWithin with \$centerSphere |
-   * +-------------+--------------------------------+
-   * }}}
-   *
-   * @param filter the query filter
-   * @since 2.4
-   */
+  /** Counts the number of documents in the collection according to the given options.
+    *
+    * @param filter the query filter
+    * @since 2.4
+    */
   def count[F[_]: Async](filter: Bson): F[Long] =
     async(collection.countDocuments(filter))
 
-  /**
-   * Counts the number of documents in the collection according to the given options.
-   *
-   * '''Note:'''
-   * For a fast count of the total documents in a collection see [[estimatedDocumentCount()]]
-   * When migrating from `count()` to `countDocuments()` the following query operators must be replaced:
-   *
-   * {{{
-   * +-------------+--------------------------------+
-   * | Operator    | Replacement                    |
-   * +=============+================================+
-   * | \$where      |  \$expr                         |
-   * +-------------+--------------------------------+
-   * | \$near       |  \$geoWithin with \$center       |
-   * +-------------+--------------------------------+
-   * | \$nearSphere |  \$geoWithin with \$centerSphere |
-   * +-------------+--------------------------------+
-   * }}}
-   *
-   * @param filter  the query filter
-   * @param options the options describing the count
-   * @since 2.4
-   */
+  /** Counts the number of documents in the collection according to the given options.
+    *
+    * @param filter  the query filter
+    * @param options the options describing the count
+    * @since 2.4
+    */
   def count[F[_]: Async](filter: Bson, options: CountOptions): F[Long] =
     async(collection.countDocuments(filter, options))
 
   private def async[F[_]: Async, R](observable: => SingleObservable[R]): F[R] =
-    Async[F].async(singleItemAsync(observable))
+    Async[F].async_(singleItemAsync(observable))
 
   private def asyncVoid[F[_]: Async](observable: => SingleObservable[Void]): F[Unit] =
-    Async[F].async(voidAsync(observable))
+    Async[F].async_(voidAsync(observable))
 }
 
 object MongoCollectionF {

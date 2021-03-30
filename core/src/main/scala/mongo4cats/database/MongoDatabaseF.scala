@@ -16,7 +16,7 @@
 
 package mongo4cats.database
 
-import cats.effect.{Async, Concurrent, Sync}
+import cats.effect.{Async, Sync}
 import cats.implicits._
 import mongo4cats.database.helpers._
 import org.bson.codecs.configuration.CodecRegistry
@@ -36,7 +36,7 @@ trait MongoDatabaseF[F[_]] {
 final private class LiveMongoDatabaseF[F[_]](
     private val database: MongoDatabase
 )(implicit
-    val F: Concurrent[F]
+    val F: Async[F]
 ) extends MongoDatabaseF[F] {
 
   def name: String =
@@ -51,13 +51,13 @@ final private class LiveMongoDatabaseF[F[_]](
       .map(MongoCollectionF.apply[T])
 
   def collectionNames: F[Iterable[String]] =
-    Async[F].async(multipleItemsAsync(database.listCollectionNames()))
+    F.async_(multipleItemsAsync(database.listCollectionNames()))
 
   def createCollection(name: String): F[Unit] =
-    Async[F].async(voidAsync(database.createCollection(name)))
+    F.async_(voidAsync(database.createCollection(name)))
 }
 
 object MongoDatabaseF {
-  def make[F[_]: Concurrent](database: MongoDatabase): F[MongoDatabaseF[F]] =
+  def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
     Sync[F].delay(new LiveMongoDatabaseF[F](database))
 }

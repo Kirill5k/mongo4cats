@@ -16,7 +16,7 @@
 
 package mongo4cats.database.queries
 
-import cats.effect.{Async, ConcurrentEffect}
+import cats.effect.Async
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream
 import com.mongodb.client.model.changestream.ChangeStreamDocument
@@ -57,12 +57,12 @@ final case class FindQueryBuilder[T: ClassTag] private (
     FindQueryBuilder[T](observable, FindCommand.Limit[T](limit) :: commands)
 
   def first[F[_]: Async]: F[T] =
-    Async[F].async(singleItemAsync(applyCommands().first()))
+    Async[F].async_(singleItemAsync(applyCommands().first()))
 
   def all[F[_]: Async]: F[Iterable[T]] =
-    Async[F].async(multipleItemsAsync(applyCommands()))
+    Async[F].async_(multipleItemsAsync(applyCommands()))
 
-  def stream[F[_]: ConcurrentEffect]: fs2.Stream[F, T] =
+  def stream[F[_]: Async]: fs2.Stream[F, T] =
     unicastPublisher[T](applyCommands()).toStream[F]
 }
 
@@ -81,12 +81,12 @@ final case class DistinctQueryBuilder[T: ClassTag] private (
     DistinctQueryBuilder[T](observable, DistinctCommand.Collation[T](collation) :: commands)
 
   def first[F[_]: Async]: F[T] =
-    Async[F].async(singleItemAsync(applyCommands().first()))
+    Async[F].async_(singleItemAsync(applyCommands().first()))
 
   def all[F[_]: Async]: F[Iterable[T]] =
-    Async[F].async(multipleItemsAsync(applyCommands()))
+    Async[F].async_(multipleItemsAsync(applyCommands()))
 
-  def stream[F[_]: ConcurrentEffect]: fs2.Stream[F, T] =
+  def stream[F[_]: Async]: fs2.Stream[F, T] =
     unicastPublisher[T](applyCommands()).toStream[F]
 }
 
@@ -117,9 +117,9 @@ final case class WatchQueryBuilder[T: ClassTag] private (
     WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime[T](operationTime) :: commands)
 
   def first[F[_]: Async]: F[ChangeStreamDocument[T]] =
-    Async[F].async(singleItemAsync(applyCommands().first()))
+    Async[F].async_(singleItemAsync(applyCommands().first()))
 
-  def stream[F[_]: ConcurrentEffect]: fs2.Stream[F, ChangeStreamDocument[T]] =
+  def stream[F[_]: Async]: fs2.Stream[F, ChangeStreamDocument[T]] =
     unicastPublisher[ChangeStreamDocument[T]](applyCommands()).toStream[F]
 }
 
@@ -153,11 +153,11 @@ final case class AggregateQueryBuilder[T: ClassTag] private (
     AggregateQueryBuilder(observable, AggregateCommand.BatchSize[T](batchSize) :: commands)
 
   def first[F[_]: Async]: F[T] =
-    Async[F].async(singleItemAsync(applyCommands().first()))
+    Async[F].async_(singleItemAsync(applyCommands().first()))
 
-  def stream[F[_]: ConcurrentEffect]: fs2.Stream[F, T] =
+  def stream[F[_]: Async]: fs2.Stream[F, T] =
     unicastPublisher[T](applyCommands()).toStream[F]
 
   def all[F[_]: Async]: F[Iterable[T]] =
-    Async[F].async(multipleItemsAsync(applyCommands()))
+    Async[F].async_(multipleItemsAsync(applyCommands()))
 }

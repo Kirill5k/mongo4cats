@@ -16,7 +16,7 @@
 
 package mongo4cats.client
 
-import cats.effect.{Concurrent, Resource, Sync}
+import cats.effect.{Async, Resource, Sync}
 import cats.implicits._
 import mongo4cats.database.MongoDatabaseF
 import org.mongodb.scala.{MongoClient, MongoClientSettings, ServerAddress}
@@ -29,15 +29,16 @@ trait MongoClientF[F[_]] {
 
 final private class LiveMongoClientF[F[_]](
     private val client: MongoClient
-)(implicit val F: Concurrent[F])
-    extends MongoClientF[F] {
+)(implicit
+    val F: Async[F]
+) extends MongoClientF[F] {
 
   def getDatabase(name: String): F[MongoDatabaseF[F]] =
     F.delay(client.getDatabase(name)).flatMap(MongoDatabaseF.make[F])
 }
 
 object MongoClientF {
-  def fromServerAddress[F[_]: Concurrent](serverAddresses: ServerAddress*): Resource[F, MongoClientF[F]] = {
+  def fromServerAddress[F[_]: Async](serverAddresses: ServerAddress*): Resource[F, MongoClientF[F]] = {
     val settings = MongoClientSettings
       .builder()
       .applyToClusterSettings { builder =>
@@ -47,9 +48,9 @@ object MongoClientF {
     clientResource(MongoClient(settings))
   }
 
-  def fromConnectionString[F[_]: Concurrent](connectionString: String): Resource[F, MongoClientF[F]] =
-    clientResource(MongoClient(connectionString))
+  def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClientF[F]] =
+    clientResource[F](MongoClient(connectionString))
 
-  private def clientResource[F[_]: Concurrent](client: => MongoClient): Resource[F, MongoClientF[F]] =
+  private def clientResource[F[_]: Async](client: => MongoClient): Resource[F, MongoClientF[F]] =
     Resource.fromAutoCloseable(Sync[F].delay(client)).map(c => new LiveMongoClientF[F](c))
 }
