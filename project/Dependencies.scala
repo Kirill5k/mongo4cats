@@ -8,8 +8,8 @@ object Dependencies {
 
     lazy val scalaLogging  = "3.9.2"
     lazy val logback       = "1.2.3"
-    lazy val scalaTest     = "3.2.3"
-    lazy val embeddedMongo = "2.2.0"
+    lazy val scalaTest     = "3.2.6"
+    lazy val embeddedMongo = "3.0.0"
   }
 
   object Libraries {
