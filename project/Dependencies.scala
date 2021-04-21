@@ -2,13 +2,13 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    lazy val mongodb     = "4.2.2"
-    lazy val fs2         = "3.0.0"
-    lazy val scalaCompat = "2.2.0"
+    lazy val mongodb     = "4.2.3"
+    lazy val fs2         = "3.0.1"
+    lazy val scalaCompat = "2.4.3"
 
-    lazy val scalaLogging  = "3.9.2"
+    lazy val scalaLogging  = "3.9.3"
     lazy val logback       = "1.2.3"
-    lazy val scalaTest     = "3.2.6"
+    lazy val scalaTest     = "3.2.8"
     lazy val embeddedMongo = "3.0.0"
   }
 
