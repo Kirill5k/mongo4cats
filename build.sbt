@@ -72,7 +72,7 @@ lazy val `mongo4cats-circe` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
-    libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
+    libraryDependencies ++= Dependencies.circe,
     test / parallelExecution := false
   )
   .enablePlugins(AutomateHeaderPlugin)
