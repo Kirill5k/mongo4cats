@@ -37,4 +37,8 @@ object Dependencies {
     Libraries.scalaTest     % Test,
     Libraries.embeddedMongo % Test
   )
+
+  lazy val examples = Seq(
+    Libraries.logback
+  )
 }

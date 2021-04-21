@@ -47,7 +47,8 @@ lazy val commonSettings = Seq(
   crossScalaVersions := supportedScalaVersions
 )
 
-lazy val root = (project in file("."))
+lazy val root = project
+  .in(file("."))
   .settings(noPublish)
   .settings(
     name := "mongo4cats",
@@ -55,7 +56,8 @@ lazy val root = (project in file("."))
   )
   .aggregate(`mongo4cats-core`, `mongo4cats-examples`)
 
-lazy val `mongo4cats-core` = (project in file("core"))
+lazy val `mongo4cats-core` = project
+  .in(file("core"))
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
@@ -64,12 +66,14 @@ lazy val `mongo4cats-core` = (project in file("core"))
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-examples` = (project in file("examples"))
+lazy val `mongo4cats-examples` = project
+  .in(file("examples"))
   .dependsOn(`mongo4cats-core`)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-examples",
-    test / parallelExecution := false
+    test / parallelExecution := false,
+    libraryDependencies ++= Dependencies.examples
   )
   .enablePlugins(AutomateHeaderPlugin)
