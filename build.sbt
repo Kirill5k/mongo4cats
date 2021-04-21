@@ -68,7 +68,7 @@ lazy val `mongo4cats-core` = project
 
 lazy val `mongo4cats-circe` = project
   .in(file("circe"))
-  .dependsOn(`mongo4cats-core`)
+  .dependsOn(`mongo4cats-core` % "compile->compile;test->test")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
