@@ -53,13 +53,23 @@ lazy val root = (project in file("."))
     name := "mongo4cats",
     crossScalaVersions := Nil
   )
-  .aggregate(`mongo4cats-core`)
+  .aggregate(`mongo4cats-core`, `mongo4cats-examples`)
 
 lazy val `mongo4cats-core` = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core ++ Dependencies.test,
+    test / parallelExecution := false
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+lazy val `mongo4cats-examples` = (project in file("examples"))
+  .dependsOn(`mongo4cats-core`)
+  .settings(noPublish)
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-examples",
     test / parallelExecution := false
   )
   .enablePlugins(AutomateHeaderPlugin)
