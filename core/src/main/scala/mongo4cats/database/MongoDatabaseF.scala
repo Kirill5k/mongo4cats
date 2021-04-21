@@ -29,6 +29,8 @@ trait MongoDatabaseF[F[_]] {
   def name: String
   def getCollection(name: String): F[MongoCollectionF[Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
+  def getCollectionWithCodecRegistry[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
+    getCollection[T](name, codecRegistry)
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String): F[Unit]
 }

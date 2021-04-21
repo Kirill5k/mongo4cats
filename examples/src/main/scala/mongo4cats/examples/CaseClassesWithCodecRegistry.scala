@@ -6,7 +6,7 @@ import org.mongodb.scala.bson.codecs.Macros._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 
-object CaseClasses extends IOApp.Simple {
+object CaseClassesWithCodecRegistry extends IOApp.Simple {
 
   final case class Address(city: String, country: String)
   final case class Person(firstName: String, lastName: String, address: Address)
@@ -20,7 +20,7 @@ object CaseClasses extends IOApp.Simple {
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("people")
-        coll <- db.getCollection[Person]("collection", personCodecRegistry)
+        coll <- db.getCollectionWithCodecRegistry[Person]("collection", personCodecRegistry)
         _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA")))
         docs <- coll.find.stream[IO].compile.toList
         _    <- IO.println(docs)
