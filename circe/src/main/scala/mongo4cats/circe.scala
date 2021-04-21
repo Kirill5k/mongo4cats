@@ -39,7 +39,7 @@ object circe {
   implicit val encodeObjectId: Encoder[ObjectId] = Encoder.encodeString.contramap[ObjectId](_.toHexString)
   implicit val decodeObjectId: Decoder[ObjectId] = Decoder.decodeString.emapTry(idHex => Try(new ObjectId(idHex)))
 
-  def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
+  private def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
     new CodecProvider {
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
         if (classY == classT) {
