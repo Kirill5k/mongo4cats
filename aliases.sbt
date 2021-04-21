@@ -1,1 +1,1 @@
-addCommandAlias("seqtest", ";mongo4cats-core/test;mongo4cats-circe/test;")
+addCommandAlias("testseq", ";mongo4cats-core/test;mongo4cats-circe/test;")

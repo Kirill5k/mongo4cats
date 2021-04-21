@@ -14,4 +14,4 @@ jobs:
         with:
           java-version: adopt@1.15
       - name: Run unit tests
-        run: sbt clean test
+        run: sbt clean testseq
