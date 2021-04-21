@@ -58,9 +58,9 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
   }
 
   def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
-    withRunningEmbeddedMongo(port = 12347) {
+    withRunningEmbeddedMongo(port = 12344) {
       MongoClientF
-        .fromConnectionString[IO]("mongodb://localhost:12347")
+        .fromConnectionString[IO]("mongodb://localhost:1234")
         .use(test)
         .unsafeRunSync()
     }
