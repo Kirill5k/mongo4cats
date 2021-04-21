@@ -26,6 +26,9 @@ import org.mongodb.scala.bson.ObjectId
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.Instant
+import java.time.temporal.ChronoField.MILLI_OF_SECOND
+
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
   implicit val runTime = IORuntime.global
@@ -33,14 +36,15 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
   "A MongoDatabaseF" should {
 
     final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
-    final case class Person(_id: ObjectId, firstName: String, lastName: String, address: Address)
+    final case class Person(_id: ObjectId, firstName: String, lastName: String, address: Address, registrationDate: Instant)
 
     "use circe codecs for encoding and decoding data" in {
       val person = Person(
         new ObjectId(),
         "John",
         "Bloggs",
-        Address(611, "5th Ave", "New York", "NY 10022")
+        Address(611, "5th Ave", "New York", "NY 10022"),
+        Instant.now().`with`(MILLI_OF_SECOND, 0)
       )
 
       withEmbeddedMongoClient { client =>
@@ -58,9 +62,9 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
   }
 
   def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
-    withRunningEmbeddedMongo() {
+    withRunningEmbeddedMongo(port = 12346) {
       MongoClientF
-        .fromConnectionString[IO]("mongodb://localhost:12345")
+        .fromConnectionString[IO]("mongodb://localhost:12346")
         .use(test)
         .unsafeRunSync()
     }
