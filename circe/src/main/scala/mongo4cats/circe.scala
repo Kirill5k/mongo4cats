@@ -16,37 +16,31 @@
 
 package mongo4cats
 
-import io.circe.{Decoder, Encoder}
-import io.circe._
 import io.circe.parser.{decode => circeDecode}
+import io.circe.{Decoder, Encoder}
 import mongo4cats.database.{MongoCollectionF, MongoDatabaseF}
-import org.bson.{BsonReader, BsonWriter}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonReader, BsonWriter}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.MongoClientException
-import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.codecs.ImmutableDocumentCodec
 import org.mongodb.scala.bson.collection.immutable.Document
 
-import java.time.Instant
 import scala.reflect.ClassTag
-import scala.util.Try
 
-object circe {
+object circe extends JsonCodecs {
 
   final case class MongoJsonParsingException(jsonString: String, message: String) extends MongoClientException(message)
 
-  implicit val encodeObjectId: Encoder[ObjectId] =
-    Encoder.encodeString.contramap[ObjectId](_.toHexString)
-  implicit val decodeObjectId: Decoder[ObjectId] =
-    Decoder.decodeString.emapTry(idHex => Try(new ObjectId(idHex)))
-
-  implicit val encodeInstant: Encoder[Instant] =
-    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject("$date" -> Json.fromString(i.toString)))
-  implicit val decodeInstant: Decoder[Instant] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj.toMap("$date").toString().replaceAll("\"", ""))))
+  implicit final class MongoDatabaseFOps[F[_]](private val db: MongoDatabaseF[F]) extends AnyVal {
+    def getCollectionWithCirceCodecs[T: ClassTag: Encoder: Decoder](name: String): F[MongoCollectionF[T]] = {
+      implicit val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+      val codecs: CodecRegistry     = fromRegistries(fromProviders(circeBasedCodecProvider[T]), DEFAULT_CODEC_REGISTRY)
+      db.getCollectionWithCodecRegistry[T](name, codecs)
+    }
+  }
 
   private def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
     new CodecProvider {
@@ -72,11 +66,4 @@ object circe {
         }
     }
 
-  implicit final class MongoDatabaseFOps[F[_]](private val db: MongoDatabaseF[F]) extends AnyVal {
-    def getCollectionWithCirceCodecs[T: ClassTag: Encoder: Decoder](name: String): F[MongoCollectionF[T]] = {
-      implicit val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-      val codecs: CodecRegistry     = fromRegistries(fromProviders(circeBasedCodecProvider[T]), DEFAULT_CODEC_REGISTRY)
-      db.getCollectionWithCodecRegistry[T](name, codecs)
-    }
-  }
 }
