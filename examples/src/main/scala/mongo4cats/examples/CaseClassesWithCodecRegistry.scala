@@ -22,10 +22,12 @@ import org.mongodb.scala.bson.codecs.Macros._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 
+import java.time.Instant
+
 object CaseClassesWithCodecRegistry extends IOApp.Simple {
 
   final case class Address(city: String, country: String)
-  final case class Person(firstName: String, lastName: String, address: Address)
+  final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
 
   val personCodecRegistry = fromRegistries(
     fromProviders(classOf[Person], classOf[Address]),
@@ -35,9 +37,9 @@ object CaseClassesWithCodecRegistry extends IOApp.Simple {
   override val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
-        db   <- client.getDatabase("people")
-        coll <- db.getCollectionWithCodecRegistry[Person]("collection", personCodecRegistry)
-        _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA")))
+        db   <- client.getDatabase("testdb")
+        coll <- db.getCollectionWithCodecRegistry[Person]("people", personCodecRegistry)
+        _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA"), Instant.now()))
         docs <- coll.find.stream[IO].compile.toList
         _    <- IO.println(docs)
       } yield ()
