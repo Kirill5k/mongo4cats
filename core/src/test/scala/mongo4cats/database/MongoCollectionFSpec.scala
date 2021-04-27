@@ -345,15 +345,16 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
           }
         }
 
-        "stream" in {
+        "stream with filter" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.stream[IO].compile.toList
+              docs = (0 until 50000).map(i => document(s"d$i")).toList
+              _   <- coll.insertMany[IO](docs)
+              res <- coll.find.filter(Filters.regex("name", "d(1|3|5).*")).stream[IO].compile.toList
             } yield res
 
-            result.map(_ must have size 4)
+            result.map(_ must have size 23333)
           }
         }
       }
@@ -433,7 +434,14 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
       MongoClientF
         .fromConnectionString[IO]("mongodb://localhost:12345")
         .use { client =>
-          client.getDatabase("db").flatMap(test)
+          for {
+            db    <- client.getDatabase("db")
+            start <- IO.realTime
+            res   <- test(db)
+            end   <- IO.realTime
+            duration = end - start
+            _ <- IO.println(s">>>> test duration ${duration.toMillis}ms")
+          } yield res
         }
         .unsafeRunSync()
     }
