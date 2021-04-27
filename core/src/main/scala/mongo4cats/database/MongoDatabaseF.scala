@@ -53,10 +53,10 @@ final private class LiveMongoDatabaseF[F[_]](
       .map(MongoCollectionF.apply[T])
 
   def collectionNames: F[Iterable[String]] =
-    F.async_(multipleItemsAsync(database.listCollectionNames()))
+    database.listCollectionNames().asyncIterable[F]
 
   def createCollection(name: String): F[Unit] =
-    F.async_(voidAsync(database.createCollection(name)))
+    database.createCollection(name).void[F]
 }
 
 object MongoDatabaseF {

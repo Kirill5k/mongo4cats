@@ -22,7 +22,7 @@ import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder,
 import org.bson.conversions.Bson
 import org.mongodb.scala.model._
 import org.mongodb.scala.result._
-import org.mongodb.scala.{MongoCollection, MongoNamespace, SingleObservable}
+import org.mongodb.scala.{MongoCollection, MongoNamespace}
 
 import scala.reflect.ClassTag
 
@@ -96,7 +96,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note If no documents matched the query filter, then null will be returned
     */
   def findOneAndDelete[F[_]: Async](filter: Bson): F[T] =
-    async(collection.findOneAndDelete(filter))
+    collection.findOneAndDelete(filter).asyncSingle[F]
 
   /** Atomically find a document and remove it.
     *
@@ -105,7 +105,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note If no documents matched the query filter, then null will be returned
     */
   def findOneAndDelete[F[_]: Async](filter: Bson, options: FindOneAndDeleteOptions): F[T] =
-    async(collection.findOneAndDelete(filter, options))
+    collection.findOneAndDelete(filter, options).asyncSingle[F]
 
   /** Atomically find a document and update it.
     *
@@ -116,7 +116,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note If no documents matched the query filter, then null will be returned
     */
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson): F[T] =
-    async(collection.findOneAndUpdate(filter, update))
+    collection.findOneAndUpdate(filter, update).asyncSingle[F]
 
   /** Atomically find a document and update it.
     *
@@ -130,7 +130,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *       query filter, then null will be returned
     */
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T] =
-    async(collection.findOneAndUpdate(filter, update, options))
+    collection.findOneAndUpdate(filter, update, options).asyncSingle[F]
 
   /** Atomically find a document and replace it.
     *
@@ -139,7 +139,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note If no documents matched the query filter, then null will be returned
     */
   def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T): F[T] =
-    async(collection.findOneAndReplace(filter, replacement))
+    collection.findOneAndReplace(filter, replacement).asyncSingle[F]
 
   /** Atomically find a document and replace it.
     *
@@ -151,7 +151,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *        If no documents matched the query filter, then null will be returned
     */
   def findOneAndReplace[F[_]: Async](filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[T] =
-    async(collection.findOneAndReplace(filter, replacement, options))
+    collection.findOneAndReplace(filter, replacement, options).asyncSingle[F]
 
   /** Drops the given index.
     *
@@ -159,14 +159,14 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param name the name of the index to remove
     */
   def dropIndex[F[_]: Async](name: String): F[Unit] =
-    asyncVoid(collection.dropIndex(name))
+    collection.dropIndex(name).void[F]
 
   /** Drops the index given the keys used to create it.
     *
     * @param keys the keys of the index to remove
     */
   def dropIndex[F[_]: Async](keys: Bson): F[Unit] =
-    asyncVoid(collection.dropIndex(keys))
+    collection.dropIndex(keys).void[F]
 
   /** Drops the index given the keys used to create it.
     *
@@ -175,7 +175,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.2
     */
   def dropIndex[F[_]: Async](keys: Bson, options: DropIndexOptions): F[Unit] =
-    asyncVoid(collection.dropIndex(keys, options))
+    collection.dropIndex(keys, options).void[F]
 
   /** Drop all the indexes on this collection, except for the default on _id.
     *
@@ -184,27 +184,27 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.2
     */
   def dropIndexes[F[_]: Async](options: DropIndexOptions): F[Unit] =
-    asyncVoid(collection.dropIndexes(options))
+    collection.dropIndexes(options).void[F]
 
   /** Drop all the indexes on this collection, except for the default on _id.
     *
     * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
     */
   def dropIndexes[F[_]: Async](): F[Unit] =
-    asyncVoid(collection.dropIndexes())
+    collection.dropIndexes().void[F]
 
   /** Drops this collection from the Database.
     *
     * [[http://docs.mongodb.org/manual/reference/command/drop/ Drop Collection]]
     */
   def drop[F[_]: Async](): F[Unit] =
-    asyncVoid(collection.drop())
+    collection.drop().void[F]
 
   /** [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
     * @param filters an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
     */
   def createIndex[F[_]: Async](filters: Bson): F[String] =
-    async(collection.createIndex(filters))
+    collection.createIndex(filters).asyncSingle[F]
 
   /** [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
     * @param filter  an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is
@@ -212,7 +212,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options the options for the index
     */
   def createIndex[F[_]: Async](filter: Bson, options: IndexOptions): F[String] =
-    async(collection.createIndex(filter, options))
+    collection.createIndex(filter, options).asyncSingle[F]
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -224,7 +224,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *                can be of any type for which a `Codec` is registered
     */
   def updateMany[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
-    async(collection.updateMany(filters, update))
+    collection.updateMany(filters, update).asyncSingle[F]
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -237,7 +237,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateMany[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    async(collection.updateMany(filters, update))
+    collection.updateMany(filters, update).asyncSingle[F]
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -250,7 +250,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options the options to apply to the update operation
     */
   def updateMany[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
-    async(collection.updateMany(filter, update, options))
+    collection.updateMany(filter, update, options).asyncSingle[F]
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -264,7 +264,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateMany[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    async(collection.updateMany(filter, update, options))
+    collection.updateMany(filter, update, options).asyncSingle[F]
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -276,7 +276,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *                can be of any type for which a `Codec` is registered
     */
   def updateOne[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
-    async(collection.updateOne(filters, update))
+    collection.updateOne(filters, update).asyncSingle[F]
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -289,7 +289,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateOne[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    async(collection.updateOne(filters, update))
+    collection.updateOne(filters, update).asyncSingle[F]
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -302,7 +302,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options the options to apply to the update operation
     */
   def updateOne[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
-    async(collection.updateOne(filter, update, options))
+    collection.updateOne(filter, update, options).asyncSingle[F]
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -316,7 +316,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateOne[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    async(collection.updateOne(filter, update, options))
+    collection.updateOne(filter, update, options).asyncSingle[F]
 
   /** Replace a document in the collection according to the specified arguments.
     *
@@ -325,7 +325,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param replacement the replacement document
     */
   def replaceOne[F[_]: Async](filters: Bson, replacement: T): F[UpdateResult] =
-    async(collection.replaceOne(filters, replacement))
+    collection.replaceOne(filters, replacement).asyncSingle[F]
 
   /** Replace a document in the collection according to the specified arguments.
     *
@@ -335,7 +335,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options     the options to apply to the replace operation
     */
   def replaceOne[F[_]: Async](filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult] =
-    async(collection.replaceOne(filter, replacement, options))
+    collection.replaceOne(filter, replacement, options).asyncSingle[F]
 
   /** Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
     * modified.
@@ -343,7 +343,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param filters the query filter to apply the the delete operation
     */
   def deleteOne[F[_]: Async](filters: Bson): F[DeleteResult] =
-    async(collection.deleteOne(filters))
+    collection.deleteOne(filters).asyncSingle[F]
 
   /** Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
     * modified.
@@ -353,14 +353,14 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 1.2
     */
   def deleteOne[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
-    async(collection.deleteOne(filter, options))
+    collection.deleteOne(filter, options).asyncSingle[F]
 
   /** Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
     *
     * @param filters the query filter to apply the the delete operation
     */
   def deleteMany[F[_]: Async](filters: Bson): F[DeleteResult] =
-    async(collection.deleteMany(filters))
+    collection.deleteMany(filters).asyncSingle[F]
 
   /** Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
     *
@@ -369,14 +369,14 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 1.2
     */
   def deleteMany[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
-    async(collection.deleteMany(filter, options))
+    collection.deleteMany(filter, options).asyncSingle[F]
 
   /** Inserts the provided document. If the document is missing an identifier, the driver should generate one.
     *
     * @param document the document to insert
     */
   def insertOne[F[_]: Async](document: T): F[InsertOneResult] =
-    async(collection.insertOne(document))
+    collection.insertOne(document).asyncSingle[F]
 
   /** Inserts the provided document. If the document is missing an identifier, the driver should generate one.
     *
@@ -385,7 +385,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 1.1
     */
   def insertOne[F[_]: Async](document: T, options: InsertOneOptions): F[InsertOneResult] =
-    async(collection.insertOne(document, options))
+    collection.insertOne(document, options).asyncSingle[F]
 
   /** Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
     * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
@@ -393,7 +393,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param documents the documents to insert
     */
   def insertMany[F[_]: Async](documents: Seq[T]): F[InsertManyResult] =
-    async(collection.insertMany(documents))
+    collection.insertMany(documents).asyncSingle[F]
 
   /** Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
     * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
@@ -402,14 +402,14 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options   the options to apply to the operation
     */
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
-    async(collection.insertMany(documents, options))
+    collection.insertMany(documents, options).asyncSingle[F]
 
   /** Counts the number of documents in the collection.
     *
     * @since 2.4
     */
   def count[F[_]: Async]: F[Long] =
-    async(collection.countDocuments())
+    collection.countDocuments().asyncSingle[F]
 
   /** Counts the number of documents in the collection according to the given options.
     *
@@ -417,7 +417,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.4
     */
   def count[F[_]: Async](filter: Bson): F[Long] =
-    async(collection.countDocuments(filter))
+    collection.countDocuments(filter).asyncSingle[F]
 
   /** Counts the number of documents in the collection according to the given options.
     *
@@ -426,13 +426,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.4
     */
   def count[F[_]: Async](filter: Bson, options: CountOptions): F[Long] =
-    async(collection.countDocuments(filter, options))
-
-  private def async[F[_]: Async, R](observable: => SingleObservable[R]): F[R] =
-    Async[F].async_(singleItemAsync(observable))
-
-  private def asyncVoid[F[_]: Async](observable: => SingleObservable[Void]): F[Unit] =
-    Async[F].async_(voidAsync(observable))
+    collection.countDocuments(filter, options).asyncSingle[F]
 }
 
 object MongoCollectionF {
