@@ -56,7 +56,7 @@ final private class LiveMongoDatabaseF[F[_]](
     database.listCollectionNames().asyncIterable[F]
 
   def createCollection(name: String): F[Unit] =
-    database.createCollection(name).void[F]
+    database.createCollection(name).asyncVoid[F]
 }
 
 object MongoDatabaseF {

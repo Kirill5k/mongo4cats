@@ -21,7 +21,6 @@ import com.mongodb.client.model
 import com.mongodb.client.model.changestream
 import com.mongodb.client.model.changestream.ChangeStreamDocument
 import mongo4cats.database.helpers._
-import fs2.interop.reactivestreams._
 import org.bson.conversions.Bson
 import org.mongodb.scala.bson.{BsonTimestamp, Document}
 import org.mongodb.scala.{AggregateObservable, ChangeStreamObservable, DistinctObservable, FindObservable, Observable}
@@ -63,7 +62,7 @@ final case class FindQueryBuilder[T: ClassTag] private (
     applyCommands().asyncIterable[F]
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
-    unicastPublisher[T](applyCommands()).toStream[F]
+    applyCommands().stream[F]
 
   def stream2[F[_]: Async]: fs2.Stream[F, T] =
     applyCommands().stream[F]
@@ -90,7 +89,7 @@ final case class DistinctQueryBuilder[T: ClassTag] private (
     applyCommands().asyncIterable[F]
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
-    unicastPublisher[T](applyCommands()).toStream[F]
+    applyCommands().stream[F]
 }
 
 final case class WatchQueryBuilder[T: ClassTag] private (
@@ -123,7 +122,7 @@ final case class WatchQueryBuilder[T: ClassTag] private (
     applyCommands().first().asyncSingle[F]
 
   def stream[F[_]: Async]: fs2.Stream[F, ChangeStreamDocument[T]] =
-    unicastPublisher[ChangeStreamDocument[T]](applyCommands()).toStream[F]
+    applyCommands().stream[F]
 }
 
 final case class AggregateQueryBuilder[T: ClassTag] private (
@@ -162,5 +161,5 @@ final case class AggregateQueryBuilder[T: ClassTag] private (
     applyCommands().asyncIterable[F]
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
-    unicastPublisher[T](applyCommands()).toStream[F]
+    applyCommands().stream[F]
 }

@@ -159,14 +159,14 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param name the name of the index to remove
     */
   def dropIndex[F[_]: Async](name: String): F[Unit] =
-    collection.dropIndex(name).void[F]
+    collection.dropIndex(name).asyncVoid[F]
 
   /** Drops the index given the keys used to create it.
     *
     * @param keys the keys of the index to remove
     */
   def dropIndex[F[_]: Async](keys: Bson): F[Unit] =
-    collection.dropIndex(keys).void[F]
+    collection.dropIndex(keys).asyncVoid[F]
 
   /** Drops the index given the keys used to create it.
     *
@@ -175,7 +175,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.2
     */
   def dropIndex[F[_]: Async](keys: Bson, options: DropIndexOptions): F[Unit] =
-    collection.dropIndex(keys, options).void[F]
+    collection.dropIndex(keys, options).asyncVoid[F]
 
   /** Drop all the indexes on this collection, except for the default on _id.
     *
@@ -184,21 +184,21 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.2
     */
   def dropIndexes[F[_]: Async](options: DropIndexOptions): F[Unit] =
-    collection.dropIndexes(options).void[F]
+    collection.dropIndexes(options).asyncVoid[F]
 
   /** Drop all the indexes on this collection, except for the default on _id.
     *
     * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/ Drop Indexes]]
     */
   def dropIndexes[F[_]: Async](): F[Unit] =
-    collection.dropIndexes().void[F]
+    collection.dropIndexes().asyncVoid[F]
 
   /** Drops this collection from the Database.
     *
     * [[http://docs.mongodb.org/manual/reference/command/drop/ Drop Collection]]
     */
   def drop[F[_]: Async](): F[Unit] =
-    collection.drop().void[F]
+    collection.drop().asyncVoid[F]
 
   /** [[http://docs.mongodb.org/manual/reference/command/createIndexes Create Index]]
     * @param filters an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered

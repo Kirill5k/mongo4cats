@@ -18,16 +18,15 @@ package mongo4cats.database
 
 import cats.effect.Async
 import cats.effect.std.{Dispatcher, Queue}
-import org.mongodb.scala.{Observable, Observer, Subscription}
-import org.reactivestreams.{Publisher, Subscriber, Subscription => RSSubscription}
 import fs2.Stream
+import org.mongodb.scala.{Observable, Observer}
 
 import scala.util.Either
 
 private[database] object helpers {
 
   implicit final class ObservableOps[T](private val observable: Observable[T]) extends AnyVal {
-    def void[F[_]: Async]: F[Unit] =
+    def asyncVoid[F[_]: Async]: F[Unit] =
       Async[F].async_ { k =>
         observable.subscribe(new Observer[T] {
           override def onNext(result: T): Unit     = ()
@@ -70,18 +69,5 @@ private[database] object helpers {
         })
         stream <- Stream.fromQueueNoneTerminated(queue).evalMap(Async[F].fromEither)
       } yield stream
-  }
-
-  def unicastPublisher[T](observable: Observable[T]): Publisher[T] = (s: Subscriber[_ >: T]) => {
-    observable.subscribe(new Observer[T] {
-      override def onSubscribe(sub: Subscription): Unit =
-        s.onSubscribe(new RSSubscription {
-          def request(n: Long): Unit = sub.request(n)
-          def cancel(): Unit         = sub.unsubscribe()
-        })
-      def onNext(result: T): Unit     = s.onNext(result)
-      def onError(e: Throwable): Unit = s.onError(e)
-      def onComplete(): Unit          = s.onComplete()
-    })
   }
 }

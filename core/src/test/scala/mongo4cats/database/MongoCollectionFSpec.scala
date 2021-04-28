@@ -350,11 +350,8 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll <- db.getCollection("coll")
               docs = (0 until 50000).map(i => document(s"d$i")).toList
-              _     <- coll.insertMany[IO](docs)
-              start <- IO.realTime
-              res   <- coll.find.filter(Filters.regex("name", "d(1|3|5).*")).stream2[IO].compile.toList
-              end   <- IO.realTime
-              _     <- IO.println(s">>>>>> ${end - start}ms")
+              _   <- coll.insertMany[IO](docs)
+              res <- coll.find.filter(Filters.regex("name", "d(1|3|5).*")).stream[IO].compile.toList
             } yield res
 
             result.map(_ must have size 23333)

@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   private object Versions {
     lazy val mongodb     = "4.2.3"
-    lazy val fs2         = "3.0.1"
+    lazy val fs2         = "3.0.2"
     lazy val scalaCompat = "2.4.3"
     lazy val circe       = "0.13.0"
 
@@ -16,7 +16,6 @@ object Dependencies {
   private object Libraries {
     lazy val mongodb            = "org.mongodb.scala"      %% "mongo-scala-driver"      % Versions.mongodb
     lazy val fs2Core            = "co.fs2"                 %% "fs2-core"                % Versions.fs2
-    lazy val fs2ReactiveStreams = "co.fs2"                 %% "fs2-reactive-streams"    % Versions.fs2
     lazy val scalaCompat        = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.scalaCompat
 
     lazy val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
@@ -32,7 +31,6 @@ object Dependencies {
   lazy val core = Seq(
     Libraries.mongodb,
     Libraries.fs2Core,
-    Libraries.fs2ReactiveStreams,
     Libraries.scalaCompat
   )
 
