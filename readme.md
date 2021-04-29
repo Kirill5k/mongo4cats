@@ -11,8 +11,8 @@ Available for Scala 2.12 and Scala 2.13.
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.4"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.4" // circe support
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.5"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.5" // circe support
 ```
 
 ### Quick Start Examples
