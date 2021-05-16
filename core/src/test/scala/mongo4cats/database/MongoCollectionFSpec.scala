@@ -35,11 +35,11 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
       "insertOne" should {
         "store new document in db" in {
           withEmbeddedMongoDatabase { db =>
-            val result = for
+            val result = for {
               coll         <- db.getCollection("coll")
               insertResult <- coll.insertOne[IO](document())
               documents    <- coll.find.all[IO]
-            yield (insertResult, documents)
+            } yield (insertResult, documents)
 
             result.map { case (insertRes, documents) =>
               documents must have size 1
