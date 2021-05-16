@@ -13,7 +13,6 @@ ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"
 ThisBuild / developers := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
-ThisBuild / publishMavenStyle := true
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 releaseProcess := Seq[ReleaseStep](
