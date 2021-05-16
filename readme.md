@@ -10,7 +10,7 @@ Available for Scala 2.12, 2.13 and 3.0.
 
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
-```
+```scala
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.6"
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.6" // circe support
 ```
