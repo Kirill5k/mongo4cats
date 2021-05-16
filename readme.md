@@ -3,8 +3,8 @@ mongo4cats
 
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
-Mongo DB scala client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
-Available for Scala 2.12 and Scala 2.13.
+Java Mongo DB client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
+Available for Scala 2.12, 2.13 and 3.0.
 
 ### Dependencies
 
@@ -17,15 +17,15 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.5" // c
 
 ### Quick Start Examples
 
-#### Working with JSON
+#### Working with plain JSON
 
 ```scala
 import cats.effect.{IO, IOApp}
+import com.mongodb.client.model.{Filters, Sorts}
 import mongo4cats.client.MongoClientF
-import org.mongodb.scala.bson.Document
-import org.mongodb.scala.model.{Filters, Updates}
+import org.bson.Document
 
-object Example extends IOApp.Simple {
+object DocumentFindAndUpdate extends IOApp.Simple {
 
   val json =
     """{
@@ -33,14 +33,14 @@ object Example extends IOApp.Simple {
       |"lastName": "Bloggs",
       |"dob": "1970-01-01"
       |}""".stripMargin
-  
+
   val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db      <- client.getDatabase("testdb")
         coll    <- db.getCollection("jsoncoll")
-        _       <- coll.insertOne[IO](Document(json))
-        old     <- coll.findOneAndUpdate[IO](Filters.equal("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
+        _       <- coll.insertOne[IO](Document.parse(json))
+        old     <- coll.findOneAndUpdate[IO](Filters.eq("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
         updated <- coll.find.first[IO]
         _       <- IO.println(old.toJson(), updated.toJson())
       } yield ()
@@ -52,19 +52,21 @@ object Example extends IOApp.Simple {
 
 ```scala
 import cats.effect.{IO, IOApp}
+import com.mongodb.client.model.{Filters, Sorts}
 import mongo4cats.client.MongoClientF
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.{Filters, Sorts}
+import org.bson.Document
 
-object Example extends IOApp.Simple {
+object FilteringAndSorting extends IOApp.Simple {
 
-  val run: IO[Unit] =
+  def genDocs(n: Int): Seq[Document] =
+    (0 to n).map(i => new Document("name", s"doc-$i"))
+
+  override val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollection("docs")
-        newDocs = (0 to 10).map(i => Document("name" -> s"doc-$i"))
-        _ <- coll.insertMany[IO](newDocs)
+        _    <- coll.insertMany[IO](genDocs(10))
         docs <- coll.find
           .filter(Filters.regex("name", "doc-[2-7]"))
           .sort(Sorts.descending("name"))
@@ -76,46 +78,11 @@ object Example extends IOApp.Simple {
 }
 ```
 
-#### Working with case classes
-
-```scala
-import cats.effect.{IO, IOApp}
-import mongo4cats.client.MongoClientF
-import org.mongodb.scala.bson.codecs.Macros._
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
-
-import java.time.Instant
-
-object Example extends IOApp.Simple {
-
-  final case class Address(city: String, country: String)
-  final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
-
-  val personCodecRegistry = fromRegistries(
-    fromProviders(classOf[Person], classOf[Address]),
-    DEFAULT_CODEC_REGISTRY
-  )
-
-  val run: IO[Unit] =
-    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-      for {
-        db   <- client.getDatabase("testdb")
-        coll <- db.getCollectionWithCodecRegistry[Person]("people", personCodecRegistry)
-        _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA"), Instant.now()))
-        docs <- coll.find.stream[IO].compile.toList
-        _    <- IO.println(docs)
-      } yield ()
-    }
-}
-```
-Refer to the official documentation for more sophisticated examples on working with case classes: https://mongodb.github.io/mongo-scala-driver/2.9/bson/macros/
-
 #### Using circe for encoding and decoding documents into case classes
 
 Only mongo4cats-circe is required for basic interop with circe:
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.4"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.5"
 ```
 
 In order to obtain mongo collection with circe codecs, the following import is required:
