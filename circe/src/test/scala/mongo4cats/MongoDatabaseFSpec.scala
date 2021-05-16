@@ -22,7 +22,7 @@ import io.circe.generic.auto._
 import mongo4cats.EmbeddedMongo
 import mongo4cats.circe._
 import mongo4cats.client.MongoClientF
-import org.mongodb.scala.bson.ObjectId
+import org.bson.types.ObjectId
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
