@@ -17,7 +17,7 @@
 package mongo4cats.database
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits.global
 import com.mongodb.client.model.{Filters, Sorts, Updates}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
@@ -28,8 +28,6 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.jdk.CollectionConverters._
 
 class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
-
-  implicit val runTime = IORuntime.global
 
   "A MongoCollectionF" when {
 

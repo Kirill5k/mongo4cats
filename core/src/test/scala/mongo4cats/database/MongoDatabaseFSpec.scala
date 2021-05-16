@@ -17,7 +17,7 @@
 package mongo4cats.database
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits.global
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.bson.Document
@@ -25,8 +25,6 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
-
-  implicit val runTime = IORuntime.global
 
   "A MongoDatabaseF" should {
 

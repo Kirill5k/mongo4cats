@@ -17,7 +17,7 @@
 package mongo4cats
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits.global
 import io.circe.generic.auto._
 import mongo4cats.EmbeddedMongo
 import mongo4cats.circe._
@@ -30,8 +30,6 @@ import java.time.Instant
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
-
-  implicit val runTime = IORuntime.global
 
   "A MongoDatabaseF" should {
 

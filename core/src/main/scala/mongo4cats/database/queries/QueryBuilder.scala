@@ -39,7 +39,7 @@ private[queries] trait QueryBuilder[O[_] <: Publisher[_], T] {
     }
 }
 
-final case class FindQueryBuilder[T: ClassTag] private (
+final case class FindQueryBuilder[T: ClassTag] private[database] (
     protected val observable: FindPublisher[T],
     protected val commands: List[FindCommand[T]]
 ) extends QueryBuilder[FindPublisher, T] {
@@ -69,7 +69,7 @@ final case class FindQueryBuilder[T: ClassTag] private (
     applyCommands().stream[F]
 }
 
-final case class DistinctQueryBuilder[T: ClassTag] private (
+final case class DistinctQueryBuilder[T: ClassTag] private[database] (
     protected val observable: DistinctPublisher[T],
     protected val commands: List[DistinctCommand[T]]
 ) extends QueryBuilder[DistinctPublisher, T] {
@@ -93,7 +93,7 @@ final case class DistinctQueryBuilder[T: ClassTag] private (
     applyCommands().stream[F]
 }
 
-final case class WatchQueryBuilder[T: ClassTag] private (
+final case class WatchQueryBuilder[T: ClassTag] private[database] (
     protected val observable: ChangeStreamPublisher[T],
     protected val commands: List[WatchCommand[T]]
 ) extends QueryBuilder[ChangeStreamPublisher, T] {
@@ -126,7 +126,7 @@ final case class WatchQueryBuilder[T: ClassTag] private (
     applyCommands().stream[F]
 }
 
-final case class AggregateQueryBuilder[T: ClassTag] private (
+final case class AggregateQueryBuilder[T: ClassTag] private[database] (
     protected val observable: AggregatePublisher[T],
     protected val commands: List[AggregateCommand[T]]
 ) extends QueryBuilder[AggregatePublisher, T] {
