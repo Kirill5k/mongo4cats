@@ -21,7 +21,7 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.5" // c
 
 ```scala
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.{Filters, Sorts}
+import com.mongodb.client.model.{Filters, Updates}
 import mongo4cats.client.MongoClientF
 import org.bson.Document
 
