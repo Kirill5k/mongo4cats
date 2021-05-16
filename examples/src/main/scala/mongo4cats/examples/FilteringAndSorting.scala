@@ -17,15 +17,14 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
+import com.mongodb.client.model.{Filters, Sorts}
 import mongo4cats.client.MongoClientF
-import org.mongodb.scala.model.{Filters, Sorts}
 import org.bson.Document
-import org.mongodb.scala.bson.{Document => SDocument}
 
 object FilteringAndSorting extends IOApp.Simple {
 
   def genDocs(n: Int): Seq[Document] =
-    (0 to n).map(i => SDocument("name" -> s"doc-$i"))
+    (0 to n).map(i => new Document("name", s"doc-$i"))
 
   override val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>

@@ -22,21 +22,10 @@ import com.mongodb.client.model.{Filters, Sorts, Updates}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.bson.Document
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.bson.types.ObjectId
-import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
-import org.mongodb.scala.bson.codecs.Macros._
-import org.mongodb.scala.bson.{Document => SDocument}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-final case class PersonInfo(x: Int, y: Int)
-final case class Person(_id: ObjectId, name: String, info: PersonInfo)
-
-object Person {
-  def apply(name: String, info: PersonInfo): Person =
-    Person(new ObjectId(), name, info)
-}
+import scala.jdk.CollectionConverters._
 
 class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
@@ -374,32 +363,6 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
       }
     }
 
-    "working with case classes" should {
-      val personCodecRegistry = fromRegistries(
-        fromProviders(classOf[Person]),
-        fromProviders(classOf[PersonInfo]),
-        DEFAULT_CODEC_REGISTRY
-      )
-
-      "insertOne" should {
-        "store new person in db" in {
-          withEmbeddedMongoDatabase { db =>
-            val result = for {
-              coll         <- db.getCollection[Person]("coll", personCodecRegistry)
-              insertResult <- coll.insertOne[IO](person())
-              people       <- coll.find.all[IO]
-            } yield (insertResult, people)
-
-            result.map { case (insertRes, people) =>
-              people must have size 1
-              people.head.name mustBe "test-person-1"
-              insertRes.wasAcknowledged() mustBe true
-            }
-          }
-        }
-      }
-    }
-
     "working with json" should {
 
       "findOneAndUpdate" should {
@@ -447,8 +410,5 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
     }
 
   def document(name: String = "test-doc-1"): Document =
-    SDocument("name" -> name, "info" -> SDocument("x" -> 203, "y" -> 102))
-
-  def person(name: String = "test-person-1"): Person =
-    Person(name, PersonInfo(203, 102))
+    new Document(Map[String, AnyRef]("name" -> name, "info" -> Document.parse(s"""{"x": 42, "y": 23}"""")).asJava)
 }
