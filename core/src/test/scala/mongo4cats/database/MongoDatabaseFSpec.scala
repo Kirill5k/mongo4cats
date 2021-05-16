@@ -23,10 +23,6 @@ import mongo4cats.client.MongoClientF
 import org.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.mongodb.scala.bson.codecs.Macros._
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
-import org.mongodb.scala.bson.ObjectId
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
@@ -67,26 +63,6 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
           col.namespace.getDatabaseName mustBe "foo"
           col.namespace.getCollectionName mustBe "c1"
           col.documentClass mustBe classOf[Document]
-        }
-      }
-    }
-
-    "return specific class collection by name" in {
-      final case class Person(_id: ObjectId, firstName: String, lastName: String)
-
-      val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY)
-
-      withEmbeddedMongoClient { client =>
-        val result = for {
-          db         <- client.getDatabase("foo")
-          _          <- db.createCollection("c1")
-          collection <- db.getCollection[Person]("c1", personCodecRegistry)
-        } yield collection
-
-        result.map { col =>
-          col.namespace.getDatabaseName mustBe "foo"
-          col.namespace.getCollectionName mustBe "c1"
-          col.documentClass mustBe classOf[Person]
         }
       }
     }
