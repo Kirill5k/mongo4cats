@@ -17,7 +17,7 @@
 package mongo4cats
 
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import org.mongodb.scala.bson.ObjectId
+import org.bson.types.ObjectId
 
 import java.time.Instant
 import scala.util.Try
