@@ -17,7 +17,7 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.{Filters, Sorts}
+import com.mongodb.client.model.{Filters, Updates}
 import mongo4cats.client.MongoClientF
 import org.bson.Document
 
