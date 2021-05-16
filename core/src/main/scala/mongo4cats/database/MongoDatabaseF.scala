@@ -20,8 +20,8 @@ import cats.effect.{Async, Sync}
 import cats.implicits._
 import mongo4cats.database.helpers._
 import org.bson.codecs.configuration.CodecRegistry
-import org.mongodb.scala.MongoDatabase
-import org.mongodb.scala.bson.Document
+import com.mongodb.reactivestreams.client.MongoDatabase
+import org.bson.Document
 
 import scala.reflect.ClassTag
 
@@ -42,15 +42,21 @@ final private class LiveMongoDatabaseF[F[_]](
 ) extends MongoDatabaseF[F] {
 
   def name: String =
-    database.name
+    database.getName
 
   def getCollection(name: String): F[MongoCollectionF[Document]] =
-    F.delay(database.getCollection[Document](name))
+    F.delay(database.getCollection(name))
       .map(MongoCollectionF.apply[Document])
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
-    F.delay(database.getCollection[T](name).withCodecRegistry(codecRegistry).withDocumentClass[T]())
-      .map(MongoCollectionF.apply[T])
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    F.delay(
+      database
+        .getCollection[T](name, clazz)
+        .withCodecRegistry(codecRegistry)
+        .withDocumentClass[T](clazz)
+    ).map(MongoCollectionF.apply[T])
+  }
 
   def collectionNames: F[Iterable[String]] =
     database.listCollectionNames().asyncIterable[F]

@@ -20,7 +20,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
-import org.mongodb.scala.bson.collection.immutable.Document
+import org.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.mongodb.scala.bson.codecs.Macros._
@@ -73,6 +73,7 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
     "return specific class collection by name" in {
       final case class Person(_id: ObjectId, firstName: String, lastName: String)
+
       val personCodecRegistry = fromRegistries(fromProviders(classOf[Person]), DEFAULT_CODEC_REGISTRY)
 
       withEmbeddedMongoClient { client =>

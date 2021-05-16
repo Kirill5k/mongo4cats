@@ -20,15 +20,16 @@ import cats.effect.Async
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream
 import com.mongodb.client.model.changestream.ChangeStreamDocument
+import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._
+import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
-import org.mongodb.scala.bson.{BsonTimestamp, Document}
-import org.mongodb.scala.{AggregateObservable, ChangeStreamObservable, DistinctObservable, FindObservable, Observable}
+import org.reactivestreams.Publisher
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-private[queries] trait QueryBuilder[O[_] <: Observable[_], T] {
+private[queries] trait QueryBuilder[O[_] <: Publisher[_], T] {
   protected def observable: O[T]
   protected def commands: List[QueryCommand[O, T]]
 
@@ -39,9 +40,9 @@ private[queries] trait QueryBuilder[O[_] <: Observable[_], T] {
 }
 
 final case class FindQueryBuilder[T: ClassTag] private (
-    protected val observable: FindObservable[T],
+    protected val observable: FindPublisher[T],
     protected val commands: List[FindCommand[T]]
-) extends QueryBuilder[FindObservable, T] {
+) extends QueryBuilder[FindPublisher, T] {
 
   def sort(sort: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Sort[T](sort) :: commands)
@@ -69,9 +70,9 @@ final case class FindQueryBuilder[T: ClassTag] private (
 }
 
 final case class DistinctQueryBuilder[T: ClassTag] private (
-    protected val observable: DistinctObservable[T],
+    protected val observable: DistinctPublisher[T],
     protected val commands: List[DistinctCommand[T]]
-) extends QueryBuilder[DistinctObservable, T] {
+) extends QueryBuilder[DistinctPublisher, T] {
 
   def filter(filter: Bson): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.Filter[T](filter) :: commands)
@@ -93,9 +94,9 @@ final case class DistinctQueryBuilder[T: ClassTag] private (
 }
 
 final case class WatchQueryBuilder[T: ClassTag] private (
-    protected val observable: ChangeStreamObservable[T],
+    protected val observable: ChangeStreamPublisher[T],
     protected val commands: List[WatchCommand[T]]
-) extends QueryBuilder[ChangeStreamObservable, T] {
+) extends QueryBuilder[ChangeStreamPublisher, T] {
 
   def batchSize(size: Int): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.BatchSize[T](size) :: commands)
@@ -109,10 +110,10 @@ final case class WatchQueryBuilder[T: ClassTag] private (
   def maxAwaitTime(duration: Duration): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.MaxAwaitTime[T](duration) :: commands)
 
-  def resumeAfter(after: Document): WatchQueryBuilder[T] =
+  def resumeAfter(after: BsonDocument): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.ResumeAfter[T](after) :: commands)
 
-  def startAfter(after: Document): WatchQueryBuilder[T] =
+  def startAfter(after: BsonDocument): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.StartAfter[T](after) :: commands)
 
   def startAtOperationTime(operationTime: BsonTimestamp): WatchQueryBuilder[T] =
@@ -126,9 +127,9 @@ final case class WatchQueryBuilder[T: ClassTag] private (
 }
 
 final case class AggregateQueryBuilder[T: ClassTag] private (
-    protected val observable: AggregateObservable[T],
+    protected val observable: AggregatePublisher[T],
     protected val commands: List[AggregateCommand[T]]
-) extends QueryBuilder[AggregateObservable, T] {
+) extends QueryBuilder[AggregatePublisher, T] {
 
   def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(observable, AggregateCommand.AllowDiskUse[T](allowDiskUse) :: commands)

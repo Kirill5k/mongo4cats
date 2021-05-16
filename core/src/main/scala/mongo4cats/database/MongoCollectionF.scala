@@ -17,13 +17,16 @@
 package mongo4cats.database
 
 import cats.effect.Async
+import cats.implicits._
+import com.mongodb.MongoNamespace
+import com.mongodb.client.model._
+import com.mongodb.client.result._
 import mongo4cats.database.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
-import org.mongodb.scala.model._
-import org.mongodb.scala.result._
-import org.mongodb.scala.{MongoCollection, MongoNamespace}
+import com.mongodb.reactivestreams.client.MongoCollection
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
 final class MongoCollectionF[T: ClassTag] private (
@@ -31,17 +34,17 @@ final class MongoCollectionF[T: ClassTag] private (
 ) {
 
   def namespace: MongoNamespace =
-    collection.namespace
+    collection.getNamespace
 
   def documentClass: Class[T] =
-    collection.documentClass
+    collection.getDocumentClass
 
   /** Aggregates documents according to the specified aggregation pipeline.
     * [[http://docs.mongodb.org/manual/aggregation/ Aggregation]]
     * @param pipeline the aggregate pipeline
     */
   def aggregate(pipeline: Seq[Bson]): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(collection.aggregate(pipeline), Nil)
+    AggregateQueryBuilder(collection.aggregate(pipeline.asJava), Nil)
 
   /** Creates a change stream for this collection.
     *
@@ -50,21 +53,21 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 3.6 or greater
     */
   def watch(pipeline: Seq[Bson]): WatchQueryBuilder[T] =
-    WatchQueryBuilder(collection.watch(pipeline), Nil)
+    WatchQueryBuilder(collection.watch(pipeline.asJava, documentClass), Nil)
 
   /** Creates a change stream for this collection.
     * @since 2.2
     * @note Requires MongoDB 3.6 or greater
     */
   def watch: WatchQueryBuilder[T] =
-    WatchQueryBuilder(collection.watch(), Nil)
+    WatchQueryBuilder(collection.watch(documentClass), Nil)
 
   /** Gets the distinct values of the specified field name.
     * [[http://docs.mongodb.org/manual/reference/command/distinct/ Distinct]]
     * @param fieldName the field name
     */
   def distinct(fieldName: String): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder[T](collection.distinct(fieldName), Nil)
+    DistinctQueryBuilder[T](collection.distinct(fieldName, documentClass), Nil)
 
   /** Gets the distinct values of the specified field name.
     *
@@ -73,7 +76,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param filter  the query filter
     */
   def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder[T](collection.distinct(fieldName, filter), Nil)
+    DistinctQueryBuilder[T](collection.distinct(fieldName, filter, documentClass), Nil)
 
   /** Finds all documents in the collection.
     *
@@ -237,7 +240,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateMany[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    collection.updateMany(filters, update).asyncSingle[F]
+    collection.updateMany(filters, update.asJava).asyncSingle[F]
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -264,7 +267,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateMany[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    collection.updateMany(filter, update, options).asyncSingle[F]
+    collection.updateMany(filter, update.asJava, options).asyncSingle[F]
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -289,7 +292,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateOne[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    collection.updateOne(filters, update).asyncSingle[F]
+    collection.updateOne(filters, update.asJava).asyncSingle[F]
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -316,7 +319,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @note Requires MongoDB 4.2 or greater
     */
   def updateOne[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    collection.updateOne(filter, update, options).asyncSingle[F]
+    collection.updateOne(filter, update.asJava, options).asyncSingle[F]
 
   /** Replace a document in the collection according to the specified arguments.
     *
@@ -393,7 +396,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param documents the documents to insert
     */
   def insertMany[F[_]: Async](documents: Seq[T]): F[InsertManyResult] =
-    collection.insertMany(documents).asyncSingle[F]
+    collection.insertMany(documents.asJava).asyncSingle[F]
 
   /** Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API. However, when talking with a
     * server &lt; 2.6, using this method will be faster due to constraints in the bulk API related to error handling.
@@ -402,14 +405,14 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options   the options to apply to the operation
     */
   def insertMany[F[_]: Async](documents: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
-    collection.insertMany(documents, options).asyncSingle[F]
+    collection.insertMany(documents.asJava, options).asyncSingle[F]
 
   /** Counts the number of documents in the collection.
     *
     * @since 2.4
     */
   def count[F[_]: Async]: F[Long] =
-    collection.countDocuments().asyncSingle[F]
+    collection.countDocuments().asyncSingle[F].map(_.longValue())
 
   /** Counts the number of documents in the collection according to the given options.
     *
@@ -417,7 +420,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.4
     */
   def count[F[_]: Async](filter: Bson): F[Long] =
-    collection.countDocuments(filter).asyncSingle[F]
+    collection.countDocuments(filter).asyncSingle[F].map(_.longValue())
 
   /** Counts the number of documents in the collection according to the given options.
     *
@@ -426,7 +429,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.4
     */
   def count[F[_]: Async](filter: Bson, options: CountOptions): F[Long] =
-    collection.countDocuments(filter, options).asyncSingle[F]
+    collection.countDocuments(filter, options).asyncSingle[F].map(_.longValue())
 }
 
 object MongoCollectionF {

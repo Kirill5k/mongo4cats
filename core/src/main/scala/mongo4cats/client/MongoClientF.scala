@@ -19,7 +19,8 @@ package mongo4cats.client
 import cats.effect.{Async, Resource, Sync}
 import cats.implicits._
 import mongo4cats.database.MongoDatabaseF
-import org.mongodb.scala.{MongoClient, MongoClientSettings, ServerAddress}
+import com.mongodb.{MongoClientSettings, ServerAddress}
+import com.mongodb.reactivestreams.client.{MongoClient, MongoClients}
 
 import scala.jdk.CollectionConverters._
 
@@ -45,11 +46,11 @@ object MongoClientF {
         val _ = builder.hosts(serverAddresses.toList.asJava)
       }
       .build()
-    clientResource(MongoClient(settings))
+    clientResource(MongoClients.create(settings))
   }
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClientF[F]] =
-    clientResource[F](MongoClient(connectionString))
+    clientResource[F](MongoClients.create(connectionString))
 
   private def clientResource[F[_]: Async](client: => MongoClient): Resource[F, MongoClientF[F]] =
     Resource.fromAutoCloseable(Sync[F].delay(client)).map(c => new LiveMongoClientF[F](c))

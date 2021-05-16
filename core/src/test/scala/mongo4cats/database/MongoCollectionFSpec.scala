@@ -18,17 +18,17 @@ package mongo4cats.database
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import com.mongodb.client.model.{Filters, Sorts, Updates}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
+import org.bson.Document
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.bson.types.ObjectId
+import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.bson.codecs.Macros._
+import org.mongodb.scala.bson.{Document => SDocument}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.mongodb.scala.bson.{Document, ObjectId}
-import org.mongodb.scala.model.Filters
-import org.mongodb.scala.model.Updates
-import org.mongodb.scala.model.Sorts
-import org.mongodb.scala.bson.codecs.Macros._
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 
 final case class PersonInfo(x: Int, y: Int)
 final case class Person(_id: ObjectId, name: String, info: PersonInfo)
@@ -111,7 +111,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll  <- db.getCollection("coll")
               _     <- coll.insertMany[IO](List(document(), document("test-doc-2"), document("test-doc-3")))
-              count <- coll.count[IO](Filters.equal("name", "test-doc-2"))
+              count <- coll.count[IO](Filters.eq("name", "test-doc-2"))
             } yield count
 
             result.map(_ mustBe 1)
@@ -125,7 +125,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteResult <- coll.deleteMany[IO](Filters.equal("name", "test-doc-1"))
+              deleteResult <- coll.deleteMany[IO](Filters.eq("name", "test-doc-1"))
               count        <- coll.count[IO]
             } yield (deleteResult, count)
 
@@ -143,7 +143,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteResult <- coll.deleteOne[IO](Filters.equal("name", "test-doc-1"))
+              deleteResult <- coll.deleteOne[IO](Filters.eq("name", "test-doc-1"))
               count        <- coll.count[IO]
             } yield (deleteResult, count)
 
@@ -162,7 +162,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document()))
-              updateResult <- coll.replaceOne[IO](Filters.equal("name", "test-doc-1"), document("test-doc-2"))
+              updateResult <- coll.replaceOne[IO](Filters.eq("name", "test-doc-1"), document("test-doc-2"))
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -182,7 +182,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
-              updateResult <- coll.updateOne[IO](Filters.equal("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
+              updateResult <- coll.updateOne[IO](Filters.eq("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -201,7 +201,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
-              updateResult <- coll.updateMany[IO](Filters.equal("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
+              updateResult <- coll.updateMany[IO](Filters.eq("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -221,7 +221,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll      <- db.getCollection("coll")
               _         <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteRes <- coll.deleteOne[IO](Filters.equal("name", "test-doc-1"))
+              deleteRes <- coll.deleteOne[IO](Filters.eq("name", "test-doc-1"))
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
@@ -237,7 +237,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll      <- db.getCollection("coll")
               _         <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteRes <- coll.deleteMany[IO](Filters.equal("name", "test-doc-1"))
+              deleteRes <- coll.deleteMany[IO](Filters.eq("name", "test-doc-1"))
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
@@ -255,7 +255,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document()))
-              old  <- coll.findOneAndReplace[IO](Filters.equal("name", "test-doc-1"), document("test-doc-2"))
+              old  <- coll.findOneAndReplace[IO](Filters.eq("name", "test-doc-1"), document("test-doc-2"))
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
@@ -274,7 +274,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document()))
-              old  <- coll.findOneAndUpdate[IO](Filters.equal("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
+              old  <- coll.findOneAndUpdate[IO](Filters.eq("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
@@ -293,7 +293,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document()))
-              old  <- coll.findOneAndDelete[IO](Filters.equal("name", "test-doc-1"))
+              old  <- coll.findOneAndDelete[IO](Filters.eq("name", "test-doc-1"))
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
@@ -414,8 +414,8 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
 
             val result = for {
               coll    <- db.getCollection("coll")
-              _       <- coll.insertOne[IO](Document(json))
-              old     <- coll.findOneAndUpdate[IO](Filters.equal("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
+              _       <- coll.insertOne[IO](Document.parse(json))
+              old     <- coll.findOneAndUpdate[IO](Filters.eq("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
               updated <- coll.find.first[IO]
             } yield (old, updated)
 
@@ -447,7 +447,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
     }
 
   def document(name: String = "test-doc-1"): Document =
-    Document("name" -> name, "info" -> Document("x" -> 203, "y" -> 102))
+    SDocument("name" -> name, "info" -> SDocument("x" -> 203, "y" -> 102))
 
   def person(name: String = "test-person-1"): Person =
     Person(name, PersonInfo(203, 102))

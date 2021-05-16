@@ -19,8 +19,8 @@ package mongo4cats.client
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
+import com.mongodb.{MongoTimeoutException, ServerAddress}
 import mongo4cats.EmbeddedMongo
-import org.mongodb.scala.{MongoTimeoutException, ServerAddress}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
