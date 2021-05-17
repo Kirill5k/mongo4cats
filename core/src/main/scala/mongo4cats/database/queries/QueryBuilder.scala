@@ -34,9 +34,7 @@ private[queries] trait QueryBuilder[O[_] <: Publisher[_], T] {
   protected def commands: List[QueryCommand[O, T]]
 
   protected def applyCommands(): O[T] =
-    commands.reverse.foldLeft(observable) { case (obs, comm) =>
-      comm.run(obs)
-    }
+    commands.reverse.foldLeft(observable) { case (obs, comm) => comm.run(obs) }
 }
 
 final case class FindQueryBuilder[T: ClassTag] private[database] (
@@ -63,9 +61,6 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
     applyCommands().asyncIterable[F]
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
-    applyCommands().stream[F]
-
-  def stream2[F[_]: Async]: fs2.Stream[F, T] =
     applyCommands().stream[F]
 }
 

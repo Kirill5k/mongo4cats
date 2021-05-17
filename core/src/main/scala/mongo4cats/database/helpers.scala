@@ -25,7 +25,7 @@ import scala.util.Either
 
 private[database] object helpers {
 
-  implicit final class PublisherOps[T](private val publisher: Publisher[T]) extends AnyVal {
+  extension[T](publisher: Publisher[T]) {
     def asyncSingle[F[_]: Async]: F[T] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
