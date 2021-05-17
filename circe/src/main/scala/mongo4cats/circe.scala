@@ -31,7 +31,7 @@ object circe extends JsonCodecs {
 
   final case class MongoJsonParsingException(jsonString: String, message: String) extends MongoClientException(message)
 
-  implicit final class MongoDatabaseFOps[F[_]](private val db: MongoDatabaseF[F]) extends AnyVal {
+  extension[F[_]](db: MongoDatabaseF[F]) {
     def getCollectionWithCirceCodecs[T: ClassTag: Encoder: Decoder](name: String): F[MongoCollectionF[T]] = {
       implicit val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
       val codecs: CodecRegistry     = fromRegistries(fromProviders(circeBasedCodecProvider[T]), MongoDatabaseF.DefaultCodecRegistry)
