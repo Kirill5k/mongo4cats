@@ -38,7 +38,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
         _       <- coll.insertOne[IO](Document.parse(json))
         old     <- coll.findOneAndUpdate[IO](Filters.eq("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
         updated <- coll.find.first[IO]
-        _       <- IO.println(old.toJson(), updated.toJson())
+        _       <- IO.println(s"old: ${old.toJson()}\nupdated: ${updated.toJson()}")
       } yield ()
     }
 }
