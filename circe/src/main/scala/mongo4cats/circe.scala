@@ -20,6 +20,7 @@ import com.mongodb.MongoClientException
 import io.circe.parser.{decode => circeDecode}
 import io.circe.{Decoder, Encoder}
 import mongo4cats.database.{MongoCollectionF, MongoDatabaseF}
+import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.{BsonReader, BsonWriter, Document}
