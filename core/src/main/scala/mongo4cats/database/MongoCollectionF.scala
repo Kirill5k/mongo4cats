@@ -434,7 +434,14 @@ final class MongoCollectionF[T: ClassTag] private (
 
 object MongoCollectionF {
 
-  def apply[T: ClassTag](collection: MongoCollection[T]): MongoCollectionF[T] =
+  type Filters      = com.mongodb.client.model.Filters
+  type Updates      = com.mongodb.client.model.Updates
+  type Sorts        = com.mongodb.client.model.Sorts
+  type Accumulators = com.mongodb.client.model.Accumulators
+  type Aggregates   = com.mongodb.client.model.Aggregates
+  type Projections  = com.mongodb.client.model.Projections
+
+  private[database] def apply[T: ClassTag](collection: MongoCollection[T]): MongoCollectionF[T] =
     new MongoCollectionF(collection)
 
 }
