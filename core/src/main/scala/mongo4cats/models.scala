@@ -1,4 +1,4 @@
-package mongo4cats.database
+package mongo4cats
 
 object models {
   type Filters      = com.mongodb.client.model.Filters
