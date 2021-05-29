@@ -39,7 +39,7 @@ final class MongoCollectionF[T: ClassTag] private (
   def documentClass: Class[T] =
     collection.getDocumentClass
 
-  /** Aggregates documents according to the specified aggregation pipeline. [[http://docs.mongodb.org/manual/aggregation/Aggregation]]
+  /** Aggregates documents according to the specified aggregation pipeline. [[http://docs.mongodb.org/manual/aggregation/]]
     * @param pipeline
     *   the aggregate pipeline
     */
@@ -67,7 +67,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def watch: WatchQueryBuilder[T] =
     WatchQueryBuilder(collection.watch(documentClass), Nil)
 
-  /** Gets the distinct values of the specified field name. [[http://docs.mongodb.org/manual/reference/command/distinct/Distinct]]
+  /** Gets the distinct values of the specified field name.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/distinct/Distinct]]
     * @param fieldName
     *   the field name
     */
@@ -76,7 +78,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Gets the distinct values of the specified field name.
     *
-    * [[http://docs.mongodb.org/manual/reference/command/distinct/Distinct]]
+    * [[http://docs.mongodb.org/manual/reference/command/distinct/]]
     * @param fieldName
     *   the field name
     * @param filter
@@ -87,14 +89,14 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Finds all documents in the collection.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/query-documents/Find]]
+    * [[http://docs.mongodb.org/manual/tutorial/query-documents/]]
     */
   def find: FindQueryBuilder[T] =
     FindQueryBuilder[T](collection.find(), Nil)
 
   /** Finds all documents in the collection.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/query-documents/Find]]
+    * [[http://docs.mongodb.org/manual/tutorial/query-documents/]]
     * @param filter
     *   the query filter
     */
@@ -233,14 +235,14 @@ final class MongoCollectionF[T: ClassTag] private (
   def drop[F[_]: Async](): F[Unit] =
     collection.drop().asyncVoid[F]
 
-  /** [[http://docs.mongodb.org/manual/reference/command/createIndexesCreate Index]]
+  /** [[http://docs.mongodb.org/manual/reference/command/create]]
     * @param filters
     *   an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
     */
   def createIndex[F[_]: Async](filters: Bson): F[String] =
     collection.createIndex(filters).asyncSingle[F]
 
-  /** [[http://docs.mongodb.org/manual/reference/command/createIndexesCreate Index]]
+  /** [[http://docs.mongodb.org/manual/reference/command/create]]
     * @param filter
     *   an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
     * @param options
@@ -251,8 +253,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -264,8 +265,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -280,8 +280,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -295,8 +294,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -313,8 +311,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -326,8 +323,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -342,8 +338,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -357,8 +352,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/Updates]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/Update Operators]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -375,7 +369,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Replace a document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-documentReplace]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document]]
     * @param filters
     *   the query filter to apply the the replace operation
     * @param replacement
@@ -386,7 +380,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Replace a document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-documentReplace]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document]]
     * @param filter
     *   the query filter to apply the the replace operation
     * @param replacement
