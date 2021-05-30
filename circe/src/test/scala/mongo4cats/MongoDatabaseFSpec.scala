@@ -18,6 +18,7 @@ package mongo4cats
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import com.mongodb.client.model.Filters
 import io.circe.generic.auto._
 import mongo4cats.EmbeddedMongo
 import mongo4cats.circe._
@@ -28,6 +29,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
+import java.time.temporal.ChronoUnit
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
@@ -55,6 +57,35 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
         } yield people
 
         result.map(_ mustBe List(person))
+      }
+    }
+
+    sealed trait PaymentMethod
+    final case class CreditCard(name: String, number: String, expiry: String, cvv: Int) extends PaymentMethod
+    final case class Paypal(email: String)                                              extends PaymentMethod
+
+    final case class Payment(
+        id: ObjectId,
+        amount: BigDecimal,
+        method: PaymentMethod,
+        date: Instant
+    )
+
+    "encode and decode case classes that extend sealed traits" in {
+      val ts = Instant.parse("2020-01-01T00:00:00Z")
+      val p1 = Payment(new ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
+      val p2 = Payment(new ObjectId(), BigDecimal(25), CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
+
+      withEmbeddedMongoClient { client =>
+        val result = for {
+          db       <- client.getDatabase("test")
+          _        <- db.createCollection("payments")
+          coll     <- db.getCollectionWithCirceCodecs[Payment]("payments")
+          _        <- coll.insertMany[IO](List(p1, p2))
+          payments <- coll.find.filter(Filters.gt("date", ts)).all[IO]
+        } yield payments
+
+        result.map(_ mustBe List(p1, p2))
       }
     }
   }

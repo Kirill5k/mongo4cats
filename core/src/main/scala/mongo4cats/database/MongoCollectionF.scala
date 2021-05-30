@@ -253,8 +253,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -266,8 +265,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -282,8 +280,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -297,8 +294,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update all documents in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -315,8 +311,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -328,8 +323,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filters
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -344,8 +338,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
@@ -359,8 +352,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Update a single document in the collection according to the specified arguments.
     *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]]
-    * [[http://docs.mongodb.org/manual/reference/operator/update/]]
+    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
