@@ -305,30 +305,30 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
           }
         }
 
-        "all with sort and limit" in {
+        "all with sort, skip and limit" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.sort(Sorts.descending("name")).limit(3).all[IO]
+              res  <- coll.find.sort(Sorts.descending("name")).skip(1).limit(2).all[IO]
             } yield res
 
             result.map { found =>
-              found must have size 3
-              found.map(_.getString("name")) mustBe (List("d4", "d3", "d2"))
+              found must have size 2
+              found.map(_.getString("name")) mustBe (List("d3", "d2"))
             }
           }
         }
 
-        "first with sort and limit" in {
+        "first with sort, skip and limit" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.sort(Sorts.descending("name")).limit(3).first[IO]
+              res  <- coll.find.sort(Sorts.descending("name")).skip(1).limit(2).first[IO]
             } yield res
 
-            result.map(_.getString("name") mustBe "d4")
+            result.map(_.getString("name") mustBe "d3")
           }
         }
 

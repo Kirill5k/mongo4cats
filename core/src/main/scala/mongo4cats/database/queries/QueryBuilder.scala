@@ -51,6 +51,9 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
   def projection(projection: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Projection[T](projection) :: commands)
 
+  def skip(skip: Int): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Skip[T](skip) :: commands)
+
   def limit(limit: Int): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Limit[T](limit) :: commands)
 

@@ -36,6 +36,11 @@ sealed private[queries] trait WatchCommand[T]     extends QueryCommand[ChangeStr
 sealed private[queries] trait AggregateCommand[T] extends QueryCommand[AggregatePublisher, T]
 
 private[queries] object FindCommand {
+  final case class Skip[T](n: Int) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.skip(n)
+  }
+
   final case class Limit[T](n: Int) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.limit(n)
