@@ -27,7 +27,7 @@ import org.bson.types.ObjectId
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
 
@@ -36,13 +36,21 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
   "A MongoDatabaseF" should {
 
     final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
-    final case class Person(_id: ObjectId, firstName: String, lastName: String, address: Address, registrationDate: Instant)
+    final case class Person(
+        _id: ObjectId,
+        firstName: String,
+        lastName: String,
+        dob: LocalDate,
+        address: Address,
+        registrationDate: Instant
+    )
 
     "use circe codecs for encoding and decoding data" in {
       val person = Person(
         new ObjectId(),
         "John",
         "Bloggs",
+        LocalDate.parse("1970-12-01"),
         Address(611, "5th Ave", "New York", "NY 10022"),
         Instant.now().`with`(MILLI_OF_SECOND, 0)
       )

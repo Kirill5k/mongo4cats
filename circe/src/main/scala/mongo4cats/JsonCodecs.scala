@@ -19,7 +19,7 @@ package mongo4cats
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import org.bson.types.ObjectId
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import scala.util.Try
 
 private[mongo4cats] trait JsonCodecs {
@@ -34,4 +34,8 @@ private[mongo4cats] trait JsonCodecs {
   implicit val decodeInstant: Decoder[Instant] =
     Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj("$date").flatMap(_.asString).get)))
 
+  implicit val encodeLocalDate: Encoder[LocalDate] =
+    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject("$date" -> Json.fromString(i.toString)))
+  implicit val decodeLocalDate: Decoder[LocalDate] =
+    Decoder.decodeJsonObject.emapTry(dateObj => Try(LocalDate.parse(dateObj("$date").flatMap(_.asString).map(_.slice(0, 10)).get)))
 }
