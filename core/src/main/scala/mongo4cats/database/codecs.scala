@@ -16,12 +16,23 @@
 
 package mongo4cats.database
 
-import java.time.Instant
+import java.time.{Instant, LocalDate, ZoneOffset}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.{BsonReader, BsonWriter}
 
 private[database] object codecs {
+
+  private case object LocalDateCodec extends Codec[LocalDate] {
+    def encode(writer: BsonWriter, value: LocalDate, encoderContext: EncoderContext): Unit =
+      writer.writeDateTime(value.atStartOfDay().toEpochSecond(ZoneOffset.UTC));
+
+    def decode(reader: BsonReader, decoderContext: DecoderContext): LocalDate =
+      Instant.ofEpochMilli(reader.readDateTime()).atOffset(ZoneOffset.UTC).toLocalDate
+
+    def getEncoderClass(): Class[LocalDate] =
+      classOf[LocalDate]
+  }
 
   private case object InstantCodec extends Codec[Instant] {
     def encode(writer: BsonWriter, value: Instant, encoderContext: EncoderContext): Unit =
@@ -35,12 +46,14 @@ private[database] object codecs {
   }
 
   case object CustomCodecProvider extends CodecProvider {
-    private val ClassOfInstant = classOf[Instant]
+    private val ClassOfInstant   = classOf[Instant]
+    private val ClassOfLocalDate = classOf[LocalDate]
 
     def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
       (clazz match {
-        case ClassOfInstant => InstantCodec
-        case _              => null
+        case ClassOfInstant   => InstantCodec
+        case ClassOfLocalDate => LocalDateCodec
+        case _                => null
       }).asInstanceOf[Codec[T]]
   }
 }
