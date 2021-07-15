@@ -16,7 +16,7 @@
 
 package mongo4cats
 
-import de.flapdoodle.embed.mongo.MongodStarter
+import de.flapdoodle.embed.mongo.{MongodExecutable, MongodStarter}
 import de.flapdoodle.embed.mongo.config.{MongodConfig, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.process.runtime.Network
