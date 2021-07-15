@@ -21,6 +21,14 @@ import de.flapdoodle.embed.mongo.config.{MongodConfig, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.process.runtime.Network
 
+object EmbeddedMongo {
+  private val starter = MongodStarter.getDefaultInstance
+
+  def prepare(config: MongodConfig, attempt: Int = 5): MongodExecutable =
+    if (attempt < 0) throw new RuntimeException("tried to prepare executable far too many times")
+    else Try(starter.prepare(config)).getOrElse(prepare(config, attempt - 1))
+}
+
 trait EmbeddedMongo {
 
   def withRunningEmbeddedMongo[A](host: String = "localhost", port: Int = 12345)(test: => A): A = {
@@ -30,7 +38,7 @@ trait EmbeddedMongo {
       .version(Version.Main.PRODUCTION)
       .net(new Net(host, port, Network.localhostIsIPv6))
       .build
-    val mongodExecutable = starter.prepare(mongodConfig)
+    val mongodExecutable = EmbeddedMongo.prepare(mongodConfig)
     try {
       val _ = mongodExecutable.start
       test
