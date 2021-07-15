@@ -11,8 +11,8 @@ Available for Scala 2.12, 2.13 and 3.0.
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.9"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.9" // circe support
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.11"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.11" // circe support
 ```
 
 ### Quick Start Examples
@@ -84,7 +84,7 @@ object FilteringAndSorting extends IOApp.Simple {
 
 Only mongo4cats-circe is required for basic interop with circe:
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.9"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.11"
 ```
 
 In order to obtain mongo collection with circe codecs, the following import is required:
