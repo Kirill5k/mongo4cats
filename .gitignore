@@ -12,6 +12,9 @@ project/plugins/project/
 .cache
 .lib/
 .bsp/
+.bloop/
+.metals/
+metals.sbt
 
 ### JEnv template
 # JEnv local Java version configuration file

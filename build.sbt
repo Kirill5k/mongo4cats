@@ -1,19 +1,20 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 
+ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+
 lazy val scala212               = "2.12.13"
 lazy val scala213               = "2.13.5"
 lazy val scala3                 = "3.0.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion := scala3
-ThisBuild / organization := "io.github.kirill5k"
+ThisBuild / organization := "com.bcf"
 ThisBuild / homepage := Some(url("https://github.com/kirill5k/mongo4cats"))
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
 ThisBuild / developers := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
-ThisBuild / publishTo := sonatypePublishToBundle.value
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
@@ -44,7 +45,13 @@ lazy val commonSettings = Seq(
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
   scalafmtOnCompile := true,
-  crossScalaVersions := supportedScalaVersions
+  crossScalaVersions := supportedScalaVersions,
+  publishTo := {
+    val base = "https://bluechipfinancial.jfrog.io/artifactory/sbt-release-oss"
+    if (isSnapshot.value)
+      Some("Artifactory Realm" at base + ";build.timestamp=" + new java.util.Date().getTime)
+    else Some("Artifactory Realm" at base)
+  }
 )
 
 lazy val root = project

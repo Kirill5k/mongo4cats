@@ -58,11 +58,11 @@ private[database] object helpers {
         })
       }
 
-    def stream[F[_]: Async]: Stream[F, T] =
+    def stream[F[_]: Async](queueCapacity: Int = 50): Stream[F, T] =
       for {
         dispatcher <- Stream.resource(Dispatcher[F])
-        queue      <- Stream.eval(Queue.unbounded[F, Option[Either[Throwable, T]]])
-        _ = publisher.subscribe(new Subscriber[T] {
+        queue      <- Stream.eval(Queue.bounded[F, Option[Either[Throwable, T]]](queueCapacity))
+        _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
           override def onNext(result: T): Unit =
             dispatcher.unsafeRunSync(queue.offer(Some(Right(result))))
           override def onError(e: Throwable): Unit =
@@ -70,7 +70,7 @@ private[database] object helpers {
           override def onComplete(): Unit =
             dispatcher.unsafeRunSync(queue.offer(None))
           override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-        })
+        })))
         stream <- Stream.fromQueueNoneTerminated(queue).evalMap(Async[F].fromEither)
       } yield stream
   }

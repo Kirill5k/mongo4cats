@@ -63,8 +63,8 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
   def all[F[_]: Async]: F[Iterable[T]] =
     applyCommands().asyncIterable[F]
 
-  def stream[F[_]: Async]: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+  def stream[F[_]: Async](queueCapacity: Int = 50): fs2.Stream[F, T] =
+    applyCommands().stream[F](queueCapacity)
 }
 
 final case class DistinctQueryBuilder[T: ClassTag] private[database] (
@@ -87,8 +87,8 @@ final case class DistinctQueryBuilder[T: ClassTag] private[database] (
   def all[F[_]: Async]: F[Iterable[T]] =
     applyCommands().asyncIterable[F]
 
-  def stream[F[_]: Async]: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+  def stream[F[_]: Async](queueCapacity: Int = 50): fs2.Stream[F, T] =
+    applyCommands().stream[F](queueCapacity)
 }
 
 final case class WatchQueryBuilder[T: ClassTag] private[database] (
@@ -120,8 +120,8 @@ final case class WatchQueryBuilder[T: ClassTag] private[database] (
   def first[F[_]: Async]: F[ChangeStreamDocument[T]] =
     applyCommands().first().asyncSingle[F]
 
-  def stream[F[_]: Async]: fs2.Stream[F, ChangeStreamDocument[T]] =
-    applyCommands().stream[F]
+  def stream[F[_]: Async](queueCapacity: Int = 50): fs2.Stream[F, ChangeStreamDocument[T]] =
+    applyCommands().stream[F](queueCapacity)
 }
 
 final case class AggregateQueryBuilder[T: ClassTag] private[database] (
@@ -159,6 +159,6 @@ final case class AggregateQueryBuilder[T: ClassTag] private[database] (
   def all[F[_]: Async]: F[Iterable[T]] =
     applyCommands().asyncIterable[F]
 
-  def stream[F[_]: Async]: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+  def stream[F[_]: Async](queueCapacity: Int = 50): fs2.Stream[F, T] =
+    applyCommands().stream[F](queueCapacity)
 }
