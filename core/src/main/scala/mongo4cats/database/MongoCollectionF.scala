@@ -43,7 +43,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   def withAddedCodecs(codecRegistry: CodecRegistry): MongoCollectionF[T] = {
     val currentCodecs = collection.getCodecRegistry
-    val newCodecs = fromRegistries(currentCodecs, codecRegistry)
+    val newCodecs     = fromRegistries(currentCodecs, codecRegistry)
     MongoCollectionF[T](collection.withCodecRegistry(newCodecs))
   }
 
@@ -77,9 +77,8 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param fieldName
     *   the field name
     */
-  def distinct[Y](fieldName: String)(implicit classTag: ClassTag[Y]): DistinctQueryBuilder[Y] = {
+  def distinct[Y](fieldName: String)(implicit classTag: ClassTag[Y]): DistinctQueryBuilder[Y] =
     DistinctQueryBuilder[Y](collection.distinct(fieldName, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
-  }
 
   /** Gets the distinct values of the specified field name.
     *

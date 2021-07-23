@@ -25,13 +25,16 @@ import mongo4cats.circe._
 import mongo4cats.client.MongoClientF
 import org.bson.types.ObjectId
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
 import java.time.{Instant, LocalDate}
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
+import scala.concurrent.Future
 
-class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
+class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+
+  override val mongoPort: Int = 12348
 
   "A MongoDatabaseF" should {
 
@@ -63,12 +66,12 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
     "find distinct nested objects" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db     <- client.getDatabase("test")
-          _      <- db.createCollection("people")
-          coll   <- db.getCollectionWithCirceCodecs[Person]("people")
-          _      <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
-          people <- coll.withAddedCirceCodecs[Address].distinct[Address]("address").all[IO]
-        } yield people
+          db        <- client.getDatabase("test")
+          _         <- db.createCollection("people")
+          coll      <- db.getCollectionWithCirceCodecs[Person]("people")
+          _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          addresses <- coll.withAddedCirceCodecs[Address].distinct[Address]("address").all[IO]
+        } yield addresses
 
         result.map { res =>
           res mustBe List(Address(611, "5th Ave", "New York", "NY 10022"))
@@ -116,11 +119,10 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
       )
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
-    withRunningEmbeddedMongo(port = 12347) {
+  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): Future[A] =
+    withRunningEmbeddedMongo {
       MongoClientF
-        .fromConnectionString[IO]("mongodb://localhost:12347")
+        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use(test)
-        .unsafeRunSync()
-    }
+    }.unsafeToFuture()
 }

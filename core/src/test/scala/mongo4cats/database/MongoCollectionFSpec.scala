@@ -23,11 +23,14 @@ import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.bson.Document
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
-class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
+class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+
+  override val mongoPort = 12347
 
   "A MongoCollectionF" when {
 
@@ -392,10 +395,10 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
     }
   }
 
-  def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => IO[A]): A =
-    withRunningEmbeddedMongo() {
+  def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => IO[A]): Future[A] =
+    withRunningEmbeddedMongo {
       MongoClientF
-        .fromConnectionString[IO]("mongodb://localhost:12345")
+        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use { client =>
           for {
             db    <- client.getDatabase("db")
@@ -406,8 +409,7 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
             _ <- IO.println(s">>>> test duration ${duration.toMillis}ms")
           } yield res
         }
-        .unsafeRunSync()
-    }
+    }.unsafeToFuture()
 
   def document(name: String = "test-doc-1"): Document =
     new Document(Map[String, AnyRef]("name" -> name, "info" -> Document.parse(s"""{"x": 42, "y": 23}"""")).asJava)

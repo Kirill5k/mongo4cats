@@ -16,33 +16,60 @@
 
 package mongo4cats
 
-import de.flapdoodle.embed.mongo.{MongodExecutable, MongodStarter}
+import cats.effect.{Async, IO, Resource}
+import cats.implicits._
+import de.flapdoodle.embed.mongo.{MongodExecutable, MongodProcess, MongodStarter}
 import de.flapdoodle.embed.mongo.config.{MongodConfig, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.process.runtime.Network
+import org.slf4j.LoggerFactory
 
-import scala.util.Try
+import scala.concurrent.duration._
 
 object EmbeddedMongo {
   private val starter = MongodStarter.getDefaultInstance
+  private val logger  = LoggerFactory.getLogger("EmbeddedMongo")
 
-  def prepare(config: MongodConfig, attempt: Int = 5): MongodExecutable =
-    if (attempt < 0) throw new RuntimeException("tried to prepare executable far too many times")
-    else Try(starter.prepare(config)).getOrElse(prepare(config, attempt - 1))
+  def prepare[F[_]: Async](config: MongodConfig, maxAttempts: Int = 5, attempt: Int = 0): F[MongodExecutable] =
+    if (attempt >= maxAttempts)
+      Async[F].raiseError(new RuntimeException("tried to prepare executable far too many times"))
+    else
+      Async[F].delay(starter.prepare(config)).handleErrorWith { e =>
+        Async[F].delay(logger.error(e.getMessage, e)) *>
+          Async[F].sleep(attempt.seconds) *>
+          prepare[F](config, maxAttempts, attempt + 1)
+      }
+
+  implicit final class MongodExecutableOps(private val ex: MongodExecutable) extends AnyVal {
+    def startWithRetry[F[_]: Async](maxAttempts: Int = 5, attempt: Int = 0): F[MongodProcess] =
+      if (attempt >= maxAttempts)
+        Async[F].raiseError(new RuntimeException("tried to start executable far too many times"))
+      else
+        Async[F].delay(ex.start()).handleErrorWith { e =>
+          Async[F].delay(logger.error(e.getMessage, e)) *>
+            Async[F].sleep(attempt.seconds) *>
+            startWithRetry(maxAttempts, attempt + 1)
+        }
+  }
 }
 
 trait EmbeddedMongo {
+  import EmbeddedMongo._
 
-  def withRunningEmbeddedMongo[A](host: String = "localhost", port: Int = 12345)(test: => A): A = {
+  protected val mongoHost = "localhost"
+  protected val mongoPort = 12345
+
+  def withRunningEmbeddedMongo[A](test: => IO[A]): IO[A] = {
     val mongodConfig = MongodConfig
       .builder()
       .version(Version.Main.PRODUCTION)
-      .net(new Net(host, port, Network.localhostIsIPv6))
+      .net(new Net(mongoHost, mongoPort, Network.localhostIsIPv6))
       .build
-    val mongodExecutable = EmbeddedMongo.prepare(mongodConfig)
-    try {
-      val _ = mongodExecutable.start
-      test
-    } finally mongodExecutable.stop()
+
+    Resource
+      .make(EmbeddedMongo.prepare[IO](mongodConfig))(ex => IO(ex.stop()))
+      .flatMap(ex => Resource.make(ex.startWithRetry[IO]())(pr => IO(pr.stop())))
+      .use(_ => test)
+      .timeout(5.minutes)
   }
 }

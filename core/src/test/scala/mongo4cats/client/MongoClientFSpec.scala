@@ -22,14 +22,14 @@ import cats.effect.unsafe.implicits.global
 import com.mongodb.{MongoTimeoutException, ServerAddress}
 import mongo4cats.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
-class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
+class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   "A MongoDbClient" should {
     "connect to a db via connection string" in {
-      withRunningEmbeddedMongo() {
-        val result = MongoClientF
+      withRunningEmbeddedMongo {
+        MongoClientF
           .fromConnectionString[IO]("mongodb://localhost:12345")
           .use { client =>
             for {
@@ -38,16 +38,14 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
             } yield names
           }
           .attempt
-          .unsafeRunSync()
-
-        result mustBe (Right(Nil))
-      }
+          .map(_ mustBe Right(Nil))
+      }.unsafeToFuture()
     }
 
     "connect to a db via server address string" in {
-      withRunningEmbeddedMongo() {
+      withRunningEmbeddedMongo {
         val server = new ServerAddress("localhost", 12345)
-        val result = MongoClientF
+        MongoClientF
           .fromServerAddress[IO](server)
           .use { client =>
             for {
@@ -56,16 +54,14 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
             } yield names
           }
           .attempt
-          .unsafeRunSync()
-
-        result mustBe (Right(Nil))
-      }
+          .map(_ mustBe Right(Nil))
+      }.unsafeToFuture()
     }
 
     "return error when port is invalid" in {
-      withRunningEmbeddedMongo() {
+      withRunningEmbeddedMongo {
         val server = new ServerAddress("localhost", 123)
-        val result = MongoClientF
+        MongoClientF
           .fromServerAddress[IO](server)
           .use { client =>
             for {
@@ -74,11 +70,11 @@ class MongoClientFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
             } yield names
           }
           .attempt
-          .unsafeRunSync()
-
-        result.isLeft mustBe true
-        result.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe (Left(-3))
-      }
+          .map { res =>
+            res.isLeft mustBe true
+            res.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe (Left(-3))
+          }
+      }.unsafeToFuture()
     }
   }
 }

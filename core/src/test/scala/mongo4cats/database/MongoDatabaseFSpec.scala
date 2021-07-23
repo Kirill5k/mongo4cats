@@ -22,9 +22,13 @@ import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
 import org.bson.Document
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
-class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
+import scala.concurrent.Future
+
+class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+
+  override val mongoPort: Int = 12346
 
   "A MongoDatabaseF" should {
 
@@ -66,11 +70,10 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
     }
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
-    withRunningEmbeddedMongo(port = 12346) {
+  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): Future[A] =
+    withRunningEmbeddedMongo {
       MongoClientF
-        .fromConnectionString[IO]("mongodb://localhost:12346")
+        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use(test)
-        .unsafeRunSync()
-    }
+    }.unsafeToFuture()
 }
