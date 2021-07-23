@@ -73,15 +73,15 @@ final class MongoCollectionF[T: ClassTag] private (
     * @since 2.2
     *   @note Requires MongoDB 3.6 or greater
     */
-  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[T] =
-    WatchQueryBuilder(collection.watch(pipeline.asJava, documentClass), Nil)
+  def watch[Y](pipeline: Seq[Bson])(implicit classTag: ClassTag[Y]): WatchQueryBuilder[Y] =
+    WatchQueryBuilder[Y](collection.watch(pipeline.asJava, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
 
   /** Creates a change stream for this collection.
     * @since 2.2
     *   @note Requires MongoDB 3.6 or greater
     */
-  def watch: WatchQueryBuilder[T] =
-    WatchQueryBuilder(collection.watch(documentClass), Nil)
+  def watch[Y](implicit classTag: ClassTag[Y]): WatchQueryBuilder[Y] =
+    WatchQueryBuilder[Y](collection.watch(classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
 
   /** Gets the distinct values of the specified field name.
     *

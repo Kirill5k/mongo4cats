@@ -96,10 +96,10 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
     "find distinct nested objects via distinctWithCode" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db <- client.getDatabase("test")
-          _ <- db.createCollection("people")
-          coll <- db.getCollectionWithCodec[Person]("people")
-          _ <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          db        <- client.getDatabase("test")
+          _         <- db.createCollection("people")
+          coll      <- db.getCollectionWithCodec[Person]("people")
+          _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
           addresses <- coll.distinctWithCodec[Address]("address").all[IO]
         } yield addresses
 
