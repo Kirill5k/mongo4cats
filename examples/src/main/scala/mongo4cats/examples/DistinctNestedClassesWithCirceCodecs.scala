@@ -32,12 +32,12 @@ object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple {
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("testdb")
-        coll <- db.getCollectionWithCirceCodecs[Person]("people")
+        coll <- db.getCollectionWithCodec[Person]("people")
         person1 = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
         person2 = Person("John", "Doe", Address("New-York", "USA"), Instant.now())
         person3 = Person("John", "Smith", Address("New-York", "USA"), Instant.now())
         _                 <- coll.insertMany[IO](List(person1, person2, person3))
-        distinctAddresses <- coll.withAddedCirceCodecs[Address].distinct[Address]("address").all[IO]
+        distinctAddresses <- coll.distinctWithCodec[Address]("address").all[IO]
         _                 <- IO.println(distinctAddresses)
       } yield ()
     }

@@ -20,7 +20,6 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.mongodb.client.model.Filters
 import io.circe.generic.auto._
-import mongo4cats.EmbeddedMongo
 import mongo4cats.circe._
 import mongo4cats.client.MongoClientF
 import org.bson.types.ObjectId
@@ -63,6 +62,21 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
       }
     }
 
+    "use circe-codec-provider for encoding and decoding data" in {
+      withEmbeddedMongoClient { client =>
+        val p = person()
+        val result = for {
+          db     <- client.getDatabase("test")
+          _      <- db.createCollection("people")
+          coll   <- db.getCollectionWithCodec[Person]("people")
+          _      <- coll.insertOne[IO](p)
+          people <- coll.find.all[IO]
+        } yield people
+
+        result.map(_ mustBe List(p))
+      }
+    }
+
     "find distinct nested objects" in {
       withEmbeddedMongoClient { client =>
         val result = for {
@@ -70,7 +84,23 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
           _         <- db.createCollection("people")
           coll      <- db.getCollectionWithCirceCodecs[Person]("people")
           _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
-          addresses <- coll.withAddedCirceCodecs[Address].distinct[Address]("address").all[IO]
+          addresses <- coll.withAddedCodec[Address].distinct[Address]("address").all[IO]
+        } yield addresses
+
+        result.map { res =>
+          res mustBe List(Address(611, "5th Ave", "New York", "NY 10022"))
+        }
+      }
+    }
+
+    "find distinct nested objects via distinctWithCode" in {
+      withEmbeddedMongoClient { client =>
+        val result = for {
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollectionWithCirceCodecs[Person]("people")
+          _ <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          addresses <- coll.distinctWithCodec[Address]("address").all[IO]
         } yield addresses
 
         result.map { res =>

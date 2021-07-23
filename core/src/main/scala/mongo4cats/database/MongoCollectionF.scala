@@ -25,11 +25,12 @@ import mongo4cats.database.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection
-import org.bson.codecs.configuration.CodecRegistries.fromRegistries
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 final class MongoCollectionF[T: ClassTag] private (
     private val collection: MongoCollection[T]
@@ -44,10 +45,18 @@ final class MongoCollectionF[T: ClassTag] private (
   def documentClass: Class[T] =
     collection.getDocumentClass
 
-  def withAddedCodecs(codecRegistry: CodecRegistry): MongoCollectionF[T] = {
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollectionF[T] = {
     val currentCodecs = collection.getCodecRegistry
     val newCodecs     = fromRegistries(currentCodecs, codecRegistry)
     MongoCollectionF[T](collection.withCodecRegistry(newCodecs))
+  }
+
+  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollectionF[T] = {
+    val classY: Class[Y] = implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
+    Try(codecs.get(classY)) match {
+      case Failure(_) => withAddedCodec(fromProviders(cp.get))
+      case Success(_) => this
+    }
   }
 
   /** Aggregates documents according to the specified aggregation pipeline. [[http://docs.mongodb.org/manual/aggregation/]]
@@ -83,6 +92,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def distinct[Y](fieldName: String)(implicit classTag: ClassTag[Y]): DistinctQueryBuilder[Y] =
     DistinctQueryBuilder[Y](collection.distinct(fieldName, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
 
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String): DistinctQueryBuilder[Y] =
+    withAddedCodec[Y].distinct[Y](fieldName)
+
   /** Gets the distinct values of the specified field name.
     *
     * [[http://docs.mongodb.org/manual/reference/command/distinct/]]
@@ -93,6 +105,9 @@ final class MongoCollectionF[T: ClassTag] private (
     */
   def distinct[Y](fieldName: String, filter: Bson)(implicit classTag: ClassTag[Y]): DistinctQueryBuilder[Y] =
     DistinctQueryBuilder[Y](collection.distinct(fieldName, filter, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
+
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[Y] =
+    withAddedCodec[Y].distinct[Y](fieldName, filter)
 
   /** Finds all documents in the collection.
     *

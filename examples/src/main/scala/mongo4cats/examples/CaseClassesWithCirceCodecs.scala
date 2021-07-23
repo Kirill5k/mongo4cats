@@ -32,7 +32,7 @@ object CaseClassesWithCirceCodecs extends IOApp.Simple {
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("testdb")
-        coll <- db.getCollectionWithCirceCodecs[Person]("people")
+        coll <- db.getCollectionWithCodec[Person]("people")
         person = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
         _    <- coll.insertOne[IO](person)
         docs <- coll.find.stream[IO].compile.toList

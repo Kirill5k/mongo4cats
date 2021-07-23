@@ -111,7 +111,7 @@ object Example extends IOApp.Simple {
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("testdb")
-        coll <- db.getCollectionWithCirceCodecs[Person]("people")
+        coll <- db.getCollectionWithCodec[Person]("people")
         _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA"), Instant.now()))
         docs <- coll.find.stream[IO].compile.toList
         _    <- IO.println(docs)

@@ -34,6 +34,8 @@ trait MongoDatabaseF[F[_]] {
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
   def getCollectionWithCodecRegistry[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
     getCollection[T](name, codecRegistry)
+  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
+    getCollection[T](name, fromProviders(cp.get, MongoDatabaseF.DefaultCodecRegistry))
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String): F[Unit]
 }
