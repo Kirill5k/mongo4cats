@@ -65,6 +65,9 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
     applyCommands().stream[F]
+
+  def boundedStream[F[_]: Async](capacity: Int): fs2.Stream[F, T] =
+    applyCommands().boundedStream[F](capacity)
 }
 
 final case class DistinctQueryBuilder[T: ClassTag] private[database] (
@@ -89,6 +92,9 @@ final case class DistinctQueryBuilder[T: ClassTag] private[database] (
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
     applyCommands().stream[F]
+
+  def boundedStream[F[_]: Async](capacity: Int): fs2.Stream[F, T] =
+    applyCommands().boundedStream[F](capacity)
 }
 
 final case class WatchQueryBuilder[T: ClassTag] private[database] (
@@ -122,6 +128,9 @@ final case class WatchQueryBuilder[T: ClassTag] private[database] (
 
   def stream[F[_]: Async]: fs2.Stream[F, ChangeStreamDocument[T]] =
     applyCommands().stream[F]
+
+  def boundedStream[F[_]: Async](capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] =
+    applyCommands().boundedStream[F](capacity)
 }
 
 final case class AggregateQueryBuilder[T: ClassTag] private[database] (
@@ -161,4 +170,7 @@ final case class AggregateQueryBuilder[T: ClassTag] private[database] (
 
   def stream[F[_]: Async]: fs2.Stream[F, T] =
     applyCommands().stream[F]
+
+  def boundedStream[F[_]: Async](capacity: Int): fs2.Stream[F, T] =
+    applyCommands().boundedStream[F](capacity)
 }

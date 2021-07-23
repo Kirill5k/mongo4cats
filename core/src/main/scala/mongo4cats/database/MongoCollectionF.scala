@@ -35,6 +35,9 @@ final class MongoCollectionF[T: ClassTag] private (
     private val collection: MongoCollection[T]
 ) {
 
+  def codecs: CodecRegistry =
+    collection.getCodecRegistry
+
   def namespace: MongoNamespace =
     collection.getNamespace
 

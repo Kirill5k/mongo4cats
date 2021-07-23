@@ -59,9 +59,15 @@ private[database] object helpers {
       }
 
     def stream[F[_]: Async]: Stream[F, T] =
+      mkStream(Queue.unbounded)
+
+    def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
+      mkStream(Queue.bounded(capacity))
+
+    private def mkStream[F[_]: Async](mkQueue: F[Queue[F, Option[Either[Throwable, T]]]]): Stream[F, T] =
       for {
         dispatcher <- Stream.resource(Dispatcher[F])
-        queue      <- Stream.eval(Queue.unbounded[F, Option[Either[Throwable, T]]])
+        queue      <- Stream.eval(mkQueue)
         _ = publisher.subscribe(new Subscriber[T] {
           override def onNext(result: T): Unit =
             dispatcher.unsafeRunSync(queue.offer(Some(Right(result))))

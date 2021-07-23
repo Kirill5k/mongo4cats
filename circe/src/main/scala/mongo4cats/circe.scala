@@ -33,9 +33,8 @@ object circe extends JsonCodecs {
 
   implicit final class MongoCollectionFOps[T](private val coll: MongoCollectionF[T]) extends AnyVal {
     def withAddedCirceCodecs[Y: ClassTag: Encoder: Decoder]: MongoCollectionF[T] = {
-      implicit val classT: Class[Y] = implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
-      val codecs: CodecRegistry     = fromRegistries(fromProviders(circeBasedCodecProvider[Y]), MongoDatabaseF.DefaultCodecRegistry)
-      coll.withAddedCodecs(codecs)
+      implicit val classY: Class[Y] = implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
+      coll.withAddedCodecs(fromProviders(circeBasedCodecProvider[Y]))
     }
   }
 

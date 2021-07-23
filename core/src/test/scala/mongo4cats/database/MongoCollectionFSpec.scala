@@ -347,6 +347,19 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             result.map(_ must have size 23333)
           }
         }
+
+        "bounded stream" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll <- db.getCollection("coll")
+              docs = (0 until 1000000).map(i => document(s"d$i")).toList
+              _   <- coll.insertMany[IO](docs)
+              res <- coll.find.boundedStream[IO](100).compile.count
+            } yield res
+
+            result.map(_ mustBe 1000000)
+          }
+        }
       }
 
       "distinct" should {
