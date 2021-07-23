@@ -50,19 +50,15 @@ final class MongoCollectionF[T: ClassTag] private (
     *
     * @param pipeline
     *   the aggregation pipeline to apply to the change stream
-    * @since
-    *   2.2
-    * @note
-    *   Requires MongoDB 3.6 or greater
+    * @since 2.2
+    *   @note Requires MongoDB 3.6 or greater
     */
   def watch(pipeline: Seq[Bson]): WatchQueryBuilder[T] =
     WatchQueryBuilder(collection.watch(pipeline.asJava, documentClass), Nil)
 
   /** Creates a change stream for this collection.
-    * @since
-    *   2.2
-    * @note
-    *   Requires MongoDB 3.6 or greater
+    * @since 2.2
+    *   @note Requires MongoDB 3.6 or greater
     */
   def watch: WatchQueryBuilder[T] =
     WatchQueryBuilder(collection.watch(documentClass), Nil)
@@ -204,8 +200,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *   the keys of the index to remove
     * @param options
     *   options to use when dropping indexes
-    * @since
-    *   2.2
+    * @since 2.2
     */
   def dropIndex[F[_]: Async](keys: Bson, options: DropIndexOptions): F[Unit] =
     collection.dropIndex(keys, options).asyncVoid[F]
@@ -215,8 +210,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/]]
     * @param options
     *   options to use when dropping indexes
-    * @since
-    *   2.2
+    * @since 2.2
     */
   def dropIndexes[F[_]: Async](options: DropIndexOptions): F[Unit] =
     collection.dropIndexes(options).asyncVoid[F]
@@ -270,10 +264,8 @@ final class MongoCollectionF[T: ClassTag] private (
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
     *   a pipeline describing the update.
-    * @since
-    *   2.7
-    * @note
-    *   Requires MongoDB 4.2 or greater
+    * @since 2.7
+    *   @note Requires MongoDB 4.2 or greater
     */
   def updateMany[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
     collection.updateMany(filters, update.asJava).asyncSingle[F]
@@ -301,10 +293,8 @@ final class MongoCollectionF[T: ClassTag] private (
     *   a pipeline describing the update.
     * @param options
     *   the options to apply to the update operation
-    * @since
-    *   2.7
-    * @note
-    *   Requires MongoDB 4.2 or greater
+    * @since 2.7
+    *   @note Requires MongoDB 4.2 or greater
     */
   def updateMany[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
     collection.updateMany(filter, update.asJava, options).asyncSingle[F]
@@ -328,10 +318,8 @@ final class MongoCollectionF[T: ClassTag] private (
     *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
     * @param update
     *   a pipeline describing the update
-    * @since
-    *   2.7
-    * @note
-    *   Requires MongoDB 4.2 or greater
+    * @since 2.7
+    *   @note Requires MongoDB 4.2 or greater
     */
   def updateOne[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
     collection.updateOne(filters, update.asJava).asyncSingle[F]
@@ -359,10 +347,8 @@ final class MongoCollectionF[T: ClassTag] private (
     *   a pipeline describing the update.
     * @param options
     *   the options to apply to the update operation
-    * @since
-    *   2.7
-    * @note
-    *   Requires MongoDB 4.2 or greater
+    * @since 2.7
+    *   @note Requires MongoDB 4.2 or greater
     */
   def updateOne[F[_]: Async](filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
     collection.updateOne(filter, update.asJava, options).asyncSingle[F]
@@ -406,7 +392,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options
     *   the options to apply to the delete operation
     * @since
-    *   1.2
+    * 1.2
     */
   def deleteOne[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
     collection.deleteOne(filter, options).asyncSingle[F]
@@ -426,7 +412,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options
     *   the options to apply to the delete operation
     * @since
-    *   1.2
+    * 1.2
     */
   def deleteMany[F[_]: Async](filter: Bson, options: DeleteOptions): F[DeleteResult] =
     collection.deleteMany(filter, options).asyncSingle[F]
@@ -446,7 +432,7 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param options
     *   the options to apply to the operation
     * @since
-    *   1.1
+    * 1.1
     */
   def insertOne[F[_]: Async](document: T, options: InsertOneOptions): F[InsertOneResult] =
     collection.insertOne(document, options).asyncSingle[F]
@@ -473,8 +459,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
   /** Counts the number of documents in the collection.
     *
-    * @since
-    *   2.4
+    * @since 2.4
     */
   def count[F[_]: Async]: F[Long] =
     collection.countDocuments().asyncSingle[F].map(_.longValue())
@@ -483,8 +468,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *
     * @param filter
     *   the query filter
-    * @since
-    *   2.4
+    * @since 2.4
     */
   def count[F[_]: Async](filter: Bson): F[Long] =
     collection.countDocuments(filter).asyncSingle[F].map(_.longValue())
@@ -495,8 +479,7 @@ final class MongoCollectionF[T: ClassTag] private (
     *   the query filter
     * @param options
     *   the options describing the count
-    * @since
-    *   2.4
+    * @since 2.4
     */
   def count[F[_]: Async](filter: Bson, options: CountOptions): F[Long] =
     collection.countDocuments(filter, options).asyncSingle[F].map(_.longValue())

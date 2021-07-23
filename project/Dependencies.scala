@@ -4,10 +4,10 @@ object Dependencies {
   private object Versions {
     val mongodb     = "4.3.0"
     val fs2         = "3.0.6"
-    val scalaCompat = "2.4.4"
+    val scalaCompat = "2.5.0"
     val circe       = "0.14.1"
 
-    val logback        = "1.2.3"
+    val logback        = "1.2.4"
     val scalaTest      = "3.2.9"
     val embeddedMongo  = "3.0.0"
     val immutableValue = "2.8.8"

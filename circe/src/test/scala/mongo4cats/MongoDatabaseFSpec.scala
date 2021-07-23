@@ -33,38 +33,45 @@ import java.time.temporal.ChronoUnit
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
+  final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
+  final case class Person(
+      _id: ObjectId,
+      firstName: String,
+      lastName: String,
+      dob: LocalDate,
+      address: Address,
+      registrationDate: Instant
+  )
+
   "A MongoDatabaseF" should {
 
-    final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
-    final case class Person(
-        _id: ObjectId,
-        firstName: String,
-        lastName: String,
-        dob: LocalDate,
-        address: Address,
-        registrationDate: Instant
-    )
-
     "use circe codecs for encoding and decoding data" in {
-      val person = Person(
-        new ObjectId(),
-        "John",
-        "Bloggs",
-        LocalDate.parse("1970-12-01"),
-        Address(611, "5th Ave", "New York", "NY 10022"),
-        Instant.now().`with`(MILLI_OF_SECOND, 0)
-      )
-
       withEmbeddedMongoClient { client =>
+        val p = person()
         val result = for {
           db     <- client.getDatabase("test")
           _      <- db.createCollection("people")
           coll   <- db.getCollectionWithCirceCodecs[Person]("people")
-          _      <- coll.insertOne[IO](person)
+          _      <- coll.insertOne[IO](p)
           people <- coll.find.all[IO]
         } yield people
 
-        result.map(_ mustBe List(person))
+        result.map(_ mustBe List(p))
+      }
+    }
+
+    "use circe codecs for encoding and decoding data" in {
+      withEmbeddedMongoClient { client =>
+        val p = person()
+        val result = for {
+          db     <- client.getDatabase("test")
+          _      <- db.createCollection("people")
+          coll   <- db.getCollectionWithCirceCodecs[Person]("people")
+          _      <- coll.insertOne[IO](p)
+          people <- coll.find.all[IO]
+        } yield people
+
+        result.map(_ mustBe List(p))
       }
     }
 
@@ -97,6 +104,16 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
       }
     }
   }
+
+  def person(firstName: String = "John", lastName: String = "Bloggs"): Person =
+    Person(
+      new ObjectId(),
+      firstName,
+      lastName,
+      LocalDate.parse("1970-12-01"),
+      Address(611, "5th Ave", "New York", "NY 10022"),
+      Instant.now().`with`(MILLI_OF_SECOND, 0)
+    )
 
   def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
     withRunningEmbeddedMongo(port = 12347) {
