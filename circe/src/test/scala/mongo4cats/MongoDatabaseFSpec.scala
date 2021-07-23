@@ -82,7 +82,7 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
         val result = for {
           db        <- client.getDatabase("test")
           _         <- db.createCollection("people")
-          coll      <- db.getCollectionWithCirceCodecs[Person]("people")
+          coll      <- db.getCollectionWithCodec[Person]("people")
           _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
           addresses <- coll.withAddedCodec[Address].distinct[Address]("address").all[IO]
         } yield addresses
@@ -98,7 +98,7 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
         val result = for {
           db <- client.getDatabase("test")
           _ <- db.createCollection("people")
-          coll <- db.getCollectionWithCirceCodecs[Person]("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
           _ <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
           addresses <- coll.distinctWithCodec[Address]("address").all[IO]
         } yield addresses
