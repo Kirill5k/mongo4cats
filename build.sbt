@@ -2,11 +2,11 @@ import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 
 lazy val scala212               = "2.12.13"
-lazy val scala213               = "2.13.5"
+lazy val scala213               = "2.13.6"
 lazy val scala3                 = "3.0.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
-ThisBuild / scalaVersion := scala3
+ThisBuild / scalaVersion := scala213
 ThisBuild / organization := "io.github.kirill5k"
 ThisBuild / homepage := Some(url("https://github.com/kirill5k/mongo4cats"))
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))

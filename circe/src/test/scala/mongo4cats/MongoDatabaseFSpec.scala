@@ -33,17 +33,17 @@ import java.time.temporal.ChronoUnit
 
 class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
 
-  final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
-  final case class Person(
-      _id: ObjectId,
-      firstName: String,
-      lastName: String,
-      dob: LocalDate,
-      address: Address,
-      registrationDate: Instant
-  )
-
   "A MongoDatabaseF" should {
+
+    final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
+    final case class Person(
+        _id: ObjectId,
+        firstName: String,
+        lastName: String,
+        dob: LocalDate,
+        address: Address,
+        registrationDate: Instant
+    )
 
     "use circe codecs for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
@@ -60,18 +60,19 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
       }
     }
 
-    "use circe codecs for encoding and decoding data" in {
+    "find distinct nested objects" in {
       withEmbeddedMongoClient { client =>
-        val p = person()
         val result = for {
           db     <- client.getDatabase("test")
           _      <- db.createCollection("people")
           coll   <- db.getCollectionWithCirceCodecs[Person]("people")
-          _      <- coll.insertOne[IO](p)
-          people <- coll.find.all[IO]
+          _      <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          people <- coll.withAddedCirceCodecs[Address].distinct[Address]("address").all[IO]
         } yield people
 
-        result.map(_ mustBe List(p))
+        result.map { res =>
+          res mustBe List(Address(611, "5th Ave", "New York", "NY 10022"))
+        }
       }
     }
 
@@ -103,17 +104,17 @@ class MongoDatabaseFSpec extends AnyWordSpec with Matchers with EmbeddedMongo {
         result.map(_ mustBe List(p1, p2))
       }
     }
-  }
 
-  def person(firstName: String = "John", lastName: String = "Bloggs"): Person =
-    Person(
-      new ObjectId(),
-      firstName,
-      lastName,
-      LocalDate.parse("1970-12-01"),
-      Address(611, "5th Ave", "New York", "NY 10022"),
-      Instant.now().`with`(MILLI_OF_SECOND, 0)
-    )
+    def person(firstName: String = "John", lastName: String = "Bloggs"): Person =
+      Person(
+        new ObjectId(),
+        firstName,
+        lastName,
+        LocalDate.parse("1970-12-01"),
+        Address(611, "5th Ave", "New York", "NY 10022"),
+        Instant.now().`with`(MILLI_OF_SECOND, 0)
+      )
+  }
 
   def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): A =
     withRunningEmbeddedMongo(port = 12347) {

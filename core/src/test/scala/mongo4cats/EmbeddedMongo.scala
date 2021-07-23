@@ -34,7 +34,6 @@ object EmbeddedMongo {
 trait EmbeddedMongo {
 
   def withRunningEmbeddedMongo[A](host: String = "localhost", port: Int = 12345)(test: => A): A = {
-    val starter = MongodStarter.getDefaultInstance
     val mongodConfig = MongodConfig
       .builder()
       .version(Version.Main.PRODUCTION)

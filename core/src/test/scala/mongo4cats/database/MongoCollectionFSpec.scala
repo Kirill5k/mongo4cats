@@ -347,15 +347,17 @@ class MongoCollectionFSpec extends AnyWordSpec with Matchers with EmbeddedMongo 
       }
 
       "distinct" should {
-        "find distinct docs by field" in {
+        "distinct fields of a doc" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.distinct("info").all[IO]
+              res  <- coll.distinct[Document]("info").all[IO]
             } yield res
 
-            result.map(_ must have size 1)
+            result.map { res =>
+              res mustBe List(Document.parse(s"""{"x": 42, "y": 23}""""))
+            }
           }
         }
       }

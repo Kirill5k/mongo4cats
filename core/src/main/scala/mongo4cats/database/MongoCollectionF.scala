@@ -25,6 +25,8 @@ import mongo4cats.database.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection
+import org.bson.codecs.configuration.CodecRegistries.fromRegistries
+import org.bson.codecs.configuration.CodecRegistry
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
@@ -38,6 +40,12 @@ final class MongoCollectionF[T: ClassTag] private (
 
   def documentClass: Class[T] =
     collection.getDocumentClass
+
+  def withAddedCodecs(codecRegistry: CodecRegistry): MongoCollectionF[T] = {
+    val currentCodecs = collection.getCodecRegistry
+    val newCodecs = fromRegistries(currentCodecs, codecRegistry)
+    MongoCollectionF[T](collection.withCodecRegistry(newCodecs))
+  }
 
   /** Aggregates documents according to the specified aggregation pipeline. [[http://docs.mongodb.org/manual/aggregation/]]
     * @param pipeline
@@ -69,8 +77,9 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param fieldName
     *   the field name
     */
-  def distinct(fieldName: String): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder[T](collection.distinct(fieldName, documentClass), Nil)
+  def distinct[Y](fieldName: String)(implicit classTag: ClassTag[Y]): DistinctQueryBuilder[Y] = {
+    DistinctQueryBuilder[Y](collection.distinct(fieldName, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
+  }
 
   /** Gets the distinct values of the specified field name.
     *
@@ -80,8 +89,8 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param filter
     *   the query filter
     */
-  def distinct(fieldName: String, filter: Bson): DistinctQueryBuilder[T] =
-    DistinctQueryBuilder[T](collection.distinct(fieldName, filter, documentClass), Nil)
+  def distinct[Y](fieldName: String, filter: Bson)(implicit classTag: ClassTag[Y]): DistinctQueryBuilder[Y] =
+    DistinctQueryBuilder[Y](collection.distinct(fieldName, filter, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
 
   /** Finds all documents in the collection.
     *
