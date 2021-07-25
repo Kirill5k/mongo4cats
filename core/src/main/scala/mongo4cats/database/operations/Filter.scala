@@ -95,6 +95,16 @@ object Filter {
   def idEq[A](value: A): Filter =
     FilterBuilder(Filters.eq(value))
 
+  /** Creates a filter that matches all documents where the value of the provided field is null.
+   *
+   * @param fieldName
+   *   the field name
+   * @return
+   *   the filter
+   */
+  def isNull(fieldName: String): Filter =
+    FilterBuilder(Filters.eq(fieldName, null))
+
   /** Creates a filter that matches all documents where the value of the field name equals the specified value. Note that this doesn't
     * actually generate a \$eq operator, as the query language doesn't require it.
     *
