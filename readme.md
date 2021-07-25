@@ -21,8 +21,9 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.13" // 
 
 ```scala
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.{Filters, Updates}
+import com.mongodb.client.model.{Filters}
 import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Update
 import org.bson.Document
 
 object DocumentFindAndUpdate extends IOApp.Simple {
@@ -41,7 +42,7 @@ object DocumentFindAndUpdate extends IOApp.Simple {
         coll    <- db.getCollection("jsoncoll")
         _       <- coll.insertOne[IO](Document.parse(json))
         filterQuery = Filters.eq("lastName", "Bloggs")
-        updateQuery = Updates.set("dob", "2020-01-01")
+        updateQuery = Update.set("dob", "2020-01-01").rename("firstName", "name").currentTimestamp("updatedAt").unset("lastName")
         old     <- coll.findOneAndUpdate[IO](filterQuery, updateQuery)
         updated <- coll.find.first[IO]
         _       <- IO.println(s"old: ${old.toJson()}\nupdated: ${updated.toJson()}")

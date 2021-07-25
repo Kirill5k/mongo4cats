@@ -25,6 +25,7 @@ import mongo4cats.database.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection
+import mongo4cats.database.operations.Update
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 
@@ -160,6 +161,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson): F[T] =
     collection.findOneAndUpdate(filter, update).asyncSingle[F]
 
+  def findOneAndUpdate[F[_]: Async](filter: Bson, update: Update): F[T] =
+    findOneAndUpdate(filter, update.toBson)
+
   /** Atomically find a document and update it.
     *
     * @param filter
@@ -175,6 +179,9 @@ final class MongoCollectionF[T: ClassTag] private (
     */
   def findOneAndUpdate[F[_]: Async](filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T] =
     collection.findOneAndUpdate(filter, update, options).asyncSingle[F]
+
+  def findOneAndUpdate[F[_]: Async](filter: Bson, update: Update, options: FindOneAndUpdateOptions): F[T] =
+    findOneAndUpdate(filter, update.toBson, options)
 
   /** Atomically find a document and replace it.
     *
@@ -283,6 +290,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def updateMany[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
     collection.updateMany(filters, update).asyncSingle[F]
 
+  def updateMany[F[_]: Async](filters: Bson, update: Update): F[UpdateResult] =
+    updateMany(filters, update.toBson)
+
   /** Update all documents in the collection according to the specified arguments.
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
@@ -309,6 +319,9 @@ final class MongoCollectionF[T: ClassTag] private (
     */
   def updateMany[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     collection.updateMany(filter, update, options).asyncSingle[F]
+
+  def updateMany[F[_]: Async](filter: Bson, update: Update, options: UpdateOptions): F[UpdateResult] =
+    updateMany(filter, update.toBson, options)
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -337,6 +350,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def updateOne[F[_]: Async](filters: Bson, update: Bson): F[UpdateResult] =
     collection.updateOne(filters, update).asyncSingle[F]
 
+  def updateOne[F[_]: Async](filters: Bson, update: Update): F[UpdateResult] =
+    updateOne(filters, update.toBson)
+
   /** Update a single document in the collection according to the specified arguments.
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
@@ -363,6 +379,9 @@ final class MongoCollectionF[T: ClassTag] private (
     */
   def updateOne[F[_]: Async](filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     collection.updateOne(filter, update, options).asyncSingle[F]
+
+  def updateOne[F[_]: Async](filter: Bson, update: Update, options: UpdateOptions): F[UpdateResult] =
+    updateOne(filter, update.toBson, options)
 
   /** Update a single document in the collection according to the specified arguments.
     *

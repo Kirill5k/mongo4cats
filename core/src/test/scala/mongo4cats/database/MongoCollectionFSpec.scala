@@ -21,6 +21,7 @@ import cats.effect.unsafe.implicits.global
 import com.mongodb.client.model.{Filters, Sorts, Updates}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Update
 import org.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -172,7 +173,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
-              updateResult <- coll.updateOne[IO](Filters.eq("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
+              updateResult <- coll.updateOne[IO](Filters.eq("name", "test-doc-1"), Update.set("name", "test-doc-2"))
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -198,6 +199,28 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             result.map { case (updateRes, docs) =>
               docs must have size 3
               docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2")
+              updateRes.getMatchedCount mustBe 3
+              updateRes.getModifiedCount mustBe 3
+            }
+          }
+        }
+
+        "update all docs in coll" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll         <- db.getCollection("coll")
+              _            <- coll.insertMany[IO](List(document(), document(), document()))
+              updateQuery = Update.set("test-field", 1).rename("name", "renamed").unset("info")
+              updateResult <- coll.updateMany[IO](new Document(), updateQuery)
+              docs         <- coll.find.all[IO]
+            } yield (updateResult, docs)
+
+            result.map { case (updateRes, docs) =>
+              docs must have size 3
+              docs.map(_.getInteger("test-field")).toSet mustBe Set(1)
+              docs.forall(_.containsKey("renamed")) mustBe true
+              docs.forall(!_.containsKey("name")) mustBe true
+              docs.forall(!_.containsKey("info")) mustBe true
               updateRes.getMatchedCount mustBe 3
               updateRes.getModifiedCount mustBe 3
             }
