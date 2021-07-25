@@ -11,8 +11,8 @@ Available for Scala 2.12, 2.13 and 3.0.
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.13"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.13" // circe support
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.14"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.14" // circe support
 ```
 
 ### Quick Start Examples
@@ -55,7 +55,7 @@ object DocumentFindAndUpdate extends IOApp.Simple {
 
 ```scala
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.{Filters, Sorts}
+import com.mongodb.client.model.{Filters}
 import mongo4cats.client.MongoClientF
 import org.bson.Document
 
@@ -72,7 +72,7 @@ object FilteringAndSorting extends IOApp.Simple {
         _    <- coll.insertMany[IO](genDocs(10))
         docs <- coll.find
           .filter(Filters.regex("name", "doc-[2-7]"))
-          .sort(Sorts.descending("name"))
+          .sortByDesc("name")
           .limit(5)
           .all[IO]
         _ <- IO.println(docs)
@@ -85,7 +85,7 @@ object FilteringAndSorting extends IOApp.Simple {
 
 Only mongo4cats-circe is required for basic interop with circe:
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.13"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.14"
 ```
 
 In order to obtain mongo collection with circe codecs, the following import is required:

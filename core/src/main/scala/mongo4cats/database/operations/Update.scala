@@ -48,9 +48,9 @@ trait Update {
     * @param value
     *   the value
     * @return
-    *   the update
-    .0
-    *   @see UpdateOptions#upsert(boolean)
+    *   the update .0
+    * @see
+    *   UpdateOptions#upsert(boolean)
     */
   def setOnInsert(value: Bson): Update
 
@@ -62,9 +62,7 @@ trait Update {
     * @param value
     *   the value, which may be null
     * @return
-    *   the update
-    ee
-    *   UpdateOptions#upsert(boolean)
+    *   the update ee UpdateOptions#upsert(boolean)
     */
   def setOnInsert[A](fieldName: String, value: A): Update
 
