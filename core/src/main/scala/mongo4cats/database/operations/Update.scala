@@ -361,11 +361,20 @@ trait Update {
 
   def bitwiseXor(fieldName: String, value: Long): Update
 
+  /** Merges 2 sequences of update operations together.
+    *
+    * @param anotherUpdate
+    *   the update to be merged with
+    * @return
+    *   the update
+    */
+  def combinedWith(anotherUpdate: Update): Update
+
   private[database] def toBson: Bson
 }
 
 object Update extends Update {
-  private val empty = UpdateBuilder(List.empty[Bson])
+  private val empty: Update = UpdateBuilder(List.empty[Bson])
 
   override def set[A](fieldName: String, value: A): Update                                  = empty.set(fieldName, value)
   override def unset(fieldName: String): Update                                             = empty.unset(fieldName)
@@ -394,11 +403,12 @@ object Update extends Update {
   override def bitwiseOr(fieldName: String, value: Long): Update                            = empty.bitwiseOr(fieldName, value)
   override def bitwiseXor(fieldName: String, value: Int): Update                            = empty.bitwiseXor(fieldName, value)
   override def bitwiseXor(fieldName: String, value: Long): Update                           = empty.bitwiseXor(fieldName, value)
+  override def combinedWith(anotherUpdate: Update): Update                                  = empty.combinedWith(anotherUpdate)
+  override private[database] def toBson: Bson                                               = new Document()
 
-  override private[database] def toBson: Bson = new Document()
 }
 
-final private case class UpdateBuilder private (
+final private case class UpdateBuilder(
     private val updates: List[Bson]
 ) extends Update {
 
@@ -483,5 +493,9 @@ final private case class UpdateBuilder private (
   def bitwiseXor(fieldName: String, value: Long): Update =
     UpdateBuilder(Updates.bitwiseXor(fieldName, value) :: updates)
 
+  def combinedWith(anotherUpdate: Update): Update =
+    UpdateBuilder(anotherUpdate.toBson :: updates)
+
   override private[database] def toBson: Bson = Updates.combine(updates.asJava)
+
 }

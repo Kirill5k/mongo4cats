@@ -226,6 +226,31 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             }
           }
         }
+
+        "combine multiple updates together" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll <- db.getCollection("coll")
+              _    <- coll.insertMany[IO](List(document(), document(), document()))
+              updateQuery = Update
+                .set("test-field", 1)
+                .combinedWith(Update.rename("name", "renamed"))
+                .combinedWith(Update.unset("info"))
+              updateResult <- coll.updateMany[IO](new Document(), updateQuery)
+              docs         <- coll.find.all[IO]
+            } yield (updateResult, docs)
+
+            result.map { case (updateRes, docs) =>
+              docs must have size 3
+              docs.map(_.getInteger("test-field")).toSet mustBe Set(1)
+              docs.forall(_.containsKey("renamed")) mustBe true
+              docs.forall(!_.containsKey("name")) mustBe true
+              docs.forall(!_.containsKey("info")) mustBe true
+              updateRes.getMatchedCount mustBe 3
+              updateRes.getModifiedCount mustBe 3
+            }
+          }
+        }
       }
 
       "deleteOne and deleteMany" should {
