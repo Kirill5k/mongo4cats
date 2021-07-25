@@ -19,7 +19,7 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClientF
 import mongo4cats.database.operations.{Filter, Update}
-import org.bson.Document
+import mongo4cats.bson.Document
 
 object JsonDocumentFindAndUpdate extends IOApp.Simple {
 

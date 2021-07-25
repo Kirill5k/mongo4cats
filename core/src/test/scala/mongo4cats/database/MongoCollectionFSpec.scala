@@ -19,15 +19,14 @@ package mongo4cats.database
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.mongodb.client.model.{Filters, Sorts, Updates}
-import mongo4cats.EmbeddedMongo
+import mongo4cats.{EmbeddedMongo}
+import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
 import mongo4cats.database.operations.{Filter, Update}
-import org.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters._
 
 class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
@@ -423,7 +422,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             } yield res
 
             result.map { res =>
-              res mustBe List(Document.parse(s"""{"x": 42, "y": 23}""""))
+              res mustBe List(Document.fromJson(s"""{"x": 42, "y": 23}""""))
             }
           }
         }
@@ -444,7 +443,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
 
             val result = for {
               coll    <- db.getCollection("coll")
-              _       <- coll.insertOne[IO](Document.parse(json))
+              _       <- coll.insertOne[IO](Document.fromJson(json))
               old     <- coll.findOneAndUpdate[IO](Filters.eq("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
               updated <- coll.find.first[IO]
             } yield (old, updated)
@@ -476,5 +475,5 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
     }.unsafeToFuture()
 
   def document(name: String = "test-doc-1"): Document =
-    new Document(Map[String, AnyRef]("name" -> name, "info" -> Document.parse(s"""{"x": 42, "y": 23}"""")).asJava)
+    Document(Map("name" -> name, "info" -> Document.fromJson(s"""{"x": 42, "y": 23}"""")))
 }

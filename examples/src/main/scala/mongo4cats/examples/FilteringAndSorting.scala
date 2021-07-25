@@ -19,12 +19,12 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClientF
 import mongo4cats.database.operations.Filter
-import org.bson.Document
+import mongo4cats.bson.Document
 
 object FilteringAndSorting extends IOApp.Simple {
 
   def genDocs(n: Int): Seq[Document] =
-    (0 to n).map(i => new Document("name", s"doc-$i"))
+    (0 to n).map(i => Document("name", s"doc-$i"))
 
   override val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
