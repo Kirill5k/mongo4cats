@@ -17,7 +17,6 @@
 package mongo4cats.database.operations
 
 import com.mongodb.client.model.{PushOptions, Updates}
-import org.bson.Document
 import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
@@ -36,7 +35,7 @@ trait Update {
     *   the update
     * @mongodb.driver.manual
     *   reference/operator/update/set/
-   */
+    */
   def set[A](fieldName: String, value: A): Update
 
   /** Creates an update that deletes the field with the given name.
@@ -371,45 +370,44 @@ trait Update {
   def combinedWith(anotherUpdate: Update): Update
 
   private[database] def toBson: Bson
+  private[operations] def updates: List[Bson]
 }
 
-object Update extends Update {
+object Update {
   private val empty: Update = UpdateBuilder(List.empty[Bson])
 
-  override def set[A](fieldName: String, value: A): Update                                  = empty.set(fieldName, value)
-  override def unset(fieldName: String): Update                                             = empty.unset(fieldName)
-  override def setOnInsert(value: Bson): Update                                             = empty.setOnInsert(value)
-  override def setOnInsert[A](fieldName: String, value: A): Update                          = empty.setOnInsert(fieldName, value)
-  override def rename(fieldName: String, newFieldName: String): Update                      = empty.rename(fieldName, newFieldName)
-  override def inc(fieldName: String, number: Number): Update                               = empty.inc(fieldName, number)
-  override def mul(fieldName: String, number: Number): Update                               = empty.mul(fieldName, number)
-  override def min[A](fieldName: String, value: A): Update                                  = empty.min(fieldName, value)
-  override def max[A](fieldName: String, value: A): Update                                  = empty.max(fieldName, value)
-  override def currentDate(fieldName: String): Update                                       = empty.currentDate(fieldName)
-  override def currentTimestamp(fieldName: String): Update                                  = empty.currentTimestamp(fieldName)
-  override def addToSet[A](fieldName: String, value: A): Update                             = empty.addToSet(fieldName, value)
-  override def addEachToSet[A](fieldName: String, values: Seq[A]): Update                   = empty.addEachToSet(fieldName, values)
-  override def push[A](fieldName: String, value: A): Update                                 = empty.push(fieldName, value)
-  override def pushEach[A](fieldName: String, values: Seq[A]): Update                       = empty.pushEach(fieldName, values)
-  override def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update = empty.pushEach(fieldName, values, options)
-  override def pull[A](fieldName: String, value: A): Update                                 = empty.pull(fieldName, value)
-  override def pullByFilter(filter: Bson): Update                                           = empty.pullByFilter(filter)
-  override def pullAll[A](fieldName: String, values: Seq[A]): Update                        = empty.pullAll(fieldName, values)
-  override def popFirst(fieldName: String): Update                                          = empty.popFirst(fieldName)
-  override def popLast(fieldName: String): Update                                           = empty.popLast(fieldName)
-  override def bitwiseAnd(fieldName: String, value: Int): Update                            = empty.bitwiseAnd(fieldName, value)
-  override def bitwiseAnd(fieldName: String, value: Long): Update                           = empty.bitwiseAnd(fieldName, value)
-  override def bitwiseOr(fieldName: String, value: Int): Update                             = empty.bitwiseOr(fieldName, value)
-  override def bitwiseOr(fieldName: String, value: Long): Update                            = empty.bitwiseOr(fieldName, value)
-  override def bitwiseXor(fieldName: String, value: Int): Update                            = empty.bitwiseXor(fieldName, value)
-  override def bitwiseXor(fieldName: String, value: Long): Update                           = empty.bitwiseXor(fieldName, value)
-  override def combinedWith(anotherUpdate: Update): Update                                  = empty.combinedWith(anotherUpdate)
-  override private[database] def toBson: Bson                                               = new Document()
+  def set[A](fieldName: String, value: A): Update                                  = empty.set(fieldName, value)
+  def unset(fieldName: String): Update                                             = empty.unset(fieldName)
+  def setOnInsert(value: Bson): Update                                             = empty.setOnInsert(value)
+  def setOnInsert[A](fieldName: String, value: A): Update                          = empty.setOnInsert(fieldName, value)
+  def rename(fieldName: String, newFieldName: String): Update                      = empty.rename(fieldName, newFieldName)
+  def inc(fieldName: String, number: Number): Update                               = empty.inc(fieldName, number)
+  def mul(fieldName: String, number: Number): Update                               = empty.mul(fieldName, number)
+  def min[A](fieldName: String, value: A): Update                                  = empty.min(fieldName, value)
+  def max[A](fieldName: String, value: A): Update                                  = empty.max(fieldName, value)
+  def currentDate(fieldName: String): Update                                       = empty.currentDate(fieldName)
+  def currentTimestamp(fieldName: String): Update                                  = empty.currentTimestamp(fieldName)
+  def addToSet[A](fieldName: String, value: A): Update                             = empty.addToSet(fieldName, value)
+  def addEachToSet[A](fieldName: String, values: Seq[A]): Update                   = empty.addEachToSet(fieldName, values)
+  def push[A](fieldName: String, value: A): Update                                 = empty.push(fieldName, value)
+  def pushEach[A](fieldName: String, values: Seq[A]): Update                       = empty.pushEach(fieldName, values)
+  def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update = empty.pushEach(fieldName, values, options)
+  def pull[A](fieldName: String, value: A): Update                                 = empty.pull(fieldName, value)
+  def pullByFilter(filter: Bson): Update                                           = empty.pullByFilter(filter)
+  def pullAll[A](fieldName: String, values: Seq[A]): Update                        = empty.pullAll(fieldName, values)
+  def popFirst(fieldName: String): Update                                          = empty.popFirst(fieldName)
+  def popLast(fieldName: String): Update                                           = empty.popLast(fieldName)
+  def bitwiseAnd(fieldName: String, value: Int): Update                            = empty.bitwiseAnd(fieldName, value)
+  def bitwiseAnd(fieldName: String, value: Long): Update                           = empty.bitwiseAnd(fieldName, value)
+  def bitwiseOr(fieldName: String, value: Int): Update                             = empty.bitwiseOr(fieldName, value)
+  def bitwiseOr(fieldName: String, value: Long): Update                            = empty.bitwiseOr(fieldName, value)
+  def bitwiseXor(fieldName: String, value: Int): Update                            = empty.bitwiseXor(fieldName, value)
+  def bitwiseXor(fieldName: String, value: Long): Update                           = empty.bitwiseXor(fieldName, value)
 
 }
 
 final private case class UpdateBuilder(
-    private val updates: List[Bson]
+    override val updates: List[Bson]
 ) extends Update {
 
   def set[A](fieldName: String, value: A): Update =
@@ -494,7 +492,7 @@ final private case class UpdateBuilder(
     UpdateBuilder(Updates.bitwiseXor(fieldName, value) :: updates)
 
   def combinedWith(anotherUpdate: Update): Update =
-    UpdateBuilder(anotherUpdate.toBson :: updates)
+    UpdateBuilder(anotherUpdate.updates ::: updates)
 
   override private[database] def toBson: Bson = Updates.combine(updates.asJava)
 
