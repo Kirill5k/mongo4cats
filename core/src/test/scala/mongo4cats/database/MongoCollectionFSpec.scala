@@ -19,7 +19,7 @@ package mongo4cats.database
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.mongodb.client.model.{Filters, Sorts, Updates}
-import mongo4cats.{EmbeddedMongo}
+import mongo4cats.EmbeddedMongo
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
 import mongo4cats.database.operations.{Filter, Update}

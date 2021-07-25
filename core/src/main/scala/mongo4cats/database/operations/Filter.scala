@@ -30,7 +30,7 @@ trait Filter {
     *
     * <blockquote><pre> eq("x", 1).and(lt("y", 3)) </pre></blockquote>
     *
-    * will generate a MongoDB query like: <blockquote><pre> { $and: [{x : 1}, {y : {$lt : 3}}]} </pre></blockquote>
+    * will generate a MongoDB query like: <blockquote><pre> { "$and": [{x : 1}, {y : {"$lt" : 3}}]} </pre></blockquote>
     *
     * @param anotherFilter
     *   the filter to and together
