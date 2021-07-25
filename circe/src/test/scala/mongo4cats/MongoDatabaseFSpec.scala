@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters
 import io.circe.generic.auto._
 import mongo4cats.circe._
 import mongo4cats.client.MongoClientF
+import mongo4cats.test.EmbeddedMongo
 import org.bson.types.ObjectId
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec

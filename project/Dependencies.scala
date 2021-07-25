@@ -55,4 +55,10 @@ object Dependencies {
     Libraries.circeGeneric,
     Libraries.circeParser
   )
+
+  lazy val testkit = Seq(
+    Libraries.fs2Core,
+    Libraries.embeddedMongo,
+    Libraries.logback
+  )
 }

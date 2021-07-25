@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.test
 
 import cats.effect.{Async, IO, Resource}
 import cats.implicits._
