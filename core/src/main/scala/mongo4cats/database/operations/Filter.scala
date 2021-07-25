@@ -30,7 +30,7 @@ trait Filter {
     *
     * <blockquote><pre> eq("x", 1).and(lt("y", 3)) </pre></blockquote>
     *
-    * will generate a MongoDB query like: <blockquote><pre> { "$and": [{x : 1}, {y : {"$lt" : 3}}]} </pre></blockquote>
+    * will generate a MongoDB query like: <blockquote><pre> { {@literal $}and: [{x : 1}, {y : {{@literal $}lt : 3}}]} </pre></blockquote>
     *
     * @param anotherFilter
     *   the filter to and together
@@ -48,12 +48,12 @@ trait Filter {
     */
   def or(anotherFilter: Filter): Filter
 
-  /** Creates a filter that matches all documents that do not match the passed in filter. Lifts the current filter to create a valid "$not"
+  /** Creates a filter that matches all documents that do not match the passed in filter. Lifts the current filter to create a valid "{@literal $}not"
     * query:
     *
     * <blockquote><pre> eq("x", 1).not </pre></blockquote>
     *
-    * will generate a MongoDB query like: <blockquote><pre> {x : $not: {$eq : 1}} </pre></blockquote>
+    * will generate a MongoDB query like: <blockquote><pre> {x : {@literal $}not: {{@literal $}eq : 1}} </pre></blockquote>
     *
     * @return
     *   the filter
@@ -84,7 +84,7 @@ object Filter {
   val all: Filter = FilterBuilder(Filters.empty())
 
   /** Creates a filter that matches all documents where the value of _id field equals the specified value. Note that this doesn't actually
-    * generate a $eq operator, as the query language doesn't require it.
+    * generate a {@literal $}eq operator, as the query language doesn't require it.
     *
     * @param value
     *   the value, which may be null
@@ -96,7 +96,7 @@ object Filter {
     FilterBuilder(Filters.eq(value))
 
   /** Creates a filter that matches all documents where the value of the field name equals the specified value. Note that this doesn't
-    * actually generate a $eq operator, as the query language doesn't require it.
+    * actually generate a {@literal $}eq operator, as the query language doesn't require it.
     *
     * @param fieldName
     *   the field name
