@@ -29,12 +29,8 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value, which may be null
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/set/
     */
   def set[A](fieldName: String, value: A): Update
 
@@ -44,8 +40,6 @@ trait Update {
     *   the non-null field name
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/unset/
     */
   def unset(fieldName: String): Update
 
@@ -55,9 +49,7 @@ trait Update {
     *   the value
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/setOnInsert/
-    * @since 3.10.0
+    .0
     *   @see UpdateOptions#upsert(boolean)
     */
   def setOnInsert(value: Bson): Update
@@ -69,13 +61,9 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value, which may be null
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/setOnInsert/
-    * @see
+    ee
     *   UpdateOptions#upsert(boolean)
     */
   def setOnInsert[A](fieldName: String, value: A): Update
@@ -88,8 +76,6 @@ trait Update {
     *   the non-null new field name
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/rename/ $rename
     */
   def rename(fieldName: String, newFieldName: String): Update
 
@@ -101,8 +87,6 @@ trait Update {
     *   the value
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/inc/
     */
   def inc(fieldName: String, number: Number): Update
 
@@ -114,8 +98,6 @@ trait Update {
     *   the non-null number
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/mul/
     */
   def mul(fieldName: String, number: Number): Update
 
@@ -125,12 +107,8 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/min/
     */
   def min[A](fieldName: String, value: A): Update
 
@@ -141,12 +119,8 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/min/
     */
   def max[A](fieldName: String, value: A): Update
 
@@ -156,10 +130,6 @@ trait Update {
     *   the non-null field name
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/currentDate/
-    * @mongodb.driver.manual
-    *   reference/bson-types/#date Date
     */
   def currentDate(fieldName: String): Update
 
@@ -169,10 +139,6 @@ trait Update {
     *   the non-null field name
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/currentDate/
-    * @mongodb.driver.manual
-    *   reference/bson-types/#document-bson-type-timestamp Timestamp
     */
   def currentTimestamp(fieldName: String): Update
 
@@ -183,12 +149,8 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value, which may be null
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/addToSet/
     */
   def addToSet[A](fieldName: String, value: A): Update
 
@@ -199,12 +161,8 @@ trait Update {
     *   the non-null field name
     * @param values
     *   the values
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/addToSet/
     */
   def addEachToSet[A](fieldName: String, values: Seq[A]): Update
 
@@ -214,12 +172,8 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value, which may be null
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/push/
     */
   def push[A](fieldName: String, value: A): Update
 
@@ -229,12 +183,8 @@ trait Update {
     *   the non-null field name
     * @param values
     *   the values
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/push/
     */
   def pushEach[A](fieldName: String, values: Seq[A]): Update
 
@@ -247,12 +197,8 @@ trait Update {
     *   the values
     * @param options
     *   the non-null push options
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/push/
     */
   def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update
 
@@ -262,12 +208,8 @@ trait Update {
     *   the non-null field name
     * @param value
     *   the value, which may be null
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/pull/
     */
   def pull[A](fieldName: String, value: A): Update
 
@@ -277,8 +219,6 @@ trait Update {
     *   the query filter
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/pull/
     */
   def pullByFilter(filter: Bson): Update
 
@@ -288,12 +228,8 @@ trait Update {
     *   the non-null field name
     * @param values
     *   the values
-    * @param <
-    *   TItem> the value type
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/pull/
     */
   def pullAll[A](fieldName: String, values: Seq[A]): Update
 
@@ -303,8 +239,6 @@ trait Update {
     *   the non-null field name
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/pop/
     */
   def popFirst(fieldName: String): Update
 
@@ -314,8 +248,6 @@ trait Update {
     *   the non-null field name
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/pop/
     */
   def popLast(fieldName: String): Update
 
@@ -340,8 +272,6 @@ trait Update {
     *   the value
     * @return
     *   the update
-    * @mongodb.driver.manual
-    *   reference/operator/update/bit/
     */
   def bitwiseOr(fieldName: String, value: Int): Update
 
