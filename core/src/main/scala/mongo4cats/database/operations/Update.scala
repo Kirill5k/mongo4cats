@@ -218,7 +218,7 @@ trait Update {
     * @return
     *   the update
     */
-  def pullByFilter(filter: Bson): Update
+  def pullByFilter(filter: Filter): Update
 
   /** Creates an update that removes all instances of the given values from the array value of the field with the given name.
     *
@@ -321,7 +321,7 @@ object Update {
   def pushEach[A](fieldName: String, values: Seq[A]): Update                       = empty.pushEach(fieldName, values)
   def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update = empty.pushEach(fieldName, values, options)
   def pull[A](fieldName: String, value: A): Update                                 = empty.pull(fieldName, value)
-  def pullByFilter(filter: Bson): Update                                           = empty.pullByFilter(filter)
+  def pullByFilter(filter: Filter): Update                                         = empty.pullByFilter(filter)
   def pullAll[A](fieldName: String, values: Seq[A]): Update                        = empty.pullAll(fieldName, values)
   def popFirst(fieldName: String): Update                                          = empty.popFirst(fieldName)
   def popLast(fieldName: String): Update                                           = empty.popLast(fieldName)
@@ -389,8 +389,8 @@ final private case class UpdateBuilder(
   def pull[A](fieldName: String, value: A): Update =
     UpdateBuilder(Updates.pull(fieldName, value) :: updates)
 
-  def pullByFilter(filter: Bson): Update =
-    UpdateBuilder(Updates.pullByFilter(filter) :: updates)
+  def pullByFilter(filter: Filter): Update =
+    UpdateBuilder(Updates.pullByFilter(filter.toBson) :: updates)
 
   def pullAll[A](fieldName: String, values: Seq[A]): Update =
     UpdateBuilder(Updates.pullAll(fieldName, values.asJava) :: updates)

@@ -22,6 +22,7 @@ import com.mongodb.client.model.{changestream, Sorts}
 import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._
+import mongo4cats.database.operations
 import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
 import org.reactivestreams.Publisher
@@ -54,6 +55,9 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
   def filter(filter: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Filter[T](filter) :: commands)
 
+  def filter(filters: operations.Filter): FindQueryBuilder[T] =
+    filter(filters.toBson)
+
   def projection(projection: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Projection[T](projection) :: commands)
 
@@ -83,6 +87,9 @@ final case class DistinctQueryBuilder[T: ClassTag] private[database] (
 
   def filter(filter: Bson): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.Filter[T](filter) :: commands)
+
+  def filter(filters: operations.Filter): DistinctQueryBuilder[T] =
+    filter(filters.toBson)
 
   def batchSize(size: Int): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.BatchSize[T](size) :: commands)

@@ -21,7 +21,7 @@ import cats.effect.unsafe.implicits.global
 import com.mongodb.client.model.{Filters, Sorts, Updates}
 import mongo4cats.EmbeddedMongo
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Update
+import mongo4cats.database.operations.{Filter, Update}
 import org.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -173,7 +173,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](List(document(), document(), document()))
-              updateResult <- coll.updateOne[IO](Filters.eq("name", "test-doc-1"), Update.set("name", "test-doc-2"))
+              updateResult <- coll.updateOne[IO](Filter.eq("name", "test-doc-1"), Update.set("name", "test-doc-2"))
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -211,7 +211,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document(), document(), document()))
               updateQuery = Update.set("test-field", 1).rename("name", "renamed").unset("info")
-              updateResult <- coll.updateMany[IO](new Document(), updateQuery)
+              updateResult <- coll.updateMany[IO](Filter.all, updateQuery)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -236,7 +236,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
                 .set("test-field", 1)
                 .combinedWith(Update.rename("name", "renamed"))
                 .combinedWith(Update.unset("info"))
-              updateResult <- coll.updateMany[IO](new Document(), updateQuery)
+              updateResult <- coll.updateMany[IO](Filter.all, updateQuery)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 

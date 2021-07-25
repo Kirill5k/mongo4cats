@@ -17,9 +17,8 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.Filters
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Update
+import mongo4cats.database.operations.{Filter, Update}
 import org.bson.Document
 
 object JsonDocumentFindAndUpdate extends IOApp.Simple {
@@ -37,7 +36,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollection("jsoncoll")
         _    <- coll.insertOne[IO](Document.parse(json))
-        filterQuery = Filters.eq("lastName", "Bloggs")
+        filterQuery = Filter.eq("lastName", "Bloggs").or(Filter.eq("firstName", "John"))
         updateQuery = Update.set("dob", "2020-01-01").rename("firstName", "name").currentTimestamp("updatedAt").unset("lastName")
         old     <- coll.findOneAndUpdate[IO](filterQuery, updateQuery)
         updated <- coll.find.first[IO]

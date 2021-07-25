@@ -21,9 +21,8 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.14" // 
 
 ```scala
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.{Filters}
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Update
+import mongo4cats.database.operations.{Filter, Update}
 import org.bson.Document
 
 object DocumentFindAndUpdate extends IOApp.Simple {
@@ -41,7 +40,7 @@ object DocumentFindAndUpdate extends IOApp.Simple {
         db      <- client.getDatabase("testdb")
         coll    <- db.getCollection("jsoncoll")
         _       <- coll.insertOne[IO](Document.parse(json))
-        filterQuery = Filters.eq("lastName", "Bloggs")
+        filterQuery = Filter.eq("lastName", "Bloggs").and(Filter.eq("firstName", "John"))
         updateQuery = Update.set("dob", "2020-01-01").rename("firstName", "name").currentTimestamp("updatedAt").unset("lastName")
         old     <- coll.findOneAndUpdate[IO](filterQuery, updateQuery)
         updated <- coll.find.first[IO]
@@ -55,8 +54,8 @@ object DocumentFindAndUpdate extends IOApp.Simple {
 
 ```scala
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.{Filters}
 import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Filter
 import org.bson.Document
 
 object FilteringAndSorting extends IOApp.Simple {
@@ -71,7 +70,7 @@ object FilteringAndSorting extends IOApp.Simple {
         coll <- db.getCollection("docs")
         _    <- coll.insertMany[IO](genDocs(10))
         docs <- coll.find
-          .filter(Filters.regex("name", "doc-[2-7]"))
+          .filter(Filter.exists("name").and(Filter.regex("name", "doc-[2-7]")))
           .sortByDesc("name")
           .limit(5)
           .all[IO]

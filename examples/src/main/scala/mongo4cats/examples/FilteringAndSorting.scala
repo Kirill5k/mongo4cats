@@ -17,8 +17,8 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import com.mongodb.client.model.Filters
 import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Filter
 import org.bson.Document
 
 object FilteringAndSorting extends IOApp.Simple {
@@ -33,7 +33,7 @@ object FilteringAndSorting extends IOApp.Simple {
         coll <- db.getCollection("docs")
         _    <- coll.insertMany[IO](genDocs(10))
         docs <- coll.find
-          .filter(Filters.regex("name", "doc-[2-7]"))
+          .filter(Filter.notExists("foo").and(Filter.regex("name", "doc-[2-7]")))
           .sortByDesc("name")
           .limit(5)
           .all[IO]
