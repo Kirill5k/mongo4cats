@@ -18,7 +18,7 @@ package mongo4cats.database.queries
 
 import cats.effect.Async
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream
+import com.mongodb.client.model.{Sorts, changestream}
 import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._
@@ -44,6 +44,12 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
 
   def sort(sort: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Sort[T](sort) :: commands)
+
+  def sortBy(fieldNames: String*): FindQueryBuilder[T] =
+    sort(Sorts.ascending(fieldNames: _*))
+
+  def sortByDesc(fieldNames: String*): FindQueryBuilder[T] =
+    sort(Sorts.descending(fieldNames: _*))
 
   def filter(filter: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Filter[T](filter) :: commands)

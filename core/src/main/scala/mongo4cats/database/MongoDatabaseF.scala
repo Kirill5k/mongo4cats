@@ -16,15 +16,16 @@
 
 package mongo4cats.database
 
-import cats.effect.{Async, Sync}
+import cats.Monad
+import cats.effect.Async
 import cats.implicits._
-import mongo4cats.database.helpers._
-import mongo4cats.database.codecs.CustomCodecProvider
-import org.bson.codecs.configuration.CodecRegistry
 import com.mongodb.reactivestreams.client.MongoDatabase
+import mongo4cats.database.codecs.CustomCodecProvider
+import mongo4cats.database.helpers._
 import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.fromProviders
-import org.bson.codecs.{BsonValueCodecProvider, DocumentCodecProvider, IterableCodecProvider, MapCodecProvider, ValueCodecProvider}
+import org.bson.codecs.configuration.CodecRegistry
+import org.bson.codecs._
 
 import scala.reflect.ClassTag
 
@@ -55,12 +56,12 @@ final private class LiveMongoDatabaseF[F[_]](
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    F.delay(
+    F.delay {
       database
         .getCollection[T](name, clazz)
         .withCodecRegistry(codecRegistry)
         .withDocumentClass[T](clazz)
-    ).map(MongoCollectionF.apply[T])
+    }.map(MongoCollectionF.apply[T])
   }
 
   def collectionNames: F[Iterable[String]] =
@@ -82,5 +83,5 @@ object MongoDatabaseF {
   )
 
   def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
-    Sync[F].delay(new LiveMongoDatabaseF[F](database))
+    Monad[F].pure(new LiveMongoDatabaseF[F](database))
 }

@@ -304,16 +304,19 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
               res  <- coll.find.filter(Filters.eq("name", "d1")).all[IO]
             } yield res
 
-            result.map(_ must have size 1)
+            result.map { res =>
+              res must have size 1
+              res.head.getString("name") mustBe "d1"
+            }
           }
         }
 
-        "all with sort, skip and limit" in {
+        "get all docs with sort, skip and limit" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.sort(Sorts.descending("name")).skip(1).limit(2).all[IO]
+              res  <- coll.find.sortByDesc("name").skip(1).limit(2).all[IO]
             } yield res
 
             result.map { found =>
@@ -323,7 +326,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           }
         }
 
-        "first with sort, skip and limit" in {
+        "get first doc with sort, skip and limit" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
