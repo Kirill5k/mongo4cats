@@ -35,8 +35,8 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/set/ $set
-    */
+    *   reference/operator/update/set/
+   */
   def set[A](fieldName: String, value: A): Update
 
   /** Creates an update that deletes the field with the given name.
@@ -46,7 +46,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/unset/ $unset
+    *   reference/operator/update/unset/
     */
   def unset(fieldName: String): Update
 
@@ -57,7 +57,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/setOnInsert/ $setOnInsert
+    *   reference/operator/update/setOnInsert/
     * @since 3.10.0
     *   @see UpdateOptions#upsert(boolean)
     */
@@ -75,7 +75,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/setOnInsert/ $setOnInsert
+    *   reference/operator/update/setOnInsert/
     * @see
     *   UpdateOptions#upsert(boolean)
     */
@@ -103,7 +103,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/inc/ $inc
+    *   reference/operator/update/inc/
     */
   def inc(fieldName: String, number: Number): Update
 
@@ -116,7 +116,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/mul/ $mul
+    *   reference/operator/update/mul/
     */
   def mul(fieldName: String, number: Number): Update
 
@@ -131,7 +131,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/min/ $min
+    *   reference/operator/update/min/
     */
   def min[A](fieldName: String, value: A): Update
 
@@ -147,7 +147,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/min/ $min
+    *   reference/operator/update/min/
     */
   def max[A](fieldName: String, value: A): Update
 
@@ -158,7 +158,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/currentDate/ $currentDate
+    *   reference/operator/update/currentDate/
     * @mongodb.driver.manual
     *   reference/bson-types/#date Date
     */
@@ -171,7 +171,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/currentDate/ $currentDate
+    *   reference/operator/update/currentDate/
     * @mongodb.driver.manual
     *   reference/bson-types/#document-bson-type-timestamp Timestamp
     */
@@ -189,7 +189,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/addToSet/ $addToSet
+    *   reference/operator/update/addToSet/
     */
   def addToSet[A](fieldName: String, value: A): Update
 
@@ -205,7 +205,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/addToSet/ $addToSet
+    *   reference/operator/update/addToSet/
     */
   def addEachToSet[A](fieldName: String, values: Seq[A]): Update
 
@@ -220,7 +220,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/push/ $push
+    *   reference/operator/update/push/
     */
   def push[A](fieldName: String, value: A): Update
 
@@ -235,7 +235,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/push/ $push
+    *   reference/operator/update/push/
     */
   def pushEach[A](fieldName: String, values: Seq[A]): Update
 
@@ -253,7 +253,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/push/ $push
+    *   reference/operator/update/push/
     */
   def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update
 
@@ -268,7 +268,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/pull/ $pull
+    *   reference/operator/update/pull/
     */
   def pull[A](fieldName: String, value: A): Update
 
@@ -279,7 +279,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/pull/ $pull
+    *   reference/operator/update/pull/
     */
   def pullByFilter(filter: Bson): Update
 
@@ -294,7 +294,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/pull/ $pull
+    *   reference/operator/update/pull/
     */
   def pullAll[A](fieldName: String, values: Seq[A]): Update
 
@@ -305,7 +305,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/pop/ $pop
+    *   reference/operator/update/pop/
     */
   def popFirst(fieldName: String): Update
 
@@ -316,7 +316,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/pop/ $pop
+    *   reference/operator/update/pop/
     */
   def popLast(fieldName: String): Update
 
@@ -342,7 +342,7 @@ trait Update {
     * @return
     *   the update
     * @mongodb.driver.manual
-    *   reference/operator/update/bit/ $bit
+    *   reference/operator/update/bit/
     */
   def bitwiseOr(fieldName: String, value: Int): Update
 
