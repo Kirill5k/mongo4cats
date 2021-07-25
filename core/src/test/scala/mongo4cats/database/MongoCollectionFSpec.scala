@@ -208,8 +208,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
         "update all docs in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection("coll")
-              _            <- coll.insertMany[IO](List(document(), document(), document()))
+              coll <- db.getCollection("coll")
+              _    <- coll.insertMany[IO](List(document(), document(), document()))
               updateQuery = Update.set("test-field", 1).rename("name", "renamed").unset("info")
               updateResult <- coll.updateMany[IO](new Document(), updateQuery)
               docs         <- coll.find.all[IO]
