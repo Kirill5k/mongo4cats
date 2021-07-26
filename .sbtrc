@@ -1,2 +1,3 @@
 alias fmt = ; scalafmtAll ; scalafmtSbt
 alias fmtcheck = ; scalafmtCheck ; test:scalafmtCheck; scalafmtSbtCheck
+alis testseq = ; mongo4cats-core/test ; mongo4cats-circe/test ;
