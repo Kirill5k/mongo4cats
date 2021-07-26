@@ -1,0 +1,2 @@
+alias fmt = ; scalafmtAll ; scalafmtSbt
+alias fmtcheck = ; scalafmtCheck ; test:scalafmtCheck; scalafmtSbtCheck
