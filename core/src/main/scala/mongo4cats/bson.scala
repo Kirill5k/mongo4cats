@@ -16,8 +16,10 @@
 
 package mongo4cats
 
-import scala.jdk.CollectionConverters._
+import org.bson.types.{ObjectId => JObjectId}
 import org.bson.{Document => JDocument}
+
+import scala.jdk.CollectionConverters._
 
 object bson {
 
@@ -28,5 +30,10 @@ object bson {
     def apply(entries: Map[String, AnyRef]): Document  = new JDocument(entries.asJava)
     def fromJson(json: String): Document               = JDocument.parse(json)
     def parse(json: String): Document                  = fromJson(json)
+  }
+
+  type ObjectId = JObjectId
+  object ObjectId {
+    def apply(): ObjectId = new JObjectId()
   }
 }
