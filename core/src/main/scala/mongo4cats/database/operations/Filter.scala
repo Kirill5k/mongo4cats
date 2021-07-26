@@ -96,12 +96,12 @@ object Filter {
     FilterBuilder(Filters.eq(value))
 
   /** Creates a filter that matches all documents where the value of the provided field is null.
-   *
-   * @param fieldName
-   *   the field name
-   * @return
-   *   the filter
-   */
+    *
+    * @param fieldName
+    *   the field name
+    * @return
+    *   the filter
+    */
   def isNull(fieldName: String): Filter =
     FilterBuilder(Filters.eq(fieldName, null))
 

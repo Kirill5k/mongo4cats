@@ -54,11 +54,11 @@ lazy val root = project
     name               := "mongo4cats",
     crossScalaVersions := Nil
   )
-  .aggregate(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-examples`, `mongo4cats-test`)
+  .aggregate(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-examples`, `mongo4cats-embedded`)
 
 lazy val `mongo4cats-core` = project
   .in(file("core"))
-  .dependsOn(`mongo4cats-test` % "test->compile")
+  .dependsOn(`mongo4cats-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
@@ -69,7 +69,7 @@ lazy val `mongo4cats-core` = project
 
 lazy val `mongo4cats-circe` = project
   .in(file("circe"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-test` % "test->compile")
+  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
@@ -90,12 +90,12 @@ lazy val `mongo4cats-examples` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-test` = project
-  .in(file("test"))
+lazy val `mongo4cats-embedded` = project
+  .in(file("embedded"))
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
-    name                     := "mongo4cats-test",
+    name                     := "mongo4cats-embedded",
     test / parallelExecution := false,
     libraryDependencies ++= Dependencies.testkit
   )

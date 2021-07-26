@@ -20,7 +20,7 @@ import cats.effect.IO
 import cats.implicits._
 import cats.effect.unsafe.implicits.global
 import com.mongodb.{MongoTimeoutException, ServerAddress}
-import mongo4cats.test.EmbeddedMongo
+import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
