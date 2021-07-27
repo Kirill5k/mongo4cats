@@ -39,6 +39,8 @@ trait Filter {
     */
   def and(anotherFilter: Filter): Filter
 
+  def &&(anotherFilter: Filter): Filter = and(anotherFilter)
+
   /** Creates a filter that preforms a logical OR of the provided filter.
     *
     * @param anotherFilter
@@ -47,6 +49,8 @@ trait Filter {
     *   the filter
     */
   def or(anotherFilter: Filter): Filter
+
+  def ||(anotherFilter: Filter): Filter = or(anotherFilter)
 
   /** Creates a filter that matches all documents that do not match the passed in filter. Lifts the current filter to create a valid "\$not"
     * query:
@@ -81,7 +85,7 @@ object Filter {
     *   the filter
     * @since 3.4
     */
-  val all: Filter = FilterBuilder(Filters.empty())
+  val empty: Filter = FilterBuilder(Filters.empty())
 
   /** Creates a filter that matches all documents where the value of _id field equals the specified value. Note that this doesn't actually
     * generate a \$eq operator, as the query language doesn't require it.

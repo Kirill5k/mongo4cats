@@ -210,7 +210,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document(), document(), document()))
               updateQuery = Update.set("test-field", 1).rename("name", "renamed").unset("info")
-              updateResult <- coll.updateMany[IO](Filter.all, updateQuery)
+              updateResult <- coll.updateMany[IO](Filter.empty, updateQuery)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
@@ -235,7 +235,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
                 .set("test-field", 1)
                 .combinedWith(Update.rename("name", "renamed"))
                 .combinedWith(Update.unset("info"))
-              updateResult <- coll.updateMany[IO](Filter.all, updateQuery)
+              updateResult <- coll.updateMany[IO](Filter.empty, updateQuery)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
