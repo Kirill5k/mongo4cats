@@ -58,7 +58,6 @@ object Dependencies {
   lazy val embedded = Seq(
     Libraries.fs2Core,
     Libraries.embeddedMongo,
-    Libraries.logback,
     Libraries.immutableValue
   )
 }
