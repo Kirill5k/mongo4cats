@@ -18,7 +18,7 @@ package mongo4cats.database.queries
 
 import cats.effect.Async
 import com.mongodb.client.model
-import com.mongodb.client.model.{Sorts, changestream}
+import com.mongodb.client.model.{changestream, Sorts}
 import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._

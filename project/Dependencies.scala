@@ -42,8 +42,7 @@ object Dependencies {
   lazy val test = Seq(
     Libraries.logback        % Test,
     Libraries.scalaTest      % Test,
-    Libraries.embeddedMongo  % Test,
-    Libraries.immutableValue % Test
+    Libraries.embeddedMongo  % Test
   )
 
   lazy val examples = Seq(
@@ -56,9 +55,10 @@ object Dependencies {
     Libraries.circeParser
   )
 
-  lazy val testkit = Seq(
+  lazy val embedded = Seq(
     Libraries.fs2Core,
     Libraries.embeddedMongo,
-    Libraries.logback
+    Libraries.logback,
+    Libraries.immutableValue
   )
 }

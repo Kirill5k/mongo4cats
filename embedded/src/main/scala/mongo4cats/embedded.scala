@@ -53,16 +53,21 @@ object embedded {
     protected val mongoHost = "localhost"
     protected val mongoPort = 12345
 
-    def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] = {
-      val mongodConfig = MongodConfig
-        .builder()
-        .version(Version.Main.PRODUCTION)
-        .net(new Net(mongoHost, mongoPort, Network.localhostIsIPv6))
-        .build
+    def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] =
+      runMongo(mongoHost, mongoPort)(test)
 
+    def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
+      runMongo(host, port)(test)
+
+    private def runMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
       EmbeddedMongo
-        .start[F](mongodConfig)
+        .start[F] {
+          MongodConfig
+            .builder()
+            .version(Version.Main.PRODUCTION)
+            .net(new Net(host, port, Network.localhostIsIPv6))
+            .build
+        }
         .use(_ => test)
-    }
   }
 }

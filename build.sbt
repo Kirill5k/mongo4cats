@@ -92,11 +92,10 @@ lazy val `mongo4cats-examples` = project
 
 lazy val `mongo4cats-embedded` = project
   .in(file("embedded"))
-  .settings(noPublish)
   .settings(commonSettings)
   .settings(
     name                     := "mongo4cats-embedded",
     test / parallelExecution := false,
-    libraryDependencies ++= Dependencies.testkit
+    libraryDependencies ++= Dependencies.embedded
   )
   .enablePlugins(AutomateHeaderPlugin)
