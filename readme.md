@@ -70,7 +70,7 @@ object FilteringAndSorting extends IOApp.Simple {
         coll <- db.getCollection("docs")
         _    <- coll.insertMany[IO](genDocs(10))
         docs <- coll.find
-          .filter(Filter.exists("name") and Filter.regex("name", "doc-[2-7]"))
+          .filter(Filter.eq("name", "doc-0") or Filter.regex("name", "doc-[2-7]"))
           .sortByDesc("name")
           .limit(5)
           .all[IO]
