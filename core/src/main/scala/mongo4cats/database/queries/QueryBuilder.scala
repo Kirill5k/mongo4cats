@@ -18,11 +18,12 @@ package mongo4cats.database.queries
 
 import cats.effect.Async
 import com.mongodb.client.model
-import com.mongodb.client.model.{changestream, Sorts}
+import com.mongodb.client.model.{Sorts, changestream}
 import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._
 import mongo4cats.database.operations
+import mongo4cats.database.operations.Projection
 import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
 import org.reactivestreams.Publisher
@@ -60,6 +61,9 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
 
   def projection(projection: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Projection[T](projection) :: commands)
+
+  def projection(projection: Projection): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Projection[T](projection.toBson) :: commands)
 
   def skip(skip: Int): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Skip[T](skip) :: commands)
