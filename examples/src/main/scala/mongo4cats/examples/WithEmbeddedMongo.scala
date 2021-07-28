@@ -17,30 +17,22 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import io.circe.generic.auto._
-import mongo4cats.circe._
+import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Projection
 import mongo4cats.embedded.EmbeddedMongo
 
-import java.time.Instant
+object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
 
-object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMongo {
-
-  final case class Address(city: String, country: String)
-  final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
-
-  override val run: IO[Unit] =
+  val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
           db   <- client.getDatabase("testdb")
-          coll <- db.getCollectionWithCodec[Person]("people")
-          person1 = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
-          person2 = Person("John", "Doe", Address("Los-Angeles", "USA"), Instant.now())
-          person3 = Person("John", "Smith", Address("Chicago", "USA"), Instant.now())
-          _                 <- coll.insertMany[IO](List(person1, person2, person3))
-          distinctAddresses <- coll.distinctWithCodec[Address]("address").all[IO]
-          _                 <- IO.println(distinctAddresses)
+          coll <- db.getCollection("jsoncoll")
+          _    <- coll.insertOne[IO](Document("Hello", "World!"))
+          res  <- coll.find.projection(Projection.excludeId).all[IO]
+          _    <- IO.println(res.map(_.toJson).mkString)
         } yield ()
       }
     }

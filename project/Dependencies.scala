@@ -7,10 +7,12 @@ object Dependencies {
     val scalaCompat = "2.5.0"
     val circe       = "0.14.1"
 
-    val logback        = "1.2.4"
-    val scalaTest      = "3.2.9"
-    val embeddedMongo  = "3.0.0"
-    val immutableValue = "2.8.8"
+    val logback   = "1.2.5"
+    val scalaTest = "3.2.9"
+
+    val embeddedMongo   = "3.0.0"
+    val immutableValue  = "2.8.8"
+    val commonsCompress = "1.21"
   }
 
   private object Libraries {
@@ -25,10 +27,12 @@ object Dependencies {
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
     val circeGeneric = "io.circe" %% "circe-generic" % Versions.circe
 
-    val scalaTest      = "org.scalatest"      %% "scalatest"                 % Versions.scalaTest
-    val embeddedMongo  = "de.flapdoodle.embed" % "de.flapdoodle.embed.mongo" % Versions.embeddedMongo
-    val immutableValue = "org.immutables"      % "value"                     % Versions.immutableValue
-    val logback        = "ch.qos.logback"      % "logback-classic"           % Versions.logback
+    val scalaTest = "org.scalatest" %% "scalatest"       % Versions.scalaTest
+    val logback   = "ch.qos.logback" % "logback-classic" % Versions.logback
+
+    val embeddedMongo   = "de.flapdoodle.embed" % "de.flapdoodle.embed.mongo" % Versions.embeddedMongo
+    val immutableValue  = "org.immutables"      % "value"                     % Versions.immutableValue
+    val commonsCompress = "org.apache.commons"  % "commons-compress"          % Versions.commonsCompress
   }
 
   lazy val core = Seq(
@@ -40,9 +44,9 @@ object Dependencies {
   )
 
   lazy val test = Seq(
-    Libraries.logback        % Test,
-    Libraries.scalaTest      % Test,
-    Libraries.embeddedMongo  % Test
+    Libraries.logback       % Test,
+    Libraries.scalaTest     % Test,
+    Libraries.embeddedMongo % Test
   )
 
   lazy val examples = Seq(
@@ -58,6 +62,7 @@ object Dependencies {
   lazy val embedded = Seq(
     Libraries.fs2Core,
     Libraries.embeddedMongo,
-    Libraries.immutableValue
+    Libraries.immutableValue,
+    Libraries.commonsCompress
   )
 }

@@ -83,7 +83,7 @@ lazy val `mongo4cats-circe` = project
 
 lazy val `mongo4cats-examples` = project
   .in(file("examples"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`)
+  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
