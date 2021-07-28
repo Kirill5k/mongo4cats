@@ -44,7 +44,10 @@ lazy val commonSettings = Seq(
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
   scalafmtOnCompile  := true,
-  crossScalaVersions := supportedScalaVersions
+  crossScalaVersions := supportedScalaVersions,
+  Compile / doc / scalacOptions ++= Seq(
+    "-no-link-warnings" // Suppresses problems with Scaladoc links
+  )
 )
 
 lazy val root = project

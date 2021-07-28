@@ -86,8 +86,6 @@ trait Projection {
     *   the field name whose value is the array
     * @return
     *   the projection
-    * @mongodb.driver.manual
-    *   reference/operator/projection/positional/#projection Project the first matching element (\$ operator)
     */
   def elemMatch(fieldName: String): Projection
 
@@ -100,12 +98,10 @@ trait Projection {
     *   the filter to apply
     * @return
     *   the projection
-    * @mongodb.driver.manual
-    *   reference/operator/projection/elemMatch elemMatch
     */
   def elemMatch(fieldName: String, filter: Filter): Projection
 
-  /** Creates a $meta projection to the given field name for the given meta field name.
+  /** Creates a \$meta projection to the given field name for the given meta field name.
     *
     * @param fieldName
     *   the field name
@@ -113,8 +109,6 @@ trait Projection {
     *   the meta field name
     * @return
     *   the projection
-    * @mongodb.driver.manual
-    *   reference/operator/projection/meta/#projection
     * @since 4.1
     */
   def meta(fieldName: String, metaFieldName: String): Projection
@@ -125,8 +119,6 @@ trait Projection {
     *   the field name
     * @return
     *   the projection
-    * @mongodb.driver.manual
-    *   reference/operator/projection/meta/#projection textScore
     */
   def metaTextScore(fieldName: String): Projection
 
@@ -138,8 +130,6 @@ trait Projection {
     *   the number of elements to project.
     * @return
     *   the projection
-    * @mongodb.driver.manual
-    *   reference/operator/projection/slice Slice
     */
   def slice(fieldName: String, limit: Int): Projection
 
@@ -153,8 +143,6 @@ trait Projection {
     *   the number of elements to project
     * @return
     *   the projection
-    * @mongodb.driver.manual
-    *   reference/operator/projection/slice Slice
     */
   def slice(fieldName: String, skip: Int, limit: Int): Projection
 
