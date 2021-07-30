@@ -18,7 +18,7 @@ package mongo4cats
 
 import org.bson.types.{ObjectId => JObjectId}
 import org.bson.{Document => JDocument}
-
+import cats.implicits._
 import java.time.Instant
 import java.util.Date
 import scala.jdk.CollectionConverters._
@@ -37,6 +37,7 @@ object bson {
   type ObjectId = JObjectId
   object ObjectId {
     def apply(): ObjectId = new JObjectId()
+    def get: ObjectId = apply()
 
     /** Constructs a new instance from a 24-byte hexadecimal string representation.
       *
@@ -46,6 +47,18 @@ object bson {
       *   if the string is not a valid hex string representation of an ObjectId
       */
     def apply(hex: String): ObjectId = new JObjectId(hex)
+
+    /** Constructs a new instance from a 24-byte hexadecimal string representation.
+      *
+      * @param hex
+      *   the string to convert
+      */
+    def from(hex: String): Either[String, ObjectId] =
+      JObjectId
+        .isValid(hex)
+        .guard[Option]
+        .as(apply(hex))
+        .toRight(s"Invalid hexadecimal representation of an ObjectId $hex")
 
     /** Constructs a new instance from the given byte array
       *

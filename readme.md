@@ -13,6 +13,7 @@ Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 ```scala
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.16"
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.16"// circe support
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.16" // usefull for unit testing
 ```
 
 ### Quick Start Examples
@@ -120,3 +121,35 @@ object Example extends IOApp.Simple {
 }
 ```
 
+#### Running with embedded mongo
+
+To be able to use embedded-mongodb runner in your code, the following import needs to be added to the dependency list:
+```scala
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.16"
+```
+
+Once the dependency is added, the embedded-mongodb can be brought in by extending `EmbeddedMongo` trait:
+
+```scala
+import cats.effect.{IO, IOApp}
+import mongo4cats.bson.Document
+import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Projection
+import mongo4cats.embedded.EmbeddedMongo
+
+object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
+
+  val run: IO[Unit] =
+    withRunningEmbeddedMongo("localhost", 27017) {
+      MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+        for {
+          db   <- client.getDatabase("testdb")
+          coll <- db.getCollection("jsoncoll")
+          _    <- coll.insertOne[IO](Document("Hello", "World!"))
+          res  <- coll.find.projection(Projection.excludeId).all[IO]
+          _    <- IO.println(res.map(_.toJson).mkString)
+        } yield ()
+      }
+    }
+}
+```
