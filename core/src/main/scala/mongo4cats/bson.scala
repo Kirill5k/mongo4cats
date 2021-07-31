@@ -18,7 +18,8 @@ package mongo4cats
 
 import org.bson.types.{ObjectId => JObjectId}
 import org.bson.{Document => JDocument}
-import cats.implicits._
+import cats.syntax.alternative._
+import cats.syntax.functor._
 import java.time.Instant
 import java.util.Date
 import scala.jdk.CollectionConverters._

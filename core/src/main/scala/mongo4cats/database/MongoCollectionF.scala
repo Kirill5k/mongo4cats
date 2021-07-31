@@ -25,7 +25,7 @@ import mongo4cats.database.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection
-import mongo4cats.database.operations.{Filter, Update}
+import mongo4cats.database.operations.{Filter, Index, Update}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 
@@ -248,6 +248,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def dropIndex[F[_]: Async](keys: Bson): F[Unit] =
     collection.dropIndex(keys).asyncVoid[F]
 
+  def dropIndex[F[_]: Async](index: Index): F[Unit] =
+    collection.dropIndex(index.toBson).asyncVoid[F]
+
   /** Drops the index given the keys used to create it.
     *
     * @param keys
@@ -258,6 +261,9 @@ final class MongoCollectionF[T: ClassTag] private (
     */
   def dropIndex[F[_]: Async](keys: Bson, options: DropIndexOptions): F[Unit] =
     collection.dropIndex(keys, options).asyncVoid[F]
+
+  def dropIndex[F[_]: Async](index: Index, options: DropIndexOptions): F[Unit] =
+    collection.dropIndex(index.toBson, options).asyncVoid[F]
 
   /** Drop all the indexes on this collection, except for the default on _id.
     *
@@ -284,26 +290,26 @@ final class MongoCollectionF[T: ClassTag] private (
     collection.drop().asyncVoid[F]
 
   /** [[http://docs.mongodb.org/manual/reference/command/create]]
-    * @param filters
+    * @param key
     *   an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
     */
-  def createIndex[F[_]: Async](filters: Bson): F[String] =
-    collection.createIndex(filters).asyncSingle[F]
+  def createIndex[F[_]: Async](key: Bson): F[String] =
+    collection.createIndex(key).asyncSingle[F]
 
-  def createIndex[F[_]: Async](filters: Filter): F[String] =
-    createIndex(filters.toBson)
+  def createIndex[F[_]: Async](index: Index): F[String] =
+    createIndex(index.toBson)
 
   /** [[http://docs.mongodb.org/manual/reference/command/create]]
-    * @param filter
+    * @param key
     *   an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
     * @param options
     *   the options for the index
     */
-  def createIndex[F[_]: Async](filter: Bson, options: IndexOptions): F[String] =
-    collection.createIndex(filter, options).asyncSingle[F]
+  def createIndex[F[_]: Async](key: Bson, options: IndexOptions): F[String] =
+    collection.createIndex(key, options).asyncSingle[F]
 
-  def createIndex[F[_]: Async](filters: Filter, options: IndexOptions): F[String] =
-    createIndex(filters.toBson, options)
+  def createIndex[F[_]: Async](index: Index, options: IndexOptions): F[String] =
+    createIndex(index.toBson, options)
 
   /** Update all documents in the collection according to the specified arguments.
     *
