@@ -131,25 +131,28 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.16"
 Once the dependency is added, the embedded-mongodb can be brought in by extending `EmbeddedMongo` trait:
 
 ```scala
-import cats.effect.{IO, IOApp}
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Projection
 import mongo4cats.embedded.EmbeddedMongo
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 
-object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
+class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  val run: IO[Unit] =
-    withRunningEmbeddedMongo("localhost", 27017) {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+  "A MongoCollectionF" should {
+    "create and retrieve documents from a db" in withRunningEmbeddedMongo("localhost", 12345) {
+      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12345").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
-          coll <- db.getCollection("jsoncoll")
-          _    <- coll.insertOne[IO](Document("Hello", "World!"))
-          res  <- coll.find.projection(Projection.excludeId).all[IO]
-          _    <- IO.println(res.map(_.toJson).mkString)
-        } yield ()
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          testDoc = Document("Hello", "World!")
+          _ <- coll.insertOne[IO](testDoc)
+          foundDoc <- coll.find.first[IO]
+        } yield foundDoc mustBe testDoc
       }
-    }
+    }.unsafeToFuture()
+  }
 }
 ```

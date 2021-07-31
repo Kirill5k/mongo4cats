@@ -89,7 +89,7 @@ lazy val `mongo4cats-examples` = project
   .settings(
     name                     := "mongo4cats-examples",
     test / parallelExecution := false,
-    libraryDependencies ++= Dependencies.examples
+    libraryDependencies ++= Dependencies.examples ++ Dependencies.test
   )
   .enablePlugins(AutomateHeaderPlugin)
 

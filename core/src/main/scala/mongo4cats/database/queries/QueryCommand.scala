@@ -36,123 +36,123 @@ sealed private[queries] trait WatchCommand[T]     extends QueryCommand[ChangeStr
 sealed private[queries] trait AggregateCommand[T] extends QueryCommand[AggregatePublisher, T]
 
 private[queries] object FindCommand {
-  final case class Skip[T](n: Int) extends FindCommand[T] {
+  final private[queries] case class Skip[T](n: Int) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.skip(n)
   }
 
-  final case class Limit[T](n: Int) extends FindCommand[T] {
+  final private[queries] case class Limit[T](n: Int) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.limit(n)
   }
 
-  final case class Sort[T](order: Bson) extends FindCommand[T] {
+  final private[queries] case class Sort[T](order: Bson) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.sort(order)
   }
 
-  final case class Filter[T](filter: Bson) extends FindCommand[T] {
+  final private[queries] case class Filter[T](filter: Bson) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.filter(filter)
   }
 
-  final case class Projection[T](projection: Bson) extends FindCommand[T] {
+  final private[queries] case class Projection[T](projection: Bson) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.projection(projection)
   }
 }
 
 private[queries] object DistinctCommand {
-  final case class Filter[T](filter: Bson) extends DistinctCommand[T] {
+  final private[queries] case class Filter[T](filter: Bson) extends DistinctCommand[T] {
     override def run(pub: DistinctPublisher[T]): DistinctPublisher[T] =
       pub.filter(filter)
   }
 
-  final case class BatchSize[T](size: Int) extends DistinctCommand[T] {
+  final private[queries] case class BatchSize[T](size: Int) extends DistinctCommand[T] {
     override def run(pub: DistinctPublisher[T]): DistinctPublisher[T] =
       pub.batchSize(size)
   }
 
-  final case class Collation[T](collation: model.Collation) extends DistinctCommand[T] {
+  final private[queries] case class Collation[T](collation: model.Collation) extends DistinctCommand[T] {
     override def run(pub: DistinctPublisher[T]): DistinctPublisher[T] =
       pub.collation(collation)
   }
 }
 
 private[queries] object WatchCommand {
-  final case class BatchSize[T](size: Int) extends WatchCommand[T] {
+  final private[queries] case class BatchSize[T](size: Int) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.batchSize(size)
   }
 
-  final case class Collation[T](collation: model.Collation) extends WatchCommand[T] {
+  final private[queries] case class Collation[T](collation: model.Collation) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.collation(collation)
   }
 
-  final case class FullDocument[T](fullDocument: changestream.FullDocument) extends WatchCommand[T] {
+  final private[queries] case class FullDocument[T](fullDocument: changestream.FullDocument) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.fullDocument(fullDocument)
   }
 
-  final case class MaxAwaitTime[T](duration: Duration) extends WatchCommand[T] {
+  final private[queries] case class MaxAwaitTime[T](duration: Duration) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
   }
 
-  final case class ResumeAfter[T](after: BsonDocument) extends WatchCommand[T] {
+  final private[queries] case class ResumeAfter[T](after: BsonDocument) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.resumeAfter(after)
   }
 
-  final case class StartAfter[T](after: BsonDocument) extends WatchCommand[T] {
+  final private[queries] case class StartAfter[T](after: BsonDocument) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.startAfter(after)
   }
 
-  final case class StartAtOperationTime[T](operationTime: BsonTimestamp) extends WatchCommand[T] {
+  final private[queries] case class StartAtOperationTime[T](operationTime: BsonTimestamp) extends WatchCommand[T] {
     override def run(pub: ChangeStreamPublisher[T]): ChangeStreamPublisher[T] =
       pub.startAtOperationTime(operationTime)
   }
 }
 
 private[queries] object AggregateCommand {
-  final case class AllowDiskUse[T](allowDiskUse: Boolean) extends AggregateCommand[T] {
+  final private[queries] case class AllowDiskUse[T](allowDiskUse: Boolean) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.allowDiskUse(allowDiskUse)
   }
 
-  final case class MaxTime[T](duration: Duration) extends AggregateCommand[T] {
+  final private[queries] case class MaxTime[T](duration: Duration) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
   }
 
-  final case class MaxAwaitTime[T](duration: Duration) extends AggregateCommand[T] {
+  final private[queries] case class MaxAwaitTime[T](duration: Duration) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
   }
 
-  final case class BypassDocumentValidation[T](bypassDocumentValidation: Boolean) extends AggregateCommand[T] {
+  final private[queries] case class BypassDocumentValidation[T](bypassDocumentValidation: Boolean) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.bypassDocumentValidation(bypassDocumentValidation)
   }
 
-  final case class Collation[T](collation: model.Collation) extends AggregateCommand[T] {
+  final private[queries] case class Collation[T](collation: model.Collation) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.collation(collation)
   }
 
-  final case class Comment[T](comment: String) extends AggregateCommand[T] {
+  final private[queries] case class Comment[T](comment: String) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.comment(comment)
   }
 
-  final case class Hint[T](hint: Bson) extends AggregateCommand[T] {
+  final private[queries] case class Hint[T](hint: Bson) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.hint(hint)
   }
 
-  final case class BatchSize[T](batchSize: Int) extends AggregateCommand[T] {
+  final private[queries] case class BatchSize[T](batchSize: Int) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.batchSize(batchSize)
   }

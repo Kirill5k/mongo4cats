@@ -37,7 +37,7 @@ object bson {
   type ObjectId = JObjectId
   object ObjectId {
     def apply(): ObjectId = new JObjectId()
-    def get: ObjectId = apply()
+    def get: ObjectId     = apply()
 
     /** Constructs a new instance from a 24-byte hexadecimal string representation.
       *
