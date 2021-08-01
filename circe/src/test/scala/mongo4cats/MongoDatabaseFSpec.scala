@@ -85,7 +85,7 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
           _         <- db.createCollection("people")
           coll      <- db.getCollectionWithCodec[Person]("people")
           _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
-          addresses <- coll.withAddedCodec[Address].distinct[Address]("address").all[IO]
+          addresses <- coll.withAddedCodec[Address].distinct[Address]("address").batchSize(10).all[IO]
         } yield addresses
 
         result.map { res =>
