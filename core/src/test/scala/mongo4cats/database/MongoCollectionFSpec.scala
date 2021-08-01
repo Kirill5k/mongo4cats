@@ -18,11 +18,11 @@ package mongo4cats.database
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.mongodb.client.model.{Filters, Sorts, Updates}
+import com.mongodb.client.model.{Filters, Updates}
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.{Filter, Update}
+import mongo4cats.database.operations.{Filter, Sort, Update}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -378,7 +378,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.sort(Sorts.descending("name")).skip(1).limit(2).first[IO]
+              res  <- coll.find.sort(Sort.desc("name")).skip(1).limit(2).first[IO]
             } yield res
 
             result.map(_.getString("name") mustBe "d3")

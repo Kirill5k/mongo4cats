@@ -159,5 +159,5 @@ final private case class IndexBuilder(
 
   override def combinedWith(anotherIndex: Index): Index = IndexBuilder(anotherIndex.indexes ::: indexes)
 
-  override private[database] def toBson = Indexes.compoundIndex(indexes.reverse.asJava)
+  override private[database] def toBson: Bson = Indexes.compoundIndex(indexes.reverse.asJava)
 }

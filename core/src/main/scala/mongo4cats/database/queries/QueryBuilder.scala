@@ -18,12 +18,11 @@ package mongo4cats.database.queries
 
 import cats.effect.Async
 import com.mongodb.client.model
-import com.mongodb.client.model.{changestream, Sorts}
-import com.mongodb.client.model.changestream.ChangeStreamDocument
+import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._
 import mongo4cats.database.operations
-import mongo4cats.database.operations.Projection
+import mongo4cats.database.operations.{Projection, Sort}
 import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
 import org.reactivestreams.Publisher
@@ -47,11 +46,14 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
   def sort(sort: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Sort[T](sort) :: commands)
 
+  def sort(sorts: Sort): FindQueryBuilder[T] =
+    sort(sorts.toBson)
+
   def sortBy(fieldNames: String*): FindQueryBuilder[T] =
-    sort(Sorts.ascending(fieldNames: _*))
+    sort(Sort.asc(fieldNames: _*))
 
   def sortByDesc(fieldNames: String*): FindQueryBuilder[T] =
-    sort(Sorts.descending(fieldNames: _*))
+    sort(Sort.desc(fieldNames: _*))
 
   def filter(filter: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Filter[T](filter) :: commands)
@@ -125,7 +127,7 @@ final case class WatchQueryBuilder[T: ClassTag] private[database] (
   def collation(collation: model.Collation): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.Collation[T](collation) :: commands)
 
-  def fullDocument(fullDocument: changestream.FullDocument): WatchQueryBuilder[T] =
+  def fullDocument(fullDocument: FullDocument): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.FullDocument[T](fullDocument) :: commands)
 
   def maxAwaitTime(duration: Duration): WatchQueryBuilder[T] =
