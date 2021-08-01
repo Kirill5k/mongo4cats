@@ -422,6 +422,6 @@ final private case class UpdateBuilder(
   def combinedWith(anotherUpdate: Update): Update =
     UpdateBuilder(anotherUpdate.updates ::: updates)
 
-  override private[database] def toBson: Bson = Updates.combine(updates.asJava)
+  override private[database] def toBson: Bson = Updates.combine(updates.reverse.asJava)
 
 }

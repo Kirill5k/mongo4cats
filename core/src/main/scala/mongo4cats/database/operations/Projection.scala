@@ -30,8 +30,6 @@ trait Projection {
     *   the expression
     * @return
     *   the projection
-    * @see
-    *   Aggregates#project(Bson)
     */
   def computed[T](fieldName: String, expression: T): Projection
 
@@ -80,7 +78,7 @@ trait Projection {
   def excludeId: Projection
 
   /** Creates a projection that includes for the given field only the first element of an array that matches the query filter. This is
-    * referred to as the positional $ operator.
+    * referred to as the positional \$ operator.
     *
     * @param fieldName
     *   the field name whose value is the array

@@ -39,7 +39,7 @@ trait Index {
     * @return
     *   the index specification [[https://docs.mongodb.com/manual/core/index-single/#single-field-indexes]]
     */
-  def ascending(fieldNames: List[String]): Index
+  def ascending(fieldNames: Seq[String]): Index
 
   /** Create an index key for an descending index on the given field.
     *
@@ -57,7 +57,7 @@ trait Index {
     * @return
     *   the index specification [[https://docs.mongodb.com/manual/core/index-single/#single-field-indexes]]
     */
-  def descending(fieldNames: List[String]): Index
+  def descending(fieldNames: Seq[String]): Index
 
   /** Create an index key for an 2dsphere index on the given field.
     *
@@ -75,7 +75,7 @@ trait Index {
     * @return
     *   the index specification [[https://docs.mongodb.com/manual/core/2dsphere/]]
     */
-  def geo2dsphere(fieldNames: List[String]): Index
+  def geo2dsphere(fieldNames: Seq[String]): Index
 
   /** Create an index key for a 2d index on the given field.
     *
@@ -130,32 +130,32 @@ trait Index {
 object Index {
   private val empty: Index = IndexBuilder(Nil)
 
-  def ascending(fieldName: String): Index          = empty.ascending(fieldName)
-  def ascending(fieldNames: List[String]): Index   = empty.ascending(fieldNames)
-  def descending(fieldName: String): Index         = empty.descending(fieldName)
-  def descending(fieldNames: List[String]): Index  = empty.descending(fieldNames)
-  def geo2dsphere(fieldName: String): Index        = empty.geo2dsphere(fieldName)
-  def geo2dsphere(fieldNames: List[String]): Index = empty.geo2dsphere(fieldNames)
-  def geo2d(fieldName: String): Index              = empty.geo2d(fieldName)
-  def text(fieldName: String): Index               = empty.text(fieldName)
-  def text: Index                                  = empty.text
-  def hashed(fieldName: String): Index             = empty.hashed(fieldName)
+  def ascending(fieldName: String): Index         = empty.ascending(fieldName)
+  def ascending(fieldNames: Seq[String]): Index   = empty.ascending(fieldNames)
+  def descending(fieldName: String): Index        = empty.descending(fieldName)
+  def descending(fieldNames: Seq[String]): Index  = empty.descending(fieldNames)
+  def geo2dsphere(fieldName: String): Index       = empty.geo2dsphere(fieldName)
+  def geo2dsphere(fieldNames: Seq[String]): Index = empty.geo2dsphere(fieldNames)
+  def geo2d(fieldName: String): Index             = empty.geo2d(fieldName)
+  def text(fieldName: String): Index              = empty.text(fieldName)
+  def text: Index                                 = empty.text
+  def hashed(fieldName: String): Index            = empty.hashed(fieldName)
 }
 
 final private case class IndexBuilder(
     override val indexes: List[Bson]
 ) extends Index {
 
-  override def ascending(fieldName: String): Index          = IndexBuilder(Indexes.ascending(fieldName) :: indexes)
-  override def ascending(fieldNames: List[String]): Index   = IndexBuilder(Indexes.ascending(fieldNames.asJava) :: indexes)
-  override def descending(fieldName: String): Index         = IndexBuilder(Indexes.descending(fieldName) :: indexes)
-  override def descending(fieldNames: List[String]): Index  = IndexBuilder(Indexes.descending(fieldNames.asJava) :: indexes)
-  override def geo2dsphere(fieldName: String): Index        = IndexBuilder(Indexes.geo2dsphere(fieldName) :: indexes)
-  override def geo2dsphere(fieldNames: List[String]): Index = IndexBuilder(Indexes.geo2dsphere(fieldNames.asJava) :: indexes)
-  override def geo2d(fieldName: String): Index              = IndexBuilder(Indexes.geo2d(fieldName) :: indexes)
-  override def text(fieldName: String): Index               = IndexBuilder(Indexes.text(fieldName) :: indexes)
-  override def text: Index                                  = IndexBuilder(Indexes.text() :: indexes)
-  override def hashed(fieldName: String): Index             = IndexBuilder(Indexes.hashed(fieldName) :: indexes)
+  override def ascending(fieldName: String): Index         = IndexBuilder(Indexes.ascending(fieldName) :: indexes)
+  override def ascending(fieldNames: Seq[String]): Index   = IndexBuilder(Indexes.ascending(fieldNames.asJava) :: indexes)
+  override def descending(fieldName: String): Index        = IndexBuilder(Indexes.descending(fieldName) :: indexes)
+  override def descending(fieldNames: Seq[String]): Index  = IndexBuilder(Indexes.descending(fieldNames.asJava) :: indexes)
+  override def geo2dsphere(fieldName: String): Index       = IndexBuilder(Indexes.geo2dsphere(fieldName) :: indexes)
+  override def geo2dsphere(fieldNames: Seq[String]): Index = IndexBuilder(Indexes.geo2dsphere(fieldNames.asJava) :: indexes)
+  override def geo2d(fieldName: String): Index             = IndexBuilder(Indexes.geo2d(fieldName) :: indexes)
+  override def text(fieldName: String): Index              = IndexBuilder(Indexes.text(fieldName) :: indexes)
+  override def text: Index                                 = IndexBuilder(Indexes.text() :: indexes)
+  override def hashed(fieldName: String): Index            = IndexBuilder(Indexes.hashed(fieldName) :: indexes)
 
   override def combinedWith(anotherIndex: Index): Index = IndexBuilder(anotherIndex.indexes ::: indexes)
 
