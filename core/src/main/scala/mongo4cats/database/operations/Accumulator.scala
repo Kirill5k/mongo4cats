@@ -22,7 +22,7 @@ import com.mongodb.client.model.{Accumulators, BsonField}
 
 import scala.jdk.CollectionConverters._
 
-object Accumulator {
+trait Accumulator {
 
   /** Gets a field name for a \$group operation representing the sum of the values of the given expression when applied to all members of
     * the group.
@@ -34,8 +34,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/sum/]]
     */
-  def sum[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.sum(fieldName, expression))
+  def sum[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the average of the values of the given expression when applied to all members
     * of the group.
@@ -47,8 +46,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/avg/]]
     */
-  def avg[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.avg(fieldName, expression))
+  def avg[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the value of the given expression when applied to the first member of the
     * group.
@@ -60,8 +58,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/first/]]
     */
-  def first[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.first(fieldName, expression))
+  def first[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the value of the given expression when applied to the last member of the group.
     *
@@ -72,8 +69,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/last/]]
     */
-  def last[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.last(fieldName, expression))
+  def last[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the maximum of the values of the given expression when applied to all members
     * of the group.
@@ -85,8 +81,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/max/]]
     */
-  def max[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.max(fieldName, expression))
+  def max[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the minimum of the values of the given expression when applied to all members
     * of the group.
@@ -98,8 +93,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/min/]]
     */
-  def min[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.min(fieldName, expression))
+  def min[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing an array of all values that results from applying an expression to each
     * document in a group of documents that share the same group by key.
@@ -111,8 +105,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/push/]]
     */
-  def push[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.push(fieldName, expression))
+  def push[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing all unique values that results from applying the given expression to each
     * document in a group of documents that share the same group by key.
@@ -124,8 +117,7 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/addToSet/]]
     */
-  def addToSet[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.addToSet(fieldName, expression))
+  def addToSet[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the sample standard deviation of the values of the given expression when
     * applied to all members of the group.
@@ -141,8 +133,7 @@ object Accumulator {
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/stdDevPop/]]
     * @since 3.2
     */
-  def stdDevPop[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.stdDevPop(fieldName, expression))
+  def stdDevPop[T](fieldName: String, expression: T): Accumulator
 
   /** Gets a field name for a \$group operation representing the sample standard deviation of the values of the given expression when
     * applied to all members of the group.
@@ -156,8 +147,23 @@ object Accumulator {
     * @return
     *   the accumulator [[https://docs.mongodb.com/manual/reference/operator/aggregation/stdDevSamp/]]
     */
-  def stdDevSamp[T](fieldName: String, expression: T): Accumulator =
-    AccumulatorBuilder(Accumulators.stdDevSamp(fieldName, expression))
+  def stdDevSamp[T](fieldName: String, expression: T): Accumulator
+
+  /** Merges 2 field accumulators together.
+    *
+    * @param anotherAccumulator
+    *   the accumulator to be merged with
+    * @return
+    *   the accumulator
+    */
+  def combinedWith(anotherAccumulator: Accumulator): Accumulator
+
+  private[operations] def accumulators: List[BsonField]
+  private[database] def toBson: java.util.List[BsonField]
+}
+
+object Accumulator {
+  private val empty = AccumulatorBuilder(Nil)
 
   /** Creates an \$accumulator pipeline stage
     *
@@ -202,16 +208,57 @@ object Accumulator {
         mergeFunction,
         finalizeFunction.orNull,
         lang
-      )
+      ) :: Nil
     }
-}
 
-trait Accumulator {
-  private[database] def toBson: BsonField
+  def sum[T](fieldName: String, expression: T): Accumulator        = empty.sum(fieldName, expression)
+  def avg[T](fieldName: String, expression: T): Accumulator        = empty.avg(fieldName, expression)
+  def first[T](fieldName: String, expression: T): Accumulator      = empty.first(fieldName, expression)
+  def last[T](fieldName: String, expression: T): Accumulator       = empty.last(fieldName, expression)
+  def max[T](fieldName: String, expression: T): Accumulator        = empty.max(fieldName, expression)
+  def min[T](fieldName: String, expression: T): Accumulator        = empty.min(fieldName, expression)
+  def push[T](fieldName: String, expression: T): Accumulator       = empty.push(fieldName, expression)
+  def addToSet[T](fieldName: String, expression: T): Accumulator   = empty.addToSet(fieldName, expression)
+  def stdDevPop[T](fieldName: String, expression: T): Accumulator  = empty.stdDevPop(fieldName, expression)
+  def stdDevSamp[T](fieldName: String, expression: T): Accumulator = empty.stdDevSamp(fieldName, expression)
 }
 
 final private case class AccumulatorBuilder(
-    private val accumulator: BsonField
+    override val accumulators: List[BsonField]
 ) extends Accumulator {
-  override private[database] def toBson: BsonField = accumulator
+
+  def sum[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.sum(fieldName, expression) :: accumulators)
+
+  def avg[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.avg(fieldName, expression) :: accumulators)
+
+  def first[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.first(fieldName, expression) :: accumulators)
+
+  def last[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.last(fieldName, expression) :: accumulators)
+
+  def max[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.max(fieldName, expression) :: accumulators)
+
+  def min[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.min(fieldName, expression) :: accumulators)
+
+  def push[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.push(fieldName, expression) :: accumulators)
+
+  def addToSet[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.addToSet(fieldName, expression) :: accumulators)
+
+  def stdDevPop[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.stdDevPop(fieldName, expression) :: accumulators)
+
+  def stdDevSamp[T](fieldName: String, expression: T): Accumulator =
+    AccumulatorBuilder(Accumulators.stdDevSamp(fieldName, expression) :: accumulators)
+
+  override def combinedWith(anotherAccumulator: Accumulator): Accumulator =
+    AccumulatorBuilder(anotherAccumulator.accumulators ::: accumulators)
+
+  override private[database] def toBson: java.util.List[BsonField] = accumulators.reverse.asJava
 }
