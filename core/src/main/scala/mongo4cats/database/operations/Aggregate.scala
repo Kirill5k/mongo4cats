@@ -21,7 +21,7 @@ import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
 
-object Aggregate {
+trait Aggregate {
 
   /** Creates a \$bucketAuto pipeline stage
     *
@@ -39,7 +39,7 @@ object Aggregate {
       groupBy: TExpression,
       buckets: Int,
       options: BucketAutoOptions = new BucketAutoOptions()
-  ): Aggregate = AggregateBuilder(Aggregates.bucketAuto(groupBy, buckets, options))
+  ): Aggregate
 
   /** Creates a \$sample pipeline stage with the specified sample size
     *
@@ -49,7 +49,7 @@ object Aggregate {
     *   the \$sample pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sample/]]
     * @since 3.2
     */
-  def sample(size: Int): Aggregate = AggregateBuilder(Aggregates.sample(size))
+  def sample(size: Int): Aggregate
 
   /** Creates a \$count pipeline stage using the field name "count" to store the result
     *
@@ -57,7 +57,7 @@ object Aggregate {
     *   the \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
     * @since 3.4
     */
-  def count: Aggregate = AggregateBuilder(Aggregates.count())
+  def count: Aggregate
 
   /** Creates a \$count pipeline stage using the named field to store the result
     *
@@ -67,7 +67,7 @@ object Aggregate {
     *   the \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
     * @since 3.4
     */
-  def count(field: String): Aggregate = AggregateBuilder(Aggregates.count(field))
+  def count(field: String): Aggregate
 
   /** Creates a \$match pipeline stage for the specified filter
     *
@@ -76,7 +76,7 @@ object Aggregate {
     * @return
     *   the \$match pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/match/]]
     */
-  def matchBy(filter: Filter): Aggregate = AggregateBuilder(Aggregates.`match`(filter.toBson))
+  def matchBy(filter: Filter): Aggregate
 
   /** Creates a \$project pipeline stage for the specified projection
     *
@@ -85,7 +85,7 @@ object Aggregate {
     * @return
     *   the \$project pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/project/]]
     */
-  def project(projection: Projection): Aggregate = AggregateBuilder(Aggregates.project(projection.toBson))
+  def project(projection: Projection): Aggregate
 
   /** Creates a \$sort pipeline stage for the specified sort specification
     *
@@ -94,7 +94,7 @@ object Aggregate {
     * @return
     *   the \$sort pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sort/]]
     */
-  def sort(sort: Sort): Aggregate = AggregateBuilder(Aggregates.sort(sort.toBson))
+  def sort(sort: Sort): Aggregate
 
   /** Creates a \$sortByCount pipeline stage for the specified filter
     *
@@ -104,7 +104,7 @@ object Aggregate {
     *   the \$sortByCount pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sortByCount/]]
     * @since 3.4
     */
-  def sortByCount[TExpression](filter: TExpression): Aggregate = AggregateBuilder(Aggregates.sortByCount(filter))
+  def sortByCount[TExpression](filter: TExpression): Aggregate
 
   /** Creates a \$skip pipeline stage
     *
@@ -113,7 +113,7 @@ object Aggregate {
     * @return
     *   the \$skip pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/skip/]]
     */
-  def skip(n: Int): Aggregate = AggregateBuilder(Aggregates.skip(n))
+  def skip(n: Int): Aggregate
 
   /** Creates a \$limit pipeline stage for the specified filter
     *
@@ -122,7 +122,7 @@ object Aggregate {
     * @return
     *   the \$limit pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/limi/]]
     */
-  def limit(n: Int): Aggregate = AggregateBuilder(Aggregates.limit(n))
+  def limit(n: Int): Aggregate
 
   /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using equality match between the
     * local field and the foreign field
@@ -139,8 +139,7 @@ object Aggregate {
     *   the \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
     * @since 3.2
     */
-  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
-    AggregateBuilder(Aggregates.lookup(from, localField, foreignField, as))
+  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate
 
   /** Creates a \$group pipeline stage for the specified filter
     *
@@ -151,8 +150,7 @@ object Aggregate {
     * @return
     *   the \$group pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/group/]]
     */
-  def group[TExpression](id: Option[TExpression], fieldAccumulators: Seq[Accumulator]): Aggregate =
-    AggregateBuilder(Aggregates.group(id.getOrElse(null.asInstanceOf[TExpression]), fieldAccumulators.map(_.toBson).asJava))
+  def group[TExpression](id: Option[TExpression], fieldAccumulators: Seq[Accumulator]): Aggregate
 
   /** Creates a \$unwind pipeline stage for the specified field name, which must be prefixed by a '\$' sign.
     *
@@ -164,8 +162,7 @@ object Aggregate {
     *   the \$unwind pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/]]
     * @since 3.2
     */
-  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
-    AggregateBuilder(Aggregates.unwind(fieldName, unwindOptions))
+  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate
 
   /** Creates a \$out pipeline stage that writes into the specified collection
     *
@@ -174,7 +171,7 @@ object Aggregate {
     * @return
     *   the \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
     */
-  def out(collectionName: String): Aggregate = AggregateBuilder(Aggregates.out(collectionName))
+  def out(collectionName: String): Aggregate
 
   /** Creates a \$out pipeline stage that supports outputting to a different database.
     *
@@ -186,8 +183,7 @@ object Aggregate {
     *   the \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
     * @since 4.1
     */
-  def out(databaseName: String, collectionName: String): Aggregate =
-    AggregateBuilder(Aggregates.out(databaseName, collectionName))
+  def out(databaseName: String, collectionName: String): Aggregate
 
   /** Creates a \$merge pipeline stage that merges into the specified collection using the specified options.
     *
@@ -199,8 +195,7 @@ object Aggregate {
     *   the \$merge pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/merge/]]
     * @since 3.11
     */
-  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate =
-    AggregateBuilder(Aggregates.merge(collectionName, options))
+  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate
 
   /** Creates a \$replaceRoot pipeline stage
     *
@@ -213,7 +208,7 @@ object Aggregate {
     *   the \$replaceRoot pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/replaceWith/]]
     * @since 3.11
     */
-  def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value))
+  def replaceWith[TExpression](value: TExpression): Aggregate
 
   /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using the given pipeline
     *
@@ -227,8 +222,7 @@ object Aggregate {
     *   the \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
     * @since 3.7
     */
-  def lookup(from: String, pipeline: Seq[Aggregate], as: String): Aggregate =
-    AggregateBuilder(Aggregates.lookup(from, pipeline.map(_.toBson).asJava, as))
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate
 
   /** Creates a graphLookup pipeline stage for the specified filter
     *
@@ -255,7 +249,7 @@ object Aggregate {
       connectToField: String,
       as: String,
       options: GraphLookupOptions = new GraphLookupOptions()
-  ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options))
+  ): Aggregate
 
   /** Creates a \$unionWith pipeline stage.
     *
@@ -267,16 +261,128 @@ object Aggregate {
     *   the \$unionWith pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unionWith/]]
     * @since 4.1
     */
-  def unionWith(collection: String, pipeline: Seq[Aggregate]): Aggregate =
-    AggregateBuilder(Aggregates.unionWith(collection, pipeline.map(_.toBson).asJava))
+  def unionWith(collection: String, pipeline: Aggregate): Aggregate
+
+  /** Merges 2 aggregation pipelines together.
+    *
+    * @param anotherAggregate
+    *   the aggregate to be merged with
+    * @return
+    *   the aggregate pipeline
+    */
+  def combinedWith(anotherAggregate: Aggregate): Aggregate
+
+  private[operations] def aggregates: List[Bson]
+  private[database] def toBson: java.util.List[Bson]
 }
 
-trait Aggregate {
-  private[database] def toBson: Bson
+object Aggregate {
+  private val empty = AggregateBuilder(Nil)
+
+  def bucketAuto[TExpression](
+      groupBy: TExpression,
+      buckets: Int,
+      options: BucketAutoOptions = new BucketAutoOptions()
+  ): Aggregate = empty.bucketAuto(groupBy, buckets, options)
+
+  def sample(size: Int): Aggregate                             = empty.sample(size)
+  def count: Aggregate                                         = empty.count
+  def count(field: String): Aggregate                          = empty.count(field)
+  def matchBy(filter: Filter): Aggregate                       = empty.matchBy(filter)
+  def project(projection: Projection): Aggregate               = empty.project(projection)
+  def sort(sort: Sort): Aggregate                              = empty.sort(sort)
+  def sortByCount[TExpression](filter: TExpression): Aggregate = empty.sortByCount(filter)
+  def skip(n: Int): Aggregate                                  = empty.skip(n)
+  def limit(n: Int): Aggregate                                 = empty.limit(n)
+
+  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
+    empty.lookup(from, localField, foreignField, as)
+
+  def group[TExpression](id: Option[TExpression], fieldAccumulators: Seq[Accumulator]): Aggregate = empty.group(id, fieldAccumulators)
+
+  def unwind(fieldName: String, options: UnwindOptions = new UnwindOptions()): Aggregate = empty.unwind(fieldName, options)
+
+  def out(collectionName: String): Aggregate                                               = empty.out(collectionName)
+  def out(databaseName: String, collectionName: String): Aggregate                         = empty.out(databaseName, collectionName)
+  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate = empty.merge(collectionName, options)
+  def replaceWith[TExpression](value: TExpression): Aggregate                              = empty.replaceWith(value)
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate                     = empty.lookup(from, pipeline, as)
+
+  def graphLookup[TExpression](
+      from: String,
+      startWith: TExpression,
+      connectFromField: String,
+      connectToField: String,
+      as: String,
+      options: GraphLookupOptions = new GraphLookupOptions()
+  ): Aggregate = empty.graphLookup(from, startWith, connectFromField, connectToField, as, options)
+
+  def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
 }
 
 final private case class AggregateBuilder(
-    private val aggregate: Bson
+    override val aggregates: List[Bson]
 ) extends Aggregate {
-  override private[database] def toBson: Bson = aggregate
+
+  def bucketAuto[TExpression](
+      groupBy: TExpression,
+      buckets: Int,
+      options: BucketAutoOptions = new BucketAutoOptions()
+  ): Aggregate = AggregateBuilder(Aggregates.bucketAuto(groupBy, buckets, options) :: aggregates)
+
+  def sample(size: Int): Aggregate = AggregateBuilder(Aggregates.sample(size) :: aggregates)
+
+  def count: Aggregate = AggregateBuilder(Aggregates.count() :: aggregates)
+
+  def count(field: String): Aggregate = AggregateBuilder(Aggregates.count(field) :: aggregates)
+
+  def matchBy(filter: Filter): Aggregate = AggregateBuilder(Aggregates.`match`(filter.toBson) :: aggregates)
+
+  def project(projection: Projection): Aggregate = AggregateBuilder(Aggregates.project(projection.toBson) :: aggregates)
+
+  def sort(sort: Sort): Aggregate = AggregateBuilder(Aggregates.sort(sort.toBson) :: aggregates)
+
+  def sortByCount[TExpression](filter: TExpression): Aggregate = AggregateBuilder(Aggregates.sortByCount(filter) :: aggregates)
+
+  def skip(n: Int): Aggregate = AggregateBuilder(Aggregates.skip(n) :: aggregates)
+
+  def limit(n: Int): Aggregate = AggregateBuilder(Aggregates.limit(n) :: aggregates)
+
+  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
+    AggregateBuilder(Aggregates.lookup(from, localField, foreignField, as) :: aggregates)
+
+  def group[TExpression](id: Option[TExpression], fieldAccumulators: Seq[Accumulator]): Aggregate =
+    AggregateBuilder(Aggregates.group(id.getOrElse(null.asInstanceOf[TExpression]), fieldAccumulators.map(_.toBson).asJava) :: aggregates)
+
+  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
+    AggregateBuilder(Aggregates.unwind(fieldName, unwindOptions) :: aggregates)
+
+  def out(collectionName: String): Aggregate = AggregateBuilder(Aggregates.out(collectionName) :: aggregates)
+
+  def out(databaseName: String, collectionName: String): Aggregate =
+    AggregateBuilder(Aggregates.out(databaseName, collectionName) :: aggregates)
+
+  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate =
+    AggregateBuilder(Aggregates.merge(collectionName, options) :: aggregates)
+
+  def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
+
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
+    AggregateBuilder(Aggregates.lookup(from, pipeline.toBson, as) :: aggregates)
+
+  def graphLookup[TExpression](
+      from: String,
+      startWith: TExpression,
+      connectFromField: String,
+      connectToField: String,
+      as: String,
+      options: GraphLookupOptions = new GraphLookupOptions()
+  ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
+
+  def unionWith(collection: String, pipeline: Aggregate): Aggregate =
+    AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
+
+  override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
+
+  override private[database] def toBson: java.util.List[Bson] = aggregates.reverse.asJava
 }
