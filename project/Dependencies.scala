@@ -7,9 +7,10 @@ object Dependencies {
     val scalaCompat = "2.5.0"
     val circe       = "0.14.1"
 
-    val logback    = "1.2.5"
-    val scalaTest  = "3.2.9"
-    val scalaCheck = "1.15.4"
+    val logback       = "1.2.5"
+    val scalaTest     = "3.2.9"
+    val scalaTestPlus = "3.2.9.0"
+    val scalaCheck    = "1.15.4"
 
     val embeddedMongo   = "3.0.0"
     val immutableValue  = "2.8.8"
@@ -28,9 +29,8 @@ object Dependencies {
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
     val circeGeneric = "io.circe" %% "circe-generic" % Versions.circe
 
-    val scalaTest  = "org.scalatest"  %% "scalatest"       % Versions.scalaTest
-    val scalaCheck = "org.scalacheck" %% "scalacheck"      % Versions.scalaCheck
-    val logback    = "ch.qos.logback"  % "logback-classic" % Versions.logback
+    val scalaTest      = "org.scalatest"     %% "scalatest"       % Versions.scalaTest
+    val logback        = "ch.qos.logback"     % "logback-classic" % Versions.logback
 
     val embeddedMongo   = "de.flapdoodle.embed" % "de.flapdoodle.embed.mongo" % Versions.embeddedMongo
     val immutableValue  = "org.immutables"      % "value"                     % Versions.immutableValue
@@ -46,9 +46,8 @@ object Dependencies {
   )
 
   lazy val test = Seq(
-    Libraries.logback    % Test,
-    Libraries.scalaTest  % Test,
-    Libraries.scalaCheck % Test
+    Libraries.logback        % Test,
+    Libraries.scalaTest      % Test
   )
 
   lazy val examples = Seq(
