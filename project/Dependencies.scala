@@ -9,8 +9,6 @@ object Dependencies {
 
     val logback       = "1.2.5"
     val scalaTest     = "3.2.9"
-    val scalaTestPlus = "3.2.9.0"
-    val scalaCheck    = "1.15.4"
 
     val embeddedMongo   = "3.0.0"
     val immutableValue  = "2.8.8"

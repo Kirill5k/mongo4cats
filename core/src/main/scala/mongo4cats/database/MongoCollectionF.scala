@@ -25,7 +25,7 @@ import mongo4cats.database.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection
-import mongo4cats.database.operations.{Filter, Index, Update}
+import mongo4cats.database.operations.{Aggregate, Filter, Index, Update}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 
@@ -67,6 +67,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def aggregate(pipeline: Seq[Bson]): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(collection.aggregate(pipeline.asJava), Nil)
 
+  def aggregate(pipeline: Aggregate): AggregateQueryBuilder[T] =
+    AggregateQueryBuilder(collection.aggregate(pipeline.toBson), Nil)
+
   /** Creates a change stream for this collection.
     *
     * @param pipeline
@@ -76,6 +79,9 @@ final class MongoCollectionF[T: ClassTag] private (
     */
   def watch[Y](pipeline: Seq[Bson])(implicit classTag: ClassTag[Y]): WatchQueryBuilder[Y] =
     WatchQueryBuilder[Y](collection.watch(pipeline.asJava, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
+
+  def watch[Y](pipeline: Aggregate)(implicit classTag: ClassTag[Y]): WatchQueryBuilder[Y] =
+    WatchQueryBuilder[Y](collection.watch(pipeline.toBson, classTag.runtimeClass.asInstanceOf[Class[Y]]), Nil)
 
   /** Creates a change stream for this collection.
     * @since 2.2
