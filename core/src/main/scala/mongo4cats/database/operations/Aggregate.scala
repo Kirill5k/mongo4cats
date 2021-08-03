@@ -150,7 +150,7 @@ trait Aggregate {
     * @return
     *   the \$group pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/group/]]
     */
-  def group[TExpression](id: Option[TExpression], fieldAccumulators: Accumulator): Aggregate
+  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate
 
   /** Creates a \$unwind pipeline stage for the specified field name, which must be prefixed by a '\$' sign.
     *
@@ -298,7 +298,7 @@ object Aggregate {
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
     empty.lookup(from, localField, foreignField, as)
 
-  def group[TExpression](id: Option[TExpression], fieldAccumulators: Accumulator): Aggregate = empty.group(id, fieldAccumulators)
+  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate = empty.group(id, fieldAccumulators)
 
   def unwind(fieldName: String, options: UnwindOptions = new UnwindOptions()): Aggregate = empty.unwind(fieldName, options)
 
@@ -351,8 +351,8 @@ final private case class AggregateBuilder(
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
     AggregateBuilder(Aggregates.lookup(from, localField, foreignField, as) :: aggregates)
 
-  def group[TExpression](id: Option[TExpression], fieldAccumulators: Accumulator): Aggregate =
-    AggregateBuilder(Aggregates.group(id.getOrElse(null.asInstanceOf[TExpression]), fieldAccumulators.toBson) :: aggregates)
+  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate =
+    AggregateBuilder(Aggregates.group(id, fieldAccumulators.toBson) :: aggregates)
 
   def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
     AggregateBuilder(Aggregates.unwind(fieldName, unwindOptions) :: aggregates)
