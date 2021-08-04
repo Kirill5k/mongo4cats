@@ -18,7 +18,7 @@ package mongo4cats.database
 
 import cats.Monad
 import cats.effect.Async
-import cats.implicits._
+import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.MongoDatabase
 import mongo4cats.database.codecs.CustomCodecProvider
 import mongo4cats.database.helpers._

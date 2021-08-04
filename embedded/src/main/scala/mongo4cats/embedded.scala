@@ -17,7 +17,8 @@
 package mongo4cats
 
 import cats.effect.{Async, Resource}
-import cats.implicits._
+import cats.syntax.apply._
+import cats.syntax.applicativeError._
 import de.flapdoodle.embed.mongo.config.{MongodConfig, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.mongo.{MongodProcess, MongodStarter}

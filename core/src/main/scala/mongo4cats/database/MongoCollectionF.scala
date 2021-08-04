@@ -17,7 +17,7 @@
 package mongo4cats.database
 
 import cats.effect.Async
-import cats.implicits._
+import cats.syntax.functor._
 import com.mongodb.MongoNamespace
 import com.mongodb.client.model._
 import com.mongodb.client.result._

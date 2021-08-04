@@ -17,7 +17,7 @@
 package mongo4cats.client
 
 import cats.effect.IO
-import cats.implicits._
+import cats.syntax.either._
 import cats.effect.unsafe.implicits.global
 import com.mongodb.{MongoTimeoutException, ServerAddress}
 import mongo4cats.embedded.EmbeddedMongo

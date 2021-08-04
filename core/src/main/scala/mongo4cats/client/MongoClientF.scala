@@ -17,7 +17,7 @@
 package mongo4cats.client
 
 import cats.effect.{Async, Resource, Sync}
-import cats.implicits._
+import cats.syntax.flatMap._
 import mongo4cats.database.MongoDatabaseF
 import com.mongodb.{MongoClientSettings, MongoDriverInformation, ServerAddress}
 import com.mongodb.reactivestreams.client.{MongoClient, MongoClients}
