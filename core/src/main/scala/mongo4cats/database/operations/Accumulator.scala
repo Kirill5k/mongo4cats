@@ -163,7 +163,7 @@ trait Accumulator {
 }
 
 object Accumulator {
-  private val empty = AccumulatorBuilder(Nil)
+  private val empty: Accumulator = AccumulatorBuilder(Nil)
 
   /** Creates an \$accumulator pipeline stage
     *

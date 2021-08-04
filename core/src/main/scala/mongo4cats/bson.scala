@@ -28,11 +28,12 @@ object bson {
 
   type Document = JDocument
   object Document {
-    val empty: Document                               = new JDocument()
-    def apply[A](key: String, value: A): Document     = new JDocument(key, value)
-    def apply(entries: Map[String, AnyRef]): Document = new JDocument(entries.asJava)
-    def fromJson(json: String): Document              = JDocument.parse(json)
-    def parse(json: String): Document                 = fromJson(json)
+    val empty: Document                             = new JDocument()
+    def apply[A](entries: Map[String, A]): Document = new JDocument(entries.asInstanceOf[Map[String, AnyRef]].asJava)
+    def apply[A](entries: (String, A)*): Document   = apply[A](entries.toMap[String, A])
+    def apply[A](key: String, value: A): Document   = apply(key -> value)
+    def fromJson(json: String): Document            = JDocument.parse(json)
+    def parse(json: String): Document               = fromJson(json)
   }
 
   type ObjectId = JObjectId

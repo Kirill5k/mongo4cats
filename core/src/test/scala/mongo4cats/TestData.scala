@@ -23,21 +23,19 @@ final case class Transaction(
 )
 
 object TestData {
-
   private val random = Random
 
-  val account: Document            = Document("_id", ObjectId.get)
-  val categories: Vector[Document] = (0 until 10).map(i => Document(Map("_id" -> ObjectId.get, "name" -> s"cat-$i"))).toVector
+  val usdCurrency: Document        = Document("symbol" -> "$", "code" -> "USD")
+  val account: Document            = Document("_id" -> ObjectId.get, "currency" -> usdCurrency)
+  val categories: Vector[Document] = (0 until 10).map(i => Document("_id" -> ObjectId.get, "name" -> s"cat-$i")).toVector
 
   def transaction: Document =
     Document(
-      Map(
-        "_id"      -> ObjectId.get,
-        "date"     -> Instant.now().minusMillis(random.nextLong(100000L)),
-        "category" -> categories(random.nextInt(categories.size)),
-        "account"  -> account.getObjectId("_id"),
-        "amount"   -> random.nextInt(10000).asInstanceOf[AnyRef]
-      )
+      "_id"      -> ObjectId.get,
+      "date"     -> Instant.now().minusMillis(random.nextLong(100000L)),
+      "category" -> categories(random.nextInt(categories.size)),
+      "account"  -> account.getObjectId("_id"),
+      "amount"   -> random.nextInt(10000)
     )
 
   def transactions(n: Int): Vector[Document] = (0 until n).map(_ => transaction).toVector

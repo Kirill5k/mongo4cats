@@ -62,6 +62,7 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
 
           result.map { cats =>
             cats must have size 10
+            cats.map(_.getInteger("count").intValue()).sum mustBe 250
           }
         }
       }

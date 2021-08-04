@@ -475,5 +475,5 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
     }.unsafeToFuture()
 
   def document(name: String = "test-doc-1"): Document =
-    Document(Map("name" -> name, "info" -> Document.fromJson(s"""{"x": 42, "y": 23}"""")))
+    Document("name" -> name, "info" -> Document.fromJson(s"""{"x": 42, "y": 23}""""))
 }
