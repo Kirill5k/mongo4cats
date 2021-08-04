@@ -21,7 +21,7 @@ import cats.effect.unsafe.implicits.global
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.{Accumulator, Aggregate}
+import mongo4cats.database.operations.{Accumulator, Aggregate, Sort}
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -53,16 +53,26 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
       "group by field" in {
         withEmbeddedMongoDatabase { db =>
           val result = for {
-            cats <- db.getCollection("transactions")
-            accumulator = Accumulator.sum("count", 1).sum("totalAmount", "$amount").first("categoryId", "$category")
-            aggregate = Aggregate.group("$category", accumulator)
-
-            res <- cats.aggregate(aggregate).all[IO]
+            transactions <- db.getCollection("transactions")
+            accumulator = Accumulator
+              .sum("count", 1)
+              .sum("totalAmount", "$amount")
+              .first("categoryId", "$category._id")
+            res <- transactions
+              .aggregate {
+                Aggregate
+                  .group("$category", accumulator)
+                  .lookup("categories", "categoryId", "_id", "category")
+                  .sort(Sort.desc("count"))
+              }
+              .all[IO]
           } yield res
 
           result.map { cats =>
             cats must have size 10
-            cats.map(_.getInteger("count").intValue()).sum mustBe 250
+            val counts = cats.map(_.getInteger("count").intValue()).toList
+            counts.reverse mustBe sorted
+            counts.sum mustBe 250
           }
         }
       }
