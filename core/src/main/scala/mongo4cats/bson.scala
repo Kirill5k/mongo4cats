@@ -34,6 +34,7 @@ object bson {
     def apply[A](key: String, value: A): Document   = apply(key -> value)
     def fromJson(json: String): Document            = JDocument.parse(json)
     def parse(json: String): Document               = fromJson(json)
+    def from(doc: Document): Document               = parse(doc.toJson)
   }
 
   type ObjectId = JObjectId

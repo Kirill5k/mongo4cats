@@ -448,6 +448,9 @@ final class MongoCollectionF[T: ClassTag] private (
   def replaceOne[F[_]: Async](filters: Bson, replacement: T): F[UpdateResult] =
     collection.replaceOne(filters, replacement).asyncSingle[F]
 
+  def replaceOne[F[_]: Async](filters: Filter, replacement: T): F[UpdateResult] =
+    replaceOne(filters.toBson, replacement)
+
   /** Replace a document in the collection according to the specified arguments.
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/#replace-the-document]]

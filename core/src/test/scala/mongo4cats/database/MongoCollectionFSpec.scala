@@ -18,7 +18,7 @@ package mongo4cats.database
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.mongodb.client.model.{Filters, Updates}
+import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
@@ -33,20 +33,19 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
   override val mongoPort = 12347
 
   "A MongoCollectionF" when {
-
     "working with Documents" should {
+
       "insertOne" should {
         "store new document in db" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
-              insertResult <- coll.insertOne[IO](document())
-              documents    <- coll.find.all[IO]
+              insertResult <- coll.insertOne[IO](TestData.gbpAccount)
+              documents    <- coll.find.first[IO]
             } yield (insertResult, documents)
 
             result.map { case (insertRes, documents) =>
-              documents must have size 1
-              documents.head.getString("name") mustBe "test-doc-1"
+              documents mustBe TestData.gbpAccount
               insertRes.wasAcknowledged() mustBe true
             }
           }
@@ -58,15 +57,14 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
-              insertResult <- coll.insertMany[IO](List(document(), document("test-doc-2")))
+              insertResult <- coll.insertMany[IO](TestData.accounts)
               documents    <- coll.find.all[IO]
             } yield (insertResult, documents)
 
             result.map { case (insertRes, documents) =>
-              documents must have size 2
-              documents.map(_.getString("name")) mustBe List("test-doc-1", "test-doc-2")
+              documents mustBe TestData.accounts
               insertRes.wasAcknowledged() mustBe true
-              insertRes.getInsertedIds() must have size 2
+              insertRes.getInsertedIds must have size 3
             }
           }
         }
@@ -77,7 +75,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll  <- db.getCollection("coll")
-              _     <- coll.insertMany[IO](List(document(), document("test-doc-2"), document("test-doc-3")))
+              _     <- coll.insertMany[IO](TestData.accounts)
               count <- coll.count[IO]
             } yield count
 
@@ -100,8 +98,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll  <- db.getCollection("coll")
-              _     <- coll.insertMany[IO](List(document(), document("test-doc-2"), document("test-doc-3")))
-              count <- coll.count[IO](Filters.eq("name", "test-doc-2"))
+              _     <- coll.insertMany[IO](TestData.accounts)
+              count <- coll.count[IO](Filter.eq("currency", TestData.eurCurrency))
             } yield count
 
             result.map(_ mustBe 1)
@@ -113,27 +111,29 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
         "delete multiple docs in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection("coll")
-              _            <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteResult <- coll.deleteMany[IO](Filters.eq("name", "test-doc-1"))
-              count        <- coll.count[IO]
+              coll <- db.getCollection("coll")
+              _    <- coll.insertMany[IO](TestData.accounts)
+              deleteResult <- coll.deleteMany[IO](
+                Filter.eq("currency", TestData.eurCurrency) || Filter.eq("currency", TestData.gbpCurrency)
+              )
+              count <- coll.count[IO]
             } yield (deleteResult, count)
 
             result.map { case (deleteRes, count) =>
-              count mustBe 0
-              deleteRes.getDeletedCount mustBe 3
+              count mustBe 1
+              deleteRes.getDeletedCount mustBe 2
             }
           }
         }
       }
 
       "deleteOne" should {
-        "delete one docs in coll" in {
+        "delete one doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
-              _            <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteResult <- coll.deleteOne[IO](Filters.eq("name", "test-doc-1"))
+              _            <- coll.insertMany[IO](TestData.accounts)
+              deleteResult <- coll.deleteOne[IO](Filter.eq("currency", TestData.eurCurrency).not)
               count        <- coll.count[IO]
             } yield (deleteResult, count)
 
@@ -150,15 +150,16 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
         "replace doc in coll" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll         <- db.getCollection("coll")
-              _            <- coll.insertMany[IO](List(document()))
-              updateResult <- coll.replaceOne[IO](Filters.eq("name", "test-doc-1"), document("test-doc-2"))
+              coll <- db.getCollection("coll")
+              _    <- coll.insertOne[IO](TestData.gbpAccount)
+              replacement = Document("currency" -> TestData.eurCurrency)
+              updateResult <- coll.replaceOne[IO](Filter.eq("currency", TestData.gbpCurrency), replacement)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
               docs must have size 1
-              docs.head.getString("name") mustBe "test-doc-2"
+              docs.head.get("currency", classOf[Document]) mustBe TestData.eurCurrency
               updateRes.getMatchedCount mustBe 1
               updateRes.getModifiedCount mustBe 1
             }
@@ -171,14 +172,13 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
-              _            <- coll.insertMany[IO](List(document(), document(), document()))
-              updateResult <- coll.updateOne[IO](Filter.eq("name", "test-doc-1"), Update.set("name", "test-doc-2"))
-              docs         <- coll.find.all[IO]
+              _            <- coll.insertMany[IO](TestData.accounts)
+              updateResult <- coll.updateOne[IO](Filter.eq("currency", TestData.eurCurrency), Update.set("name", "eur-account"))
+              docs         <- coll.find.filter(Filter.eq("currency", TestData.eurCurrency)).first[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
-              docs must have size 3
-              docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2", "test-doc-1")
+              docs.getString("name") mustBe "eur-account"
               updateRes.getMatchedCount mustBe 1
               updateRes.getModifiedCount mustBe 1
             }
@@ -190,16 +190,16 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
-              _            <- coll.insertMany[IO](List(document(), document(), document()))
-              updateResult <- coll.updateMany[IO](Filters.eq("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
-              docs         <- coll.find.all[IO]
+              _            <- coll.insertMany[IO](TestData.accounts)
+              updateResult <- coll.updateMany[IO](Filter.eq("currency", TestData.eurCurrency).not, Update.set("status", "updated"))
+              docs         <- coll.find(Filter.eq("currency", TestData.eurCurrency).not).all[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
-              docs must have size 3
-              docs.map(_.getString("name")) must contain allElementsOf List("test-doc-2")
-              updateRes.getMatchedCount mustBe 3
-              updateRes.getModifiedCount mustBe 3
+              docs must have size 2
+              docs.map(_.getString("status")).toSet mustBe Set("updated")
+              updateRes.getMatchedCount mustBe 2
+              updateRes.getModifiedCount mustBe 2
             }
           }
         }
@@ -208,18 +208,18 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document(), document(), document()))
-              updateQuery = Update.set("test-field", 1).rename("name", "renamed").unset("info")
+              _    <- coll.insertMany[IO](TestData.accounts)
+              updateQuery = Update.set("status", "updated").rename("currency", "curr").currentDate("updatedAt")
               updateResult <- coll.updateMany[IO](Filter.empty, updateQuery)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
               docs must have size 3
-              docs.map(_.getInteger("test-field")).toSet mustBe Set(1)
-              docs.forall(_.containsKey("renamed")) mustBe true
-              docs.forall(!_.containsKey("name")) mustBe true
-              docs.forall(!_.containsKey("info")) mustBe true
+              docs.map(_.getString("status")).toSet mustBe Set("updated")
+              docs.forall(_.containsKey("curr")) mustBe true
+              docs.forall(!_.containsKey("currency")) mustBe true
+              docs.forall(_.containsKey("updatedAt")) mustBe true
               updateRes.getMatchedCount mustBe 3
               updateRes.getModifiedCount mustBe 3
             }
@@ -230,21 +230,21 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document(), document(), document()))
+              _    <- coll.insertMany[IO](TestData.accounts)
               updateQuery = Update
-                .set("test-field", 1)
-                .combinedWith(Update.rename("name", "renamed"))
-                .combinedWith(Update.unset("info"))
+                .set("status", "updated")
+                .combinedWith(Update.rename("currency", "money"))
+                .combinedWith(Update.unset("name"))
               updateResult <- coll.updateMany[IO](Filter.empty, updateQuery)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
               docs must have size 3
-              docs.map(_.getInteger("test-field")).toSet mustBe Set(1)
-              docs.forall(_.containsKey("renamed")) mustBe true
-              docs.forall(!_.containsKey("name")) mustBe true
-              docs.forall(!_.containsKey("info")) mustBe true
+              docs.map(_.getString("status")).toSet mustBe Set("updated")
+              docs.forall(_.containsKey("money")) mustBe true
+              docs.forall(!_.containsKey("currency")) mustBe true
+              docs.forall(!_.containsKey("currency")) mustBe true
               updateRes.getMatchedCount mustBe 3
               updateRes.getModifiedCount mustBe 3
             }
@@ -257,8 +257,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll      <- db.getCollection("coll")
-              _         <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteRes <- coll.deleteOne[IO](Filters.eq("name", "test-doc-1"))
+              _         <- coll.insertMany[IO](TestData.accounts)
+              deleteRes <- coll.deleteOne[IO](Filter.idEq(TestData.eurAccount.getObjectId("_id")))
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
@@ -273,14 +273,14 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll      <- db.getCollection("coll")
-              _         <- coll.insertMany[IO](List(document(), document(), document()))
-              deleteRes <- coll.deleteMany[IO](Filters.eq("name", "test-doc-1"))
+              _         <- coll.insertMany[IO](TestData.accounts)
+              deleteRes <- coll.deleteMany[IO](Filter.eq("currency", TestData.eurCurrency).not)
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
             result.map { case (deleteRes, docs) =>
-              docs must have size 0
-              deleteRes.getDeletedCount mustBe 3
+              docs mustBe List(TestData.eurAccount)
+              deleteRes.getDeletedCount mustBe 2
             }
           }
         }
@@ -291,15 +291,14 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document()))
-              old  <- coll.findOneAndReplace[IO](Filters.eq("name", "test-doc-1"), document("test-doc-2"))
+              _    <- coll.insertOne[IO](TestData.eurAccount)
+              old  <- coll.findOneAndReplace[IO](Filter.eq("currency", TestData.eurCurrency), Document("currency" -> TestData.gbpCurrency))
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
             result.map { case (old, docs) =>
-              docs must have size 1
-              docs.head.getString("name") mustBe "test-doc-2"
-              old.getString("name") mustBe "test-doc-1"
+              docs.map(_.get("currency", classOf[Document])) mustBe List(TestData.gbpCurrency)
+              old mustBe TestData.eurAccount
             }
           }
         }
@@ -310,15 +309,14 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document()))
-              old  <- coll.findOneAndUpdate[IO](Filters.eq("name", "test-doc-1"), Updates.set("name", "test-doc-2"))
-              docs <- coll.find.all[IO]
+              _    <- coll.insertMany[IO](TestData.accounts)
+              old  <- coll.findOneAndUpdate[IO](Filter.eq("currency", TestData.eurCurrency), Update.set("status", "updated"))
+              docs <- coll.find.filter(Filter.exists("status")).all[IO]
             } yield (old, docs)
 
             result.map { case (old, docs) =>
-              docs must have size 1
-              docs.head.getString("name") mustBe "test-doc-2"
-              old.getString("name") mustBe "test-doc-1"
+              old mustBe TestData.eurAccount
+              docs mustBe List(Document.from(TestData.eurAccount).append("status", "updated"))
             }
           }
         }
@@ -329,14 +327,15 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document()))
-              old  <- coll.findOneAndDelete[IO](Filters.eq("name", "test-doc-1"))
+              _    <- coll.insertMany[IO](TestData.accounts)
+              old  <- coll.findOneAndDelete[IO](Filter.eq("name", "eur-acc"))
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
             result.map { case (old, docs) =>
-              docs must have size 0
-              old.getString("name") mustBe "test-doc-1"
+              docs must have size 2
+              docs.map(_.getString("name")).toSet mustBe Set("gbp-acc", "usd-acc")
+              old.getString("name") mustBe "eur-acc"
             }
           }
         }
@@ -347,13 +346,12 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.filter(Filters.eq("name", "d1")).all[IO]
+              _    <- coll.insertMany[IO](TestData.accounts)
+              res  <- coll.find.filter(Filter.eq("currency", TestData.eurCurrency)).all[IO]
             } yield res
 
             result.map { res =>
-              res must have size 1
-              res.head.getString("name") mustBe "d1"
+              res mustBe List(TestData.eurAccount)
             }
           }
         }
@@ -362,13 +360,12 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.sortByDesc("name").skip(1).limit(2).all[IO]
+              _    <- coll.insertMany[IO](TestData.categories)
+              res  <- coll.find.sortByDesc("name").skip(2).limit(3).all[IO]
             } yield res
 
             result.map { found =>
-              found must have size 2
-              found.map(_.getString("name")) mustBe (List("d3", "d2"))
+              found.map(_.getString("name")) mustBe List("cat-7", "cat-6", "cat-5")
             }
           }
         }
@@ -377,11 +374,11 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.find.sort(Sort.desc("name")).skip(1).limit(2).first[IO]
+              _    <- coll.insertMany[IO](TestData.categories)
+              res  <- coll.find.sort(Sort.desc("name")).skip(3).limit(2).first[IO]
             } yield res
 
-            result.map(_.getString("name") mustBe "d3")
+            result.map(_.getString("name") mustBe "cat-6")
           }
         }
 
@@ -389,9 +386,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              docs = (0 until 50000).map(i => document(s"d$i")).toList
-              _   <- coll.insertMany[IO](docs)
-              res <- coll.find.filter(Filters.regex("name", "d(1|3|5).*")).stream[IO].compile.toList
+              _    <- coll.insertMany[IO](TestData.categories(50000))
+              res  <- coll.find.filter(Filter.regex("name", "cat-(1|3|5).*")).stream[IO].compile.toList
             } yield res
 
             result.map(_ must have size 23333)
@@ -402,9 +398,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              docs = (0 until 1000000).map(i => document(s"d$i")).toList
-              _   <- coll.insertMany[IO](docs)
-              res <- coll.find.boundedStream[IO](100).compile.count
+              _    <- coll.insertMany[IO](TestData.categories(1000000))
+              res  <- coll.find.boundedStream[IO](100).compile.count
             } yield res
 
             result.map(_ mustBe 1000000)
@@ -417,12 +412,12 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](List(document("d1"), document("d2"), document("d3"), document("d4")))
-              res  <- coll.distinct[Document]("info").all[IO]
+              _    <- coll.insertMany[IO](TestData.accounts)
+              res  <- coll.distinct[Document]("currency").all[IO]
             } yield res
 
             result.map { res =>
-              res mustBe List(Document.fromJson(s"""{"x": 42, "y": 23}""""))
+              res.toSet mustBe Set(TestData.usdCurrency, TestData.eurCurrency, TestData.gbpCurrency)
             }
           }
         }
@@ -444,13 +439,15 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll    <- db.getCollection("coll")
               _       <- coll.insertOne[IO](Document.fromJson(json))
-              old     <- coll.findOneAndUpdate[IO](Filters.eq("lastName", "Bloggs"), Updates.set("dob", "2020-01-01"))
+              old     <- coll.findOneAndUpdate[IO](Filter.eq("lastName", "Bloggs"), Update.set("dob", "2020-01-01"))
               updated <- coll.find.first[IO]
             } yield (old, updated)
 
             result.map { case (old, updated) =>
               old.getObjectId("_id") mustBe updated.getObjectId("_id")
               old.getString("lastName") mustBe updated.getString("lastName")
+              updated.getString("dob") mustBe "2020-01-01"
+              old.getString("dob") mustBe "1970-01-01"
             }
           }
         }
@@ -474,6 +471,4 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
         }
     }.unsafeToFuture()
 
-  def document(name: String = "test-doc-1"): Document =
-    Document("name" -> name, "info" -> Document.fromJson(s"""{"x": 42, "y": 23}""""))
 }

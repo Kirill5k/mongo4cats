@@ -86,7 +86,7 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
         .use { client =>
           for {
             db  <- client.getDatabase("db")
-            _   <- db.getCollection("accounts").flatMap(_.insertOne[IO](TestData.account))
+            _   <- db.getCollection("accounts").flatMap(_.insertOne[IO](TestData.usdAccount))
             _   <- db.getCollection("categories").flatMap(_.insertMany[IO](TestData.categories))
             _   <- db.getCollection("transactions").flatMap(_.insertMany[IO](TestData.transactions(250)))
             res <- test(db)
