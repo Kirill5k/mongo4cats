@@ -22,7 +22,7 @@ import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.database.helpers._
 import mongo4cats.database.operations
-import mongo4cats.database.operations.{Projection, Sort}
+import mongo4cats.database.operations.{Index, Projection, Sort}
 import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
 import org.reactivestreams.Publisher
@@ -42,6 +42,42 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
     protected val observable: FindPublisher[T],
     protected val commands: List[FindCommand[T]]
 ) extends QueryBuilder[FindPublisher, T] {
+
+  def maxTime(duration: Duration): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.MaxTime[T](duration) :: commands)
+
+  def collation(collation: model.Collation): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Collation[T](collation) :: commands)
+
+  def partial(partial: Boolean): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Partial[T](partial) :: commands)
+
+  def comment(comment: String): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Comment[T](comment) :: commands)
+
+  def returnKey(returnKey: Boolean): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.ReturnKey[T](returnKey) :: commands)
+
+  def showRecordId(showRecordId: Boolean): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.ShowRecordId[T](showRecordId) :: commands)
+
+  def hint(index: Bson): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Hint[T](index) :: commands)
+
+  def hint(index: Index): FindQueryBuilder[T] =
+    hint(index.toBson)
+
+  def max(index: Bson): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Max[T](index) :: commands)
+
+  def max(index: Index): FindQueryBuilder[T] =
+    max(index.toBson)
+
+  def min(index: Bson): FindQueryBuilder[T] =
+    FindQueryBuilder[T](observable, FindCommand.Min[T](index) :: commands)
+
+  def min(index: Index): FindQueryBuilder[T] =
+    min(index.toBson)
 
   def sort(sort: Bson): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Sort[T](sort) :: commands)
@@ -90,6 +126,9 @@ final case class DistinctQueryBuilder[T: ClassTag] private[database] (
     protected val observable: DistinctPublisher[T],
     protected val commands: List[DistinctCommand[T]]
 ) extends QueryBuilder[DistinctPublisher, T] {
+
+  def maxTime(duration: Duration): DistinctQueryBuilder[T] =
+    DistinctQueryBuilder[T](observable, DistinctCommand.MaxTime[T](duration) :: commands)
 
   def filter(filter: Bson): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.Filter[T](filter) :: commands)
@@ -175,11 +214,20 @@ final case class AggregateQueryBuilder[T: ClassTag] private[database] (
   def comment(comment: String): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(observable, AggregateCommand.Comment[T](comment) :: commands)
 
+  def let(variables: Bson): AggregateQueryBuilder[T] =
+    AggregateQueryBuilder(observable, AggregateCommand.Let[T](variables) :: commands)
+
   def hint(hint: Bson): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(observable, AggregateCommand.Hint[T](hint) :: commands)
 
+  def hint(index: Index): AggregateQueryBuilder[T] =
+    hint(index.toBson)
+
   def batchSize(batchSize: Int): AggregateQueryBuilder[T] =
     AggregateQueryBuilder(observable, AggregateCommand.BatchSize[T](batchSize) :: commands)
+
+  def toCollection[F[_]: Async]: F[Unit] =
+    applyCommands().toCollection.asyncVoid[F]
 
   def first[F[_]: Async]: F[T] =
     applyCommands().first().asyncSingle[F]

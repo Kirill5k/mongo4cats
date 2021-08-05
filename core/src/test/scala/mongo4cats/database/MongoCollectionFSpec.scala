@@ -99,7 +99,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll  <- db.getCollection("coll")
               _     <- coll.insertMany[IO](TestData.accounts)
-              count <- coll.count[IO](Filter.eq("currency", TestData.eurCurrency))
+              count <- coll.count[IO](Filter.eq("currency", TestData.EUR))
             } yield count
 
             result.map(_ mustBe 1)
@@ -114,7 +114,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](TestData.accounts)
               deleteResult <- coll.deleteMany[IO](
-                Filter.eq("currency", TestData.eurCurrency) || Filter.eq("currency", TestData.gbpCurrency)
+                Filter.eq("currency", TestData.EUR) || Filter.eq("currency", TestData.GBP)
               )
               count <- coll.count[IO]
             } yield (deleteResult, count)
@@ -133,7 +133,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](TestData.accounts)
-              deleteResult <- coll.deleteOne[IO](Filter.eq("currency", TestData.eurCurrency).not)
+              deleteResult <- coll.deleteOne[IO](Filter.eq("currency", TestData.EUR).not)
               count        <- coll.count[IO]
             } yield (deleteResult, count)
 
@@ -152,14 +152,14 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertOne[IO](TestData.gbpAccount)
-              replacement = Document("currency" -> TestData.eurCurrency)
-              updateResult <- coll.replaceOne[IO](Filter.eq("currency", TestData.gbpCurrency), replacement)
+              replacement = Document("currency" -> TestData.EUR)
+              updateResult <- coll.replaceOne[IO](Filter.eq("currency", TestData.GBP), replacement)
               docs         <- coll.find.all[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
               docs must have size 1
-              docs.head.get("currency", classOf[Document]) mustBe TestData.eurCurrency
+              docs.head.get("currency", classOf[Document]) mustBe TestData.EUR
               updateRes.getMatchedCount mustBe 1
               updateRes.getModifiedCount mustBe 1
             }
@@ -173,8 +173,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](TestData.accounts)
-              updateResult <- coll.updateOne[IO](Filter.eq("currency", TestData.eurCurrency), Update.set("name", "eur-account"))
-              docs         <- coll.find.filter(Filter.eq("currency", TestData.eurCurrency)).first[IO]
+              updateResult <- coll.updateOne[IO](Filter.eq("currency", TestData.EUR), Update.set("name", "eur-account"))
+              docs         <- coll.find.filter(Filter.eq("currency", TestData.EUR)).first[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
@@ -191,8 +191,8 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll         <- db.getCollection("coll")
               _            <- coll.insertMany[IO](TestData.accounts)
-              updateResult <- coll.updateMany[IO](Filter.eq("currency", TestData.eurCurrency).not, Update.set("status", "updated"))
-              docs         <- coll.find(Filter.eq("currency", TestData.eurCurrency).not).all[IO]
+              updateResult <- coll.updateMany[IO](Filter.eq("currency", TestData.EUR).not, Update.set("status", "updated"))
+              docs         <- coll.find(Filter.eq("currency", TestData.EUR).not).all[IO]
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
@@ -274,7 +274,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll      <- db.getCollection("coll")
               _         <- coll.insertMany[IO](TestData.accounts)
-              deleteRes <- coll.deleteMany[IO](Filter.eq("currency", TestData.eurCurrency).not)
+              deleteRes <- coll.deleteMany[IO](Filter.eq("currency", TestData.EUR).not)
               docs      <- coll.find.all[IO]
             } yield (deleteRes, docs)
 
@@ -292,12 +292,12 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertOne[IO](TestData.eurAccount)
-              old  <- coll.findOneAndReplace[IO](Filter.eq("currency", TestData.eurCurrency), Document("currency" -> TestData.gbpCurrency))
+              old  <- coll.findOneAndReplace[IO](Filter.eq("currency", TestData.EUR), Document("currency" -> TestData.GBP))
               docs <- coll.find.all[IO]
             } yield (old, docs)
 
             result.map { case (old, docs) =>
-              docs.map(_.get("currency", classOf[Document])) mustBe List(TestData.gbpCurrency)
+              docs.map(_.get("currency", classOf[Document])) mustBe List(TestData.GBP)
               old mustBe TestData.eurAccount
             }
           }
@@ -310,7 +310,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](TestData.accounts)
-              old  <- coll.findOneAndUpdate[IO](Filter.eq("currency", TestData.eurCurrency), Update.set("status", "updated"))
+              old  <- coll.findOneAndUpdate[IO](Filter.eq("currency", TestData.EUR), Update.set("status", "updated"))
               docs <- coll.find.filter(Filter.exists("status")).all[IO]
             } yield (old, docs)
 
@@ -347,7 +347,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany[IO](TestData.accounts)
-              res  <- coll.find.filter(Filter.eq("currency", TestData.eurCurrency)).all[IO]
+              res  <- coll.find.filter(Filter.eq("currency", TestData.EUR)).all[IO]
             } yield res
 
             result.map { res =>
@@ -417,7 +417,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             } yield res
 
             result.map { res =>
-              res.toSet mustBe Set(TestData.usdCurrency, TestData.eurCurrency, TestData.gbpCurrency)
+              res.toSet mustBe Set(TestData.USD, TestData.EUR, TestData.GBP)
             }
           }
         }

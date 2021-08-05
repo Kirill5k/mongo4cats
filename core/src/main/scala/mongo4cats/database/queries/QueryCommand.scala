@@ -17,7 +17,7 @@
 package mongo4cats.database.queries
 
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream
+import com.mongodb.client.model.{changestream}
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
@@ -36,6 +36,52 @@ sealed private[queries] trait WatchCommand[T]     extends QueryCommand[ChangeStr
 sealed private[queries] trait AggregateCommand[T] extends QueryCommand[AggregatePublisher, T]
 
 private[queries] object FindCommand {
+
+  final private[queries] case class ShowRecordId[T](showRecordId: Boolean) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.showRecordId(showRecordId)
+  }
+
+  final private[queries] case class ReturnKey[T](returnKey: Boolean) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.returnKey(returnKey)
+  }
+
+  final private[queries] case class Comment[T](comment: String) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.comment(comment)
+  }
+
+  final private[queries] case class Collation[T](collation: model.Collation) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.collation(collation)
+  }
+
+  final private[queries] case class Partial[T](partial: Boolean) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.partial(partial)
+  }
+
+  final private[queries] case class MaxTime[T](duration: Duration) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
+  }
+
+  final private[queries] case class Hint[T](hint: Bson) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.hint(hint)
+  }
+
+  final private[queries] case class Max[T](index: Bson) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.max(index)
+  }
+
+  final private[queries] case class Min[T](index: Bson) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.min(index)
+  }
+
   final private[queries] case class Skip[T](n: Int) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.skip(n)
@@ -63,6 +109,11 @@ private[queries] object FindCommand {
 }
 
 private[queries] object DistinctCommand {
+  final private[queries] case class MaxTime[T](duration: Duration) extends DistinctCommand[T] {
+    override def run(pub: DistinctPublisher[T]): DistinctPublisher[T] =
+      pub.maxTime(duration.toMillis, TimeUnit.MILLISECONDS)
+  }
+
   final private[queries] case class Filter[T](filter: Bson) extends DistinctCommand[T] {
     override def run(pub: DistinctPublisher[T]): DistinctPublisher[T] =
       pub.filter(filter)
@@ -145,6 +196,11 @@ private[queries] object AggregateCommand {
   final private[queries] case class Comment[T](comment: String) extends AggregateCommand[T] {
     override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
       pub.comment(comment)
+  }
+
+  final private[queries] case class Let[T](variables: Bson) extends AggregateCommand[T] {
+    override def run(pub: AggregatePublisher[T]): AggregatePublisher[T] =
+      pub.let(variables)
   }
 
   final private[queries] case class Hint[T](hint: Bson) extends AggregateCommand[T] {

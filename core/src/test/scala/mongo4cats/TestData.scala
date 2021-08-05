@@ -25,13 +25,13 @@ final case class Transaction(
 object TestData {
   implicit private val random = Random
 
-  val usdCurrency: Document = Document("symbol" -> "$", "code" -> "USD")
-  val gbpCurrency: Document = Document("symbol" -> "£", "code" -> "GBP")
-  val eurCurrency: Document = Document("symbol" -> "€", "code" -> "EUR")
+  val USD: Document = Document("symbol" -> "$", "code" -> "USD")
+  val GBP: Document = Document("symbol" -> "£", "code" -> "GBP")
+  val EUR: Document = Document("symbol" -> "€", "code" -> "EUR")
 
-  val usdAccount: Document = Document("_id" -> ObjectId.get, "currency" -> usdCurrency, "name" -> "usd-acc")
-  val gbpAccount: Document = Document("_id" -> ObjectId.get, "currency" -> gbpCurrency, "name" -> "gbp-acc")
-  val eurAccount: Document = Document("_id" -> ObjectId.get, "currency" -> eurCurrency, "name" -> "eur-acc")
+  val usdAccount: Document = Document("_id" -> ObjectId.get, "currency" -> USD, "name" -> "usd-acc")
+  val gbpAccount: Document = Document("_id" -> ObjectId.get, "currency" -> GBP, "name" -> "gbp-acc")
+  val eurAccount: Document = Document("_id" -> ObjectId.get, "currency" -> EUR, "name" -> "eur-acc")
 
   val accounts: Vector[Document]   = Vector(usdAccount, gbpAccount, eurAccount)
   val categories: Vector[Document] = categories(10)

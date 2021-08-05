@@ -21,7 +21,7 @@ import cats.effect.unsafe.implicits.global
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.{Accumulator, Aggregate, Sort}
+import mongo4cats.database.operations.{Accumulator, Aggregate, Filter, Projection, Sort}
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -30,7 +30,7 @@ import scala.concurrent.Future
 
 class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort = 12348
+  override val mongoPort = 12349
 
   "A MongoCollectionF" when {
 
@@ -40,12 +40,16 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
         withEmbeddedMongoDatabase { db =>
           val result = for {
             accs <- db.getCollection("accounts")
-            lookup = Aggregate.lookup("transactions", "_id", "account", "transactions")
-            res <- accs.aggregate(lookup).first[IO]
+            res <- accs.aggregate { Aggregate
+                .matchBy(Filter.eq("currency", TestData.USD))
+                .lookup("transactions", "_id", "account", "transactions")
+                .project(Projection.include(List("transactions", "name", "currency")).computed("totalAmount", Document("$sum" -> "$transactions.amount")))
+            }.first[IO]
           } yield res
 
           result.map { acc =>
             acc.getList("transactions", classOf[Document]) must have size 250
+            acc.getInteger("totalAmount").intValue() must be > 0
           }
         }
       }
@@ -86,7 +90,7 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
         .use { client =>
           for {
             db  <- client.getDatabase("db")
-            _   <- db.getCollection("accounts").flatMap(_.insertOne[IO](TestData.usdAccount))
+            _   <- db.getCollection("accounts").flatMap(_.insertMany[IO](TestData.accounts))
             _   <- db.getCollection("categories").flatMap(_.insertMany[IO](TestData.categories))
             _   <- db.getCollection("transactions").flatMap(_.insertMany[IO](TestData.transactions(250)))
             res <- test(db)
