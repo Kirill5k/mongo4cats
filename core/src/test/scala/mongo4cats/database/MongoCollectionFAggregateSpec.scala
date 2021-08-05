@@ -80,6 +80,26 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
           }
         }
       }
+
+      "explain the pipeline in a form of a document" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            accs <- db.getCollection("accounts")
+            res <- accs.aggregate { Aggregate
+              .matchBy(Filter.eq("currency", TestData.USD))
+              .lookup("transactions", "_id", "account", "transactions")
+              .sort(Sort.asc("name"))
+              .project(Projection.excludeId)
+            }.explain[IO]
+          } yield res
+
+          result.map { expl =>
+            println(expl.toJson)
+            expl.getDouble("ok").doubleValue() mustBe 1.0
+            expl.getList("stages", classOf[Document]).size() mustBe 4
+          }
+        }
+      }
     }
   }
 

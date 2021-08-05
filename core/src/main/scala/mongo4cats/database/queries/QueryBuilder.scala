@@ -17,9 +17,11 @@
 package mongo4cats.database.queries
 
 import cats.effect.Async
+import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
+import mongo4cats.bson.Document
 import mongo4cats.database.helpers._
 import mongo4cats.database.operations
 import mongo4cats.database.operations.{Index, Projection, Sort}
@@ -120,6 +122,18 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
 
   def boundedStream[F[_]: Async](capacity: Int): fs2.Stream[F, T] =
     applyCommands().boundedStream[F](capacity)
+
+  def explain[F[_]: Async]: F[Document] =
+    applyCommands().explain().asyncSingle[F]
+
+  def explain[F[_]: Async](verbosity: ExplainVerbosity): F[Document] =
+    applyCommands().explain(verbosity).asyncSingle[F]
+
+  def explain[F[_]: Async, E: ClassTag]: F[E] =
+    applyCommands().explain[E](implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]).asyncSingle[F]
+
+  def explain[F[_]: Async, E: ClassTag](verbosity: ExplainVerbosity): F[E] =
+    applyCommands().explain[E](implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]], verbosity).asyncSingle[F]
 }
 
 final case class DistinctQueryBuilder[T: ClassTag] private[database] (
@@ -240,4 +254,16 @@ final case class AggregateQueryBuilder[T: ClassTag] private[database] (
 
   def boundedStream[F[_]: Async](capacity: Int): fs2.Stream[F, T] =
     applyCommands().boundedStream[F](capacity)
+
+  def explain[F[_]: Async]: F[Document] =
+    applyCommands().explain().asyncSingle[F]
+
+  def explain[F[_]: Async](verbosity: ExplainVerbosity): F[Document] =
+    applyCommands().explain(verbosity).asyncSingle[F]
+
+  def explain[F[_]: Async, E: ClassTag]: F[E] =
+    applyCommands().explain[E](implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]).asyncSingle[F]
+
+  def explain[F[_]: Async, E: ClassTag](verbosity: ExplainVerbosity): F[E] =
+    applyCommands().explain[E](implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]], verbosity).asyncSingle[F]
 }
