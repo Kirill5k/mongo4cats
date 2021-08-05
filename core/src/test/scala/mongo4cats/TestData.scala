@@ -46,7 +46,7 @@ object TestData {
     )
 
   def transactions(n: Int): Vector[Document] = (0 until n).map(_ => transaction).toVector
-  def categories(n: Int): Vector[Document] = (0 until n).map(i => Document("_id" -> ObjectId.get, "name" -> s"cat-$i")).toVector
+  def categories(n: Int): Vector[Document]   = (0 until n).map(i => Document("_id" -> ObjectId.get, "name" -> s"cat-$i")).toVector
 
   implicit final private class SeqOps[A](private val seq: Seq[A]) extends AnyVal {
     def pickRand(implicit rnd: Random): A =

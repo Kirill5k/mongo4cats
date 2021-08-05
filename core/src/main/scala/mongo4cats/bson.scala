@@ -32,8 +32,8 @@ object bson {
     def apply[A](entries: Map[String, A]): Document = new JDocument(entries.asInstanceOf[Map[String, AnyRef]].asJava)
     def apply[A](entries: (String, A)*): Document   = apply[A](entries.toMap[String, A])
     def apply[A](key: String, value: A): Document   = apply(key -> value)
-    def fromJson(json: String): Document            = JDocument.parse(json)
-    def parse(json: String): Document               = fromJson(json)
+    def parse(json: String): Document               = JDocument.parse(json)
+    def from(json: String): Document                = parse(json)
     def from(doc: Document): Document               = parse(doc.toJson)
   }
 

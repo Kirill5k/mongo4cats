@@ -438,7 +438,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
 
             val result = for {
               coll    <- db.getCollection("coll")
-              _       <- coll.insertOne[IO](Document.fromJson(json))
+              _       <- coll.insertOne[IO](Document.from(json))
               old     <- coll.findOneAndUpdate[IO](Filter.eq("lastName", "Bloggs"), Update.set("dob", "2020-01-01"))
               updated <- coll.find.first[IO]
             } yield (old, updated)
