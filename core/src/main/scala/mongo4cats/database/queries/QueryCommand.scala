@@ -67,6 +67,16 @@ private[queries] object FindCommand {
       pub.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
   }
 
+  final private[queries] case class MaxAwaitTime[T](duration: Duration) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
+  }
+
+  final private[queries] case class HintString[T](hint: String) extends FindCommand[T] {
+    override def run(pub: FindPublisher[T]): FindPublisher[T] =
+      pub.hintString(hint)
+  }
+
   final private[queries] case class Hint[T](hint: Bson) extends FindCommand[T] {
     override def run(pub: FindPublisher[T]): FindPublisher[T] =
       pub.hint(hint)
