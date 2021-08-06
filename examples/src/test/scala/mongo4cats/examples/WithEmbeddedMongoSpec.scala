@@ -27,8 +27,8 @@ import org.scalatest.wordspec.AsyncWordSpec
 class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   "A MongoCollectionF" should {
-    "create and retrieve documents from a db" in withRunningEmbeddedMongo("localhost", 12345) {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12345").use { client =>
+    "create and retrieve documents from a db" in withRunningEmbeddedMongo("localhost", 12344) {
+      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollection("docs")

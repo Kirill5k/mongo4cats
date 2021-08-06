@@ -52,17 +52,17 @@ object TestData {
   val accounts: Vector[Document]   = Vector(usdAccount, gbpAccount, eurAccount)
   val categories: Vector[Document] = categories(10)
 
-  def transaction: Document =
+  def transaction(account: Document): Document =
     Document(
       "_id"      -> ObjectId.get,
       "date"     -> Instant.now().minusMillis(random.nextLong(100000L)),
       "category" -> categories.pickRand,
-      "account"  -> usdAccount.getObjectId("_id"),
+      "account"  -> account.getObjectId("_id"),
       "amount"   -> random.nextInt(10000)
     )
 
-  def transactions(n: Int): Vector[Document] = (0 until n).map(_ => transaction).toVector
-  def categories(n: Int): Vector[Document]   = (0 until n).map(i => Document("_id" -> ObjectId.get, "name" -> s"cat-$i")).toVector
+  def transactions(n: Int, account: Document = usdAccount): Vector[Document] = (0 until n).map(_ => transaction(account)).toVector
+  def categories(n: Int): Vector[Document] = (0 until n).map(i => Document("_id" -> ObjectId.get, "name" -> s"cat-$i")).toVector
 
   implicit final private class SeqOps[A](private val seq: Seq[A]) extends AnyVal {
     def pickRand(implicit rnd: Random): A =
