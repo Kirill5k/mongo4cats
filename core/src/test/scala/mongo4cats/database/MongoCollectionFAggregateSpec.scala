@@ -40,11 +40,18 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
         withEmbeddedMongoDatabase { db =>
           val result = for {
             accs <- db.getCollection("accounts")
-            res <- accs.aggregate { Aggregate
-                .matchBy(Filter.eq("currency", TestData.USD))
-                .lookup("transactions", "_id", "account", "transactions")
-                .project(Projection.include(List("transactions", "name", "currency")).computed("totalAmount", Document("$sum" -> "$transactions.amount")))
-            }.first[IO]
+            res <- accs
+              .aggregate {
+                Aggregate
+                  .matchBy(Filter.eq("currency", TestData.USD))
+                  .lookup("transactions", "_id", "account", "transactions")
+                  .project(
+                    Projection
+                      .include(List("transactions", "name", "currency"))
+                      .computed("totalAmount", Document("$sum" -> "$transactions.amount"))
+                  )
+              }
+              .first[IO]
           } yield res
 
           result.map { acc =>
@@ -85,12 +92,15 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
         withEmbeddedMongoDatabase { db =>
           val result = for {
             accs <- db.getCollection("accounts")
-            res <- accs.aggregate { Aggregate
-              .matchBy(Filter.eq("currency", TestData.USD))
-              .lookup("transactions", "_id", "account", "transactions")
-              .sort(Sort.asc("name"))
-              .project(Projection.excludeId)
-            }.explain[IO]
+            res <- accs
+              .aggregate {
+                Aggregate
+                  .matchBy(Filter.eq("currency", TestData.USD))
+                  .lookup("transactions", "_id", "account", "transactions")
+                  .sort(Sort.asc("name"))
+                  .project(Projection.excludeId)
+              }
+              .explain[IO]
           } yield res
 
           result.map { expl =>

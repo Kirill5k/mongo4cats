@@ -17,7 +17,7 @@
 package mongo4cats.database.queries
 
 import com.mongodb.client.model
-import com.mongodb.client.model.{changestream}
+import com.mongodb.client.model.changestream
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import org.bson.{BsonDocument, BsonTimestamp}
 import org.bson.conversions.Bson
@@ -119,6 +119,7 @@ private[queries] object FindCommand {
 }
 
 private[queries] object DistinctCommand {
+
   final private[queries] case class MaxTime[T](duration: Duration) extends DistinctCommand[T] {
     override def run(pub: DistinctPublisher[T]): DistinctPublisher[T] =
       pub.maxTime(duration.toMillis, TimeUnit.MILLISECONDS)

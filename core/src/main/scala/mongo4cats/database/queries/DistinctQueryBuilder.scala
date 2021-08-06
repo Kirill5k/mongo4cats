@@ -15,18 +15,51 @@ final case class DistinctQueryBuilder[T: ClassTag] private[database] (
     protected val commands: List[DistinctCommand[T]]
 ) extends QueryBuilder[DistinctPublisher, T] {
 
+  /** Sets the maximum execution time on the server for this operation.
+    *
+    * @param duration
+    *   the max time
+    * @return
+    *   DistinctQueryBuilder
+    */
   def maxTime(duration: Duration): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.MaxTime[T](duration) :: commands)
 
+  /** Sets the query filter to apply to the query.
+    *
+    * @param filter
+    *   the filter.
+    * @return
+    *   DistinctQueryBuilder
+    */
   def filter(filter: Bson): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.Filter[T](filter) :: commands)
 
   def filter(filters: operations.Filter): DistinctQueryBuilder[T] =
     filter(filters.toBson)
 
+  /** Sets the number of documents to return per batch.
+    *
+    * <p>Overrides the Subscription#request value for setting the batch size, allowing for fine grained control over the underlying
+    * cursor.</p>
+    *
+    * @param size
+    *   the batch size
+    * @return
+    *   DistinctQueryBuilder
+    * @since 1.8
+    */
   def batchSize(size: Int): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.BatchSize[T](size) :: commands)
 
+  /** Sets the collation options
+    *
+    * @param collation
+    *   the collation options to use
+    * @return
+    *   DistinctQueryBuilder
+    * @since 1.3
+    */
   def collation(collation: model.Collation): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.Collation[T](collation) :: commands)
 
