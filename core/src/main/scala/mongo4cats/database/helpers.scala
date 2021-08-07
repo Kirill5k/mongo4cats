@@ -16,8 +16,13 @@
 
 package mongo4cats.database
 
-import cats.effect.Async
 import cats.effect.std.{Dispatcher, Queue}
+import cats.effect.{Async, Deferred, Resource}
+import cats.syntax.apply._
+import cats.syntax.applicative._
+import cats.syntax.either._
+import cats.syntax.option._
+import cats.syntax.functor._
 import fs2.Stream
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
@@ -66,18 +71,21 @@ private[database] object helpers {
 
     private def mkStream[F[_]: Async](mkQueue: F[Queue[F, Option[Either[Throwable, T]]]]): Stream[F, T] =
       for {
-        dispatcher <- Stream.resource(Dispatcher[F])
+        safeGuard  <- Stream.eval(Deferred[F, Unit])
         queue      <- Stream.eval(mkQueue)
+        dispatcher <- Stream.resource(Dispatcher[F])
+        _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get))
         _ = publisher.subscribe(new Subscriber[T] {
-          override def onNext(result: T): Unit =
-            dispatcher.unsafeRunSync(queue.offer(Some(Right(result))))
-          override def onError(e: Throwable): Unit =
-            dispatcher.unsafeRunSync(queue.offer(Some(Left(e))))
+          override def onNext(el: T): Unit =
+            dispatcher.unsafeRunSync(queue.offer(el.asRight.some))
+          override def onError(err: Throwable): Unit =
+            dispatcher.unsafeRunSync(queue.offer(err.asLeft.some) *> safeGuard.complete(()).void)
           override def onComplete(): Unit =
-            dispatcher.unsafeRunSync(queue.offer(None))
-          override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
+            dispatcher.unsafeRunSync(queue.offer(None) *> safeGuard.complete(()).void)
+          override def onSubscribe(s: Subscription): Unit =
+            s.request(Long.MaxValue)
         })
-        stream <- Stream.fromQueueNoneTerminated(queue).evalMap(Async[F].fromEither)
+        stream <- Stream.fromQueueNoneTerminated(queue).rethrow
       } yield stream
   }
 }
