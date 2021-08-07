@@ -18,6 +18,7 @@ package mongo4cats.database
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.implicits._
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
@@ -25,8 +26,10 @@ import mongo4cats.client.MongoClientF
 import mongo4cats.database.operations.{Filter, Sort, Update}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import fs2.Stream
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
@@ -397,12 +400,33 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
         "bounded stream" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection("coll")
-              _    <- coll.insertMany[IO](TestData.categories(1000000))
-              res  <- coll.find.boundedStream[IO](100).compile.count
+              cats <- db.getCollection("categories")
+              txs  <- db.getCollection("transactions")
+              _    <- (cats.insertMany[IO](TestData.categories), txs.insertMany[IO](TestData.transactions(1000000))).parTupled
+              res  <- txs.find.boundedStream[IO](100).compile.count
             } yield res
 
             result.map(_ mustBe 1000000)
+          }
+        }
+
+        "execute multiple bounded streams in parallel" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              cats <- db.getCollection("categories")
+              txs  <- db.getCollection("transactions")
+              _    <- cats.insertMany[IO](TestData.categories)
+              _    <- txs.insertMany[IO](TestData.transactions(1000000))
+              res <- Stream(
+                txs.find.skip(10000).limit(10000).boundedStream[IO](100),
+                txs.find.skip(20000).limit(10000).boundedStream[IO](100),
+                txs.find.skip(30000).limit(10000).boundedStream[IO](100),
+                txs.find.skip(40000).limit(10000).boundedStream[IO](100),
+                txs.find.skip(50000).limit(10000).boundedStream[IO](100)
+              ).parJoinUnbounded.compile.count
+            } yield res
+
+            result.map(_ mustBe 50000)
           }
         }
       }
