@@ -26,6 +26,7 @@ import cats.syntax.functor._
 import fs2.Stream
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Either
 
 private[database] object helpers {
@@ -55,11 +56,11 @@ private[database] object helpers {
     def asyncIterable[F[_]: Async]: F[Iterable[T]] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
-          private var results: List[T]                    = Nil
+          private val results: ListBuffer[T]              = ListBuffer.empty[T]
           override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-          override def onNext(result: T): Unit            = results = result :: results
+          override def onNext(result: T): Unit            = results.addOne(result)
           override def onError(e: Throwable): Unit        = k(Left(e))
-          override def onComplete(): Unit                 = k(Right(results.reverse))
+          override def onComplete(): Unit                 = k(Right(results))
         })
       }
 
@@ -75,7 +76,7 @@ private[database] object helpers {
         queue      <- Stream.eval(mkQueue)
         dispatcher <- Stream.resource(Dispatcher[F])
         _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get))
-        _ = publisher.subscribe(new Subscriber[T] {
+        _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
           override def onNext(el: T): Unit =
             dispatcher.unsafeRunSync(queue.offer(el.asRight.some))
           override def onError(err: Throwable): Unit =
@@ -84,7 +85,7 @@ private[database] object helpers {
             dispatcher.unsafeRunSync(queue.offer(None) *> safeGuard.complete(()).void)
           override def onSubscribe(s: Subscription): Unit =
             s.request(Long.MaxValue)
-        })
+        })))
         stream <- Stream.fromQueueNoneTerminated(queue).rethrow
       } yield stream
   }

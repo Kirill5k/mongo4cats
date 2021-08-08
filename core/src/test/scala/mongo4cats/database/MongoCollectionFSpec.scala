@@ -29,7 +29,6 @@ import org.scalatest.wordspec.AsyncWordSpec
 import fs2.Stream
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
