@@ -44,7 +44,7 @@ object embedded {
         Resource
           .make(F.delay(starter.prepare(config)))(ex => F.delay(ex.stop()))
           .flatMap(ex => Resource.make(F.delay(ex.start()))(p => F.delay(p.stop())))
-          .handleErrorWith { e =>
+          .handleErrorWith[MongodProcess, Throwable] { e =>
             Resource.eval(F.sleep(attempt.seconds)) *> start[F](config, maxAttempts, attempt + 1, Some(e))
           }
   }
