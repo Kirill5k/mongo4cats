@@ -18,11 +18,11 @@ package mongo4cats.database
 
 import cats.effect.std.{Dispatcher, Queue}
 import cats.effect.{Async, Deferred, Resource}
-import cats.syntax.apply._
 import cats.syntax.applicative._
 import cats.syntax.either._
 import cats.syntax.option._
 import cats.syntax.functor._
+import cats.effect.syntax.monadCancel._
 import fs2.Stream
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
@@ -80,9 +80,9 @@ private[database] object helpers {
           override def onNext(el: T): Unit =
             dispatcher.unsafeRunSync(queue.offer(el.asRight.some))
           override def onError(err: Throwable): Unit =
-            dispatcher.unsafeRunSync(queue.offer(err.asLeft.some) *> safeGuard.complete(()).void)
+            dispatcher.unsafeRunSync(queue.offer(err.asLeft.some).guarantee(safeGuard.complete(()).void))
           override def onComplete(): Unit =
-            dispatcher.unsafeRunSync(queue.offer(None) *> safeGuard.complete(()).void)
+            dispatcher.unsafeRunSync(queue.offer(None).guarantee(safeGuard.complete(()).void))
           override def onSubscribe(s: Subscription): Unit =
             s.request(Long.MaxValue)
         })))
