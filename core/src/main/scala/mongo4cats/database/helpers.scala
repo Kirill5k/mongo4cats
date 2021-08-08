@@ -58,7 +58,7 @@ private[database] object helpers {
         publisher.subscribe(new Subscriber[T] {
           private val results: ListBuffer[T]              = ListBuffer.empty[T]
           override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-          override def onNext(result: T): Unit            = results.addOne(result)
+          override def onNext(result: T): Unit            = results += result
           override def onError(e: Throwable): Unit        = k(Left(e))
           override def onComplete(): Unit                 = k(Right(results))
         })
