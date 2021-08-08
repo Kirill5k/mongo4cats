@@ -86,7 +86,7 @@ private[database] object helpers {
           override def onSubscribe(s: Subscription): Unit =
             s.request(Long.MaxValue)
         })))
-        stream <- Stream.fromQueueNoneTerminated(queue).rethrow
+        stream <- Stream.fromQueueNoneTerminated(queue).rethrow.onFinalize(safeGuard.complete(()).void)
       } yield stream
   }
 }
