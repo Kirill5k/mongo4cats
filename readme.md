@@ -11,9 +11,9 @@ Available for Scala 2.12, 2.13 and 3.0.
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.16"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.16"// circe support
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.16" // usefull for unit testing
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.18"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.18"// circe support
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.18" // usefull for unit testing
 ```
 
 ### Quick Start Examples
@@ -85,7 +85,7 @@ object FilteringAndSorting extends IOApp.Simple {
 
 Only mongo4cats-circe is required for basic interop with circe:
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.16"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.18"
 ```
 
 In order to obtain mongo collection with circe codecs, the following import is required:
@@ -125,7 +125,7 @@ object Example extends IOApp.Simple {
 
 To be able to use embedded-mongodb runner in your code, the following import needs to be added to the dependency list:
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.16"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.18"
 ```
 
 Once the dependency is added, the embedded-mongodb can be brought in by extending `EmbeddedMongo` trait:
