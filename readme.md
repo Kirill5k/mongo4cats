@@ -3,7 +3,7 @@ mongo4cats
 
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
-Mongo DB client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
+MongoDB Java client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
 Available for Scala 2.12, 2.13 and 3.0.
 
 ### Dependencies
@@ -74,7 +74,9 @@ object FilteringAndSorting extends IOApp.Simple {
           .filter(Filter.eq("name", "doc-0") or Filter.regex("name", "doc-[2-7]"))
           .sortByDesc("name")
           .limit(5)
-          .all[IO]
+          .stream[IO]
+          .compile
+          .toList
         _ <- IO.println(docs)
       } yield ()
     }
@@ -114,7 +116,7 @@ object Example extends IOApp.Simple {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollectionWithCodec[Person]("people")
         _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA"), Instant.now()))
-        docs <- coll.find.stream[IO].compile.toList
+        docs <- coll.find.all[IO]
         _    <- IO.println(docs)
       } yield ()
     }

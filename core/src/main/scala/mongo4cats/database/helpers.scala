@@ -22,7 +22,6 @@ import cats.syntax.applicative._
 import cats.syntax.either._
 import cats.syntax.option._
 import cats.syntax.functor._
-import cats.effect.syntax.monadCancel._
 import fs2.Stream
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
@@ -70,23 +69,27 @@ private[database] object helpers {
     def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
       mkStream(Queue.bounded(capacity))
 
-    private def mkStream[F[_]: Async](mkQueue: F[Queue[F, Option[Either[Throwable, T]]]]): Stream[F, T] =
+    private def mkStream[F[_]: Async](mkQueue: F[Queue[F, Either[Option[Throwable], T]]]): Stream[F, T] =
       for {
-        safeGuard  <- Stream.eval(Deferred[F, Unit])
+        safeGuard  <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
         queue      <- Stream.eval(mkQueue)
         dispatcher <- Stream.resource(Dispatcher[F])
-        _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get))
+        _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get.void))
         _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
-          override def onNext(el: T): Unit =
-            dispatcher.unsafeRunSync(queue.offer(el.asRight.some))
-          override def onError(err: Throwable): Unit =
-            dispatcher.unsafeRunSync(queue.offer(err.asLeft.some).guarantee(safeGuard.complete(()).void))
-          override def onComplete(): Unit =
-            dispatcher.unsafeRunSync(queue.offer(None).guarantee(safeGuard.complete(()).void))
-          override def onSubscribe(s: Subscription): Unit =
-            s.request(Long.MaxValue)
+          override def onNext(el: T): Unit                = dispatcher.unsafeRunSync(queue.offer(el.asRight))
+          override def onError(err: Throwable): Unit      = dispatcher.unsafeRunSync(queue.offer(err.some.asLeft))
+          override def onComplete(): Unit                 = dispatcher.unsafeRunSync(queue.offer(None.asLeft))
+          override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
         })))
-        stream <- Stream.fromQueueNoneTerminated(queue).rethrow.onFinalize(safeGuard.complete(()).void)
+        stream <- Stream
+          .fromQueueUnterminated(queue)
+          .flatMap[F, T] {
+            case Right(value)    => Stream(value)
+            case Left(None)      => Stream.eval(safeGuard.complete(().asRight)).drain
+            case Left(Some(err)) => Stream.eval(safeGuard.complete(err.asLeft)).drain
+          }
+          .interruptWhen(safeGuard.get)
+          .onFinalize(safeGuard.complete(().asRight).void)
       } yield stream
   }
 }
