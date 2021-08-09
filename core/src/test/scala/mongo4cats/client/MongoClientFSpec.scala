@@ -19,7 +19,8 @@ package mongo4cats.client
 import cats.effect.IO
 import cats.syntax.either._
 import cats.effect.unsafe.implicits.global
-import com.mongodb.{MongoTimeoutException, ServerAddress}
+import com.mongodb.MongoTimeoutException
+import mongo4cats.client.settings.ServerAddress
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -42,11 +43,10 @@ class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       }.unsafeToFuture()
     }
 
-    "connect to a db via server address string" in {
+    "connect to a db via server address class" in {
       withRunningEmbeddedMongo {
-        val server = new ServerAddress("localhost", 12345)
         MongoClientF
-          .fromServerAddress[IO](server)
+          .fromServerAddress[IO](ServerAddress("localhost", 12345))
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
@@ -60,9 +60,8 @@ class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
     "return error when port is invalid" in {
       withRunningEmbeddedMongo {
-        val server = new ServerAddress("localhost", 123)
         MongoClientF
-          .fromServerAddress[IO](server)
+          .fromServerAddress[IO](ServerAddress("localhost", 123))
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
