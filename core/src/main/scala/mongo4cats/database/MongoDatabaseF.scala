@@ -19,13 +19,12 @@ package mongo4cats.database
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
+import com.mongodb.MongoClientSettings
 import com.mongodb.reactivestreams.client.MongoDatabase
-import mongo4cats.database.codecs.CustomCodecProvider
 import mongo4cats.database.helpers._
 import org.bson.Document
-import org.bson.codecs.configuration.CodecRegistries.fromProviders
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
-import org.bson.codecs._
 
 import scala.reflect.ClassTag
 
@@ -36,7 +35,7 @@ trait MongoDatabaseF[F[_]] {
   def getCollectionWithCodecRegistry[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
     getCollection[T](name, codecRegistry)
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
-    getCollection[T](name, fromProviders(cp.get, MongoDatabaseF.DefaultCodecRegistry))
+    getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabaseF.DefaultCodecRegistry))
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String): F[Unit]
 }
@@ -73,14 +72,7 @@ final private class LiveMongoDatabaseF[F[_]](
 
 object MongoDatabaseF {
 
-  val DefaultCodecRegistry = fromProviders(
-    new ValueCodecProvider,
-    new BsonValueCodecProvider,
-    new DocumentCodecProvider,
-    new IterableCodecProvider,
-    new MapCodecProvider,
-    CustomCodecProvider
-  )
+  val DefaultCodecRegistry: CodecRegistry = MongoClientSettings.getDefaultCodecRegistry
 
   def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
     Monad[F].pure(new LiveMongoDatabaseF[F](database))

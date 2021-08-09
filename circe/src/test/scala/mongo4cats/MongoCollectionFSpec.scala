@@ -18,10 +18,10 @@ package mongo4cats
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.mongodb.client.model.Filters
 import io.circe.generic.auto._
 import mongo4cats.circe._
 import mongo4cats.client.MongoClientF
+import mongo4cats.database.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
 import org.bson.types.ObjectId
 import org.scalatest.matchers.must.Matchers
@@ -32,11 +32,11 @@ import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
 
-class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort: Int = 12348
 
-  "A MongoDatabaseF" should {
+  "A MongoCollectionF" should {
 
     final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
     final case class Person(
@@ -52,11 +52,12 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
-          db     <- client.getDatabase("test")
-          _      <- db.createCollection("people")
-          coll   <- db.getCollectionWithCirceCodecs[Person]("people")
-          _      <- coll.insertOne[IO](p)
-          people <- coll.find.all[IO]
+          db   <- client.getDatabase("test")
+          _    <- db.createCollection("people")
+          coll <- db.getCollectionWithCirceCodecs[Person]("people")
+          _    <- coll.insertOne[IO](p)
+          filter = Filter.lt("dob", LocalDate.now()) && Filter.lt("registrationDate", Instant.now())
+          people <- coll.find(filter).all[IO]
         } yield people
 
         result.map(_ mustBe List(p))
@@ -132,7 +133,7 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
           _        <- db.createCollection("payments")
           coll     <- db.getCollectionWithCirceCodecs[Payment]("payments")
           _        <- coll.insertMany[IO](List(p1, p2))
-          payments <- coll.find.filter(Filters.gt("date", ts)).all[IO]
+          payments <- coll.find.filter(Filter.gt("date", ts)).all[IO]
         } yield payments
 
         result.map(_ mustBe List(p1, p2))
