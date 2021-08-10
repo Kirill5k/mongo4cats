@@ -1,7 +1,7 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 
-lazy val scala212               = "2.12.13"
+lazy val scala212               = "2.12.14"
 lazy val scala213               = "2.13.6"
 lazy val scala3                 = "3.0.1"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
@@ -38,7 +38,7 @@ lazy val noPublish = Seq(
 )
 
 lazy val commonSettings = Seq(
-  organizationName := "Mongo DB client wrapper for Cats Effect & FS2",
+  organizationName := "MongoDB Java client wrapper for Cats Effect & FS2",
   startYear        := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
@@ -57,7 +57,13 @@ lazy val root = project
     name               := "mongo4cats",
     crossScalaVersions := Nil
   )
-  .aggregate(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-examples`, `mongo4cats-embedded`)
+  .aggregate(
+    `mongo4cats-core`,
+    `mongo4cats-circe`,
+    `mongo4cats-examples`,
+    `mongo4cats-embedded`,
+    docs
+  )
 
 lazy val `mongo4cats-core` = project
   .in(file("core"))
@@ -102,3 +108,24 @@ lazy val `mongo4cats-embedded` = project
     libraryDependencies ++= Dependencies.embedded
   )
   .enablePlugins(AutomateHeaderPlugin)
+
+lazy val docs = project
+  .in(file("docs"))
+  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .enablePlugins(MicrositesPlugin)
+  .settings(noPublish)
+  .settings(commonSettings)
+  .settings(
+    name                      := "mongo4cats-docs",
+    micrositeName             := "mongo4cats",
+    micrositeAuthor           := "Kirill",
+    micrositeDescription      := "MongoDB Java client wrapper for Cats Effect & FS2",
+    micrositeBaseUrl          := "/mongo4cats",
+    micrositeDocumentationUrl := "/mongo4cats/docs",
+    micrositeHomepage         := "https://github.com/kirill5k/mongo4cats",
+    micrositeGithubOwner      := "kirill5k",
+    micrositeGithubRepo       := "mongo4cats",
+    micrositeGitterChannel    := false,
+    micrositeShareOnSocial    := false,
+    mdocIn                    := (Compile / resourceDirectory).value / "mdoc"
+  )
