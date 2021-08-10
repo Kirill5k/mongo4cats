@@ -19,7 +19,6 @@ package mongo4cats.client
 import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
 import mongo4cats.database.MongoDatabaseF
-import com.mongodb.{MongoClientSettings, MongoDriverInformation, ServerAddress}
 import com.mongodb.reactivestreams.client.{MongoClient, MongoClients}
 
 import scala.jdk.CollectionConverters._
@@ -45,8 +44,7 @@ object MongoClientF {
 
   def fromServerAddress[F[_]: Async](serverAddresses: ServerAddress*): Resource[F, MongoClientF[F]] =
     create {
-      MongoClientSettings
-        .builder()
+      MongoClientSettings.builder
         .applyToClusterSettings { builder =>
           val _ = builder.hosts(serverAddresses.toList.asJava)
         }

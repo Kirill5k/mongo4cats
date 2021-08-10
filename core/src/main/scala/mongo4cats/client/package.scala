@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package mongo4cats.client
+package mongo4cats
 
+import java.net.InetSocketAddress
 import com.mongodb.{
   MongoDriverInformation => JMongoDriverInformation,
   MongoClientSettings => JMongoClientSettings,
   ServerAddress => JServerAddress
 }
 
-import java.net.InetSocketAddress
-
-object settings {
-
+package object client {
   type ServerAddress = JServerAddress
   object ServerAddress {
     def apply(host: String, port: Int): ServerAddress    = new JServerAddress(host, port)
