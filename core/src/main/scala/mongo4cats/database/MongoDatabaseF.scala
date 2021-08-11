@@ -20,7 +20,6 @@ import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoClientSettings
-import com.mongodb.client.model.CreateCollectionOptions
 import com.mongodb.reactivestreams.client.MongoDatabase
 import mongo4cats.helpers._
 import org.bson.Document

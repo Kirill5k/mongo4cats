@@ -38,3 +38,5 @@ MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client 
   } yield ()
 }
 ```
+
+If the database does not exist, MongoDB will create it during the very first query to it.

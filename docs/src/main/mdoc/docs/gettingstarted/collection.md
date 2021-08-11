@@ -25,4 +25,15 @@ val collection: IO[MongoCollectionF[MyClass]] = database.getCollection[MyClass](
 val collection: IO[MongoCollectionF[MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
 ```
 
-One of the supported options for deriving MongoDB codecs is through the use of the popular JSON library for Scala - [Circe](../circe.html)
+One of the supported options for deriving MongoDB codecs is through the use of the popular JSON library for Scala - [Circe](../circe.html).
+More information on MongoDB codecs and codec registries can be found in the [official documentation](http://mongodb.github.io/mongo-java-driver/4.3/bson/codecs/)
+
+If a collection that you are trying to obtain does not exist, it will be created by MongoDB during the first query. Additionally, `MongoDatabaseF` has methods for creating collections explicitly:
+```scala
+database.createCollection("mycoll")
+
+// or with options
+import mongo4cats.database._
+
+database.createCollection("my coll", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
+```

@@ -20,7 +20,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.client.MongoClientF
-import org.bson.Document
+import mongo4cats.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -44,7 +44,7 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
       withEmbeddedMongoClient { client =>
         val result = for {
           db    <- client.getDatabase("foo")
-          _     <- db.createCollection("c1")
+          _     <- db.createCollection("c1", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
           _     <- db.createCollection("c2")
           names <- db.collectionNames
         } yield names
