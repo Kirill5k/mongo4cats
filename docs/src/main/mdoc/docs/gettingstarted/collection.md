@@ -24,16 +24,15 @@ val collection: IO[MongoCollectionF[MyClass]] = database.getCollection[MyClass](
 // needs to have an instance of MongoCodecProvider[MyClass] available in the implicit scope
 val collection: IO[MongoCollectionF[MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
 ```
-
+More information on MongoDB codecs and codec registries can be found in the [official documentation](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/data-formats/codecs/).
 One of the supported options for deriving MongoDB codecs is through the use of the popular JSON library for Scala - [Circe](../circe.html).
-More information on MongoDB codecs and codec registries can be found in the [official documentation](http://mongodb.github.io/mongo-java-driver/4.3/bson/codecs/)
 
 If a collection that you are trying to obtain does not exist, it will be created by MongoDB during the first query. Additionally, `MongoDatabaseF` has methods for creating collections explicitly:
 ```scala
 database.createCollection("mycoll")
 
 // or with options
-import mongo4cats.database._
+import mongo4cats.database.CreateCollectionOptions
 
 database.createCollection("my coll", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
 ```

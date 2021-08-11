@@ -27,7 +27,7 @@ val settings = MongoClientSettings.builder.build()
 val client = MongoClientF.create[IO](settings)
 ```
 
-Creating a client through any of the available constructor methods in its companion object, returns a `Resource[IO, MongoClientF[IO]]`, meaning that the connection to the MongoDB server will be disposed after its use.
+Creating a client through any of the available constructor methods in its companion object returns a `Resource[IO, MongoClientF[IO]]`, meaning that the connection to the MongoDB server will be disposed after its use.
 
 Once the client is created, it can further be used for interacting with `MongoDatabaseF` instances that provide methods for dealing with your actual MongoDB database:
 
