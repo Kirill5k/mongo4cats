@@ -26,6 +26,8 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
+  override val mongoPort = 12345
+
   "A MongoDbClient" should {
     "connect to a db via connection string" in {
       withRunningEmbeddedMongo {

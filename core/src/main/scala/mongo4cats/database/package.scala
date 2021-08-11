@@ -16,12 +16,20 @@
 
 package mongo4cats
 
-import com.mongodb.client.model.{CreateCollectionOptions => JCreateCollectionOptions}
+import com.mongodb.client.model.{
+  CreateCollectionOptions => JCreateCollectionOptions,
+  IndexOptions => JIndexOptions
+}
 
 package object database {
 
   type CreateCollectionOptions = JCreateCollectionOptions
   object CreateCollectionOptions {
     def apply(): CreateCollectionOptions = new JCreateCollectionOptions()
+  }
+
+  type IndexOptions = JIndexOptions
+  object IndexOptions {
+    def apply(): IndexOptions = new JIndexOptions()
   }
 }
