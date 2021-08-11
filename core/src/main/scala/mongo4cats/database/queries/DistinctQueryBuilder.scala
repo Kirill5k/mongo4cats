@@ -19,7 +19,7 @@ package mongo4cats.database.queries
 import cats.effect.Async
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.DistinctPublisher
-import mongo4cats.database.helpers._
+import mongo4cats.helpers._
 import mongo4cats.database.operations
 import org.bson.conversions.Bson
 

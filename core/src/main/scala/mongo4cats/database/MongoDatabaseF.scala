@@ -22,7 +22,7 @@ import cats.syntax.functor._
 import com.mongodb.MongoClientSettings
 import com.mongodb.client.model.CreateCollectionOptions
 import com.mongodb.reactivestreams.client.MongoDatabase
-import mongo4cats.database.helpers._
+import mongo4cats.helpers._
 import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
@@ -33,8 +33,6 @@ trait MongoDatabaseF[F[_]] {
   def name: String
   def getCollection(name: String): F[MongoCollectionF[Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
-  def getCollectionWithCodecRegistry[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] =
-    getCollection[T](name, codecRegistry)
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabaseF.DefaultCodecRegistry))
   def collectionNames: F[Iterable[String]]

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package mongo4cats.database
+package mongo4cats
 
-import cats.implicits._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.implicits._
 import mongo4cats.helpers._
 import org.reactivestreams.{Publisher, Subscriber}
 import org.scalatest.matchers.must.Matchers

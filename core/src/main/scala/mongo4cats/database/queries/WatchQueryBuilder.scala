@@ -20,7 +20,7 @@ import cats.effect.Async
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher
-import mongo4cats.database.helpers._
+import mongo4cats.helpers._
 import org.bson.{BsonDocument, BsonTimestamp}
 
 import scala.concurrent.duration.Duration

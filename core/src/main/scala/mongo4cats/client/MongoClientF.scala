@@ -20,11 +20,15 @@ import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
 import mongo4cats.database.MongoDatabaseF
 import com.mongodb.reactivestreams.client.{MongoClient, MongoClients}
+import mongo4cats.bson.Document
+import mongo4cats.helpers._
 
 import scala.jdk.CollectionConverters._
 
 trait MongoClientF[F[_]] {
   def getDatabase(name: String): F[MongoDatabaseF[F]]
+  def listDatabaseNames: F[Iterable[String]]
+  def listDatabases: F[Iterable[Document]]
 }
 
 final private class LiveMongoClientF[F[_]](
@@ -35,6 +39,12 @@ final private class LiveMongoClientF[F[_]](
 
   def getDatabase(name: String): F[MongoDatabaseF[F]] =
     F.delay(client.getDatabase(name)).flatMap(MongoDatabaseF.make[F])
+
+  def listDatabaseNames: F[Iterable[String]] =
+    client.listDatabaseNames().asyncIterable[F]
+
+  def listDatabases: F[Iterable[Document]] =
+    client.listDatabases().asyncIterable[F]
 }
 
 object MongoClientF {

@@ -21,7 +21,7 @@ import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.AggregatePublisher
 import mongo4cats.bson.Document
-import mongo4cats.database.helpers._
+import mongo4cats.helpers._
 import mongo4cats.database.operations.Index
 import org.bson.conversions.Bson
 

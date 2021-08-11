@@ -13,10 +13,10 @@ options:
         menu_section: getting-started
 
   - title: Operations
-    url: docs/index.html
+    url: docs/operations.html
 
   - title: Circe
     url: docs/circe.html
 
-  - title: Embedded
+  - title: Embedded MongoDB
     url: docs/embedded.html

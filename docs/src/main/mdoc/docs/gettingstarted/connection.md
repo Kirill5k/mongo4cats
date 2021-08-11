@@ -6,7 +6,7 @@ number: 2
 
 ## Making a connection
 
-In order to create a connection to a MongoDB database, an instance of `MongoClientF` class need to be instantiated. 
+In order to create a connection to a MongoDB database, an instance of `MongoClientF` class needs to be instantiated. 
 The `MongoClientF` instance represents a pool of connections for a given MongoDB server deployment and typically
 only one instance of this class is required per application (even with multiple operations executed concurrently).
 
@@ -29,7 +29,7 @@ val client = MongoClientF.create[IO](settings)
 
 Creating a client through any of the available constructor methods in its companion object, returns a `Resource[IO, MongoClientF[IO]]`, meaning that the connection to the MongoDB server will be disposed after its use.
 
-Once the client is created, it can be further used for interacting with `MongoDatabaseF` instances that provide methods for dealing with your actual MongoDB database:
+Once the client is created, it can further be used for interacting with `MongoDatabaseF` instances that provide methods for dealing with your actual MongoDB database:
 
 ```scala
 MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>

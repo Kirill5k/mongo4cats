@@ -21,7 +21,7 @@ import cats.syntax.functor._
 import com.mongodb.MongoNamespace
 import com.mongodb.client.model._
 import com.mongodb.client.result._
-import mongo4cats.database.helpers._
+import mongo4cats.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection

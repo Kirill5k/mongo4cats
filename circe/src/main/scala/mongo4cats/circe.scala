@@ -41,7 +41,7 @@ object circe extends JsonCodecs {
     def getCollectionWithCirceCodecs[T: ClassTag: Encoder: Decoder](name: String): F[MongoCollectionF[T]] = {
       implicit val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
       val codecs: CodecRegistry     = fromRegistries(fromProviders(circeBasedCodecProvider[T]), MongoDatabaseF.DefaultCodecRegistry)
-      db.getCollectionWithCodecRegistry[T](name, codecs)
+      db.getCollection[T](name, codecs)
     }
   }
 

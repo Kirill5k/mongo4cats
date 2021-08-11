@@ -24,5 +24,5 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version
 ```
 
 ### Next steps
-- **[Making a connection](./connection.html)**
-- **[Getting a collection](./collection.html)**
+- **[Making a connection](./gettingstarted/connection.html)**
+- **[Getting a collection](./gettingstarted/collection.html)**
