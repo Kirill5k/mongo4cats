@@ -285,14 +285,14 @@ final class MongoCollectionF[T: ClassTag] private (
     *
     * [[http://docs.mongodb.org/manual/reference/command/dropIndexes/]]
     */
-  def dropIndexes[F[_]: Async](): F[Unit] =
+  def dropIndexes[F[_]: Async]: F[Unit] =
     collection.dropIndexes().asyncVoid[F]
 
   /** Drops this collection from the Database.
     *
     * [[http://docs.mongodb.org/manual/reference/command/drop/]]
     */
-  def drop[F[_]: Async](): F[Unit] =
+  def drop[F[_]: Async]: F[Unit] =
     collection.drop().asyncVoid[F]
 
   /** [[http://docs.mongodb.org/manual/reference/command/create]]
