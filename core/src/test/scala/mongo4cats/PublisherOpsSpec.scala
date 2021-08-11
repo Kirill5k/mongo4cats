@@ -19,7 +19,7 @@ package mongo4cats.database
 import cats.implicits._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import mongo4cats.database.helpers._
+import mongo4cats.helpers._
 import org.reactivestreams.{Publisher, Subscriber}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
