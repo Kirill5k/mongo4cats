@@ -51,7 +51,7 @@ object embedded {
 
   trait EmbeddedMongo {
     protected val mongoHost = "localhost"
-    protected val mongoPort = 12345
+    protected val mongoPort = 27017
 
     def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] =
       runMongo(mongoHost, mongoPort)(test)

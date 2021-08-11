@@ -1,3 +1,22 @@
 options:
   - title: Getting started
+    url: docs/gettingstarted/
+    menu_section: getting-started
+
+    nested_options:
+      - title: Making a connection
+        url: docs/gettingstarted/connection.html
+        menu_section: getting-started
+
+      - title: Getting a collection
+        url: docs/gettingstarted/collection.html
+        menu_section: getting-started
+
+  - title: Operations
     url: docs/index.html
+
+  - title: Circe
+    url: docs/circe.html
+
+  - title: Embedded
+    url: docs/embedded.html

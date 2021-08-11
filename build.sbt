@@ -61,8 +61,7 @@ lazy val root = project
     `mongo4cats-core`,
     `mongo4cats-circe`,
     `mongo4cats-examples`,
-    `mongo4cats-embedded`,
-    docs
+    `mongo4cats-embedded`
   )
 
 lazy val `mongo4cats-core` = project
@@ -127,5 +126,5 @@ lazy val docs = project
     micrositeGithubRepo       := "mongo4cats",
     micrositeGitterChannel    := false,
     micrositeShareOnSocial    := false,
-    mdocIn                    := (Compile / resourceDirectory).value / "mdoc"
+    mdocIn                    := (Compile / sourceDirectory).value / "mdoc"
   )

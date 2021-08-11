@@ -20,6 +20,7 @@ import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoClientSettings
+import com.mongodb.client.model.CreateCollectionOptions
 import com.mongodb.reactivestreams.client.MongoDatabase
 import mongo4cats.database.helpers._
 import org.bson.Document
@@ -38,6 +39,7 @@ trait MongoDatabaseF[F[_]] {
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabaseF.DefaultCodecRegistry))
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String): F[Unit]
+  def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
 }
 
 final private class LiveMongoDatabaseF[F[_]](
@@ -67,13 +69,16 @@ final private class LiveMongoDatabaseF[F[_]](
     database.listCollectionNames().asyncIterable[F]
 
   def createCollection(name: String): F[Unit] =
-    database.createCollection(name).asyncVoid[F]
+    createCollection(name, new CreateCollectionOptions())
+
+  def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
+    database.createCollection(name, options).asyncVoid[F]
 }
 
 object MongoDatabaseF {
 
   val DefaultCodecRegistry: CodecRegistry = MongoClientSettings.getDefaultCodecRegistry
 
-  def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
+  private[mongo4cats] def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
     Monad[F].pure(new LiveMongoDatabaseF[F](database))
 }

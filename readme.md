@@ -61,22 +61,17 @@ import mongo4cats.bson.Document
 
 object FilteringAndSorting extends IOApp.Simple {
 
-  def genDocs(n: Int): Seq[Document] =
-    (0 to n).map(i => Document("name", s"doc-$i"))
-
   override val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollection("docs")
-        _    <- coll.insertMany[IO](genDocs(10))
+        _    <- coll.insertMany[IO]((0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i)))
         docs <- coll.find
-          .filter(Filter.eq("name", "doc-0") or Filter.regex("name", "doc-[2-7]"))
+          .filter(Filter.gte("index", 10) && Filter.regex("name", "doc-[1-9]0"))
           .sortByDesc("name")
           .limit(5)
-          .stream[IO]
-          .compile
-          .toList
+          .all[IO]
         _ <- IO.println(docs)
       } yield ()
     }
