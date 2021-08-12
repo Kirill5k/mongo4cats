@@ -32,10 +32,9 @@ Creating a client through any of the available constructor methods in its compan
 Once the client is created, it can further be used for interacting with `MongoDatabaseF` instances that provide methods for dealing with your actual MongoDB database:
 
 ```scala
+import mongo4cats.database.MongoDatabaseF
 MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-  for {
-    database <- client.getDatabase("mydb")
-  } yield ()
+  val database: IO[MongoDatabaseF[IO]] = client.getDatabase("mydb")
 }
 ```
 

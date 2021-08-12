@@ -17,6 +17,7 @@
 package mongo4cats.database.queries
 
 import cats.effect.Async
+import cats.syntax.functor._
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.DistinctPublisher
 import mongo4cats.helpers._
@@ -79,8 +80,8 @@ final case class DistinctQueryBuilder[T: ClassTag] private[database] (
   def collation(collation: model.Collation): DistinctQueryBuilder[T] =
     DistinctQueryBuilder[T](observable, DistinctCommand.Collation[T](collation) :: commands)
 
-  def first[F[_]: Async]: F[T] =
-    applyCommands().first().asyncSingle[F]
+  def first[F[_]: Async]: F[Option[T]] =
+    applyCommands().first().asyncSingle[F].map(Option.apply)
 
   def all[F[_]: Async]: F[Iterable[T]] =
     applyCommands().asyncIterable[F]

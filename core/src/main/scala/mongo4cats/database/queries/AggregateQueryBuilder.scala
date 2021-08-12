@@ -17,6 +17,7 @@
 package mongo4cats.database.queries
 
 import cats.effect.Async
+import cats.syntax.functor._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.AggregatePublisher
@@ -154,8 +155,8 @@ final case class AggregateQueryBuilder[T: ClassTag] private[database] (
   def toCollection[F[_]: Async]: F[Unit] =
     applyCommands().toCollection.asyncVoid[F]
 
-  def first[F[_]: Async]: F[T] =
-    applyCommands().first().asyncSingle[F]
+  def first[F[_]: Async]: F[Option[T]] =
+    applyCommands().first().asyncSingle[F].map(Option.apply)
 
   def all[F[_]: Async]: F[Iterable[T]] =
     applyCommands().asyncIterable[F]

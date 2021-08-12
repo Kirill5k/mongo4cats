@@ -47,7 +47,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             } yield (insertResult, documents)
 
             result.map { case (insertRes, documents) =>
-              documents mustBe TestData.gbpAccount
+              documents mustBe Some(TestData.gbpAccount)
               insertRes.wasAcknowledged() mustBe true
             }
           }
@@ -180,7 +180,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
-              docs.getString("name") mustBe "eur-account"
+              docs.map(_.getString("name")) mustBe Some("eur-account")
               updateRes.getMatchedCount mustBe 1
               updateRes.getModifiedCount mustBe 1
             }
@@ -380,7 +380,18 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
               res  <- coll.find.sort(Sort.desc("name")).skip(3).limit(2).first[IO]
             } yield res
 
-            result.map(_.getString("name") mustBe "cat-6")
+            result.map(_.map(_.getString("name")) mustBe Some("cat-6"))
+          }
+        }
+
+        "return none when there are no docs that match query" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll <- db.getCollection("coll")
+              res  <- coll.find.sort(Sort.desc("name")).skip(3).limit(2).first[IO]
+            } yield res
+
+            result.map(_ mustBe None)
           }
         }
 
@@ -467,10 +478,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
             } yield (old, updated)
 
             result.map { case (old, updated) =>
-              old.getObjectId("_id") mustBe updated.getObjectId("_id")
-              old.getString("lastName") mustBe updated.getString("lastName")
-              updated.getString("dob") mustBe "2020-01-01"
-              old.getString("dob") mustBe "1970-01-01"
+              updated mustBe Some(old.append("dob", "2020-01-01"))
             }
           }
         }

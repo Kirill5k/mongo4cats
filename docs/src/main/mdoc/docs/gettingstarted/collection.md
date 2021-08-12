@@ -29,10 +29,10 @@ One of the supported options for deriving MongoDB codecs is through the use of t
 
 If a collection that you are trying to obtain does not exist, it will be created by MongoDB during the first query. Additionally, `MongoDatabaseF` has methods for creating collections explicitly:
 ```scala
-database.createCollection("mycoll")
+val collection: IO[Unit] = database.createCollection("mycoll")
 
 // or with options
 import mongo4cats.database.CreateCollectionOptions
-
-database.createCollection("my coll", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
+val options = CreateCollectionOptions().capped(true).sizeInBytes(1024L)
+val collection: IO[Unit] = database.createCollection("my coll", options)
 ```

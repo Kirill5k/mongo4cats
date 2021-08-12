@@ -114,9 +114,6 @@ final case class WatchQueryBuilder[T: ClassTag] private[database] (
   def startAtOperationTime(startAtOperationTime: BsonTimestamp): WatchQueryBuilder[T] =
     WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime[T](startAtOperationTime) :: commands)
 
-  def first[F[_]: Async]: F[ChangeStreamDocument[T]] =
-    applyCommands().first().asyncSingle[F]
-
   def stream[F[_]: Async]: fs2.Stream[F, ChangeStreamDocument[T]] =
     applyCommands().stream[F]
 

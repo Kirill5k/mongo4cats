@@ -55,8 +55,8 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
           } yield res
 
           result.map { acc =>
-            acc.getList("transactions", classOf[Document]) must have size 250
-            acc.getInteger("totalAmount").intValue() must be > 0
+            acc.get.getList("transactions", classOf[Document]) must have size 250
+            acc.get.getInteger("totalAmount").intValue() must be > 0
           }
         }
       }

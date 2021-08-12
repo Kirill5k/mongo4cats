@@ -17,6 +17,7 @@
 package mongo4cats.database.queries
 
 import cats.effect.Async
+import cats.syntax.functor._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.FindPublisher
@@ -227,8 +228,8 @@ final case class FindQueryBuilder[T: ClassTag] private[database] (
   def limit(limit: Int): FindQueryBuilder[T] =
     FindQueryBuilder[T](observable, FindCommand.Limit[T](limit) :: commands)
 
-  def first[F[_]: Async]: F[T] =
-    applyCommands().first().asyncSingle[F]
+  def first[F[_]: Async]: F[Option[T]] =
+    applyCommands().first().asyncSingle[F].map(Option.apply)
 
   def all[F[_]: Async]: F[Iterable[T]] =
     applyCommands().asyncIterable[F]
