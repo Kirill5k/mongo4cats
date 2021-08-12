@@ -39,7 +39,7 @@ val data = IO[Iterable[Document]] = collection
   .all[IO]
 ```
 
-The ordering of the data can be set by either calling a `sortBy` method or `sort`:
+The ordering of the data can be enforced by calling either `sortBy` or `sort` method:
 ```scala
 import mongo4cats.database.operations.Sort
 

@@ -1,7 +1,7 @@
 ---
 layout: docs
 title:  "Aggregate"
-number: 5
+number: 6
 ---
 
 ## Aggregate
