@@ -1,5 +1,6 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
+import microsites.CdnDirectives
 
 lazy val scala212               = "2.12.14"
 lazy val scala213               = "2.13.6"
@@ -124,8 +125,13 @@ lazy val docs = project
     micrositeHomepage         := "https://github.com/kirill5k/mongo4cats",
     micrositeGithubOwner      := "kirill5k",
     micrositeGithubRepo       := "mongo4cats",
-    micrositeHighlightTheme   := "Vs",
+    micrositeHighlightTheme   := "docco",
     micrositeGitterChannel    := false,
     micrositeShareOnSocial    := false,
-    mdocIn                    := (Compile / sourceDirectory).value / "mdoc"
+    mdocIn                    := (Compile / sourceDirectory).value / "mdoc",
+    micrositeCDNDirectives := CdnDirectives(
+      cssList = List(
+        "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css"
+      )
+    )
   )
