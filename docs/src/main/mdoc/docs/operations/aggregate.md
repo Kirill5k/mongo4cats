@@ -26,8 +26,10 @@ val aggregation = Aggregate
   .sort(Sort.desc("totalAmount")) // define the order of the produced results
 ```
 Once the aggregation pipeline is defined, the aggregation operation can be executed by calling `aggregate` method on a `MongoCollectionF[F]` instance. 
-Similarly to `find`, the result of `aggregate` can be returned in a form of a single document, list of documents or a stream:
+Similarly to `find`, the result of `aggregate` can be returned in a form of a single (first) document, list of all documents or a stream:
 ```scala
+import mongo4cats.bson.Document
+
 val result: IO[Option[Document]] = collection.aggregate[Document](aggregation).first[IO]
 val result: IO[Iterable[Document]] = collection.aggregate[Document](aggregation).all[IO]
 val result: fs2.Stream[IO, Document] = collection.aggregate[Document](aggregation).stream[IO]

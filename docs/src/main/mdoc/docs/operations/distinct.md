@@ -16,6 +16,8 @@ val distinctValues: fs2.Stream[IO, String] = collection.distinct[String]("field1
 ```
 If the document's field is represented by a more complicated class in a collection than a String, it can be upcasted to a required type:
 ```scala
+import mongo4cats.bson.Document
+
 val distinctValues: IO[Iterable[Document]] = collection.distinct[Document]("field1").all[IO]
 
 // assuming you have an instance of MongoCodecProvider[MyClass] available in the implicit scope

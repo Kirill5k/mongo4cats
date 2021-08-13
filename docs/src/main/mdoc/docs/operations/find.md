@@ -16,6 +16,8 @@ The result of an operation can be returned in the following forms:
 
 Find operation can be executed by calling `find` method on a `MongoCollectionF[T]` instance:
 ```scala
+import mongo4cats.bson.Document
+
 val data: fs2.Stream[IO, Document] = collection.find.stream[IO]
 ```
 To specify what data to return, additional filters can be passed in:
