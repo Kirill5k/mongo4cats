@@ -26,9 +26,23 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
+  override val mongoPort: Int = 12344
+
   "A MongoCollectionF" should {
-    "create and retrieve documents from a db" in withRunningEmbeddedMongo("localhost", 12344) {
+    "create and retrieve documents from a db" in withRunningEmbeddedMongo {
       MongoClientF.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
+        for {
+          db   <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          testDoc = Document("Hello", "World!")
+          _        <- coll.insertOne[IO](testDoc)
+          foundDoc <- coll.find.first[IO]
+        } yield foundDoc mustBe Some(testDoc)
+      }
+    }.unsafeToFuture()
+
+    "start instance on different port" in withRunningEmbeddedMongo("localhost", 12355) {
+      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollection("docs")

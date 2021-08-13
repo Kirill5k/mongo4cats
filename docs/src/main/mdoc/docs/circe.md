@@ -8,7 +8,7 @@ position: 3
 ## Circe
 
 Internally, MongoDB stores all of its data in a BSON (Binary JSON) format, which is a close cousin of a traditional JSON that we all got used to.
-Similarities between these two formats give us ability to use tools that are normally used for doing conversions of case classes into a JSON for deriving MongoDB codecs. One of such tools is [circe](https://circe.github.io/circe/).
+Similarities between these two formats allow us to use tools that are normally used for doing transformations of case classes into a JSON for deriving MongoDB codecs. One of such tools is [circe](https://circe.github.io/circe/).
 
 To enable circe support, a dependency has to be added in the `build.sbt`:
 ```scala

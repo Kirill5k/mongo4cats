@@ -147,7 +147,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
           testDoc = Document("Hello", "World!")
           _ <- coll.insertOne[IO](testDoc)
           foundDoc <- coll.find.first[IO]
-        } yield foundDoc mustBe testDoc
+        } yield foundDoc mustBe Some(testDoc)
       }
     }.unsafeToFuture()
   }
