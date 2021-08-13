@@ -11,14 +11,15 @@ Similarities between these two formats allow us to use tools that are normally u
 </code></pre></div></div>
 <p>Which, when included, implicitly builds an instance of <code class="language-plaintext highlighter-rouge">MongoCodecProvider[T]</code>, 
 assuming there are instances of <code class="language-plaintext highlighter-rouge">Encoder[T]</code> and <code class="language-plaintext highlighter-rouge">Decoder[T]</code> available in the implicit scope:</p>
+
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.circe.generic.auto._</span>
 <span class="k">import</span> <span class="nn">mongo4cats.bson.ObjectId</span>
 <span class="k">import</span> <span class="nn">mongo4cats.circe._</span>
-<span class="k">import</span> <span class="nn">mongo4cats.database.MongoCollectionF</span>
+<span class="k">import</span> <span class="nn">mongo4cats.collection.MongoCollection</span>
 
 <span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">MyClass</span><span class="o">(</span><span class="nc">_id</span><span class="k">:</span> <span class="kt">ObjectId</span><span class="o">,</span> <span class="n">field1</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">field2</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
 
-<span class="k">val</span> <span class="nv">collection</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">MongoCollectionF</span><span class="o">[</span><span class="kt">MyClass</span><span class="o">]]</span> <span class="k">=</span> <span class="nv">database</span><span class="o">.</span><span class="py">getCollectionWithCodec</span><span class="o">[</span><span class="kt">MyClass</span><span class="o">](</span><span class="s">"mycoll"</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">collection</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">MongoCollection</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">MyClass</span><span class="o">]]</span> <span class="k">=</span> <span class="nv">database</span><span class="o">.</span><span class="py">getCollectionWithCodec</span><span class="o">[</span><span class="kt">MyClass</span><span class="o">](</span><span class="s">"mycoll"</span><span class="o">)</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="/mongo4cats/highlight/highlight.pack.js"></script><script src="/mongo4cats/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div

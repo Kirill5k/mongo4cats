@@ -2,14 +2,16 @@
 
 <p>Indexes support efficient execution of queries in MongoDB as well as allow efficient sorting, some additional capabilities like unique constraints and geospatial search, and <a href="https://docs.mongodb.com/manual/indexes/">more</a>.</p>
 
-<p><code class="language-plaintext highlighter-rouge">MongoCollectionF[T]</code> supports several ways of creating an index on a field (or multiple fields).
+<p><code class="language-plaintext highlighter-rouge">MongoCollection[F, T]</code> supports several ways of creating an index on a field (or multiple fields).
 The simplest one would be calling <code class="language-plaintext highlighter-rouge">createIndex</code> method and passing defined index specification object:</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.database.operations.Index</span>
 
-<span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">collection</span><span class="o">.</span><span class="py">createIndex</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nv">Index</span><span class="o">.</span><span class="py">ascending</span><span class="o">(</span><span class="s">"field"</span><span class="o">))</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.collection.operations.Index</span>
+
+<span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">collection</span><span class="o">.</span><span class="py">createIndex</span><span class="o">(</span><span class="nv">Index</span><span class="o">.</span><span class="py">ascending</span><span class="o">(</span><span class="s">"field"</span><span class="o">))</span>
 </code></pre></div></div>
 <p>To create a compound index, multiple specifications can be combined together:</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.database.operations.Index</span>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.collection.operations.Index</span>
 
 <span class="k">val</span> <span class="nv">compoundIndex</span> <span class="k">=</span> <span class="nv">Index</span><span class="o">.</span><span class="py">ascending</span><span class="o">(</span><span class="s">"field1"</span><span class="o">).</span><span class="py">descending</span><span class="o">(</span><span class="s">"field2"</span><span class="o">)</span>
 
@@ -19,18 +21,19 @@ The simplest one would be calling <code class="language-plaintext highlighter-ro
 <span class="k">val</span> <span class="nv">compoundIndex</span> <span class="k">=</span> <span class="nv">index1</span><span class="o">.</span><span class="py">combinedWith</span><span class="o">(</span><span class="n">index2</span><span class="o">)</span>
 </code></pre></div></div>
 <p>If some additional configuration required, <code class="language-plaintext highlighter-rouge">createIndex</code> has an overloaded variant which accepts options object:</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.database.operations.Index</span>
-<span class="k">import</span> <span class="nn">mongo4cats.database.IndexOptions</span>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.collection.operations.Index</span>
+<span class="k">import</span> <span class="nn">mongo4cats.collection.IndexOptions</span>
 
 <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nv">Index</span><span class="o">.</span><span class="py">ascending</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"email"</span><span class="o">)</span>
 <span class="k">val</span> <span class="nv">options</span> <span class="k">=</span> <span class="nc">IndexOptions</span><span class="o">().</span><span class="py">unique</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
-<span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">collection</span><span class="o">.</span><span class="py">createIndex</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">index</span><span class="o">,</span> <span class="n">options</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">collection</span><span class="o">.</span><span class="py">createIndex</span><span class="o">(</span><span class="n">index</span><span class="o">,</span> <span class="n">options</span><span class="o">)</span>
 </code></pre></div></div>
 <p>Alternatively, indexes can be creating by using <a href="https://docs.mongodb.com/drivers/java/sync/current/fundamentals/builders/indexes/">builders</a> from the standard MongoDB Java library:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">com.mongodb.client.model.Indexes</span>
 
 <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nv">Indexes</span><span class="o">.</span><span class="py">compoundIndex</span><span class="o">(</span><span class="nv">Indexes</span><span class="o">.</span><span class="py">ascending</span><span class="o">(</span><span class="s">"field1"</span><span class="o">),</span> <span class="nv">Indexes</span><span class="o">.</span><span class="py">ascending</span><span class="o">(</span><span class="s">"field2"</span><span class="o">))</span>
-<span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">collection</span><span class="o">.</span><span class="py">createIndex</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">index</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">collection</span><span class="o">.</span><span class="py">createIndex</span><span class="o">(</span><span class="n">index</span><span class="o">)</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="/mongo4cats/highlight/highlight.pack.js"></script><script src="/mongo4cats/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div

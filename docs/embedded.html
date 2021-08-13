@@ -12,43 +12,44 @@ One of the use-cases for such scenarios would be unit testing where you would ju
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect.IO</span>
 <span class="k">import</span> <span class="nn">cats.effect.unsafe.implicits.global</span>
 <span class="k">import</span> <span class="nn">mongo4cats.bson.Document</span>
-<span class="k">import</span> <span class="nn">mongo4cats.client.MongoClientF</span>
+<span class="k">import</span> <span class="nn">mongo4cats.client.MongoClient</span>
 <span class="k">import</span> <span class="nn">mongo4cats.embedded.EmbeddedMongo</span>
 <span class="k">import</span> <span class="nn">org.scalatest.matchers.must.Matchers</span>
 <span class="k">import</span> <span class="nn">org.scalatest.wordspec.AsyncWordSpec</span>
 
 <span class="k">class</span> <span class="nc">WithEmbeddedMongoSpec</span> <span class="k">extends</span> <span class="nc">AsyncWordSpec</span> <span class="k">with</span> <span class="nc">Matchers</span> <span class="k">with</span> <span class="nc">EmbeddedMongo</span> <span class="o">{</span>
 
-  <span class="c1">// by default, MongoDB instance will be accessible on 27017 port, which can be overridden: </span>
+  <span class="c1">// by default, MongoDB instance will be accessible on 27017 port, which can be overridden:</span>
   <span class="k">override</span> <span class="k">val</span> <span class="nv">mongoPort</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">12345</span>
-  
-  <span class="s">"A MongoCollectionF"</span> <span class="n">should</span> <span class="o">{</span>
+
+  <span class="s">"A MongoCollection"</span> <span class="n">should</span> <span class="o">{</span>
     <span class="s">"create and retrieve documents from a db"</span> <span class="n">in</span> <span class="n">withRunningEmbeddedMongo</span> <span class="o">{</span>
-      <span class="nv">MongoClientF</span><span class="o">.</span><span class="py">fromConnectionString</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">"mongodb://localhost:12345"</span><span class="o">).</span><span class="py">use</span> <span class="o">{</span> <span class="n">client</span> <span class="k">=&gt;</span>
+      <span class="nv">MongoClient</span><span class="o">.</span><span class="py">fromConnectionString</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">"mongodb://localhost:12345"</span><span class="o">).</span><span class="py">use</span> <span class="o">{</span> <span class="n">client</span> <span class="k">=&gt;</span>
         <span class="k">for</span> <span class="o">{</span>
           <span class="n">db</span> <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
           <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">db</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)</span>
           <span class="n">testDoc</span> <span class="k">=</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"World!"</span><span class="o">)</span>
-          <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertOne</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">testDoc</span><span class="o">)</span>
-          <span class="n">foundDoc</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span><span class="o">.</span><span class="py">first</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+          <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertOne</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
+          <span class="n">foundDoc</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span><span class="o">.</span><span class="py">first</span>
         <span class="o">}</span> <span class="k">yield</span> <span class="n">foundDoc</span> <span class="n">mustBe</span> <span class="nc">Some</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
       <span class="o">}</span>
     <span class="o">}.</span><span class="py">unsafeToFuture</span><span class="o">()</span>
 
     <span class="c1">// or connection properties can be passed explicitly</span>
     <span class="s">"start instance on different port"</span> <span class="n">in</span> <span class="nf">withRunningEmbeddedMongo</span><span class="o">(</span><span class="s">"localhost"</span><span class="o">,</span> <span class="mi">12355</span><span class="o">)</span> <span class="o">{</span>
-      <span class="nv">MongoClientF</span><span class="o">.</span><span class="py">fromConnectionString</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">"mongodb://localhost:12355"</span><span class="o">).</span><span class="py">use</span> <span class="o">{</span> <span class="n">client</span> <span class="k">=&gt;</span>
+      <span class="nv">MongoClient</span><span class="o">.</span><span class="py">fromConnectionString</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">"mongodb://localhost:12355"</span><span class="o">).</span><span class="py">use</span> <span class="o">{</span> <span class="n">client</span> <span class="k">=&gt;</span>
         <span class="k">for</span> <span class="o">{</span>
-          <span class="n">db</span>   <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
+          <span class="n">db</span> <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
           <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">db</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)</span>
           <span class="n">testDoc</span> <span class="k">=</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"World!"</span><span class="o">)</span>
-          <span class="k">_</span>        <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertOne</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="n">testDoc</span><span class="o">)</span>
-          <span class="n">foundDoc</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span><span class="o">.</span><span class="py">first</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+          <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertOne</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
+          <span class="n">foundDoc</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span><span class="o">.</span><span class="py">first</span>
         <span class="o">}</span> <span class="k">yield</span> <span class="n">foundDoc</span> <span class="n">mustBe</span> <span class="nc">Some</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
       <span class="o">}</span>
     <span class="o">}.</span><span class="py">unsafeToFuture</span><span class="o">()</span>
   <span class="o">}</span>
 <span class="o">}</span>
+
 </code></pre></div></div>
 </section></div></div></div></div><script src="/mongo4cats/highlight/highlight.pack.js"></script><script src="/mongo4cats/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
