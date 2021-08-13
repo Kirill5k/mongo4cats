@@ -59,6 +59,9 @@ final class MongoCollectionF[T: ClassTag] private (
     }
   }
 
+  def as[Y: ClassTag]: MongoCollectionF[Y] =
+    MongoCollectionF[Y](collection.withDocumentClass[Y](implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]))
+
   /** Aggregates documents according to the specified aggregation pipeline. [[http://docs.mongodb.org/manual/aggregation/]]
     * @param pipeline
     *   the aggregate pipeline
