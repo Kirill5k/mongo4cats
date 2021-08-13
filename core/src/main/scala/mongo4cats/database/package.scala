@@ -16,7 +16,20 @@
 
 package mongo4cats
 
-import com.mongodb.client.model.{CreateCollectionOptions => JCreateCollectionOptions, IndexOptions => JIndexOptions}
+import com.mongodb.client.model.{
+  CreateCollectionOptions => JCreateCollectionOptions,
+  DropIndexOptions => JDropIndexOptions,
+  InsertOneOptions => JInsertOneOptions,
+  InsertManyOptions => JInsertManyOptions,
+  CountOptions => JCountOptions,
+  DeleteOptions => JDeleteOptions,
+  IndexOptions => JIndexOptions,
+  UpdateOptions => JUpdateOptions,
+  ReplaceOptions => JReplaceOptions,
+  FindOneAndReplaceOptions => JFindOneAndReplaceOptions,
+  FindOneAndDeleteOptions => JFindOneAndDeleteOptions,
+  FindOneAndUpdateOptions => JFindOneAndUpdateOptions
+}
 
 package object database {
 
@@ -28,5 +41,55 @@ package object database {
   type IndexOptions = JIndexOptions
   object IndexOptions {
     def apply(): IndexOptions = new JIndexOptions()
+  }
+
+  type UpdateOptions = JUpdateOptions
+  object UpdateOptions {
+    def apply(): UpdateOptions = new JUpdateOptions()
+  }
+
+  type ReplaceOptions = JReplaceOptions
+  object ReplaceOptions {
+    def apply(): ReplaceOptions = new JReplaceOptions()
+  }
+
+  type DropIndexOptions = JDropIndexOptions
+  object DropIndexOptions {
+    def apply(): DropIndexOptions = new JDropIndexOptions()
+  }
+
+  type FindOneAndReplaceOptions = JFindOneAndReplaceOptions
+  object FindOneAndReplaceOptions {
+    def apply(): FindOneAndReplaceOptions = new JFindOneAndReplaceOptions()
+  }
+
+  type DeleteOptions = JDeleteOptions
+  object DeleteOptions {
+    def apply(): DeleteOptions = new JDeleteOptions()
+  }
+
+  type CountOptions = JCountOptions
+  object CountOptions {
+    def apply(): CountOptions = new JCountOptions()
+  }
+
+  type InsertManyOptions = JInsertManyOptions
+  object InsertManyOptions {
+    def apply(): InsertManyOptions = new JInsertManyOptions()
+  }
+
+  type InsertOneOptions = JInsertOneOptions
+  object InsertOneOptions {
+    def apply(): InsertOneOptions = new JInsertOneOptions()
+  }
+
+  type FindOneAndUpdateOptions = JFindOneAndUpdateOptions
+  object FindOneAndUpdateOptions {
+    def apply(): FindOneAndUpdateOptions = new JFindOneAndUpdateOptions()
+  }
+
+  type FindOneAndDeleteOptions = JFindOneAndDeleteOptions
+  object FindOneAndDeleteOptions {
+    def apply(): FindOneAndDeleteOptions = new JFindOneAndDeleteOptions()
   }
 }

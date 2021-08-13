@@ -19,7 +19,6 @@ package mongo4cats.database
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoNamespace
-import com.mongodb.client.model._
 import com.mongodb.client.result._
 import mongo4cats.helpers._
 import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
@@ -331,19 +330,6 @@ final class MongoCollectionF[T: ClassTag] private (
 
   def updateMany[F[_]: Async](filters: Filter, update: Update): F[UpdateResult] =
     updateMany(filters.toBson, update.toBson)
-
-  /** Update all documents in the collection according to the specified arguments.
-    *
-    * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
-    * @param filters
-    *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
-    * @param update
-    *   a pipeline describing the update.
-    * @since 2.7
-    *   @note Requires MongoDB 4.2 or greater
-    */
-  def updateMany[F[_]: Async](filters: Bson, update: Seq[Bson]): F[UpdateResult] =
-    collection.updateMany(filters, update.asJava).asyncSingle[F]
 
   /** Update all documents in the collection according to the specified arguments.
     *
