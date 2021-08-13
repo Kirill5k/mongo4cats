@@ -14,7 +14,7 @@ The simplest one would be calling `createIndex` method and passing defined index
 ```scala
 import mongo4cats.collection.operations.Index
 
-val result: IO[String] = collection.createIndex[IO](Index.ascending("field"))
+val result: IO[String] = collection.createIndex(Index.ascending("field"))
 ```
 To create a compound index, multiple specifications can be combined together:
 
@@ -36,12 +36,12 @@ import mongo4cats.collection.IndexOptions
 
 val index = Index.ascending("name", "email")
 val options = IndexOptions().unique(true)
-val result: IO[String] = collection.createIndex[IO](index, options)
+val result: IO[String] = collection.createIndex(index, options)
 ```
 Alternatively, indexes can be creating by using [builders](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/builders/indexes/) from the standard MongoDB Java library:
 ```scala
 import com.mongodb.client.model.Indexes
 
 val index = Indexes.compoundIndex(Indexes.ascending("field1"), Indexes.ascending("field2"))
-val result: IO[String] = collection.createIndex[IO](index)
+val result: IO[String] = collection.createIndex(index)
 ```

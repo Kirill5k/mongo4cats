@@ -17,14 +17,14 @@ import mongo4cats.collection.UpdateOptions
 // chain multiple updates together
 val update = Update.set("field1", "foo").currentDate("date")
 
-val result: IO[UpdateResult] = collection.updateOne[IO](Filter.empty, update)
+val result: IO[UpdateResult] = collection.updateOne(Filter.empty, update)
 // or with options
-val result: IO[UpdateResult] = collection.updateOne[IO](Filter.empty, update, UpdateOptions().upsert(true))
+val result: IO[UpdateResult] = collection.updateOne(Filter.empty, update, UpdateOptions().upsert(true))
 ```
 As an alternative, an update query can be built using [builder](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/builders/updates/) from the standard MongoDB library:
 ```scala
 import com.mongodb.client.model.{Filters, Updates}
 
 val update = Updates.combine(Updates.set("field1", "foo"), Updates.currentDate("date"))
-val result: IO[UpdateResult] = collection.updateOne[IO](Filters.empty(), update)
+val result: IO[UpdateResult] = collection.updateOne(Filters.empty(), update)
 ```

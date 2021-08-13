@@ -8,7 +8,7 @@ lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion           := scala213
 ThisBuild / organization           := "io.github.kirill5k"
-ThisBuild / homepage               := Some(url("https://github.com/kirill5k/mongo4cats"))
+ThisBuild / homepage               := Some(url("https://kirill5k.github.io/mongo4cats"))
 ThisBuild / scmInfo                := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
 ThisBuild / developers             := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses               := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))

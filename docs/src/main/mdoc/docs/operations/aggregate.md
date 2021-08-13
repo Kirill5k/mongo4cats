@@ -41,5 +41,5 @@ val result: fs2.Stream[IO, MyClass] = collection.aggregateWithCodec[MyClass](agg
 ```
 If aggregation pipeline ends with the `$out` stage (write document to a specified collection), `toCollection` method can be used:
 ```scala
-val result: IO[Unit] = collection.aggregate[Document](aggregation).toCollection[IO]
+val result: IO[Unit] = collection.aggregate[Document](aggregation).toCollection
 ```
