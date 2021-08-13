@@ -15,7 +15,6 @@ import mongo4cats.bson.Document
 val changes: fs2.Stream[IO, Document] = collection.watch[Document].stream
 
 // or with an aggregation pipeline included
-
 import mongo4cats.collection.operations.{Aggregate, Filter}
 
 val changes: fs2.Stream[IO, Document] = collection.watch[Document](Aggregate.matchBy(Filter.gte("amount", 100))).stream

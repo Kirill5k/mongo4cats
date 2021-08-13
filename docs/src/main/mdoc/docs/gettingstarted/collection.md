@@ -33,9 +33,8 @@ If a collection that you are trying to obtain does not exist, it will be created
 val collection: IO[Unit] = database.createCollection("mycoll")
 
 // or with options
-
 import mongo4cats.collection.CreateCollectionOptions
 
 val options = CreateCollectionOptions().capped(true).sizeInBytes(1024L)
-val collection: IO[Unit] = database.createCollection("my coll", options)
+val collection: IO[Unit] = database.createCollection("mycoll", options)
 ```

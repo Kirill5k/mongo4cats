@@ -38,7 +38,7 @@ lazy val noPublish = Seq(
 )
 
 lazy val commonSettings = Seq(
-  organizationName := "MongoDB Java client wrapper for Cats Effect & FS2",
+  organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2",
   startYear        := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
@@ -118,12 +118,13 @@ lazy val docs = project
     name                      := "mongo4cats-docs",
     micrositeName             := "mongo4cats",
     micrositeAuthor           := "Kirill",
-    micrositeDescription      := "MongoDB Java client wrapper for Cats Effect & FS2",
+    micrositeDescription      := "MongoDB Java client wrapper for Cats-Effect & FS2",
     micrositeBaseUrl          := "/mongo4cats",
     micrositeDocumentationUrl := "/mongo4cats/docs",
     micrositeHomepage         := "https://github.com/kirill5k/mongo4cats",
     micrositeGithubOwner      := "kirill5k",
     micrositeGithubRepo       := "mongo4cats",
+    micrositeHighlightTheme   := "Vs",
     micrositeGitterChannel    := false,
     micrositeShareOnSocial    := false,
     mdocIn                    := (Compile / sourceDirectory).value / "mdoc"

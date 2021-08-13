@@ -1,6 +1,6 @@
 ---
 layout: docs
-title:  "Updates"
+title:  "Update"
 number: 4
 ---
 
