@@ -20,7 +20,7 @@ import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoClientSettings
-import com.mongodb.reactivestreams.client.MongoDatabase
+import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import mongo4cats.collection.{MongoCodecProvider, MongoCollectionF}
 import mongo4cats.helpers._
 import org.bson.Document
@@ -29,28 +29,28 @@ import org.bson.codecs.configuration.CodecRegistry
 
 import scala.reflect.ClassTag
 
-trait MongoDatabaseF[F[_]] {
+trait MongoDatabase[F[_]] {
   def name: String
-  def getCollection(name: String): F[MongoCollectionF[Document]]
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
-  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
-    getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabaseF.DefaultCodecRegistry))
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
+  def getCollection(name: String): F[MongoCollectionF[Document]]
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
+  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
+    getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
 }
 
-final private class LiveMongoDatabaseF[F[_]](
-    private val database: MongoDatabase
+final private class LiveMongoDatabase[F[_]](
+    private val database: JMongoDatabase
 )(implicit
     val F: Async[F]
-) extends MongoDatabaseF[F] {
+) extends MongoDatabase[F] {
 
   def name: String =
     database.getName
 
   def getCollection(name: String): F[MongoCollectionF[Document]] =
-    F.delay(database.getCollection(name).withCodecRegistry(MongoDatabaseF.DefaultCodecRegistry))
+    F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
       .map(MongoCollectionF.apply[Document])
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] = {
@@ -70,10 +70,10 @@ final private class LiveMongoDatabaseF[F[_]](
     database.createCollection(name, options).asyncVoid[F]
 }
 
-object MongoDatabaseF {
+object MongoDatabase {
 
   val DefaultCodecRegistry: CodecRegistry = MongoClientSettings.getDefaultCodecRegistry
 
-  private[mongo4cats] def make[F[_]: Async](database: MongoDatabase): F[MongoDatabaseF[F]] =
-    Monad[F].pure(new LiveMongoDatabaseF[F](database))
+  private[mongo4cats] def make[F[_]: Async](database: JMongoDatabase): F[MongoDatabase[F]] =
+    Monad[F].pure(new LiveMongoDatabase[F](database))
 }

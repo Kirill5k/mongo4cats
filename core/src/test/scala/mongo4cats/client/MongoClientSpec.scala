@@ -24,14 +24,14 @@ import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
-class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort = 12345
 
-  "A MongoDbClient" should {
+  "A MongoClient" should {
     "connect to a db via connection string" in {
       withRunningEmbeddedMongo {
-        MongoClientF
+        MongoClient
           .fromConnectionString[IO]("mongodb://localhost:12345")
           .use { client =>
             for {
@@ -46,7 +46,7 @@ class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
     "connect to a db via server address class" in {
       withRunningEmbeddedMongo {
-        MongoClientF
+        MongoClient
           .fromServerAddress[IO](ServerAddress("localhost", 12345))
           .use { client =>
             for {
@@ -61,7 +61,7 @@ class MongoClientFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
     "return error when port is invalid" in {
       withRunningEmbeddedMongo {
-        MongoClientF
+        MongoClient
           .fromServerAddress[IO](ServerAddress("localhost", 123))
           .use { client =>
             for {

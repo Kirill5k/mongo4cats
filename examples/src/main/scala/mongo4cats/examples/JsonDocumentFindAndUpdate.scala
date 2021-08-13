@@ -17,7 +17,7 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Update}
 import mongo4cats.bson.Document
 
@@ -39,7 +39,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
     .unset("lastName")
 
   val run: IO[Unit] =
-    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db      <- client.getDatabase("testdb")
         coll    <- db.getCollection("jsoncoll")

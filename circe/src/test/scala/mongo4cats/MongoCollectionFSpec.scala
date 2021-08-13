@@ -20,7 +20,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.circe.generic.auto._
 import mongo4cats.circe._
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.ObjectId
@@ -151,9 +151,9 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
       )
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): Future[A] =
+  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] =
     withRunningEmbeddedMongo {
-      MongoClientF
+      MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use(test)
     }.unsafeToFuture()

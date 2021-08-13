@@ -22,12 +22,12 @@ import cats.implicits._
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Sort, Update}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import fs2.Stream
-import mongo4cats.database.MongoDatabaseF
+import mongo4cats.database.MongoDatabase
 
 import scala.concurrent.Future
 
@@ -487,9 +487,9 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
     }
   }
 
-  def withEmbeddedMongoDatabase[A](test: MongoDatabaseF[IO] => IO[A]): Future[A] =
+  def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =
     withRunningEmbeddedMongo {
-      MongoClientF
+      MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use { client =>
           for {

@@ -18,7 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import mongo4cats.bson.Document
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.Projection
 import mongo4cats.embedded.EmbeddedMongo
 
@@ -26,7 +26,7 @@ object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
 
   val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+      MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollection("jsoncoll")

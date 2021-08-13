@@ -19,7 +19,7 @@ package mongo4cats.examples
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import mongo4cats.bson.Document
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -30,7 +30,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
 
   "A MongoCollectionF" should {
     "create and retrieve documents from a db" in withRunningEmbeddedMongo {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
+      MongoClient.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollection("docs")
@@ -42,7 +42,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
     }.unsafeToFuture()
 
     "start instance on different port" in withRunningEmbeddedMongo("localhost", 12355) {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
+      MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollection("docs")

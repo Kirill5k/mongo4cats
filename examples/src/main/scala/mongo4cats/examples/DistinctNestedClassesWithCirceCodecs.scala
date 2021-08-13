@@ -19,7 +19,7 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import io.circe.generic.auto._
 import mongo4cats.circe._
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 
 import java.time.Instant
@@ -31,7 +31,7 @@ object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMo
 
   override val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+      MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollectionWithCodec[Person]("people")

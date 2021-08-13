@@ -19,18 +19,18 @@ package mongo4cats.database
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import mongo4cats.bson.Document
-import mongo4cats.client.MongoClientF
+import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
-class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort: Int = 12346
 
-  "A MongoDatabaseF" should {
+  "A MongoDatabase" should {
 
     "return db name" in {
       withEmbeddedMongoClient { client =>
@@ -70,9 +70,9 @@ class MongoDatabaseFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo 
     }
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClientF[IO] => IO[A]): Future[A] =
+  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] =
     withRunningEmbeddedMongo {
-      MongoClientF
+      MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use(test)
     }.unsafeToFuture()

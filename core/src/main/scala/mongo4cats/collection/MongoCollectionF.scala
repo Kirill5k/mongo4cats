@@ -23,7 +23,7 @@ import com.mongodb.client.result._
 import mongo4cats.helpers._
 import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
-import com.mongodb.reactivestreams.client.MongoCollection
+import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 final class MongoCollectionF[T: ClassTag] private (
-    private val collection: MongoCollection[T]
+    private val collection: JMongoCollection[T]
 ) {
 
   def codecs: CodecRegistry =
@@ -590,7 +590,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
 object MongoCollectionF {
 
-  private[mongo4cats] def apply[T: ClassTag](collection: MongoCollection[T]): MongoCollectionF[T] =
+  private[mongo4cats] def apply[T: ClassTag](collection: JMongoCollection[T]): MongoCollectionF[T] =
     new MongoCollectionF(collection)
 
 }
