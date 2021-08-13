@@ -41,7 +41,7 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
           val result = for {
             accs <- db.getCollection("accounts")
             res <- accs
-              .aggregate {
+              .aggregate[Document] {
                 Aggregate
                   .matchBy(Filter.eq("currency", TestData.USD))
                   .lookup("transactions", "_id", "account", "transactions")
@@ -70,7 +70,7 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
               .sum("totalAmount", "$amount")
               .first("categoryId", "$category._id")
             res <- transactions
-              .aggregate {
+              .aggregate[Document] {
                 Aggregate
                   .group("$category", accumulator)
                   .lookup("categories", "categoryId", "_id", "category")
@@ -93,7 +93,7 @@ class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with Emb
           val result = for {
             accs <- db.getCollection("accounts")
             res <- accs
-              .aggregate {
+              .aggregate[Document] {
                 Aggregate
                   .matchBy(Filter.eq("currency", TestData.USD))
                   .lookup("transactions", "_id", "account", "transactions")

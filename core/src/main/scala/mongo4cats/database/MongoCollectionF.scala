@@ -66,11 +66,17 @@ final class MongoCollectionF[T: ClassTag] private (
     * @param pipeline
     *   the aggregate pipeline
     */
-  def aggregate(pipeline: Seq[Bson]): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(collection.aggregate(pipeline.asJava), Nil)
+  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): AggregateQueryBuilder[Y] =
+    AggregateQueryBuilder(as[Y].collection.aggregate(pipeline.asJava), Nil)
 
-  def aggregate(pipeline: Aggregate): AggregateQueryBuilder[T] =
-    AggregateQueryBuilder(collection.aggregate(pipeline.toBson), Nil)
+  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Seq[Bson]): AggregateQueryBuilder[Y] =
+    withAddedCodec[Y].aggregate[Y](pipeline)
+
+  def aggregate[Y: ClassTag](pipeline: Aggregate): AggregateQueryBuilder[Y] =
+    AggregateQueryBuilder(as[Y].collection.aggregate(pipeline.toBson), Nil)
+
+  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Aggregate): AggregateQueryBuilder[Y] =
+    withAddedCodec[Y].aggregate[Y](pipeline)
 
   /** Creates a change stream for this collection.
     *

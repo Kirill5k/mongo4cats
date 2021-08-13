@@ -6,7 +6,7 @@ number: 3
 
 ## Find
 
-The Find operation can be used to retrieve a subset of the existing data from a MongoDB collection 
+The Find operation can be used for retrieving a subset of the existing data from a MongoDB collection 
 with the option for specifying what data to return, the number of documents to return and in what order. 
 
 The result of an operation can be returned in the following forms:
