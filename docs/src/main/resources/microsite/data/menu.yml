@@ -1,6 +1,6 @@
 options:
   - title: Getting started
-    url: docs/gettingstarted.html
+    url: docs/
     menu_section: getting-started
 
     nested_options:
