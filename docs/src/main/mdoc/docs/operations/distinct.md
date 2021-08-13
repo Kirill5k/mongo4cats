@@ -14,7 +14,7 @@ val distinctValues: IO[Iterable[String]] = collection.distinct[String]("field1")
 // or stream all found values instead
 val distinctValues: fs2.Stream[IO, String] = collection.distinct[String]("field1").stream[IO]
 ```
-If the document field is represented by a more complicated class in a collection than a String, it can be upcasted to a required type:
+If the document's field is represented by a more complicated class in a collection than a String, it can be upcasted to a required type:
 ```scala
 val distinctValues: IO[Iterable[Document]] = collection.distinct[Document]("field1").all[IO]
 

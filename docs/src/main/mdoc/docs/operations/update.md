@@ -13,6 +13,7 @@ When executed, the update operation will apply changes specified in an update qu
 import mongo4cats.database.operations.{Filter, Update}
 import mongo4cats.database.UpdateOptions
 
+// chain multiple updates together
 val update = Update.set("field1", "foo").currentDate("date")
 
 val result: IO[UpdateResult] = collection.updateOne[IO](Filter.empty, update)
