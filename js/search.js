@@ -76,12 +76,12 @@ function prepareIdxAndDocMap() {
       "title": "Index",
       "url": "/mongo4cats/docs/operations/indexes.html",
       "content": "Index Indexes support efficient execution of queries in MongoDB as well as allow efficient sorting, some additional capabilities like unique constraints and geospatial search, and more. MongoCollection[F, T] supports several ways of creating an index on a field (or multiple fields). The simplest one would be calling createIndex method and passing defined index specification object: import mongo4cats.collection.operations.Index val result: IO[String] = collection.createIndex(Index.ascending(\"field\")) To create a compound index, multiple specifications can be combined together: import mongo4cats.collection.operations.Index val compoundIndex = Index.ascending(\"field1\").descending(\"field2\") // or by just combining 2 indexes together val index1 = Index.ascending(\"field1\") val index2 = Index.descending(\"field2\") val compoundIndex = index1.combinedWith(index2) If some additional configuration required, createIndex has an overloaded variant which accepts options object: import mongo4cats.collection.operations.Index import mongo4cats.collection.IndexOptions val index = Index.ascending(\"name\", \"email\") val options = IndexOptions().unique(true) val result: IO[String] = collection.createIndex(index, options) Alternatively, indexes can be creating by using builders from the standard MongoDB Java library: import com.mongodb.client.model.Indexes val index = Indexes.compoundIndex(Indexes.ascending(\"field1\"), Indexes.ascending(\"field2\")) val result: IO[String] = collection.createIndex(index)"
-    } ,      
+    } ,    
     {
       "title": "Operations",
       "url": "/mongo4cats/docs/operations.html",
       "content": "Operations Operations listed in this section allow you to work with and manipulate the data store in MongoDB. Essentially, these are key procedures that can be executed on a MongoCollection[F, T] instance: Index Find Update Distinct Aggregate Watch"
-    } ,      
+    } ,        
     {
       "title": "Update",
       "url": "/mongo4cats/docs/operations/update.html",
