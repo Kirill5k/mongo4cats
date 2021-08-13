@@ -43,9 +43,9 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
       for {
         db      <- client.getDatabase("testdb")
         coll    <- db.getCollection("jsoncoll")
-        _       <- coll.insertOne[IO](Document.parse(json))
-        old     <- coll.findOneAndUpdate[IO](filterQuery, updateQuery)
-        updated <- coll.find.first[IO]
+        _       <- coll.insertOne(Document.parse(json))
+        old     <- coll.findOneAndUpdate(filterQuery, updateQuery)
+        updated <- coll.find.first
         _       <- IO.println(s"old: ${old.toJson()}\nupdated: ${updated.get.toJson()}")
       } yield ()
     }

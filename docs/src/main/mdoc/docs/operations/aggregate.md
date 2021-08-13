@@ -31,13 +31,13 @@ Similarly to `find`, the result of `aggregate` can be returned in a form of a si
 ```scala
 import mongo4cats.bson.Document
 
-val result: IO[Option[Document]] = collection.aggregate[Document](aggregation).first[IO]
-val result: IO[Iterable[Document]] = collection.aggregate[Document](aggregation).all[IO]
-val result: fs2.Stream[IO, Document] = collection.aggregate[Document](aggregation).stream[IO]
+val result: IO[Option[Document]] = collection.aggregate[Document](aggregation).first
+val result: IO[Iterable[Document]] = collection.aggregate[Document](aggregation).all
+val result: fs2.Stream[IO, Document] = collection.aggregate[Document](aggregation).stream
 ```
 Analogously to `distinct`, the result of an aggregation can be tied to a specific class:
 ```scala
-val result: fs2.Stream[IO, MyClass] = collection.aggregateWithCodec[MyClass](aggregation).stream[IO]
+val result: fs2.Stream[IO, MyClass] = collection.aggregateWithCodec[MyClass](aggregation).stream
 ```
 If aggregation pipeline ends with the `$out` stage (write document to a specified collection), `toCollection` method can be used:
 ```scala

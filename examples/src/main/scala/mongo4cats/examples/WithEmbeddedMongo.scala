@@ -30,8 +30,8 @@ object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
         for {
           db   <- client.getDatabase("testdb")
           coll <- db.getCollection("jsoncoll")
-          _    <- coll.insertOne[IO](Document("Hello", "World!"))
-          res  <- coll.find.projection(Projection.excludeId).all[IO]
+          _    <- coll.insertOne(Document("Hello", "World!"))
+          res  <- coll.find.projection(Projection.excludeId).all
           _    <- IO.println(res.map(_.toJson).mkString)
         } yield ()
       }

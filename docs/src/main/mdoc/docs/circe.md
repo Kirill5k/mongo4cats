@@ -29,5 +29,5 @@ import mongo4cats.collection.MongoCollection
 
 final case class MyClass(_id: ObjectId, field1: String, field2: Int)
 
-val collection: IO[MongoCollection[MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
+val collection: IO[MongoCollection[IO, MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
 ```

@@ -18,7 +18,7 @@ package mongo4cats.database
 
 import cats.Monad
 import cats.effect.Async
-import cats.syntax.functor._
+import cats.syntax.flatMap._
 import com.mongodb.MongoClientSettings
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import mongo4cats.collection.{MongoCodecProvider, MongoCollection}
@@ -34,9 +34,9 @@ trait MongoDatabase[F[_]] {
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
-  def getCollection(name: String): F[MongoCollection[Document]]
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[T]]
-  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[T]] =
+  def getCollection(name: String): F[MongoCollection[F, Document]]
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
+  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
 }
 
@@ -49,18 +49,18 @@ final private class LiveMongoDatabase[F[_]](
   def name: String =
     database.getName
 
-  def getCollection(name: String): F[MongoCollection[Document]] =
+  def getCollection(name: String): F[MongoCollection[F, Document]] =
     F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
-      .map(MongoCollection.apply[Document])
+      .flatMap(MongoCollection.make[F, Document])
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[T]] = {
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     F.delay {
       database
         .getCollection[T](name, clazz)
         .withCodecRegistry(codecRegistry)
         .withDocumentClass[T](clazz)
-    }.map(MongoCollection.apply[T])
+    }.flatMap(MongoCollection.make[F, T])
   }
 
   def collectionNames: F[Iterable[String]] =

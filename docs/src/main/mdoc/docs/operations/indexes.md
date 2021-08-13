@@ -8,7 +8,7 @@ number: 2
 
 Indexes support efficient execution of queries in MongoDB as well as allow efficient sorting, some additional capabilities like unique constraints and geospatial search, and [more](https://docs.mongodb.com/manual/indexes/). 
 
-`MongoCollection[T]` supports several ways of creating an index on a field (or multiple fields).
+`MongoCollection[F, T]` supports several ways of creating an index on a field (or multiple fields).
 The simplest one would be calling `createIndex` method and passing defined index specification object:
 
 ```scala

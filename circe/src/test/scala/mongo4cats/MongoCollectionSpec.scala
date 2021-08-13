@@ -55,9 +55,9 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           db   <- client.getDatabase("test")
           _    <- db.createCollection("people")
           coll <- db.getCollectionWithCodec[Person]("people")
-          _    <- coll.insertOne[IO](p)
+          _    <- coll.insertOne(p)
           filter = Filter.lt("dob", LocalDate.now()) && Filter.lt("registrationDate", Instant.now())
-          people <- coll.find(filter).all[IO]
+          people <- coll.find(filter).all
         } yield people
 
         result.map(_ mustBe List(p))
@@ -71,8 +71,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           db     <- client.getDatabase("test")
           _      <- db.createCollection("people")
           coll   <- db.getCollectionWithCodec[Person]("people")
-          _      <- coll.insertOne[IO](p)
-          people <- coll.find.all[IO]
+          _      <- coll.insertOne(p)
+          people <- coll.find.all
         } yield people
 
         result.map(_ mustBe List(p))
@@ -85,8 +85,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           db        <- client.getDatabase("test")
           _         <- db.createCollection("people")
           coll      <- db.getCollectionWithCodec[Person]("people")
-          _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
-          addresses <- coll.withAddedCodec[Address].distinct[Address]("address").all[IO]
+          _         <- coll.insertMany(List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          addresses <- coll.withAddedCodec[Address].distinct[Address]("address").all
         } yield addresses
 
         result.map { res =>
@@ -101,8 +101,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           db        <- client.getDatabase("test")
           _         <- db.createCollection("people")
           coll      <- db.getCollectionWithCodec[Person]("people")
-          _         <- coll.insertMany[IO](List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
-          addresses <- coll.distinctWithCodec[Address]("address").all[IO]
+          _         <- coll.insertMany(List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          addresses <- coll.distinctWithCodec[Address]("address").all
         } yield addresses
 
         result.map { res =>
@@ -132,8 +132,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           db       <- client.getDatabase("test")
           _        <- db.createCollection("payments")
           coll     <- db.getCollectionWithCodec[Payment]("payments")
-          _        <- coll.insertMany[IO](List(p1, p2))
-          payments <- coll.find.filter(Filter.gt("date", ts)).all[IO]
+          _        <- coll.insertMany(List(p1, p2))
+          payments <- coll.find.filter(Filter.gt("date", ts)).all
         } yield payments
 
         result.map(_ mustBe List(p1, p2))

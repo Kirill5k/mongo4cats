@@ -38,8 +38,8 @@ object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMo
           person1 = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
           person2 = Person("John", "Doe", Address("Los-Angeles", "USA"), Instant.now())
           person3 = Person("John", "Smith", Address("Chicago", "USA"), Instant.now())
-          _                 <- coll.insertMany[IO](List(person1, person2, person3))
-          distinctAddresses <- coll.distinctWithCodec[Address]("address").all[IO]
+          _                 <- coll.insertMany(List(person1, person2, person3))
+          distinctAddresses <- coll.distinctWithCodec[Address]("address").all
           _                 <- IO.println(distinctAddresses)
         } yield ()
       }

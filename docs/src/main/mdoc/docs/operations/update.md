@@ -8,7 +8,7 @@ number: 4
 
 Update operations allow modifying fields and values of a single or multiple documents.
 When executed, the update operation will apply changes specified in an update query to all documents that match a filter query.
-`MongoCollection[T]` has several methods for submitting an update query: `updateOne` updates the first document that matches a filter, whereas `updateMany` will update all documents.
+`MongoCollection[F, T]` has several methods for submitting an update query: `updateOne` updates the first document that matches a filter, whereas `updateMany` will update all documents.
 
 ```scala
 import mongo4cats.collection.operations.{Filter, Update}

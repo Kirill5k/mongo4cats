@@ -34,8 +34,8 @@ object CaseClassesWithCirceCodecs extends IOApp.Simple {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollectionWithCodec[Person]("people")
         person = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
-        _    <- coll.insertOne[IO](person)
-        docs <- coll.find.stream[IO].compile.toList
+        _    <- coll.insertOne(person)
+        docs <- coll.find.stream.compile.toList
         _    <- IO.println(docs)
       } yield ()
     }

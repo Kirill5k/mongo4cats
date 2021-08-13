@@ -52,7 +52,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
                       .computed("totalAmount", Document("$sum" -> "$transactions.amount"))
                   )
               }
-              .first[IO]
+              .first
           } yield res
 
           result.map { acc =>
@@ -77,7 +77,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
                   .lookup("categories", "categoryId", "_id", "category")
                   .sort(Sort.desc("count"))
               }
-              .all[IO]
+              .all
           } yield res
 
           result.map { cats =>
@@ -101,7 +101,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
                   .sort(Sort.asc("name"))
                   .project(Projection.excludeId)
               }
-              .explain[IO]
+              .explain
           } yield res
 
           result.map { expl =>
@@ -121,9 +121,9 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         .use { client =>
           for {
             db  <- client.getDatabase("db")
-            _   <- db.getCollection("accounts").flatMap(_.insertMany[IO](TestData.accounts))
-            _   <- db.getCollection("categories").flatMap(_.insertMany[IO](TestData.categories))
-            _   <- db.getCollection("transactions").flatMap(_.insertMany[IO](TestData.transactions(250)))
+            _   <- db.getCollection("accounts").flatMap(_.insertMany(TestData.accounts))
+            _   <- db.getCollection("categories").flatMap(_.insertMany(TestData.categories))
+            _   <- db.getCollection("transactions").flatMap(_.insertMany(TestData.transactions(250)))
             res <- test(db)
           } yield res
         }
