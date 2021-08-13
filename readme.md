@@ -1,57 +1,25 @@
 mongo4cats
 ==========
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.kirill5k/mongo4cats-core_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%mongo4cats-core)
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
 MongoDB Java client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
 Available for Scala 2.12, 2.13 and 3.0.
+
+Documentation is available on [mongo4cats microsite](https://kirill5k.github.io/mongo4cats/docs/).
 
 ### Dependencies
 
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.2.19"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.19"// circe support
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.19" // usefull for unit testing
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "<version>"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"// circe support
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version>" // embedded-mongodb
 ```
 
-### Quick Start Examples
-
-#### Working with plain JSON
-
-```scala
-import cats.effect.{IO, IOApp}
-import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.{Filter, Update}
-import mongo4cats.bson.Document
-
-object DocumentFindAndUpdate extends IOApp.Simple {
-
-  val json =
-    """{
-      |"firstName": "John",
-      |"lastName": "Bloggs",
-      |"dob": "1970-01-01"
-      |}""".stripMargin
-
-  val run: IO[Unit] =
-    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-      for {
-        db      <- client.getDatabase("testdb")
-        coll    <- db.getCollection("jsoncoll")
-        _       <- coll.insertOne[IO](Document.parse(json))
-        filterQuery = Filter.eq("lastName", "Bloggs") and Filter.eq("firstName", "John")
-        updateQuery = Update.set("dob", "2020-01-01").rename("firstName", "name").currentTimestamp("updatedAt").unset("lastName")
-        old     <- coll.findOneAndUpdate[IO](filterQuery, updateQuery)
-        updated <- coll.find.first[IO]
-        _       <- IO.println(s"old: ${old.toJson()}\nupdated: ${updated.toJson()}")
-      } yield ()
-    }
-}
-```
-
-#### Working with documents
+### Quick start
 
 ```scala
 import cats.effect.{IO, IOApp}
@@ -78,78 +46,4 @@ object FilteringAndSorting extends IOApp.Simple {
 }
 ```
 
-#### Using circe for encoding and decoding documents into case classes
-
-Only mongo4cats-circe is required for basic interop with circe:
-```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.2.19"
-```
-
-In order to obtain mongo collection with circe codecs, the following import is required:
-```scala
-import mongo4cats.circe._
-```
-
-The complete working example is presented below
-
-```scala
-import cats.effect.{IO, IOApp}
-import io.circe.generic.auto._
-import mongo4cats.client.MongoClientF
-import mongo4cats.circe._
-
-import java.time.Instant
-
-object Example extends IOApp.Simple {
-
-  final case class Address(city: String, country: String)
-  final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
-
-  val run: IO[Unit] =
-    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-      for {
-        db   <- client.getDatabase("testdb")
-        coll <- db.getCollectionWithCodec[Person]("people")
-        _    <- coll.insertOne[IO](Person("John", "Bloggs", Address("New-York", "USA"), Instant.now()))
-        docs <- coll.find.all[IO]
-        _    <- IO.println(docs)
-      } yield ()
-    }
-}
-```
-
-#### Running with embedded mongo
-
-To be able to use embedded-mongodb runner in your code, the following import needs to be added to the dependency list:
-```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.2.19"
-```
-
-Once the dependency is added, the embedded-mongodb can be brought in by extending `EmbeddedMongo` trait:
-
-```scala
-import cats.effect.IO
-import cats.effect.unsafe.implicits.global
-import mongo4cats.bson.Document
-import mongo4cats.client.MongoClientF
-import mongo4cats.embedded.EmbeddedMongo
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AsyncWordSpec
-
-class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-
-  "A MongoCollectionF" should {
-    "create and retrieve documents from a db" in withRunningEmbeddedMongo("localhost", 12345) {
-      MongoClientF.fromConnectionString[IO]("mongodb://localhost:12345").use { client =>
-        for {
-          db <- client.getDatabase("testdb")
-          coll <- db.getCollection("docs")
-          testDoc = Document("Hello", "World!")
-          _ <- coll.insertOne[IO](testDoc)
-          foundDoc <- coll.find.first[IO]
-        } yield foundDoc mustBe Some(testDoc)
-      }
-    }.unsafeToFuture()
-  }
-}
-```
+If you find this library useful, consider giving it a ⭐!

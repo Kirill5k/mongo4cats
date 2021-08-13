@@ -16,7 +16,7 @@ mongo4cats
 MongoDB Java client wrapper compatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
 Available for Scala 2.12, 2.13 and 3.0.
 
-Documentation is available on [mongo4cats microsite](https://kiril5k.github.io/mongo4cats/).
+Documentation is available in [documentation](https://kirill5k.github.io/mongo4cats/docs/) section.
 
 ### Dependencies
 
