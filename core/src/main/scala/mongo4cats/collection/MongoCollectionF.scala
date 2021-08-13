@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package mongo4cats.database
+package mongo4cats.collection
 
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoNamespace
 import com.mongodb.client.result._
 import mongo4cats.helpers._
-import mongo4cats.database.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
+import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.MongoCollection
-import mongo4cats.database.operations.{Aggregate, Filter, Index, Update}
+import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 
@@ -590,7 +590,7 @@ final class MongoCollectionF[T: ClassTag] private (
 
 object MongoCollectionF {
 
-  private[database] def apply[T: ClassTag](collection: MongoCollection[T]): MongoCollectionF[T] =
+  private[mongo4cats] def apply[T: ClassTag](collection: MongoCollection[T]): MongoCollectionF[T] =
     new MongoCollectionF(collection)
 
 }

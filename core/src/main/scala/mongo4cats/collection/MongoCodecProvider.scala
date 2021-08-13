@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.queries
+package mongo4cats.collection
 
-import org.reactivestreams.Publisher
+import org.bson.codecs.configuration.CodecProvider
 
-private[queries] trait QueryBuilder[O[_] <: Publisher[_], T] {
-  protected def observable: O[T]
-  protected def commands: List[QueryCommand[O, T]]
-
-  protected def applyCommands(): O[T] =
-    commands.reverse.foldLeft(observable) { case (obs, comm) => comm.run(obs) }
+trait MongoCodecProvider[T] {
+  def get: CodecProvider
 }

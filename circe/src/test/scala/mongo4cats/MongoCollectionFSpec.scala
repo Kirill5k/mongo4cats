@@ -21,9 +21,9 @@ import cats.effect.unsafe.implicits.global
 import io.circe.generic.auto._
 import mongo4cats.circe._
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Filter
+import mongo4cats.collection.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
-import org.bson.types.ObjectId
+import mongo4cats.bson.ObjectId
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -54,7 +54,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
         val result = for {
           db   <- client.getDatabase("test")
           _    <- db.createCollection("people")
-          coll <- db.getCollectionWithCirceCodecs[Person]("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
           _    <- coll.insertOne[IO](p)
           filter = Filter.lt("dob", LocalDate.now()) && Filter.lt("registrationDate", Instant.now())
           people <- coll.find(filter).all[IO]
@@ -124,14 +124,14 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
 
     "encode and decode case classes that extend sealed traits" in {
       val ts = Instant.parse("2020-01-01T00:00:00Z")
-      val p1 = Payment(new ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
-      val p2 = Payment(new ObjectId(), BigDecimal(25), CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
+      val p1 = Payment(ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
+      val p2 = Payment(ObjectId(), BigDecimal(25), CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
 
       withEmbeddedMongoClient { client =>
         val result = for {
           db       <- client.getDatabase("test")
           _        <- db.createCollection("payments")
-          coll     <- db.getCollectionWithCirceCodecs[Payment]("payments")
+          coll     <- db.getCollectionWithCodec[Payment]("payments")
           _        <- coll.insertMany[IO](List(p1, p2))
           payments <- coll.find.filter(Filter.gt("date", ts)).all[IO]
         } yield payments
@@ -142,7 +142,7 @@ class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMong
 
     def person(firstName: String = "John", lastName: String = "Bloggs"): Person =
       Person(
-        new ObjectId(),
+        ObjectId(),
         firstName,
         lastName,
         LocalDate.parse("1970-12-01"),

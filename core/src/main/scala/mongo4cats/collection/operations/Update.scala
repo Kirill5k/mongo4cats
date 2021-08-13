@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{PushOptions, Updates}
 import org.bson.conversions.Bson
@@ -297,7 +297,7 @@ trait Update {
     */
   def combinedWith(anotherUpdate: Update): Update
 
-  private[database] def toBson: Bson
+  private[collection] def toBson: Bson
   private[operations] def updates: List[Bson]
 }
 
@@ -422,6 +422,6 @@ final private case class UpdateBuilder(
   def combinedWith(anotherUpdate: Update): Update =
     UpdateBuilder(anotherUpdate.updates ::: updates)
 
-  override private[database] def toBson: Bson = Updates.combine(updates.reverse.asJava)
+  override private[collection] def toBson: Bson = Updates.combine(updates.reverse.asJava)
 
 }

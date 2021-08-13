@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{Aggregates, BucketAutoOptions, GraphLookupOptions, MergeOptions, UnwindOptions}
 import org.bson.conversions.Bson
@@ -273,7 +273,7 @@ trait Aggregate {
   def combinedWith(anotherAggregate: Aggregate): Aggregate
 
   private[operations] def aggregates: List[Bson]
-  private[database] def toBson: java.util.List[Bson]
+  private[collection] def toBson: java.util.List[Bson]
 }
 
 object Aggregate {
@@ -384,5 +384,5 @@ final private case class AggregateBuilder(
 
   override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
-  override private[database] def toBson: java.util.List[Bson] = aggregates.reverse.asJava
+  override private[collection] def toBson: java.util.List[Bson] = aggregates.reverse.asJava
 }

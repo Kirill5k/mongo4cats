@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Projections
 import org.bson.conversions.Bson

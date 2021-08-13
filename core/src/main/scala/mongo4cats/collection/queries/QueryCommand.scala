@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.queries
+package mongo4cats.collection.queries
 
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream

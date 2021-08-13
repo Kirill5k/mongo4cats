@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import cats.syntax.alternative._
 import cats.syntax.functor._
@@ -159,7 +159,7 @@ trait Accumulator {
   def combinedWith(anotherAccumulator: Accumulator): Accumulator
 
   private[operations] def accumulators: List[BsonField]
-  private[database] def toBson: java.util.List[BsonField]
+  private[collection] def toBson: java.util.List[BsonField]
 }
 
 object Accumulator {
@@ -260,5 +260,5 @@ final private case class AccumulatorBuilder(
   override def combinedWith(anotherAccumulator: Accumulator): Accumulator =
     AccumulatorBuilder(anotherAccumulator.accumulators ::: accumulators)
 
-  override private[database] def toBson: java.util.List[BsonField] = accumulators.reverse.asJava
+  override private[collection] def toBson: java.util.List[BsonField] = accumulators.reverse.asJava
 }

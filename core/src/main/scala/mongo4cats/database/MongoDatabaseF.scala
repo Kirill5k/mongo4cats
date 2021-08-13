@@ -21,6 +21,7 @@ import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoClientSettings
 import com.mongodb.reactivestreams.client.MongoDatabase
+import mongo4cats.collection.{MongoCodecProvider, MongoCollectionF}
 import mongo4cats.helpers._
 import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
@@ -35,8 +36,8 @@ trait MongoDatabaseF[F[_]] {
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabaseF.DefaultCodecRegistry))
   def collectionNames: F[Iterable[String]]
-  def createCollection(name: String): F[Unit]
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
+  def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
 }
 
 final private class LiveMongoDatabaseF[F[_]](
@@ -64,9 +65,6 @@ final private class LiveMongoDatabaseF[F[_]](
 
   def collectionNames: F[Iterable[String]] =
     database.listCollectionNames().asyncIterable[F]
-
-  def createCollection(name: String): F[Unit] =
-    createCollection(name, new CreateCollectionOptions())
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]

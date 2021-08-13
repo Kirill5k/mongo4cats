@@ -18,9 +18,9 @@ package mongo4cats.client
 
 import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
-import mongo4cats.database.MongoDatabaseF
 import com.mongodb.reactivestreams.client.{MongoClient, MongoClients}
 import mongo4cats.bson.Document
+import mongo4cats.database.MongoDatabaseF
 import mongo4cats.helpers._
 
 import scala.jdk.CollectionConverters._

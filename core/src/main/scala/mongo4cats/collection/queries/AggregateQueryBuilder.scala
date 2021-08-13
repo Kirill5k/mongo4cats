@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.queries
+package mongo4cats.collection.queries
 
 import cats.effect.Async
 import cats.syntax.functor._
@@ -23,13 +23,13 @@ import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.AggregatePublisher
 import mongo4cats.bson.Document
 import mongo4cats.helpers._
-import mongo4cats.database.operations.Index
+import mongo4cats.collection.operations.Index
 import org.bson.conversions.Bson
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-final case class AggregateQueryBuilder[T: ClassTag] private[database] (
+final case class AggregateQueryBuilder[T: ClassTag] private[collection] (
     protected val observable: AggregatePublisher[T],
     protected val commands: List[AggregateCommand[T]]
 ) extends QueryBuilder[AggregatePublisher, T] {

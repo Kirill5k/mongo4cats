@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.queries
+package mongo4cats.collection.queries
 
 import cats.effect.Async
 import cats.syntax.functor._
@@ -23,14 +23,14 @@ import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.FindPublisher
 import mongo4cats.bson.Document
 import mongo4cats.helpers._
-import mongo4cats.database.operations
-import mongo4cats.database.operations.{Projection, Sort}
+import mongo4cats.collection.operations
+import mongo4cats.collection.operations.{Projection, Sort}
 import org.bson.conversions.Bson
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-final case class FindQueryBuilder[T: ClassTag] private[database] (
+final case class FindQueryBuilder[T: ClassTag] private[collection] (
     protected val observable: FindPublisher[T],
     protected val commands: List[FindCommand[T]]
 ) extends QueryBuilder[FindPublisher, T] {

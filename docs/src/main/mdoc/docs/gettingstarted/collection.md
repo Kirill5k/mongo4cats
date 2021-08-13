@@ -10,7 +10,7 @@ An instance of `MongoCollectionF` can be obtained from an existing database inst
 
 ```scala
 import mongo4cats.bson.Document
-import mongo4cats.database.MongoCollectionF
+import mongo4cats.collection.MongoCollectionF
 
 val collection: IO[MongoCollectionF[Document]] = database.getCollection("mycoll")
 ```
@@ -28,11 +28,14 @@ More information on MongoDB codecs and codec registries can be found in the [off
 One of the supported options for deriving MongoDB codecs is through the use of the popular Json library for Scala - [Circe](../circe.html).
 
 If a collection that you are trying to obtain does not exist, it will be created by MongoDB during the first query. Additionally, `MongoDatabaseF` has methods for creating collections explicitly:
+
 ```scala
 val collection: IO[Unit] = database.createCollection("mycoll")
 
 // or with options
-import mongo4cats.database.CreateCollectionOptions
+
+import mongo4cats.collection.CreateCollectionOptions
+
 val options = CreateCollectionOptions().capped(true).sizeInBytes(1024L)
 val collection: IO[Unit] = database.createCollection("my coll", options)
 ```

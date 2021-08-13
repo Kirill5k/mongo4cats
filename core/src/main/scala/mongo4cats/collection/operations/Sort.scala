@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Sorts
 import org.bson.conversions.Bson
@@ -59,7 +59,7 @@ trait Sort {
     */
   def combinedWith(anotherSort: Sort): Sort
 
-  private[database] def toBson: Bson
+  private[collection] def toBson: Bson
   private[operations] def sorts: List[Bson]
 }
 
@@ -82,6 +82,6 @@ final private case class SortBuilder(
   override def combinedWith(anotherSort: Sort): Sort =
     SortBuilder(anotherSort.sorts ::: sorts)
 
-  override private[database] def toBson: Bson =
+  override private[collection] def toBson: Bson =
     Sorts.orderBy(sorts.reverse.asJava)
 }

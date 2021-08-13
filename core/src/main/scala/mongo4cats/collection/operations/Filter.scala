@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.geojson.{Geometry, Point}
 import com.mongodb.client.model.{Filters, TextSearchOptions}
@@ -73,7 +73,7 @@ trait Filter {
     */
   def nor(anotherFilter: Filter): Filter
 
-  private[database] def toBson: Bson
+  private[collection] def toBson: Bson
   private[operations] def filter: Bson
 }
 
@@ -669,5 +669,5 @@ final private case class FilterBuilder(
   override def nor(anotherFilter: Filter): Filter =
     FilterBuilder(Filters.nor(filter, anotherFilter.filter))
 
-  override private[database] def toBson = filter
+  override private[collection] def toBson = filter
 }

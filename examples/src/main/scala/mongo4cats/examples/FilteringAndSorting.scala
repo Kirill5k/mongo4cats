@@ -18,7 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Filter
+import mongo4cats.collection.operations.Filter
 import mongo4cats.bson.Document
 
 object FilteringAndSorting extends IOApp.Simple {

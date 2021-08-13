@@ -21,8 +21,9 @@ import mongo4cats.bson.Document
 val data: fs2.Stream[IO, Document] = collection.find.stream[IO]
 ```
 To specify what data to return, additional filters can be passed in:
+
 ```scala
-import mongo4cats.database.operations.Filter
+import mongo4cats.collection.operations.Filter
 
 val filter1 = Filter.eq("field1", "foo")
 val filter2 = Filter.eq("field2", "bar")
@@ -41,8 +42,9 @@ val data = IO[Iterable[Document]] = collection.find
 ```
 
 The ordering of the data can be enforced by calling either `sortBy` or `sort` method:
+
 ```scala
-import mongo4cats.database.operations.Sort
+import mongo4cats.collection.operations.Sort
 
 // sort in ascending order by field1, then in descending order by field2
 val data = IO[Iterable[Document]] = collection.find.sort(Sort.asc("field1").desc("field2")).all[IO]

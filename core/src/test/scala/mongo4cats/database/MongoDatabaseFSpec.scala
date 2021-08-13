@@ -18,9 +18,9 @@ package mongo4cats.database
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import mongo4cats.embedded.EmbeddedMongo
-import mongo4cats.client.MongoClientF
 import mongo4cats.bson.Document
+import mongo4cats.client.MongoClientF
+import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 

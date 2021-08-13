@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package mongo4cats.database
+package mongo4cats.collection
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.{Accumulator, Aggregate, Filter, Projection, Sort}
+import mongo4cats.collection.operations._
+import mongo4cats.database.MongoDatabaseF
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec

@@ -33,7 +33,7 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version
 ```scala
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Filter
+import mongo4cats.collection.operations.Filter
 import mongo4cats.bson.Document
 
 object FilteringAndSorting extends IOApp.Simple {
@@ -41,9 +41,9 @@ object FilteringAndSorting extends IOApp.Simple {
   override val run: IO[Unit] =
     MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
-        db   <- client.getDatabase("testdb")
+        db <- client.getDatabase("testdb")
         coll <- db.getCollection("docs")
-        _    <- coll.insertMany[IO]((0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i)))
+        _ <- coll.insertMany[IO]((0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i)))
         docs <- coll.find
           .filter(Filter.gte("index", 10) && Filter.regex("name", "doc-[1-9]0"))
           .sortByDesc("name")
@@ -53,48 +53,7 @@ object FilteringAndSorting extends IOApp.Simple {
       } yield ()
     }
 }
-```
 
-If you find this library useful, consider giving it a ⭐!ompatible with [Cats Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
-Available for Scala 2.12, 2.13 and 3.0.
-
-Documentation is available in [documentation](https://kirill5k.github.io/mongo4cats/docs/) section.
-
-### Dependencies
-
-Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
-
-```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "<version>"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"// circe support
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version>" // embedded-mongodb
-```
-
-### Quick start
-
-```scala
-import cats.effect.{IO, IOApp}
-import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Filter
-import mongo4cats.bson.Document
-
-object FilteringAndSorting extends IOApp.Simple {
-
-  override val run: IO[Unit] =
-    MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-      for {
-        db   <- client.getDatabase("testdb")
-        coll <- db.getCollection("docs")
-        _    <- coll.insertMany[IO]((0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i)))
-        docs <- coll.find
-          .filter(Filter.gte("index", 10) && Filter.regex("name", "doc-[1-9]0"))
-          .sortByDesc("name")
-          .limit(5)
-          .all[IO]
-        _ <- IO.println(docs)
-      } yield ()
-    }
-}
 ```
 
 If you find this library useful, consider giving it a ⭐!

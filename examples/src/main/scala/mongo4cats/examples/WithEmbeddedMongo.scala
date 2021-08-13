@@ -19,7 +19,7 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.Projection
+import mongo4cats.collection.operations.Projection
 import mongo4cats.embedded.EmbeddedMongo
 
 object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {

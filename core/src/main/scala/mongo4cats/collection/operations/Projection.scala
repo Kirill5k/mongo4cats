@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Projections
 import org.bson.conversions.Bson
@@ -153,7 +153,7 @@ trait Projection {
     */
   def combinedWith(anotherProjection: Projection): Projection
 
-  private[database] def toBson: Bson
+  private[collection] def toBson: Bson
   private[operations] def projections: List[Bson]
 }
 
@@ -230,6 +230,6 @@ final private case class ProjectionBuilder(
   override def combinedWith(anotherProjection: Projection): Projection =
     ProjectionBuilder(anotherProjection.projections ::: projections)
 
-  override private[database] def toBson =
+  override private[collection] def toBson =
     Projections.fields(projections.reverse: _*)
 }

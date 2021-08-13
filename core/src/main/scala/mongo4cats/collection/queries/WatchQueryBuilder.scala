@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.queries
+package mongo4cats.collection.queries
 
 import cats.effect.Async
 import com.mongodb.client.model
@@ -26,7 +26,7 @@ import org.bson.{BsonDocument, BsonTimestamp}
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-final case class WatchQueryBuilder[T: ClassTag] private[database] (
+final case class WatchQueryBuilder[T: ClassTag] private[collection] (
     protected val observable: ChangeStreamPublisher[T],
     protected val commands: List[WatchCommand[T]]
 ) extends QueryBuilder[ChangeStreamPublisher, T] {

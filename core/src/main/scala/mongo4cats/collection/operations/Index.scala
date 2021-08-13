@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.operations
+package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Indexes
 import org.bson.conversions.Bson
@@ -123,7 +123,7 @@ trait Index {
     */
   def combinedWith(anotherIndex: Index): Index
 
-  private[database] def toBson: Bson
+  private[collection] def toBson: Bson
   private[operations] def indexes: List[Bson]
 }
 
@@ -159,5 +159,5 @@ final private case class IndexBuilder(
 
   override def combinedWith(anotherIndex: Index): Index = IndexBuilder(anotherIndex.indexes ::: indexes)
 
-  override private[database] def toBson: Bson = Indexes.compoundIndex(indexes.reverse.asJava)
+  override private[collection] def toBson: Bson = Indexes.compoundIndex(indexes.reverse.asJava)
 }

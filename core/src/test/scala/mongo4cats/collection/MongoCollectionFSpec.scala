@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.database
+package mongo4cats.collection
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -23,10 +23,11 @@ import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClientF
-import mongo4cats.database.operations.{Filter, Sort, Update}
+import mongo4cats.collection.operations.{Filter, Sort, Update}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import fs2.Stream
+import mongo4cats.database.MongoDatabaseF
 
 import scala.concurrent.Future
 

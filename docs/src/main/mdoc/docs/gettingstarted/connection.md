@@ -33,6 +33,7 @@ Once the client is created, it can further be used for interacting with `MongoDa
 
 ```scala
 import mongo4cats.database.MongoDatabaseF
+
 MongoClientF.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
   val database: IO[MongoDatabaseF[IO]] = client.getDatabase("mydb")
 }

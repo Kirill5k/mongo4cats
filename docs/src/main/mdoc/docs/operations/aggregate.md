@@ -11,8 +11,9 @@ In MongoDB aggregations are represented in a form of data processing pipelines w
 More detailed explanation of the aggregation process can be found in the official [documentation](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/aggregation/).
 
 To create such aggregation pipeline, `Aggregate` constructor can be used:
+
 ```scala
-import mongo4cats.database.operations.{Aggregate, Accumulator, Sort}
+import mongo4cats.collection.operations.{Accumulator, Aggregate, Sort}
 
 // specification for grouping multiple transactions from the same group:
 val accumulator = Accumulator

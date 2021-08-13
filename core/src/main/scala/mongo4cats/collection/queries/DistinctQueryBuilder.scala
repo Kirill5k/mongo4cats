@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package mongo4cats.database.queries
+package mongo4cats.collection.queries
 
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.DistinctPublisher
 import mongo4cats.helpers._
-import mongo4cats.database.operations
+import mongo4cats.collection.operations
 import org.bson.conversions.Bson
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-final case class DistinctQueryBuilder[T: ClassTag] private[database] (
+final case class DistinctQueryBuilder[T: ClassTag] private[collection] (
     protected val observable: DistinctPublisher[T],
     protected val commands: List[DistinctCommand[T]]
 ) extends QueryBuilder[DistinctPublisher, T] {

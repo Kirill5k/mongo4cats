@@ -18,6 +18,7 @@ package mongo4cats
 
 import java.net.InetSocketAddress
 import com.mongodb.{
+  ClientSessionOptions => JClientSessionOptions,
   MongoDriverInformation => JMongoDriverInformation,
   MongoClientSettings => JMongoClientSettings,
   ServerAddress => JServerAddress
@@ -32,13 +33,22 @@ package object client {
 
   type MongoClientSettings = JMongoClientSettings
   object MongoClientSettings {
+    def apply(): MongoClientSettings                                         = new JMongoClientSettings()
     def builder: JMongoClientSettings.Builder                                = JMongoClientSettings.builder()
     def builder(settings: MongoClientSettings): JMongoClientSettings.Builder = JMongoClientSettings.builder(settings)
   }
 
   type MongoDriverInformation = JMongoDriverInformation
   object MongoDriverInformation {
+    def apply(): MongoDriverInformation                                               = new JMongoDriverInformation()
     def builder: JMongoDriverInformation.Builder                                      = JMongoDriverInformation.builder()
     def builder(information: MongoDriverInformation): JMongoDriverInformation.Builder = JMongoDriverInformation.builder(information)
+  }
+
+  type ClientSessionOptions = JClientSessionOptions
+  object ClientSessionOptions {
+    def apply(): ClientSessionOptions                                             = new JClientSessionOptions()
+    def builder: JClientSessionOptions.Builder                                    = JClientSessionOptions.builder()
+    def builder(information: ClientSessionOptions): JClientSessionOptions.Builder = JClientSessionOptions.builder(information)
   }
 }

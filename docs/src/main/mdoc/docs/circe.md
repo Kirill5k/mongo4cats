@@ -20,11 +20,12 @@ import mongo4cats.circe._
 ```
 Which, when included, implicitly builds an instance of `MongoCodecProvider[T]`, 
 assuming there are instances of `Encoder[T]` and `Decoder[T]` available in the implicit scope:
+
 ```scala
 import io.circe.generic.auto._
 import mongo4cats.bson.ObjectId
 import mongo4cats.circe._
-import mongo4cats.database.MongoCollectionF
+import mongo4cats.collection.MongoCollectionF
 
 final case class MyClass(_id: ObjectId, field1: String, field2: Int)
 

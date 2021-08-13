@@ -19,9 +19,8 @@ package mongo4cats
 import com.mongodb.MongoClientException
 import io.circe.parser.{decode => circeDecode}
 import io.circe.{Decoder, Encoder}
-import mongo4cats.database.{MongoCodecProvider, MongoCollectionF, MongoDatabaseF}
+import mongo4cats.collection.MongoCodecProvider
 import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext}
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.{BsonReader, BsonWriter, Document}
 
@@ -36,14 +35,6 @@ object circe extends JsonCodecs {
       implicit val classT: Class[T]   = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
       override def get: CodecProvider = circeBasedCodecProvider[T]
     }
-
-  implicit final class MongoDatabaseFOps[F[_]](private val db: MongoDatabaseF[F]) extends AnyVal {
-    def getCollectionWithCirceCodecs[T: ClassTag: Encoder: Decoder](name: String): F[MongoCollectionF[T]] = {
-      implicit val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-      val codecs: CodecRegistry     = fromRegistries(fromProviders(circeBasedCodecProvider[T]), MongoDatabaseF.DefaultCodecRegistry)
-      db.getCollection[T](name, codecs)
-    }
-  }
 
   private def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
     new CodecProvider {
