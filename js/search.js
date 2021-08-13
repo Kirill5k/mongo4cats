@@ -64,7 +64,7 @@ function prepareIdxAndDocMap() {
     } ,    
     {
       "title": "Getting started",
-      "url": "/mongo4cats/docs/gettingstarted.html",
+      "url": "/mongo4cats/docs/",
       "content": "Getting Started Dependencies In order to begin, the following dependency needs to be added to your build.sbt: libraryDependencies += \"io.github.kirill5k\" %% \"mongo4cats-core\" % \"&lt;version&gt;\" For automatic derivation of Bson codecs via Circe, add this: libraryDependencies += \"io.github.kirill5k\" %% \"mongo4cats-circe\" % \"&lt;version&gt;\" For the ability to use embedded MongoDB in your tests, add this: libraryDependencies += \"io.github.kirill5k\" %% \"mongo4cats-embedded\" % \"&lt;version&gt;\" % Test Next steps Once everything is in place, you can start accessing your data: Making a connection Getting a collection"
     } ,    
     {
