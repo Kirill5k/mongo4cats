@@ -32,7 +32,7 @@ import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-final class MongoCollectionF[T: ClassTag] private (
+final class MongoCollection[T: ClassTag] private(
     private val collection: JMongoCollection[T]
 ) {
 
@@ -45,13 +45,13 @@ final class MongoCollectionF[T: ClassTag] private (
   def documentClass: Class[T] =
     collection.getDocumentClass
 
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollectionF[T] = {
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[T] = {
     val currentCodecs = collection.getCodecRegistry
     val newCodecs     = fromRegistries(currentCodecs, codecRegistry)
-    MongoCollectionF[T](collection.withCodecRegistry(newCodecs))
+    MongoCollection[T](collection.withCodecRegistry(newCodecs))
   }
 
-  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollectionF[T] = {
+  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollection[T] = {
     val classY: Class[Y] = implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
     Try(codecs.get(classY)) match {
       case Failure(_) => withAddedCodec(fromProviders(cp.get))
@@ -59,8 +59,8 @@ final class MongoCollectionF[T: ClassTag] private (
     }
   }
 
-  def as[Y: ClassTag]: MongoCollectionF[Y] =
-    MongoCollectionF[Y](collection.withDocumentClass[Y](implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]))
+  def as[Y: ClassTag]: MongoCollection[Y] =
+    MongoCollection[Y](collection.withDocumentClass[Y](implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]))
 
   /** Aggregates documents according to the specified aggregation pipeline. [[http://docs.mongodb.org/manual/aggregation/]]
     * @param pipeline
@@ -588,9 +588,9 @@ final class MongoCollectionF[T: ClassTag] private (
     count(filter.toBson, options)
 }
 
-object MongoCollectionF {
+object MongoCollection {
 
-  private[mongo4cats] def apply[T: ClassTag](collection: JMongoCollection[T]): MongoCollectionF[T] =
-    new MongoCollectionF(collection)
+  private[mongo4cats] def apply[T: ClassTag](collection: JMongoCollection[T]): MongoCollection[T] =
+    new MongoCollection(collection)
 
 }

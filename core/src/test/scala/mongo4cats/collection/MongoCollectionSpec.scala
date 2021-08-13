@@ -31,11 +31,11 @@ import mongo4cats.database.MongoDatabase
 
 import scala.concurrent.Future
 
-class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort = 12347
 
-  "A MongoCollectionF" when {
+  "A MongoCollection" when {
     "working with Documents" should {
 
       "insertOne" should {

@@ -21,7 +21,7 @@ import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.MongoClientSettings
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
-import mongo4cats.collection.{MongoCodecProvider, MongoCollectionF}
+import mongo4cats.collection.{MongoCodecProvider, MongoCollection}
 import mongo4cats.helpers._
 import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
@@ -34,9 +34,9 @@ trait MongoDatabase[F[_]] {
   def collectionNames: F[Iterable[String]]
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
-  def getCollection(name: String): F[MongoCollectionF[Document]]
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]]
-  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollectionF[T]] =
+  def getCollection(name: String): F[MongoCollection[Document]]
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[T]]
+  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[T]] =
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
 }
 
@@ -49,18 +49,18 @@ final private class LiveMongoDatabase[F[_]](
   def name: String =
     database.getName
 
-  def getCollection(name: String): F[MongoCollectionF[Document]] =
+  def getCollection(name: String): F[MongoCollection[Document]] =
     F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
-      .map(MongoCollectionF.apply[Document])
+      .map(MongoCollection.apply[Document])
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollectionF[T]] = {
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[T]] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     F.delay {
       database
         .getCollection[T](name, clazz)
         .withCodecRegistry(codecRegistry)
         .withDocumentClass[T](clazz)
-    }.map(MongoCollectionF.apply[T])
+    }.map(MongoCollection.apply[T])
   }
 
   def collectionNames: F[Iterable[String]] =

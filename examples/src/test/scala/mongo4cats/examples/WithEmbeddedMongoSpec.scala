@@ -28,7 +28,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
 
   override val mongoPort: Int = 12344
 
-  "A MongoCollectionF" should {
+  "A MongoCollection" should {
     "create and retrieve documents from a db" in withRunningEmbeddedMongo {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
         for {

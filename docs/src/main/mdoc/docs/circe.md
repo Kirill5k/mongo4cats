@@ -25,9 +25,9 @@ assuming there are instances of `Encoder[T]` and `Decoder[T]` available in the i
 import io.circe.generic.auto._
 import mongo4cats.bson.ObjectId
 import mongo4cats.circe._
-import mongo4cats.collection.MongoCollectionF
+import mongo4cats.collection.MongoCollection
 
 final case class MyClass(_id: ObjectId, field1: String, field2: Int)
 
-val collection: IO[MongoCollectionF[MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
+val collection: IO[MongoCollection[MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
 ```

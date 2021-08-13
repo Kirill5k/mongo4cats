@@ -7,7 +7,7 @@ number: 5
 ## Distinct
 
 Distinct operation returns all distinct values for a field across all documents in a collection.
-The operation can be executed by calling `distinct` method on a `MongoCollectionF[T]` class and passing a name of a field:
+The operation can be executed by calling `distinct` method on a `MongoCollection[T]` class and passing a name of a field:
 ```scala
 val distinctValues: IO[Iterable[String]] = collection.distinct[String]("field1").all[IO]
 

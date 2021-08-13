@@ -29,11 +29,11 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
-class MongoCollectionFAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort = 12349
 
-  "A MongoCollectionF" when {
+  "A MongoCollection" when {
 
     "aggregate" should {
 

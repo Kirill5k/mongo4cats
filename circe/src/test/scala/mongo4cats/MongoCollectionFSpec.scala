@@ -32,11 +32,11 @@ import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
 
-class MongoCollectionFSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort: Int = 12348
 
-  "A MongoCollectionF" should {
+  "A MongoCollection" should {
 
     final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
     final case class Person(

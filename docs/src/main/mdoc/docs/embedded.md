@@ -31,7 +31,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
   // by default, MongoDB instance will be accessible on 27017 port, which can be overridden:
   override val mongoPort: Int = 12345
 
-  "A MongoCollectionF" should {
+  "A MongoCollection" should {
     "create and retrieve documents from a db" in withRunningEmbeddedMongo {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12345").use { client =>
         for {

@@ -14,7 +14,7 @@ The result of an operation can be returned in the following forms:
 * All documents bundled in a single collection - `F[Iterable[T]]`
 * A Stream of documents where each item is emitted as soon as it is obtained - `fs2.Stream[F, T]`
 
-Find operation can be executed by calling `find` method on a `MongoCollectionF[T]` instance:
+Find operation can be executed by calling `find` method on a `MongoCollection[T]` instance:
 ```scala
 import mongo4cats.bson.Document
 
