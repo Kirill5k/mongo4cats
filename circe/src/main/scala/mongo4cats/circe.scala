@@ -56,17 +56,18 @@ object circe extends JsonCodecs {
 
             override def getEncoderClass: Class[Y] = classY
 
-            override def decode(reader: BsonReader, decoderContext: DecoderContext): Y = {
+            override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
               reader.getCurrentBsonType match {
                 case BsonType.DOCUMENT =>
                   val json = documentCodec.decode(reader, decoderContext).toJson()
                   circeDecode[T](json).fold(e => throw MongoJsonParsingException(json, e.getMessage), _.asInstanceOf[Y])
-                case _                 =>
+                case _ =>
                   val string = stringCodec.decode(reader, decoderContext)
-                  dec.decodeJson(Json.fromString(string)).fold(e => throw MongoJsonParsingException(string, e.getMessage), _.asInstanceOf[Y])
+                  dec
+                    .decodeJson(Json.fromString(string))
+                    .fold(e => throw MongoJsonParsingException(string, e.getMessage), _.asInstanceOf[Y])
               }
 
-            }
           }
         } else {
           null // scalastyle:ignore
