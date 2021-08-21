@@ -301,7 +301,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
             result.map { case (old, docs) =>
               docs.map(_.get("currency", classOf[Document])) mustBe List(TestData.GBP)
-              old mustBe TestData.eurAccount
+              old mustBe Some(TestData.eurAccount)
             }
           }
         }
@@ -318,7 +318,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
             } yield (old, docs)
 
             result.map { case (old, docs) =>
-              old mustBe TestData.eurAccount
+              old mustBe Some(TestData.eurAccount)
               docs mustBe List(Document.from(TestData.eurAccount).append("status", "updated"))
             }
           }
@@ -338,7 +338,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
             result.map { case (old, docs) =>
               docs must have size 2
               docs.map(_.getString("name")).toSet mustBe Set("gbp-acc", "usd-acc")
-              old.getString("name") mustBe "eur-acc"
+              old.map(_.getString("name")) mustBe Some("eur-acc")
             }
           }
         }
@@ -479,7 +479,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
             } yield (old, updated)
 
             result.map { case (old, updated) =>
-              updated mustBe Some(old.append("dob", "2020-01-01"))
+              updated mustBe old.map(_.append("dob", "2020-01-01"))
             }
           }
         }

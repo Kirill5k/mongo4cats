@@ -132,31 +132,31 @@ trait MongoCollection[F[_], T] {
     * @param options
     *   the options to apply to the operation
     * @note
-    *   If no documents matched the query filter, then null will be returned
+    *   If no documents matched the query filter, then None will be returned
     */
-  def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[T]
-  def findOneAndDelete(filter: Filter, options: FindOneAndDeleteOptions): F[T] = findOneAndDelete(filter.toBson, options)
-  def findOneAndDelete(filter: Filter): F[T]                                   = findOneAndDelete(filter, FindOneAndDeleteOptions())
-  def findOneAndDelete(filter: Bson): F[T]                                     = findOneAndDelete(filter, FindOneAndDeleteOptions())
+  def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]]
+  def findOneAndDelete(filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]] = findOneAndDelete(filter.toBson, options)
+  def findOneAndDelete(filter: Filter): F[Option[T]]                                   = findOneAndDelete(filter, FindOneAndDeleteOptions())
+  def findOneAndDelete(filter: Bson): F[Option[T]]                                     = findOneAndDelete(filter, FindOneAndDeleteOptions())
 
   /** Atomically find a document and update it.
     *
     * @param filter
-    *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
+    *   a document describing the query filter. This can be of any type for which a `Codec` is registered
     * @param update
-    *   a document describing the update, which may not be null. The update to apply must include only update operators. This can be of any
-    *   type for which a `Codec` is registered
+    *   a document describing the update. The update to apply must include only update operators. This can be of any type for which a
+    *   `Codec` is registered
     * @param options
     *   the options to apply to the operation
     * @note
     *   Depending on the value of the `returnOriginal` property, this will either be the document as it was before the update or as it is
-    *   after the update. If no documents matched the query filter, then null will be returned
+    *   after the update. If no documents matched the query filter, then None will be returned
     */
-  def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T]
-  def findOneAndUpdate(filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[T] =
+  def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[Option[T]] =
     findOneAndUpdate(filter.toBson, update.toBson, options)
-  def findOneAndUpdate(filter: Bson, update: Bson): F[T]     = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
-  def findOneAndUpdate(filter: Filter, update: Update): F[T] = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
+  def findOneAndUpdate(filter: Bson, update: Bson): F[Option[T]]     = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
+  def findOneAndUpdate(filter: Filter, update: Update): F[Option[T]] = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
 
   /** Atomically find a document and replace it.
     *
@@ -168,13 +168,14 @@ trait MongoCollection[F[_], T] {
     *   the options to apply to the operation
     * @note
     *   Depending on the value of the `returnOriginal` property, this will either be the document as it was before the update or as it is
-    *   after the update. If no documents matched the query filter, then null will be returned
+    *   after the update. If no documents matched the query filter, then None will be returned
     */
-  def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[T]
-  def findOneAndReplace(filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[T] =
+  def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]]
+  def findOneAndReplace(filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
     findOneAndReplace(filter.toBson, replacement, options)
-  def findOneAndReplace(filter: Bson, replacement: T): F[T]   = findOneAndReplace(filter, replacement, FindOneAndReplaceOptions())
-  def findOneAndReplace(filter: Filter, replacement: T): F[T] = findOneAndReplace(filter.toBson, replacement, FindOneAndReplaceOptions())
+  def findOneAndReplace(filter: Bson, replacement: T): F[Option[T]] = findOneAndReplace(filter, replacement, FindOneAndReplaceOptions())
+  def findOneAndReplace(filter: Filter, replacement: T): F[Option[T]] =
+    findOneAndReplace(filter.toBson, replacement, FindOneAndReplaceOptions())
 
   /** Drops the given index.
     *
@@ -209,7 +210,7 @@ trait MongoCollection[F[_], T] {
 
   /** [[http://docs.mongodb.org/manual/reference/command/create]]
     * @param key
-    *   an object describing the index key(s), which may not be null. This can be of any type for which a `Codec` is registered
+    *   an object describing the index key(s). This can be of any type for which a `Codec` is registered
     * @param options
     *   the options for the index
     */
@@ -222,10 +223,10 @@ trait MongoCollection[F[_], T] {
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
-    *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
+    *   a document describing the query filter. This can be of any type for which a `Codec` is registered
     * @param update
-    *   a document describing the update, which may not be null. The update to apply must include only update operators. This can be of any
-    *   type for which a `Codec` is registered
+    *   a document describing the update. The update to apply must include only update operators. This can be of any type for which a
+    *   `Codec` is registered
     * @param options
     *   the options to apply to the update operation
     */
@@ -239,7 +240,7 @@ trait MongoCollection[F[_], T] {
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
-    *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
+    *   a document describing the query filter. This can be of any type for which a `Codec` is registered
     * @param update
     *   a pipeline describing the update.
     * @param options
@@ -253,10 +254,10 @@ trait MongoCollection[F[_], T] {
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
-    *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
+    *   a document describing the query filter. This can be of any type for which a `Codec` is registered
     * @param update
-    *   a document describing the update, which may not be null. The update to apply must include only update operators. This can be of any
-    *   type for which a `Codec` is registered
+    *   a document describing the update. The update to apply must include only update operators. This can be of any type for which a
+    *   `Codec` is registered
     * @param options
     *   the options to apply to the update operation
     */
@@ -269,7 +270,7 @@ trait MongoCollection[F[_], T] {
     *
     * [[http://docs.mongodb.org/manual/tutorial/modify-documents/]] [[http://docs.mongodb.org/manual/reference/operator/update/]]
     * @param filter
-    *   a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is registered
+    *   a document describing the query filter. This can be of any type for which a `Codec` is registered
     * @param update
     *   a pipeline describing the update.
     * @param options
@@ -408,14 +409,14 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def find(filter: Bson): FindQueryBuilder[F, T] =
     FindQueryBuilder[F, T](collection.find(filter), Nil)
 
-  def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[T] =
-    collection.findOneAndDelete(filter, options).asyncSingle[F]
+  def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
+    collection.findOneAndDelete(filter, options).asyncSingle[F].map(Option.apply[T])
 
-  def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[T] =
-    collection.findOneAndUpdate(filter, update, options).asyncSingle[F]
+  def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]] =
+    collection.findOneAndUpdate(filter, update, options).asyncSingle[F].map(Option.apply[T])
 
-  def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[T] =
-    collection.findOneAndReplace(filter, replacement, options).asyncSingle[F]
+  def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
+    collection.findOneAndReplace(filter, replacement, options).asyncSingle[F].map(Option.apply[T])
 
   def dropIndex(name: String): F[Unit] = collection.dropIndex(name).asyncVoid[F]
 

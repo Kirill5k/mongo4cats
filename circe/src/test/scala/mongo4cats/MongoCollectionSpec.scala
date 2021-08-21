@@ -18,6 +18,7 @@ package mongo4cats
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
 import mongo4cats.circe._
 import mongo4cats.client.MongoClient
@@ -38,9 +39,30 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
   "A MongoCollection" should {
 
-    final case class Address(streetNumber: Int, streetName: String, city: String, postcode: String)
+    abstract class Gender(val value: String)
+    object Gender {
+      case object Male   extends Gender("male")
+      case object Female extends Gender("female")
+
+      val all = List(Male, Female)
+
+      def from(value: String): Either[String, Gender] =
+        all.find(_.value == value).toRight(s"unexpected item kind $value")
+
+      implicit val decode: Decoder[Gender] = Decoder[String].emap(Gender.from)
+      implicit val encode: Encoder[Gender] = Encoder[String].contramap(_.value)
+    }
+
+    final case class Address(
+        streetNumber: Int,
+        streetName: String,
+        city: String,
+        postcode: String
+    )
+
     final case class Person(
         _id: ObjectId,
+        gender: Gender,
         firstName: String,
         lastName: String,
         dob: LocalDate,
@@ -111,6 +133,38 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
+    "find distinct nested enums" in {
+      withEmbeddedMongoClient { client =>
+        val result = for {
+          db      <- client.getDatabase("test")
+          _       <- db.createCollection("people")
+          coll    <- db.getCollectionWithCodec[Person]("people")
+          _       <- coll.insertMany(List(person("Jane", "Doe", Gender.Female), person("John", "Smith")))
+          genders <- coll.distinctWithCodec[Gender]("gender").all
+        } yield genders
+
+        result.map { res =>
+          res.toSet mustBe Set(Gender.Female, Gender.Male)
+        }
+      }
+    }
+
+    "search by nested classes" in {
+      withEmbeddedMongoClient { client =>
+        val result = for {
+          db      <- client.getDatabase("test")
+          _       <- db.createCollection("people")
+          coll    <- db.getCollectionWithCodec[Person]("people")
+          _       <- coll.insertMany(List(person("John", "Doe"), person("Jane", "Doe", Gender.Female)))
+          females <- coll.withAddedCodec[Gender].find(Filter.eq("gender", Gender.Female)).all
+        } yield females
+
+        result.map { res =>
+          res must have size 1
+        }
+      }
+    }
+
     sealed trait PaymentMethod
     final case class CreditCard(name: String, number: String, expiry: String, cvv: Int) extends PaymentMethod
     final case class Paypal(email: String)                                              extends PaymentMethod
@@ -140,9 +194,10 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
-    def person(firstName: String = "John", lastName: String = "Bloggs"): Person =
+    def person(firstName: String = "John", lastName: String = "Bloggs", gender: Gender = Gender.Male): Person =
       Person(
         ObjectId(),
+        gender,
         firstName,
         lastName,
         LocalDate.parse("1970-12-01"),

@@ -18,11 +18,11 @@ package mongo4cats
 
 import com.mongodb.MongoClientException
 import io.circe.parser.{decode => circeDecode}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
 import mongo4cats.collection.MongoCodecProvider
-import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext}
+import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext, StringCodec}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import org.bson.{BsonReader, BsonWriter, Document}
+import org.bson.{BsonReader, BsonType, BsonWriter, Document}
 
 import scala.reflect.ClassTag
 
@@ -39,20 +39,33 @@ object circe extends JsonCodecs {
   private def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
     new CodecProvider {
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
-        if (classY == classT) {
+        if (classY == classT || classT.isAssignableFrom(classY)) {
           new Codec[Y] {
             private val documentCodec: Codec[Document] = new DocumentCodec(registry).asInstanceOf[Codec[Document]]
+            private val stringCodec: Codec[String]     = new StringCodec()
 
             override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit = {
-              val document = Document.parse(enc(t.asInstanceOf[T]).noSpaces)
-              documentCodec.encode(writer, document, encoderContext)
+              val json = enc(t.asInstanceOf[T])
+              if (json.isObject) {
+                val document = Document.parse(json.noSpaces)
+                documentCodec.encode(writer, document, encoderContext)
+              } else {
+                stringCodec.encode(writer, json.noSpaces.replaceAll("\"", ""), encoderContext)
+              }
             }
 
             override def getEncoderClass: Class[Y] = classY
 
             override def decode(reader: BsonReader, decoderContext: DecoderContext): Y = {
-              val documentJson = documentCodec.decode(reader, decoderContext).toJson()
-              circeDecode[T](documentJson).fold(e => throw MongoJsonParsingException(documentJson, e.getMessage), _.asInstanceOf[Y])
+              reader.getCurrentBsonType match {
+                case BsonType.DOCUMENT =>
+                  val json = documentCodec.decode(reader, decoderContext).toJson()
+                  circeDecode[T](json).fold(e => throw MongoJsonParsingException(json, e.getMessage), _.asInstanceOf[Y])
+                case _                 =>
+                  val string = stringCodec.decode(reader, decoderContext)
+                  dec.decodeJson(Json.fromString(string)).fold(e => throw MongoJsonParsingException(string, e.getMessage), _.asInstanceOf[Y])
+              }
+
             }
           }
         } else {
