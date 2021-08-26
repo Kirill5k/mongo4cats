@@ -27,10 +27,12 @@ import de.flapdoodle.embed.process.runtime.Network
 import scala.concurrent.duration._
 
 object EmbeddedMongo {
-  private val starter = MongodStarter.getDefaultInstance
+
+  private lazy val defaultStarter: MongodStarter = MongodStarter.getDefaultInstance
 
   def start[F[_]](
       config: MongodConfig,
+      starter: MongodStarter = defaultStarter,
       maxAttempts: Int = 10,
       attempt: Int = 0,
       lastError: Option[Throwable] = None
@@ -43,7 +45,7 @@ object EmbeddedMongo {
         .make(F.delay(starter.prepare(config)))(ex => F.delay(ex.stop()))
         .flatMap(ex => Resource.make(F.delay(ex.start()))(p => F.delay(p.stop())))
         .handleErrorWith[MongodProcess, Throwable] { e =>
-          Resource.eval(F.sleep(attempt.seconds)) *> start[F](config, maxAttempts, attempt + 1, Some(e))
+          Resource.eval(F.sleep(attempt.seconds)) *> start[F](config, starter, maxAttempts, attempt + 1, Some(e))
         }
 }
 
