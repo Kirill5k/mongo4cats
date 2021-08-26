@@ -28,9 +28,11 @@ import scala.concurrent.duration._
 
 object EmbeddedMongo {
 
+  private lazy val defaultStarter: MongodStarter = MongodStarter.getDefaultInstance
+
   def start[F[_]](
       config: MongodConfig,
-      starter: MongodStarter = MongodStarter.getDefaultInstance,
+      starter: MongodStarter = defaultStarter,
       maxAttempts: Int = 10,
       attempt: Int = 0,
       lastError: Option[Throwable] = None
