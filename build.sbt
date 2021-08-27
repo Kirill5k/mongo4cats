@@ -44,10 +44,8 @@ lazy val commonSettings = Seq(
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
-  scalafmtOnCompile        := true,
-  crossScalaVersions       := supportedScalaVersions,
-  test / parallelExecution := false,
-  mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0"),
+  scalafmtOnCompile  := true,
+  crossScalaVersions := supportedScalaVersions,
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   )
@@ -73,7 +71,9 @@ lazy val `mongo4cats-core` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
-    libraryDependencies ++= Dependencies.core ++ Dependencies.test
+    libraryDependencies ++= Dependencies.core ++ Dependencies.test,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -83,7 +83,9 @@ lazy val `mongo4cats-circe` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
-    libraryDependencies ++= Dependencies.circe ++ Dependencies.test
+    libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -103,7 +105,9 @@ lazy val `mongo4cats-embedded` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-embedded",
-    libraryDependencies ++= Dependencies.embedded
+    libraryDependencies ++= Dependencies.embedded,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
