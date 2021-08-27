@@ -17,17 +17,17 @@
 package mongo4cats
 
 import com.mongodb.client.model.{
-  DropIndexOptions => JDropIndexOptions,
-  InsertOneOptions => JInsertOneOptions,
-  InsertManyOptions => JInsertManyOptions,
   CountOptions => JCountOptions,
   DeleteOptions => JDeleteOptions,
-  IndexOptions => JIndexOptions,
-  UpdateOptions => JUpdateOptions,
-  ReplaceOptions => JReplaceOptions,
-  FindOneAndReplaceOptions => JFindOneAndReplaceOptions,
+  DropIndexOptions => JDropIndexOptions,
   FindOneAndDeleteOptions => JFindOneAndDeleteOptions,
-  FindOneAndUpdateOptions => JFindOneAndUpdateOptions
+  FindOneAndReplaceOptions => JFindOneAndReplaceOptions,
+  FindOneAndUpdateOptions => JFindOneAndUpdateOptions,
+  IndexOptions => JIndexOptions,
+  InsertManyOptions => JInsertManyOptions,
+  InsertOneOptions => JInsertOneOptions,
+  ReplaceOptions => JReplaceOptions,
+  UpdateOptions => JUpdateOptions
 }
 
 package object collection {

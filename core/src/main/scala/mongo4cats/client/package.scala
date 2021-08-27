@@ -19,8 +19,8 @@ package mongo4cats
 import java.net.InetSocketAddress
 import com.mongodb.{
   ClientSessionOptions => JClientSessionOptions,
-  MongoDriverInformation => JMongoDriverInformation,
   MongoClientSettings => JMongoClientSettings,
+  MongoDriverInformation => JMongoDriverInformation,
   ServerAddress => JServerAddress,
   TransactionOptions => JTransactionOptions
 }

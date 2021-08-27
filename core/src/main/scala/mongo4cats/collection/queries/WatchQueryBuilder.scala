@@ -109,7 +109,8 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @param startAtOperationTime
     *   the start at operation time
     * @since 1.9
-    *   @return WatchQueryBuilder
+    * @return
+    *   WatchQueryBuilder
     */
   def startAtOperationTime(startAtOperationTime: BsonTimestamp): WatchQueryBuilder[F, T] =
     WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime[T](startAtOperationTime) :: commands)

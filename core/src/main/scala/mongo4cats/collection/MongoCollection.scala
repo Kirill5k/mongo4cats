@@ -70,14 +70,16 @@ trait MongoCollection[F[_], T] {
     * @param pipeline
     *   the aggregation pipeline to apply to the change stream
     * @since 2.2
-    *   @note Requires MongoDB 3.6 or greater
+    * @note
+    *   Requires MongoDB 3.6 or greater
     */
   def watch[Y](pipeline: Seq[Bson])(implicit classTag: ClassTag[Y]): WatchQueryBuilder[F, Y]
   def watch[Y](pipeline: Aggregate)(implicit classTag: ClassTag[Y]): WatchQueryBuilder[F, Y]
 
   /** Creates a change stream for this collection.
     * @since 2.2
-    *   @note Requires MongoDB 3.6 or greater
+    * @note
+    *   Requires MongoDB 3.6 or greater
     */
   def watch[Y](implicit classTag: ClassTag[Y]): WatchQueryBuilder[F, Y] = watch[Y](Nil)
 
@@ -246,7 +248,8 @@ trait MongoCollection[F[_], T] {
     * @param options
     *   the options to apply to the update operation
     * @since 2.7
-    *   @note Requires MongoDB 4.2 or greater
+    * @note
+    *   Requires MongoDB 4.2 or greater
     */
   def updateMany(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
 
@@ -276,7 +279,8 @@ trait MongoCollection[F[_], T] {
     * @param options
     *   the options to apply to the update operation
     * @since 2.7
-    *   @note Requires MongoDB 4.2 or greater
+    * @note
+    *   Requires MongoDB 4.2 or greater
     */
   def updateOne(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
   def updateOne(filters: Bson, update: Seq[Bson]): F[UpdateResult] = updateOne(filters, update, UpdateOptions())
