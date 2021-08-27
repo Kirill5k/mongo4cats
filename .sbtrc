@@ -1,4 +1,3 @@
-alias binaryComp = ; mimaReportBinaryIssues
 alias fmt = ; scalafmtAll ; scalafmtSbt
 alias fmtcheck = ; scalafmtCheckAll; scalafmtSbtCheck
 alias testseq = ; mongo4cats-core/test ; mongo4cats-circe/test ;

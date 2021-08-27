@@ -16,23 +16,49 @@
 
 package mongo4cats.client
 
+import cats.Monad
 import cats.effect.Async
+import cats.syntax.alternative._
+import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
 import mongo4cats.helpers._
 
 import scala.util.Try
 
 abstract class ClientSession[F[_]] {
-  private[client] def session: JClientSession
 
+  /** Returns true if there is an active transaction on this session, and false otherwise
+    *
+    * @return
+    *   true if there is an active transaction on this session
+    */
   def hasActiveTransaction: Boolean
-  def transactionOptions: TransactionOptions
 
+  /** Gets the transaction options. If session has no active transaction, then None is returned
+    *
+    * @return
+    *   the transaction options
+    */
+  def transactionOptions: Option[TransactionOptions]
+
+  /** Start a transaction in the context of this session with the given transaction options. A transaction can not be started if there is
+    * already an active transaction on this session.
+    *
+    * @param options
+    *   the options to apply to the transaction
+    */
   def startTransaction(options: TransactionOptions): F[Unit]
   def startTransaction: F[Unit] = startTransaction(TransactionOptions())
 
+  /** Abort a transaction in the context of this session. A transaction can only be aborted if one has first been started.
+    */
   def abortTransaction: F[Unit]
+
+  /** Commit a transaction in the context of this session. A transaction can only be commmited if one has first been started.
+    */
   def commitTransaction: F[Unit]
+
+  private[client] def session: JClientSession
 }
 
 final private class LiveClientSession[F[_]](
@@ -40,8 +66,10 @@ final private class LiveClientSession[F[_]](
 )(implicit F: Async[F])
     extends ClientSession[F] {
 
-  override def hasActiveTransaction: Boolean          = session.hasActiveTransaction
-  override def transactionOptions: TransactionOptions = session.getTransactionOptions
+  override def hasActiveTransaction: Boolean = session.hasActiveTransaction
+
+  override def transactionOptions: Option[TransactionOptions] =
+    hasActiveTransaction.guard[Option].as(session.getTransactionOptions)
 
   override def startTransaction(options: TransactionOptions): F[Unit] =
     F.fromTry(Try(session.startTransaction(options)))
@@ -53,4 +81,7 @@ final private class LiveClientSession[F[_]](
     session.abortTransaction().asyncVoid[F]
 }
 
-object ClientSession {}
+object ClientSession {
+  private[client] def make[F[_]: Async](session: JClientSession): F[ClientSession[F]] =
+    Monad[F].pure(new LiveClientSession[F](session))
+}

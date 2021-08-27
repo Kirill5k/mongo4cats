@@ -132,8 +132,6 @@ lazy val docs = project
     micrositeShareOnSocial    := false,
     mdocIn                    := (Compile / sourceDirectory).value / "mdoc",
     micrositeCDNDirectives := CdnDirectives(
-      cssList = List(
-        "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css"
-      )
+      cssList = List("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css")
     )
   )
