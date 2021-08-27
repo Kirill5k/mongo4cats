@@ -44,8 +44,10 @@ lazy val commonSettings = Seq(
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
-  scalafmtOnCompile  := true,
-  crossScalaVersions := supportedScalaVersions,
+  scalafmtOnCompile        := true,
+  crossScalaVersions       := supportedScalaVersions,
+  test / parallelExecution := false,
+  mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0"),
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   )
@@ -71,8 +73,7 @@ lazy val `mongo4cats-core` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
-    libraryDependencies ++= Dependencies.core ++ Dependencies.test,
-    test / parallelExecution := false
+    libraryDependencies ++= Dependencies.core ++ Dependencies.test
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -82,8 +83,7 @@ lazy val `mongo4cats-circe` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
-    libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
-    test / parallelExecution := false
+    libraryDependencies ++= Dependencies.circe ++ Dependencies.test
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -93,8 +93,7 @@ lazy val `mongo4cats-examples` = project
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
-    name                     := "mongo4cats-examples",
-    test / parallelExecution := false,
+    name := "mongo4cats-examples",
     libraryDependencies ++= Dependencies.examples ++ Dependencies.test
   )
   .enablePlugins(AutomateHeaderPlugin)
@@ -103,8 +102,7 @@ lazy val `mongo4cats-embedded` = project
   .in(file("embedded"))
   .settings(commonSettings)
   .settings(
-    name                     := "mongo4cats-embedded",
-    test / parallelExecution := false,
+    name := "mongo4cats-embedded",
     libraryDependencies ++= Dependencies.embedded
   )
   .enablePlugins(AutomateHeaderPlugin)
