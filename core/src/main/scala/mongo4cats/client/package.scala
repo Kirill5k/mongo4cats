@@ -21,7 +21,8 @@ import com.mongodb.{
   ClientSessionOptions => JClientSessionOptions,
   MongoDriverInformation => JMongoDriverInformation,
   MongoClientSettings => JMongoClientSettings,
-  ServerAddress => JServerAddress
+  ServerAddress => JServerAddress,
+  TransactionOptions => JTransactionOptions
 }
 
 package object client {
@@ -39,13 +40,21 @@ package object client {
 
   type MongoDriverInformation = JMongoDriverInformation
   object MongoDriverInformation {
+    def apply(): JMongoDriverInformation                                              = builder.build()
     def builder: JMongoDriverInformation.Builder                                      = JMongoDriverInformation.builder()
     def builder(information: MongoDriverInformation): JMongoDriverInformation.Builder = JMongoDriverInformation.builder(information)
   }
 
   type ClientSessionOptions = JClientSessionOptions
   object ClientSessionOptions {
+    def apply(): JClientSessionOptions                                            = builder.build()
     def builder: JClientSessionOptions.Builder                                    = JClientSessionOptions.builder()
     def builder(information: ClientSessionOptions): JClientSessionOptions.Builder = JClientSessionOptions.builder(information)
+  }
+
+  type TransactionOptions = JTransactionOptions
+  object TransactionOptions {
+    def apply(): JTransactionOptions         = builder.build()
+    def builder: JTransactionOptions.Builder = JTransactionOptions.builder()
   }
 }
