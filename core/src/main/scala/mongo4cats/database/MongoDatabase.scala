@@ -19,6 +19,7 @@ package mongo4cats.database
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.flatMap._
+import cats.syntax.functor._
 import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import mongo4cats.client.ClientSession
@@ -118,18 +119,10 @@ final private class LiveMongoDatabase[F[_]](
     database.listCollections[T](cs.session, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
 
   def getCollection(name: String): F[MongoCollection[F, Document]] =
-    F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
-      .flatMap(MongoCollection.make[F, Document])
+    F.delay(database.getCollection(name)).flatMap(MongoCollection.make[F, Document])
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    F.delay {
-      database
-        .getCollection[T](name, clazz)
-        .withCodecRegistry(codecRegistry)
-        .withDocumentClass[T](clazz)
-    }.flatMap(MongoCollection.make[F, T])
-  }
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
+    withAddedCodec(codecRegistry).getCollection(name).map(_.as[T])
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]
