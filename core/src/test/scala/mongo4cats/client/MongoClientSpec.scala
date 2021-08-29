@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.syntax.either._
 import cats.effect.unsafe.implicits.global
 import com.mongodb.MongoTimeoutException
+import com.mongodb.connection.ClusterConnectionMode
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -34,13 +35,10 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         MongoClient
           .fromConnectionString[IO]("mongodb://localhost:12345")
           .use { client =>
-            for {
-              db    <- client.getDatabase("test-db")
-              names <- db.listCollectionNames
-            } yield names
+            val cluster = client.clusterDescription
+
+            IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
           }
-          .attempt
-          .map(_ mustBe Right(Nil))
       }.unsafeToFuture()
     }
 

@@ -18,6 +18,7 @@ package mongo4cats.client
 
 import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
+import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient, MongoClients}
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
@@ -26,9 +27,12 @@ import mongo4cats.helpers._
 import scala.jdk.CollectionConverters._
 
 abstract class MongoClient[F[_]] {
+  def clusterDescription: ClusterDescription
   def getDatabase(name: String): F[MongoDatabase[F]]
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
+  def startSession(options: ClientSessionOptions): F[ClientSession[F]]
+  def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
 }
 
 final private class LiveMongoClient[F[_]](
@@ -36,6 +40,7 @@ final private class LiveMongoClient[F[_]](
 )(implicit
     val F: Async[F]
 ) extends MongoClient[F] {
+  def clusterDescription: ClusterDescription = client.getClusterDescription
 
   def getDatabase(name: String): F[MongoDatabase[F]] =
     F.delay(client.getDatabase(name)).flatMap(MongoDatabase.make[F])
@@ -45,6 +50,9 @@ final private class LiveMongoClient[F[_]](
 
   def listDatabases: F[Iterable[Document]] =
     client.listDatabases().asyncIterable[F]
+
+  def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
+    client.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
 }
 
 object MongoClient {
