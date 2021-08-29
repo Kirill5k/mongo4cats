@@ -56,6 +56,7 @@ abstract class MongoDatabase[F[_]] {
   }
 
   def listCollectionNames: F[Iterable[String]]
+
   def listCollections[T: ClassTag]: F[Iterable[T]]
   def listCollections[T: ClassTag](clientSession: ClientSession[F]): F[Iterable[T]]
   def listCollections: F[Iterable[Document]]                                    = listCollections[Document]
@@ -63,8 +64,10 @@ abstract class MongoDatabase[F[_]] {
   def listCollectionsWithCodec[T: ClassTag: MongoCodecProvider]: F[Iterable[T]] = withAddedCodec[T].listCollections[T]
   def listCollectionsWithCodec[T: ClassTag: MongoCodecProvider](clientSession: ClientSession[F]): F[Iterable[T]] =
     withAddedCodec[T].listCollections[T](clientSession)
+
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
+
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
   def getCollection(name: String): F[MongoCollection[F, Document]] =
     getCollection[Document](name, MongoDatabase.DefaultCodecRegistry)
