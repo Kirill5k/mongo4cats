@@ -54,17 +54,18 @@ abstract class MongoDatabase[F[_]] {
   }
 
   def listCollectionNames: F[Iterable[String]]
-  def listCollections: F[Iterable[Document]]
-  def listCollections(clientSession: ClientSession[F]): F[Iterable[Document]]
   def listCollections[T: ClassTag]: F[Iterable[T]]
   def listCollections[T: ClassTag](clientSession: ClientSession[F]): F[Iterable[T]]
+  def listCollections: F[Iterable[Document]]                                    = listCollections[Document]
+  def listCollections(clientSession: ClientSession[F]): F[Iterable[Document]]   = listCollections[Document](clientSession)
   def listCollectionsWithCodec[T: ClassTag: MongoCodecProvider]: F[Iterable[T]] = withAddedCodec[T].listCollections[T]
   def listCollectionsWithCodec[T: ClassTag: MongoCodecProvider](clientSession: ClientSession[F]): F[Iterable[T]] =
     withAddedCodec[T].listCollections[T](clientSession)
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
-  def getCollection(name: String): F[MongoCollection[F, Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
+  def getCollection(name: String): F[MongoCollection[F, Document]] =
+    getCollection[Document](name, MongoDatabase.DefaultCodecRegistry)
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
 
@@ -110,18 +111,11 @@ final private class LiveMongoDatabase[F[_]](
 
   def listCollectionNames: F[Iterable[String]] =
     database.listCollectionNames().asyncIterable[F]
-  def listCollections: F[Iterable[Document]] =
-    database.listCollections().asyncIterable[F]
-  def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
-    database.listCollections(cs.session).asyncIterable[F]
+
   def listCollections[T: ClassTag]: F[Iterable[T]] =
     database.listCollections[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
     database.listCollections[T](cs.session, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
-
-  def getCollection(name: String): F[MongoCollection[F, Document]] =
-    F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
-      .flatMap(MongoCollection.make[F, Document])
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
