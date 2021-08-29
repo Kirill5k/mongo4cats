@@ -19,7 +19,6 @@ package mongo4cats.database
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.flatMap._
-import cats.syntax.functor._
 import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import mongo4cats.client.ClientSession
@@ -67,7 +66,7 @@ abstract class MongoDatabase[F[_]] {
   def getCollection(name: String): F[MongoCollection[F, Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
-    getCollection[T](name, fromRegistries(fromProviders(cp.get)))
+    getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
 
   /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
     */
@@ -120,17 +119,25 @@ final private class LiveMongoDatabase[F[_]](
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
     database.listCollections[T](cs.session, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
 
+  def getCollection(name: String): F[MongoCollection[F, Document]] =
+    F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
+      .flatMap(MongoCollection.make[F, Document])
+
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    F.delay {
+      database
+        .getCollection[T](name, clazz)
+        .withCodecRegistry(codecRegistry)
+        .withDocumentClass[T](clazz)
+    }.flatMap(MongoCollection.make[F, T])
+  }
+
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]
 
   def drop: F[Unit]                       = database.drop().asyncVoid[F]
   def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.session).asyncVoid[F]
-
-  def getCollection(name: String): F[MongoCollection[F, Document]] =
-    F.delay(database.getCollection(name)).flatMap(MongoCollection.make[F, Document])
-
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
-    getCollection(name).map(_.withAddedCodec(codecRegistry).as[T])
 }
 
 object MongoDatabase {
