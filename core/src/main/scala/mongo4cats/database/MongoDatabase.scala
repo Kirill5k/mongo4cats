@@ -66,7 +66,7 @@ abstract class MongoDatabase[F[_]] {
   def getCollection(name: String): F[MongoCollection[F, Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
-    getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
+    getCollection[T](name, fromRegistries(fromProviders(cp.get)))
 
   /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
     */
@@ -143,5 +143,5 @@ object MongoDatabase {
   val DefaultCodecRegistry: CodecRegistry = MongoClientSettings.getDefaultCodecRegistry
 
   private[mongo4cats] def make[F[_]: Async](database: JMongoDatabase): F[MongoDatabase[F]] =
-    Monad[F].pure(new LiveMongoDatabase[F](database))
+    Monad[F].pure(new LiveMongoDatabase[F](database).withAddedCodec(DefaultCodecRegistry))
 }
