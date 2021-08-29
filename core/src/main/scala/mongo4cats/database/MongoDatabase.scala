@@ -78,7 +78,7 @@ abstract class MongoDatabase[F[_]] {
     *   the client session with which to associate this operation [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
     * @since 1.7
     */
-  def drop(session: ClientSession[F]): F[Unit]
+  def drop(clientSession: ClientSession[F]): F[Unit]
 }
 
 final private class LiveMongoDatabase[F[_]](
@@ -110,8 +110,8 @@ final private class LiveMongoDatabase[F[_]](
     database.listCollectionNames().asyncIterable[F]
   def listCollections: F[Iterable[Document]] =
     database.listCollections().asyncIterable[F]
-  def listCollections(clientSession: ClientSession[F]): F[Iterable[Document]] =
-    database.listCollections(clientSession.session).asyncIterable[F]
+  def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
+    database.listCollections(cs.session).asyncIterable[F]
   def listCollections[T: ClassTag]: F[Iterable[T]] =
     database.listCollections[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
@@ -134,8 +134,8 @@ final private class LiveMongoDatabase[F[_]](
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]
 
-  def drop: F[Unit]                                  = database.drop().asyncVoid[F]
-  def drop(clientSession: ClientSession[F]): F[Unit] = database.drop(clientSession.session).asyncVoid[F]
+  def drop: F[Unit]                       = database.drop().asyncVoid[F]
+  def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.session).asyncVoid[F]
 }
 
 object MongoDatabase {

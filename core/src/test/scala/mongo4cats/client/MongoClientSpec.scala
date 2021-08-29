@@ -67,9 +67,9 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           .fromConnectionString[IO]("mongodb://localhost:12345")
           .use { client =>
             for {
-              db1   <- client.getDatabase("db1")
-              _     <- db1.createCollection("coll")
-              dbs   <- client.listDatabases
+              db1 <- client.getDatabase("db1")
+              _   <- db1.createCollection("coll")
+              dbs <- client.listDatabases
             } yield dbs
           }
           .map { dbs =>

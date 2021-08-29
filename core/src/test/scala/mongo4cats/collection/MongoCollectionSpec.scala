@@ -41,9 +41,9 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       "set write concern" in {
         withEmbeddedMongoDatabase { db =>
           val result = for {
-            coll         <- db.getCollection("coll")
+            coll <- db.getCollection("coll")
             updColl = coll.withWriteConcern(WriteConcern.UNACKNOWLEDGED)
-            wc = updColl.writeConcern
+            wc      = updColl.writeConcern
           } yield wc
 
           result.map(_ mustBe WriteConcern.UNACKNOWLEDGED)
@@ -53,9 +53,9 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       "set read concern" in {
         withEmbeddedMongoDatabase { db =>
           val result = for {
-            coll         <- db.getCollection("coll")
+            coll <- db.getCollection("coll")
             updColl = coll.witReadConcern(ReadConcern.MAJORITY)
-            rc = updColl.readConcern
+            rc      = updColl.readConcern
           } yield rc
 
           result.map(_ mustBe ReadConcern.MAJORITY)
@@ -65,9 +65,9 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       "set read preference" in {
         withEmbeddedMongoDatabase { db =>
           val result = for {
-            coll         <- db.getCollection("coll")
+            coll <- db.getCollection("coll")
             updColl = coll.withReadPreference(ReadPreference.primaryPreferred())
-            rc = updColl.readPreference
+            rc      = updColl.readPreference
           } yield rc
 
           result.map(_ mustBe ReadPreference.primaryPreferred())
