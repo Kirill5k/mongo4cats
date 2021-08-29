@@ -36,11 +36,48 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
-              names <- db.collectionNames
+              names <- db.listCollectionNames
             } yield names
           }
           .attempt
           .map(_ mustBe Right(Nil))
+      }.unsafeToFuture()
+    }
+
+    "return current database names" in {
+      withRunningEmbeddedMongo {
+        MongoClient
+          .fromConnectionString[IO]("mongodb://localhost:12345")
+          .use { client =>
+            for {
+              db1   <- client.getDatabase("db1")
+              _     <- db1.createCollection("coll")
+              db2   <- client.getDatabase("db2")
+              _     <- db2.createCollection("coll")
+              names <- client.listDatabaseNames
+            } yield names
+          }
+          .map(_ mustBe List("admin", "config", "db1", "db2", "local"))
+      }.unsafeToFuture()
+    }
+
+    "return current databases" in {
+      withRunningEmbeddedMongo {
+        MongoClient
+          .fromConnectionString[IO]("mongodb://localhost:12345")
+          .use { client =>
+            for {
+              db1   <- client.getDatabase("db1")
+              _     <- db1.createCollection("coll")
+              dbs   <- client.listDatabases
+            } yield dbs
+          }
+          .map { dbs =>
+            dbs must have size 4
+            val adminDb = dbs.head
+            adminDb.getString("name") mustBe "admin"
+            adminDb.getBoolean("empty") mustBe false
+          }
       }.unsafeToFuture()
     }
 
@@ -51,7 +88,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
-              names <- db.collectionNames
+              names <- db.listCollectionNames
             } yield names
           }
           .attempt
@@ -66,7 +103,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           .use { client =>
             for {
               db    <- client.getDatabase("test-db")
-              names <- db.collectionNames
+              names <- db.listCollectionNames
             } yield names
           }
           .attempt

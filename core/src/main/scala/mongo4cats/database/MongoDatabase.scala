@@ -21,6 +21,7 @@ import cats.effect.Async
 import cats.syntax.flatMap._
 import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
+import mongo4cats.client.ClientSession
 import mongo4cats.collection.{MongoCodecProvider, MongoCollection}
 import mongo4cats.helpers._
 import org.bson.Document
@@ -44,21 +45,40 @@ abstract class MongoDatabase[F[_]] {
 
   def codecs: CodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F]
-  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoDatabase[F] = {
-    val classY: Class[Y] = implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
-    Try(codecs.get(classY)) match {
+  def withAddedCodec[T](implicit classTag: ClassTag[T], cp: MongoCodecProvider[T]): MongoDatabase[F] = {
+    val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    Try(codecs.get(classT)) match {
       case Failure(_) => withAddedCodec(fromProviders(cp.get))
       case Success(_) => this
     }
   }
 
-  def collectionNames: F[Iterable[String]]
+  def listCollectionNames: F[Iterable[String]]
+  def listCollections: F[Iterable[Document]]
+  def listCollections(clientSession: ClientSession[F]): F[Iterable[Document]]
+  def listCollections[T: ClassTag]: F[Iterable[T]]
+  def listCollections[T: ClassTag](clientSession: ClientSession[F]): F[Iterable[T]]
+  def listCollectionsWithCodec[T: ClassTag: MongoCodecProvider]: F[Iterable[T]] = withAddedCodec[T].listCollections[T]
+  def listCollectionsWithCodec[T: ClassTag: MongoCodecProvider](clientSession: ClientSession[F]): F[Iterable[T]] =
+    withAddedCodec[T].listCollections[T](clientSession)
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
   def getCollection(name: String): F[MongoCollection[F, Document]]
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
     getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
+
+  /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
+    */
+  def drop: F[Unit]
+
+  /** Drops this database.
+    *
+    * @param clientSession
+    *   the client session with which to associate this operation [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
+    * @since 1.7
+    */
+  def drop(session: ClientSession[F]): F[Unit]
 }
 
 final private class LiveMongoDatabase[F[_]](
@@ -86,6 +106,17 @@ final private class LiveMongoDatabase[F[_]](
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
     new LiveMongoDatabase[F](database.withCodecRegistry(codecRegistry))
 
+  def listCollectionNames: F[Iterable[String]] =
+    database.listCollectionNames().asyncIterable[F]
+  def listCollections: F[Iterable[Document]] =
+    database.listCollections().asyncIterable[F]
+  def listCollections(clientSession: ClientSession[F]): F[Iterable[Document]] =
+    database.listCollections(clientSession.session).asyncIterable[F]
+  def listCollections[T: ClassTag]: F[Iterable[T]] =
+    database.listCollections[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
+  def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
+    database.listCollections[T](cs.session, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
+
   def getCollection(name: String): F[MongoCollection[F, Document]] =
     F.delay(database.getCollection(name).withCodecRegistry(MongoDatabase.DefaultCodecRegistry))
       .flatMap(MongoCollection.make[F, Document])
@@ -100,11 +131,11 @@ final private class LiveMongoDatabase[F[_]](
     }.flatMap(MongoCollection.make[F, T])
   }
 
-  def collectionNames: F[Iterable[String]] =
-    database.listCollectionNames().asyncIterable[F]
-
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]
+
+  def drop: F[Unit]                                  = database.drop().asyncVoid[F]
+  def drop(clientSession: ClientSession[F]): F[Unit] = database.drop(clientSession.session).asyncVoid[F]
 }
 
 object MongoDatabase {

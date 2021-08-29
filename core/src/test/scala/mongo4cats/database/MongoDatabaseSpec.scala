@@ -86,10 +86,27 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
             db    <- client.getDatabase("foo")
             _     <- db.createCollection("c1", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
             _     <- db.createCollection("c2")
-            names <- db.collectionNames
+            names <- db.listCollectionNames
           } yield names
 
           result.map(_ mustBe List("c2", "c1"))
+        }
+      }
+
+      "return current collections" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db    <- client.getDatabase("foo")
+            _     <- db.createCollection("c1")
+            colls <- db.listCollections
+          } yield colls
+
+          result.map { colls =>
+            colls must have size 1
+            val c1 = colls.head
+            c1.getString("name") mustBe "c1"
+            c1.get("type") mustBe "collection"
+          }
         }
       }
 
@@ -105,6 +122,23 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
             col.namespace.getDatabaseName mustBe "foo"
             col.namespace.getCollectionName mustBe "c1"
             col.documentClass mustBe classOf[Document]
+          }
+        }
+      }
+    }
+
+    "drop" should {
+      "delete a database" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db  <- client.getDatabase("foo")
+            _   <- db.createCollection("c1")
+            _   <- db.drop
+            dbs <- client.listDatabaseNames
+          } yield dbs
+
+          result.map { dbs =>
+            dbs must not contain "foo"
           }
         }
       }
