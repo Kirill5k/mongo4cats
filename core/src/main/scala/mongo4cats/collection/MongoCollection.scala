@@ -26,7 +26,6 @@ import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilde
 import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
-import mongo4cats.database.MongoDatabase
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 
@@ -484,6 +483,6 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
 object MongoCollection {
 
   private[mongo4cats] def make[F[_]: Async, T: ClassTag](collection: JMongoCollection[T]): F[MongoCollection[F, T]] =
-    Monad[F].pure(new LiveMongoCollection(collection).withAddedCodec(MongoDatabase.DefaultCodecRegistry))
+    Monad[F].pure(new LiveMongoCollection(collection))
 
 }

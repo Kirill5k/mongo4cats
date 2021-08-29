@@ -19,6 +19,7 @@ package mongo4cats.database
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.flatMap._
+import cats.syntax.functor._
 import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import mongo4cats.client.ClientSession
@@ -103,8 +104,10 @@ final private class LiveMongoDatabase[F[_]](
     new LiveMongoDatabase[F](database.withReadConcern(readConcern))
 
   def codecs: CodecRegistry = database.getCodecRegistry
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
-    new LiveMongoDatabase[F](database.withCodecRegistry(codecRegistry))
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] = {
+    val newCodecs = fromRegistries(codecs, codecRegistry)
+    new LiveMongoDatabase[F](database.withCodecRegistry(newCodecs))
+  }
 
   def listCollectionNames: F[Iterable[String]] =
     database.listCollectionNames().asyncIterable[F]
@@ -117,24 +120,17 @@ final private class LiveMongoDatabase[F[_]](
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
     database.listCollections[T](cs.session, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
 
-  def getCollection(name: String): F[MongoCollection[F, Document]] =
-    F.delay(database.getCollection(name)).flatMap(MongoCollection.make[F, Document])
-
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    F.delay {
-      database
-        .getCollection[T](name, clazz)
-        .withCodecRegistry(codecRegistry)
-        .withDocumentClass[T](clazz)
-    }.flatMap(MongoCollection.make[F, T])
-  }
-
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]
 
   def drop: F[Unit]                       = database.drop().asyncVoid[F]
   def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.session).asyncVoid[F]
+
+  def getCollection(name: String): F[MongoCollection[F, Document]] =
+    F.delay(database.getCollection(name)).flatMap(MongoCollection.make[F, Document])
+
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
+    getCollection(name).map(_.withAddedCodec(codecRegistry).as[T])
 }
 
 object MongoDatabase {
