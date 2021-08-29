@@ -19,7 +19,7 @@ package mongo4cats.collection
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
-import com.mongodb.MongoNamespace
+import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.client.result._
 import mongo4cats.helpers._
 import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
@@ -33,8 +33,18 @@ import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-trait MongoCollection[F[_], T] {
+abstract class MongoCollection[F[_], T] {
   def namespace: MongoNamespace
+
+  def readPreference: ReadPreference
+  def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T]
+
+  def writeConcern: WriteConcern
+  def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T]
+
+  def readConcern: ReadConcern
+  def witReadConcern(readConcern: ReadConcern): MongoCollection[F, T]
+
   def documentClass: Class[T]
   def as[Y: ClassTag]: MongoCollection[F, Y]
 
@@ -374,6 +384,16 @@ trait MongoCollection[F[_], T] {
 final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     private val collection: JMongoCollection[T]
 ) extends MongoCollection[F, T] {
+
+  def readPreference: ReadPreference = collection.getReadPreference
+  def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T] =
+    new LiveMongoCollection[F, T](collection.withReadPreference(readPreference))
+  def writeConcern: WriteConcern = collection.getWriteConcern
+  def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T] =
+    new LiveMongoCollection[F, T](collection.withWriteConcern(writeConcert))
+  def readConcern: ReadConcern = collection.getReadConcern
+  def witReadConcern(readConcern: ReadConcern): MongoCollection[F, T] =
+    new LiveMongoCollection[F, T](collection.withReadConcern(readConcern))
 
   private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
     coll.withDocumentClass[Y](implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]])

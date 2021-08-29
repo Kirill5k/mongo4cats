@@ -25,7 +25,7 @@ import mongo4cats.helpers._
 
 import scala.jdk.CollectionConverters._
 
-trait MongoClient[F[_]] {
+abstract class MongoClient[F[_]] {
   def getDatabase(name: String): F[MongoDatabase[F]]
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]

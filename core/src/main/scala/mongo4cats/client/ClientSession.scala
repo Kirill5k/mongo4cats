@@ -58,11 +58,11 @@ abstract class ClientSession[F[_]] {
     */
   def commitTransaction: F[Unit]
 
-  private[client] def session: JClientSession
+  private[mongo4cats] def session: JClientSession
 }
 
 final private class LiveClientSession[F[_]](
-    private[client] val session: JClientSession
+    private[mongo4cats] val session: JClientSession
 )(implicit F: Async[F])
     extends ClientSession[F] {
 

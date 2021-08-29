@@ -18,6 +18,7 @@ package mongo4cats.database
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
@@ -30,41 +31,81 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort: Int = 12346
 
-  "A MongoDatabase" should {
+  "A MongoDatabase" when {
 
-    "return db name" in {
-      withEmbeddedMongoClient { client =>
-        client.getDatabase("foo").map { db =>
-          db.name mustBe "foo"
+    "updating preferences" should {
+      "return db name" in {
+        withEmbeddedMongoClient { client =>
+          client.getDatabase("foo").map { db =>
+            db.name mustBe "foo"
+          }
+        }
+      }
+
+      "set write concern" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db <- client.getDatabase("test")
+            updDb = db.withWriteConcern(WriteConcern.UNACKNOWLEDGED)
+            wc    = updDb.writeConcern
+          } yield wc
+
+          result.map(_ mustBe WriteConcern.UNACKNOWLEDGED)
+        }
+      }
+
+      "set read concern" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db <- client.getDatabase("test")
+            updDb = db.witReadConcern(ReadConcern.MAJORITY)
+            rc    = updDb.readConcern
+          } yield rc
+
+          result.map(_ mustBe ReadConcern.MAJORITY)
+        }
+      }
+
+      "set read preference" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db <- client.getDatabase("test")
+            updDb = db.withReadPreference(ReadPreference.primaryPreferred())
+            rc    = updDb.readPreference
+          } yield rc
+
+          result.map(_ mustBe ReadPreference.primaryPreferred())
         }
       }
     }
 
-    "create new collections and return collection names" in {
-      withEmbeddedMongoClient { client =>
-        val result = for {
-          db    <- client.getDatabase("foo")
-          _     <- db.createCollection("c1", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
-          _     <- db.createCollection("c2")
-          names <- db.collectionNames
-        } yield names
+    "interacting with collections" should {
+      "create new collections and return collection names" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db    <- client.getDatabase("foo")
+            _     <- db.createCollection("c1", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
+            _     <- db.createCollection("c2")
+            names <- db.collectionNames
+          } yield names
 
-        result.map(_ mustBe List("c2", "c1"))
+          result.map(_ mustBe List("c2", "c1"))
+        }
       }
-    }
 
-    "return document collection by name" in {
-      withEmbeddedMongoClient { client =>
-        val result = for {
-          db         <- client.getDatabase("foo")
-          _          <- db.createCollection("c1")
-          collection <- db.getCollection("c1")
-        } yield collection
+      "return document collection by name" in {
+        withEmbeddedMongoClient { client =>
+          val result = for {
+            db         <- client.getDatabase("foo")
+            _          <- db.createCollection("c1")
+            collection <- db.getCollection("c1")
+          } yield collection
 
-        result.map { col =>
-          col.namespace.getDatabaseName mustBe "foo"
-          col.namespace.getCollectionName mustBe "c1"
-          col.documentClass mustBe classOf[Document]
+          result.map { col =>
+            col.namespace.getDatabaseName mustBe "foo"
+            col.namespace.getCollectionName mustBe "c1"
+            col.documentClass mustBe classOf[Document]
+          }
         }
       }
     }

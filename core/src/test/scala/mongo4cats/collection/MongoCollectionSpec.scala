@@ -19,6 +19,7 @@ package mongo4cats.collection
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
@@ -36,6 +37,44 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
   override val mongoPort = 12347
 
   "A MongoCollection" when {
+    "updating preferences" should {
+      "set write concern" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            coll         <- db.getCollection("coll")
+            updColl = coll.withWriteConcern(WriteConcern.UNACKNOWLEDGED)
+            wc = updColl.writeConcern
+          } yield wc
+
+          result.map(_ mustBe WriteConcern.UNACKNOWLEDGED)
+        }
+      }
+
+      "set read concern" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            coll         <- db.getCollection("coll")
+            updColl = coll.witReadConcern(ReadConcern.MAJORITY)
+            rc = updColl.readConcern
+          } yield rc
+
+          result.map(_ mustBe ReadConcern.MAJORITY)
+        }
+      }
+
+      "set read preference" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            coll         <- db.getCollection("coll")
+            updColl = coll.withReadPreference(ReadPreference.primaryPreferred())
+            rc = updColl.readPreference
+          } yield rc
+
+          result.map(_ mustBe ReadPreference.primaryPreferred())
+        }
+      }
+    }
+
     "working with Documents" should {
 
       "insertOne" should {
