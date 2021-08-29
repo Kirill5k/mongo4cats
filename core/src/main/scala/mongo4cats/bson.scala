@@ -20,6 +20,10 @@ import org.bson.types.{ObjectId => JObjectId}
 import org.bson.{Document => JDocument}
 import cats.syntax.alternative._
 import cats.syntax.functor._
+import mongo4cats.collection.MongoCodecProvider
+import org.bson.codecs.DocumentCodecProvider
+import org.bson.codecs.configuration.CodecProvider
+
 import java.time.Instant
 import java.util.Date
 import scala.jdk.CollectionConverters._
@@ -35,6 +39,10 @@ object bson {
     def parse(json: String): Document               = JDocument.parse(json)
     def from(json: String): Document                = parse(json)
     def from(doc: Document): Document               = parse(doc.toJson)
+
+    implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
+      override def get: CodecProvider = new DocumentCodecProvider()
+    }
   }
 
   type ObjectId = JObjectId
