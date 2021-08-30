@@ -33,12 +33,12 @@ object ManagingTransactions extends IOApp.Simple {
         _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
         _       <- session.abortTransaction
         count1  <- coll.count
-        _       <- IO.println(s"should be 0: $count1")
+        _       <- IO.println(s"should be 0 since transaction was aborted: $count1")
         _       <- session.startTransaction
         _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
         _       <- session.commitTransaction
         count2  <- coll.count
-        _       <- IO.println(s"should be 100: $count2")
+        _       <- IO.println(s"should be 100 since transaction was committed: $count2")
       } yield ()
     }
 }
