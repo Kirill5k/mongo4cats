@@ -97,8 +97,7 @@ abstract class MongoDatabase[F[_]] {
     runCommandWithCodec[Document](clientSession, command)
   def runCommand(command: Bson, readPreference: ReadPreference): F[Document] =
     runCommandWithCodec[Document](command, readPreference)
-  def runCommand(command: Bson): F[Document] =
-    runCommandWithCodec[Document](command, ReadPreference.primary)
+  def runCommand(command: Bson): F[Document] = runCommandWithCodec[Document](command, ReadPreference.primary)
 
   /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
     */
