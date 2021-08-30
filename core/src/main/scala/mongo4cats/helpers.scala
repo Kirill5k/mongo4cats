@@ -26,9 +26,13 @@ import fs2.Stream
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
 import scala.collection.mutable.ListBuffer
+import scala.reflect.ClassTag
 import scala.util.Either
 
 private[mongo4cats] object helpers {
+
+  def clazz[Y: ClassTag]: Class[Y] =
+    implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
 
   implicit final class PublisherOps[T](private val publisher: Publisher[T]) extends AnyVal {
     def asyncSingle[F[_]: Async]: F[T] =

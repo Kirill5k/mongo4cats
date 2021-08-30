@@ -19,19 +19,19 @@ package mongo4cats.database
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.flatMap._
-import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
+import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
+import mongo4cats.bson.Document
+import mongo4cats.bson.Document._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.{MongoCodecProvider, MongoCollection}
 import mongo4cats.helpers._
-import mongo4cats.bson.Document
-import mongo4cats.bson.Document._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 abstract class MongoDatabase[F[_]] {
   def name: String
@@ -47,13 +47,8 @@ abstract class MongoDatabase[F[_]] {
 
   def codecs: CodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F]
-  def withAddedCodec[T](implicit classTag: ClassTag[T], cp: MongoCodecProvider[T]): MongoDatabase[F] = {
-    val classT: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    Try(codecs.get(classT)) match {
-      case Failure(_) => withAddedCodec(fromProviders(cp.get))
-      case Success(_) => this
-    }
-  }
+  def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): MongoDatabase[F] =
+    Try(codecs.get(clazz[T])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
 
   def listCollectionNames: F[Iterable[String]]
 
@@ -85,25 +80,25 @@ abstract class MongoDatabase[F[_]] {
     * @since 1.7
     */
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](
-      command: Bson,
       clientSession: ClientSession[F],
+      command: Bson,
       readPreference: ReadPreference
   ): F[T]
 
-  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, clientSession: ClientSession[F]): F[T] =
-    runCommandWithCodec[T](command, clientSession, ReadPreference.primary)
+  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](clientSession: ClientSession[F], command: Bson): F[T] =
+    runCommandWithCodec[T](clientSession, command, ReadPreference.primary)
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson): F[T] =
-    runCommandWithCodec[T](command, null, ReadPreference.primary)
+    runCommandWithCodec[T](null, command, ReadPreference.primary)
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, readPreference: ReadPreference): F[T] =
-    runCommandWithCodec[T](command, null, readPreference)
-  def runCommand(command: Bson, clientSession: ClientSession[F], readPreference: ReadPreference): F[Document] =
-    runCommandWithCodec[Document](command, clientSession, readPreference)
-  def runCommand(command: Bson, clientSession: ClientSession[F]): F[Document] =
-    runCommandWithCodec[Document](command, clientSession, ReadPreference.primary)
+    runCommandWithCodec[T](null, command, readPreference)
+  def runCommand(clientSession: ClientSession[F], command: Bson, readPreference: ReadPreference): F[Document] =
+    runCommandWithCodec[Document](clientSession, command, readPreference)
+  def runCommand(clientSession: ClientSession[F], command: Bson): F[Document] =
+    runCommandWithCodec[Document](clientSession, command, ReadPreference.primary)
   def runCommand(command: Bson, readPreference: ReadPreference): F[Document] =
-    runCommandWithCodec[Document](command, null, readPreference)
+    runCommandWithCodec[Document](null, command, readPreference)
   def runCommand(command: Bson): F[Document] =
-    runCommandWithCodec[Document](command, null, ReadPreference.primary)
+    runCommandWithCodec[Document](null, command, ReadPreference.primary)
 
   /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
     */
@@ -145,31 +140,24 @@ final private class LiveMongoDatabase[F[_]](
     new LiveMongoDatabase[F](database.withCodecRegistry(newCodecs))
   }
 
-  def listCollectionNames: F[Iterable[String]] =
-    database.listCollectionNames().asyncIterable[F]
-
-  def listCollections[T: ClassTag]: F[Iterable[T]] =
-    database.listCollections[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
+  def listCollectionNames: F[Iterable[String]]     = database.listCollectionNames().asyncIterable[F]
+  def listCollections[T: ClassTag]: F[Iterable[T]] = database.listCollections[T](clazz[T]).asyncIterable[F]
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
-    database.listCollections[T](cs.session, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]).asyncIterable[F]
+    database.listCollections[T](cs.session, clazz[T]).asyncIterable[F]
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {
       database
-        .getCollection[T](name, clazz)
+        .getCollection[T](name, clazz[T])
         .withCodecRegistry(codecRegistry)
-        .withDocumentClass[T](clazz)
+        .withDocumentClass[T](clazz[T])
     }.flatMap(MongoCollection.make[F, T])
-  }
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     database.createCollection(name, options).asyncVoid[F]
 
-  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, cs: ClientSession[F], readPreference: ReadPreference): F[T] = {
-    val classT = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(cs.session, command, readPreference, classT).asyncSingle[F]
-  }
+  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[T] =
+    withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(cs.session, command, readPreference, clazz[T]).asyncSingle[F]
 
   def drop: F[Unit]                       = database.drop().asyncVoid[F]
   def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.session).asyncVoid[F]

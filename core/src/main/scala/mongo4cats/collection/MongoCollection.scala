@@ -19,20 +19,20 @@ package mongo4cats.collection
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
-import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.client.result._
-import mongo4cats.helpers._
-import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
-import org.bson.conversions.Bson
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
+import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
+import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
+import mongo4cats.helpers._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
+import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 abstract class MongoCollection[F[_], T] {
   def namespace: MongoNamespace
@@ -51,13 +51,8 @@ abstract class MongoCollection[F[_], T] {
 
   def codecs: CodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T]
-  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollection[F, T] = {
-    val classY: Class[Y] = implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
-    Try(codecs.get(classY)) match {
-      case Failure(_) => withAddedCodec(fromProviders(cp.get))
-      case Success(_) => this
-    }
-  }
+  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollection[F, T] =
+    Try(codecs.get(clazz[Y])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
 
   /** Drops this collection from the Database.
     *
@@ -455,9 +450,6 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
 
   private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
     coll.withDocumentClass[Y](clazz[Y])
-
-  private def clazz[Y: ClassTag]: Class[Y] =
-    implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
 
   def codecs: CodecRegistry =
     collection.getCodecRegistry
