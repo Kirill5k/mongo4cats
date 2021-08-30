@@ -85,20 +85,20 @@ abstract class MongoDatabase[F[_]] {
       readPreference: ReadPreference
   ): F[T]
 
+  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, readPreference: ReadPreference): F[T]
+
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](clientSession: ClientSession[F], command: Bson): F[T] =
     runCommandWithCodec[T](clientSession, command, ReadPreference.primary)
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson): F[T] =
-    runCommandWithCodec[T](null, command, ReadPreference.primary)
-  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, readPreference: ReadPreference): F[T] =
-    runCommandWithCodec[T](null, command, readPreference)
+    runCommandWithCodec[T](command, ReadPreference.primary)
   def runCommand(clientSession: ClientSession[F], command: Bson, readPreference: ReadPreference): F[Document] =
     runCommandWithCodec[Document](clientSession, command, readPreference)
   def runCommand(clientSession: ClientSession[F], command: Bson): F[Document] =
-    runCommandWithCodec[Document](clientSession, command, ReadPreference.primary)
+    runCommandWithCodec[Document](clientSession, command)
   def runCommand(command: Bson, readPreference: ReadPreference): F[Document] =
-    runCommandWithCodec[Document](null, command, readPreference)
+    runCommandWithCodec[Document](command, readPreference)
   def runCommand(command: Bson): F[Document] =
-    runCommandWithCodec[Document](null, command, ReadPreference.primary)
+    runCommandWithCodec[Document](command, ReadPreference.primary)
 
   /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
     */
@@ -158,6 +158,9 @@ final private class LiveMongoDatabase[F[_]](
 
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[T] =
     withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(cs.session, command, readPreference, clazz[T]).asyncSingle[F]
+
+  def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, readPreference: ReadPreference): F[T] =
+    withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(command, readPreference, clazz[T]).asyncSingle[F]
 
   def drop: F[Unit]                       = database.drop().asyncVoid[F]
   def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.session).asyncVoid[F]

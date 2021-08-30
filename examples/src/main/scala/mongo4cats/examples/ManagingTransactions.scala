@@ -20,28 +20,25 @@ import cats.effect.{IO, IOApp}
 import cats.syntax.foldable._
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
-import mongo4cats.embedded.EmbeddedMongo
 
-object ManagingTransactions extends IOApp.Simple with EmbeddedMongo {
+object ManagingTransactions extends IOApp.Simple {
 
   override val run: IO[Unit] =
-    withRunningEmbeddedMongo(host = "localhost", port = 27017) {
-      MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-        for {
-          session <- client.startSession
-          db      <- client.getDatabase("testdb")
-          coll    <- db.getCollection("docs")
-          _       <- session.startTransaction
-          _       <- (0 to 99).toList.traverse_(i => coll.insertOne(Document("name" -> s"doc-$i")))
-          _       <- session.abortTransaction
-          count1  <- coll.count
-          _       <- IO.println(s"should be 0: $count1")
-          _       <- session.startTransaction
-          _       <- (0 to 99).toList.traverse_(i => coll.insertOne(Document("name" -> s"doc-$i")))
-          _       <- session.commitTransaction
-          count2  <- coll.count
-          _       <- IO.println(s"should be 100: $count2")
-        } yield ()
-      }
+    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
+      for {
+        db      <- client.getDatabase("testdb")
+        coll    <- db.createCollection("docs") *> db.getCollection("docs")
+        session <- client.startSession
+        _       <- session.startTransaction
+        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
+        _       <- session.abortTransaction
+        count1  <- coll.count
+        _       <- IO.println(s"should be 0: $count1")
+        _       <- session.startTransaction
+        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
+        _       <- session.commitTransaction
+        count2  <- coll.count
+        _       <- IO.println(s"should be 100: $count2")
+      } yield ()
     }
 }
