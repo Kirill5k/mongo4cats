@@ -277,7 +277,7 @@ trait Aggregate {
 }
 
 object Aggregate {
-  private val empty: Aggregate = AggregateBuilder(Nil)
+  val empty: Aggregate = AggregateBuilder(Nil)
 
   def bucketAuto[TExpression](
       groupBy: TExpression,
