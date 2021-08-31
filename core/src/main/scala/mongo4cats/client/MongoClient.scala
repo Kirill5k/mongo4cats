@@ -31,6 +31,7 @@ abstract class MongoClient[F[_]] {
   def getDatabase(name: String): F[MongoDatabase[F]]
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
+  def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
   def startSession(options: ClientSessionOptions): F[ClientSession[F]]
   def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
 }
@@ -50,6 +51,9 @@ final private class LiveMongoClient[F[_]](
 
   def listDatabases: F[Iterable[Document]] =
     client.listDatabases().asyncIterable[F]
+
+  def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
+    client.listDatabases(cs.session).asyncIterable[F]
 
   def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
     client.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])

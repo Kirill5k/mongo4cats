@@ -63,7 +63,7 @@ private[mongo4cats] object helpers {
           override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
           override def onNext(result: T): Unit            = results += result
           override def onError(e: Throwable): Unit        = k(Left(e))
-          override def onComplete(): Unit                 = k(Right(results))
+          override def onComplete(): Unit                 = k(Right(results.toList))
         })
       }
 
