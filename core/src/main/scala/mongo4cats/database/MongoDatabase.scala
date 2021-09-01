@@ -20,14 +20,13 @@ import cats.Monad
 import cats.effect.Async
 import cats.syntax.flatMap._
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
-import com.mongodb.{MongoClientSettings, ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.bson.Document._
 import mongo4cats.client.ClientSession
-import mongo4cats.collection.{MongoCodecProvider, MongoCollection}
+import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
+import mongo4cats.collection.MongoCollection
 import mongo4cats.helpers._
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 
 import scala.reflect.ClassTag
@@ -48,7 +47,7 @@ abstract class MongoDatabase[F[_]] {
   def codecs: CodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F]
   def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): MongoDatabase[F] =
-    Try(codecs.get(clazz[T])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
+    Try(codecs.get(clazz[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)
 
   def listCollectionNames: F[Iterable[String]]
   def listCollectionNames(session: ClientSession[F]): F[Iterable[String]]
@@ -65,10 +64,9 @@ abstract class MongoDatabase[F[_]] {
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
-  def getCollection(name: String): F[MongoCollection[F, Document]] =
-    getCollection[Document](name, MongoDatabase.DefaultCodecRegistry)
+  def getCollection(name: String): F[MongoCollection[F, Document]] = getCollection[Document](name, CodecRegistry.Default)
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
-    getCollection[T](name, fromRegistries(fromProviders(cp.get), MongoDatabase.DefaultCodecRegistry))
+    getCollection[T](name, CodecRegistry.mergeWithDefault(CodecRegistry.from(cp.get)))
 
   /** Executes command in the context of the current database.
     *
@@ -128,10 +126,8 @@ final private class LiveMongoDatabase[F[_]](
     new LiveMongoDatabase[F](database.withReadConcern(readConcern))
 
   def codecs: CodecRegistry = database.getCodecRegistry
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] = {
-    val newCodecs = fromRegistries(codecs, codecRegistry)
-    new LiveMongoDatabase[F](database.withCodecRegistry(newCodecs))
-  }
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
+    new LiveMongoDatabase[F](database.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
   def listCollectionNames: F[Iterable[String]]                       = database.listCollectionNames().asyncIterable[F]
   def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = database.listCollectionNames(cs.session).asyncIterable[F]
@@ -162,8 +158,6 @@ final private class LiveMongoDatabase[F[_]](
 
 object MongoDatabase {
 
-  val DefaultCodecRegistry: CodecRegistry = MongoClientSettings.getDefaultCodecRegistry
-
   private[mongo4cats] def make[F[_]: Async](database: JMongoDatabase): F[MongoDatabase[F]] =
-    Monad[F].pure(new LiveMongoDatabase[F](database).withAddedCodec(DefaultCodecRegistry))
+    Monad[F].pure(new LiveMongoDatabase[F](database).withAddedCodec(CodecRegistry.Default))
 }

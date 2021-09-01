@@ -19,7 +19,7 @@ package mongo4cats
 import com.mongodb.MongoClientException
 import io.circe.parser.{decode => circeDecode}
 import io.circe.{Decoder, Encoder, Json}
-import mongo4cats.collection.MongoCodecProvider
+import mongo4cats.codecs.MongoCodecProvider
 import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext, StringCodec}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.{BsonReader, BsonType, BsonWriter, Document}

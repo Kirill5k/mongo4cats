@@ -20,7 +20,7 @@ import org.bson.types.{ObjectId => JObjectId}
 import org.bson.{Document => JDocument}
 import cats.syntax.alternative._
 import cats.syntax.functor._
-import mongo4cats.collection.MongoCodecProvider
+import mongo4cats.codecs.MongoCodecProvider
 import org.bson.codecs.DocumentCodecProvider
 import org.bson.codecs.configuration.CodecProvider
 
