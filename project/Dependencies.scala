@@ -2,13 +2,13 @@ import sbt._
 
 object Dependencies {
   private object Versions {
-    val mongodb     = "4.3.1"
-    val fs2         = "3.1.0"
+    val mongodb     = "4.3.3"
+    val fs2         = "3.1.5"
     val scalaCompat = "2.5.0"
     val circe       = "0.14.1"
 
-    val logback   = "1.2.5"
-    val scalaTest = "3.2.9"
+    val logback   = "1.2.6"
+    val scalaTest = "3.2.10"
 
     val embeddedMongo   = "3.0.0"
     val immutableValue  = "2.8.8"
