@@ -15,6 +15,7 @@ ThisBuild / developers             := List(Developer("kirill5k", "Kirill", "immo
 ThisBuild / licenses               := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
 ThisBuild / publishTo              := sonatypePublishToBundle.value
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
