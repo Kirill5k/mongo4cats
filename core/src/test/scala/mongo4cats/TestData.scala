@@ -39,7 +39,7 @@ final case class Transaction(
 )
 
 object TestData {
-  implicit private val random = Random
+  implicit private val random: Random = Random
 
   val USD: Document = Document("symbol" -> "$", "code" -> "USD")
   val GBP: Document = Document("symbol" -> "£", "code" -> "GBP")
@@ -55,7 +55,7 @@ object TestData {
   def transaction(account: Document): Document =
     Document(
       "_id"      -> ObjectId.get,
-      "date"     -> Instant.now().minusMillis(random.nextLong(100000L)),
+      "date"     -> Instant.now().minusSeconds(random.nextInt(1000).toLong),
       "category" -> categories.pickRand,
       "account"  -> account.getObjectId("_id"),
       "amount"   -> random.nextInt(10000)
