@@ -24,7 +24,7 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version
 ```scala
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
-import mongo4cats.database.operations.Filter
+import mongo4cats.collection.operations.Filter
 import mongo4cats.bson.Document
 
 object Quickstart extends IOApp.Simple {
