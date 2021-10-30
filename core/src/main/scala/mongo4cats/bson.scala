@@ -26,19 +26,30 @@ import org.bson.codecs.configuration.CodecProvider
 
 import java.time.Instant
 import java.util.Date
+import scala.collection.Iterable
 import scala.jdk.CollectionConverters._
 
 object bson {
 
   type Document = JDocument
   object Document {
-    val empty: Document                             = new JDocument()
-    def apply[A](entries: Map[String, A]): Document = new JDocument(entries.asInstanceOf[Map[String, AnyRef]].asJava)
-    def apply[A](entries: (String, A)*): Document   = apply[A](entries.toMap[String, A])
-    def apply[A](key: String, value: A): Document   = apply(key -> value)
-    def parse(json: String): Document               = JDocument.parse(json)
-    def from(json: String): Document                = parse(json)
-    def from(doc: Document): Document               = parse(doc.toJson)
+    val empty: Document = new JDocument()
+
+    def apply[A](entries: Map[String, A]): Document = new JDocument(
+      entries
+        .map {
+          case (k, v: Iterable[_]) => (k, v.asJava)
+          case (k, v)              => (k, v)
+        }
+        .asInstanceOf[Map[String, AnyRef]]
+        .asJava
+    )
+
+    def apply[A](entries: (String, A)*): Document = apply[A](entries.toMap[String, A])
+    def apply[A](key: String, value: A): Document = apply(key -> value)
+    def parse(json: String): Document             = JDocument.parse(json)
+    def from(json: String): Document              = parse(json)
+    def from(doc: Document): Document             = parse(doc.toJson)
 
     implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
       override def get: CodecProvider = new DocumentCodecProvider()
