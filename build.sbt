@@ -4,7 +4,7 @@ import microsites.CdnDirectives
 
 lazy val scala212               = "2.12.14"
 lazy val scala213               = "2.13.6"
-lazy val scala3                 = "3.0.1"
+lazy val scala3                 = "3.1.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion           := scala213
@@ -75,7 +75,7 @@ lazy val `mongo4cats-core` = project
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core ++ Dependencies.test,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -87,7 +87,7 @@ lazy val `mongo4cats-circe` = project
     name := "mongo4cats-circe",
     libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -109,7 +109,7 @@ lazy val `mongo4cats-embedded` = project
     name := "mongo4cats-embedded",
     libraryDependencies ++= Dependencies.embedded,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.3.0")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
