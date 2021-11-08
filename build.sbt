@@ -3,7 +3,7 @@ import ReleaseTransformations._
 import microsites.CdnDirectives
 
 lazy val scala212               = "2.12.14"
-lazy val scala213               = "2.13.6"
+lazy val scala213               = "2.13.7"
 lazy val scala3                 = "3.1.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
@@ -15,8 +15,9 @@ ThisBuild / developers             := List(Developer("kirill5k", "Kirill", "immo
 ThisBuild / licenses               := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
 ThisBuild / publishTo              := sonatypePublishToBundle.value
-ThisBuild / githubWorkflowPublishTargetBranches := Seq()
+ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
+ThisBuild / githubWorkflowJavaVersions          := Seq("amazon-corretto@1.17")
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
