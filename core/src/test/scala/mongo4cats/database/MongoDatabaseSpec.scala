@@ -34,112 +34,96 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
   "A MongoDatabase" when {
 
     "updating preferences" should {
-      "return db name" in {
-        withEmbeddedMongoClient { client =>
-          client.getDatabase("foo").map { db =>
-            db.name mustBe "foo"
-          }
+      "return db name" in withEmbeddedMongoClient { client =>
+        client.getDatabase("foo").map { db =>
+          db.name mustBe "foo"
         }
       }
 
-      "set write concern" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db <- client.getDatabase("test")
-            updDb = db.withWriteConcern(WriteConcern.UNACKNOWLEDGED)
-            wc    = updDb.writeConcern
-          } yield wc
+      "set write concern" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db <- client.getDatabase("test")
+          updDb = db.withWriteConcern(WriteConcern.UNACKNOWLEDGED)
+          wc    = updDb.writeConcern
+        } yield wc
 
-          result.map(_ mustBe WriteConcern.UNACKNOWLEDGED)
-        }
+        result.map(_ mustBe WriteConcern.UNACKNOWLEDGED)
       }
 
-      "set read concern" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db <- client.getDatabase("test")
-            updDb = db.witReadConcern(ReadConcern.MAJORITY)
-            rc    = updDb.readConcern
-          } yield rc
+      "set read concern" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db <- client.getDatabase("test")
+          updDb = db.witReadConcern(ReadConcern.MAJORITY)
+          rc    = updDb.readConcern
+        } yield rc
 
-          result.map(_ mustBe ReadConcern.MAJORITY)
-        }
+        result.map(_ mustBe ReadConcern.MAJORITY)
       }
 
-      "set read preference" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db <- client.getDatabase("test")
-            updDb = db.withReadPreference(ReadPreference.primaryPreferred())
-            rc    = updDb.readPreference
-          } yield rc
+      "set read preference" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db <- client.getDatabase("test")
+          updDb = db.withReadPreference(ReadPreference.primaryPreferred())
+          rc    = updDb.readPreference
+        } yield rc
 
-          result.map(_ mustBe ReadPreference.primaryPreferred())
-        }
+        result.map(_ mustBe ReadPreference.primaryPreferred())
       }
     }
 
     "interacting with collections" should {
-      "create new collections and return collection names" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db    <- client.getDatabase("foo")
-            _     <- db.createCollection("c1", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
-            _     <- db.createCollection("c2")
-            names <- db.listCollectionNames
-          } yield names
+      "create new collections and return collection names" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db    <- client.getDatabase("foo")
+          _     <- db.createCollection("c1", CreateCollectionOptions().capped(true).sizeInBytes(1024L))
+          _     <- db.createCollection("c2")
+          names <- db.listCollectionNames
+        } yield names
 
-          result.map(_ mustBe List("c2", "c1"))
+        result.map(_.toSet mustBe Set("c2", "c1"))
+      }
+
+      "return current collections" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db    <- client.getDatabase("foo")
+          _     <- db.createCollection("c1")
+          colls <- db.listCollections
+        } yield colls
+
+        result.map { colls =>
+          colls must have size 1
+          val c1 = colls.head
+          c1.getString("name") mustBe "c1"
+          c1.get("type") mustBe "collection"
         }
       }
 
-      "return current collections" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db    <- client.getDatabase("foo")
-            _     <- db.createCollection("c1")
-            colls <- db.listCollections
-          } yield colls
+      "return document collection by name" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db         <- client.getDatabase("foo")
+          _          <- db.createCollection("c1")
+          collection <- db.getCollection("c1")
+        } yield collection
 
-          result.map { colls =>
-            colls must have size 1
-            val c1 = colls.head
-            c1.getString("name") mustBe "c1"
-            c1.get("type") mustBe "collection"
-          }
-        }
-      }
-
-      "return document collection by name" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db         <- client.getDatabase("foo")
-            _          <- db.createCollection("c1")
-            collection <- db.getCollection("c1")
-          } yield collection
-
-          result.map { col =>
-            col.namespace.getDatabaseName mustBe "foo"
-            col.namespace.getCollectionName mustBe "c1"
-            col.documentClass mustBe classOf[Document]
-          }
+        result.map { col =>
+          col.namespace.getDatabaseName mustBe "foo"
+          col.namespace.getCollectionName mustBe "c1"
+          col.documentClass mustBe classOf[Document]
         }
       }
     }
 
     "drop" should {
-      "delete a database" in {
-        withEmbeddedMongoClient { client =>
-          val result = for {
-            db  <- client.getDatabase("foo")
-            _   <- db.createCollection("c1")
-            _   <- db.drop
-            dbs <- client.listDatabaseNames
-          } yield dbs
+      "delete a database" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db  <- client.getDatabase("foo")
+          _   <- db.createCollection("c1")
+          _   <- db.drop
+          dbs <- client.listDatabaseNames
+        } yield dbs
 
-          result.map { dbs =>
-            dbs must not contain "foo"
-          }
+        result.map { dbs =>
+          dbs must not contain "foo"
         }
       }
     }
