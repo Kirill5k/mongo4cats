@@ -58,8 +58,9 @@ object bson {
 
   type ObjectId = JObjectId
   object ObjectId {
-    def apply(): ObjectId = new JObjectId()
-    def get: ObjectId     = apply()
+    def apply(): ObjectId             = new JObjectId()
+    def get: ObjectId                 = apply()
+    def isValid(hex: String): Boolean = JObjectId.isValid(hex)
 
     /** Constructs a new instance from a 24-byte hexadecimal string representation.
       *
@@ -76,8 +77,7 @@ object bson {
       *   the string to convert
       */
     def from(hex: String): Either[String, ObjectId] =
-      JObjectId
-        .isValid(hex)
+      isValid(hex)
         .guard[Option]
         .as(apply(hex))
         .toRight(s"Invalid hexadecimal representation of an ObjectId $hex")
