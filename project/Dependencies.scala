@@ -10,7 +10,7 @@ object Dependencies {
     val logback   = "1.2.10"
     val scalaTest = "3.2.10"
 
-    val embeddedMongo   = "3.2.0"
+    val embeddedMongo   = "3.2.5"
     val immutableValue  = "2.8.8"
     val commonsCompress = "1.21"
   }
@@ -41,7 +41,6 @@ object Dependencies {
     Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
     Libraries.scalaCompat
-  )
 
   lazy val test = Seq(
     Libraries.logback   % Test,
