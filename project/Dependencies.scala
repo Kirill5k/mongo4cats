@@ -41,6 +41,7 @@ object Dependencies {
     Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
     Libraries.scalaCompat
+  )
 
   lazy val test = Seq(
     Libraries.logback   % Test,
