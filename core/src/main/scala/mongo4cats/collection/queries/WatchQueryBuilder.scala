@@ -116,7 +116,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime[T](startAtOperationTime) :: commands)
 
   def stream: fs2.Stream[F, ChangeStreamDocument[T]] =
-    applyCommands().stream[F]
+    applyCommands().boundedStream[F](1) // minimal latency
 
   def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] =
     applyCommands().boundedStream[F](capacity)

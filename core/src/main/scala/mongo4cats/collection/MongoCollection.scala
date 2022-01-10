@@ -500,22 +500,22 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     FindQueryBuilder[F, T](collection.find(cs.session, filter.toBson), Nil)
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
-    collection.findOneAndDelete(filter, options).asyncSingle[F].map(Option.apply[T])
+    collection.findOneAndDelete(filter, options).asyncOption[F]
 
   def findOneAndDelete(cs: ClientSession[F], filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]] =
-    collection.findOneAndDelete(cs.session, filter.toBson, options).asyncSingle[F].map(Option.apply[T])
+    collection.findOneAndDelete(cs.session, filter.toBson, options).asyncOption[F]
 
   def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]] =
-    collection.findOneAndUpdate(filter, update, options).asyncSingle[F].map(Option.apply[T])
+    collection.findOneAndUpdate(filter, update, options).asyncOption[F]
 
   def findOneAndUpdate(cs: ClientSession[F], filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[Option[T]] =
-    collection.findOneAndUpdate(cs.session, filter.toBson, update.toBson, options).asyncSingle[F].map(Option.apply[T])
+    collection.findOneAndUpdate(cs.session, filter.toBson, update.toBson, options).asyncOption[F]
 
   def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
-    collection.findOneAndReplace(filter, replacement, options).asyncSingle[F].map(Option.apply[T])
+    collection.findOneAndReplace(filter, replacement, options).asyncOption[F]
 
   def findOneAndReplace(cs: ClientSession[F], filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
-    collection.findOneAndReplace(cs.session, filter.toBson, replacement, options).asyncSingle[F].map(Option.apply[T])
+    collection.findOneAndReplace(cs.session, filter.toBson, replacement, options).asyncOption[F]
 
   def dropIndex(name: String, options: DropIndexOptions): F[Unit] = collection.dropIndex(name, options).asyncVoid[F]
   def dropIndex(cs: ClientSession[F], name: String, options: DropIndexOptions): F[Unit] =
