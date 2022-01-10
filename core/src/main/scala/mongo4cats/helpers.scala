@@ -16,18 +16,13 @@
 
 package mongo4cats
 
-import cats.effect.std.{Dispatcher, Queue}
-import cats.effect.{Async, Deferred, Resource}
-import cats.syntax.applicative._
-import cats.syntax.either._
-import cats.syntax.functor._
-import cats.syntax.option._
+import cats.effect.Async
 import fs2.Stream
+import fs2.interop.reactivestreams
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
-import scala.util.Either
 
 private[mongo4cats] object helpers {
 
@@ -38,62 +33,82 @@ private[mongo4cats] object helpers {
     def asyncSingle[F[_]: Async]: F[T] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
-          private var result: T                           = _
-          override def onNext(res: T): Unit               = result = res
-          override def onError(e: Throwable): Unit        = k(Left(e))
-          override def onComplete(): Unit                 = k(Right(result))
-          override def onSubscribe(s: Subscription): Unit = s.request(1)
+          private var result: T                  = _
+          private var subscription: Subscription = null
+
+          override def onNext(res: T): Unit =
+            result = res
+
+          override def onError(e: Throwable): Unit = {
+            subscription.cancel()
+            k(Left(e))
+          }
+
+          override def onComplete(): Unit = {
+            subscription.cancel()
+            k(Right(result))
+          }
+
+          override def onSubscribe(s: Subscription): Unit = {
+            subscription = s
+            subscription.request(1)
+          }
         })
       }
 
     def asyncVoid[F[_]: Async]: F[Unit] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
-          override def onNext(result: T): Unit            = ()
-          override def onError(e: Throwable): Unit        = k(Left(e))
-          override def onComplete(): Unit                 = k(Right(()))
-          override def onSubscribe(s: Subscription): Unit = s.request(1)
+          private var subscription: Subscription = null
+
+          override def onNext(result: T): Unit = ()
+
+          override def onError(e: Throwable): Unit = {
+            subscription.cancel()
+            k(Left(e))
+          }
+
+          override def onComplete(): Unit = {
+            subscription.cancel()
+            k(Right(()))
+          }
+
+          override def onSubscribe(s: Subscription): Unit = {
+            subscription = s
+            subscription.request(1)
+          }
         })
       }
 
     def asyncIterable[F[_]: Async]: F[Iterable[T]] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
-          private val results: ListBuffer[T]              = ListBuffer.empty[T]
-          override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-          override def onNext(result: T): Unit            = results += result
-          override def onError(e: Throwable): Unit        = k(Left(e))
-          override def onComplete(): Unit                 = k(Right(results.toList))
+          private val results: ListBuffer[T]     = ListBuffer.empty[T]
+          private var subscription: Subscription = null
+
+          override def onSubscribe(s: Subscription): Unit = {
+            subscription = s
+            subscription.request(Long.MaxValue)
+          }
+
+          override def onNext(result: T): Unit =
+            results += result
+
+          override def onError(e: Throwable): Unit = {
+            subscription.cancel()
+            k(Left(e))
+          }
+
+          override def onComplete(): Unit = {
+            subscription.cancel()
+            k(Right(results.toList))
+          }
         })
       }
-
     def stream[F[_]: Async]: Stream[F, T] =
-      mkStream(Queue.unbounded)
+      reactivestreams.fromPublisher(publisher, Int.MaxValue)
 
     def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
-      mkStream(Queue.bounded(capacity))
-
-    private def mkStream[F[_]: Async](mkQueue: F[Queue[F, Either[Option[Throwable], T]]]): Stream[F, T] =
-      for {
-        safeGuard  <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
-        queue      <- Stream.eval(mkQueue)
-        dispatcher <- Stream.resource(Dispatcher[F])
-        _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get.void))
-        _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
-          override def onNext(el: T): Unit                = dispatcher.unsafeRunSync(queue.offer(el.asRight))
-          override def onError(err: Throwable): Unit      = dispatcher.unsafeRunSync(queue.offer(err.some.asLeft))
-          override def onComplete(): Unit                 = dispatcher.unsafeRunSync(queue.offer(None.asLeft))
-          override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-        })))
-        stream <- Stream
-          .fromQueueUnterminated(queue)
-          .flatMap[F, T] {
-            case Right(value)    => Stream(value)
-            case Left(None)      => Stream.eval(safeGuard.complete(().asRight)).drain
-            case Left(Some(err)) => Stream.eval(safeGuard.complete(err.asLeft)).drain
-          }
-          .interruptWhen(safeGuard.get)
-          .onFinalize(safeGuard.complete(().asRight).void)
-      } yield stream
+      reactivestreams.fromPublisher(publisher, capacity)
   }
 }
