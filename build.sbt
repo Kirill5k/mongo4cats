@@ -8,16 +8,18 @@ lazy val scala3                 = "3.1.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion           := scala213
-ThisBuild / organization           := "io.github.kirill5k"
+ThisBuild / organization           := "com.precog"
 ThisBuild / homepage               := Some(url("https://kirill5k.github.io/mongo4cats"))
-ThisBuild / scmInfo                := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
+ThisBuild / scmInfo                := Some(ScmInfo(url("https://github.com/precog/mongo4cats"), "git@github.com:precog/mongo4cats.git"))
 ThisBuild / developers             := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses               := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
+ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("precog", "mongo4cats", "bot@precog.com"))
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq("amazon-corretto@1.17")
+ThisBuild / githubOwner := "precog"
+ThisBuild / githubRepository := "mongo4cats"
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
