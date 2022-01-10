@@ -21,6 +21,7 @@ object Dependencies {
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
 
     val fs2Core     = "co.fs2"                 %% "fs2-core"                % Versions.fs2
+    val fs2RS       = "co.fs2"                 %% "fs2-reactive-streams"    % Versions.fs2
     val scalaCompat = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.scalaCompat
 
     val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
@@ -40,6 +41,7 @@ object Dependencies {
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
+    Libraries.fs2RS,
     Libraries.scalaCompat
   )
 
@@ -60,6 +62,7 @@ object Dependencies {
 
   lazy val embedded = Seq(
     Libraries.fs2Core,
+    Libraries.fs2RS,
     Libraries.embeddedMongo,
     Libraries.immutableValue,
     Libraries.commonsCompress
