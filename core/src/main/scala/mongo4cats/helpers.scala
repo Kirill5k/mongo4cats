@@ -19,96 +19,34 @@ package mongo4cats
 import cats.effect.Async
 import fs2.Stream
 import fs2.interop.reactivestreams
-import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import org.reactivestreams.Publisher
 
-import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 private[mongo4cats] object helpers {
+
+  val DefaultStreamChunkSize: Int = 4096
 
   def clazz[Y: ClassTag]: Class[Y] =
     implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
 
   implicit final class PublisherOps[T](private val publisher: Publisher[T]) extends AnyVal {
     def asyncSingle[F[_]: Async]: F[T] =
-      Async[F].async_ { k =>
-        publisher.subscribe(new Subscriber[T] {
-          private var result: T                  = _
-          private var subscription: Subscription = null
+      boundedStream(1).take(1).compile.lastOrError
 
-          override def onNext(res: T): Unit =
-            result = res
-
-          override def onError(e: Throwable): Unit = {
-            subscription.cancel()
-            k(Left(e))
-          }
-
-          override def onComplete(): Unit = {
-            subscription.cancel()
-            k(Right(result))
-          }
-
-          override def onSubscribe(s: Subscription): Unit = {
-            subscription = s
-            subscription.request(1)
-          }
-        })
-      }
+    def asyncOption[F[_]: Async]: F[Option[T]] =
+      boundedStream(1).take(1).compile.last
 
     def asyncVoid[F[_]: Async]: F[Unit] =
-      Async[F].async_ { k =>
-        publisher.subscribe(new Subscriber[T] {
-          private var subscription: Subscription = null
-
-          override def onNext(result: T): Unit = ()
-
-          override def onError(e: Throwable): Unit = {
-            subscription.cancel()
-            k(Left(e))
-          }
-
-          override def onComplete(): Unit = {
-            subscription.cancel()
-            k(Right(()))
-          }
-
-          override def onSubscribe(s: Subscription): Unit = {
-            subscription = s
-            subscription.request(1)
-          }
-        })
-      }
+      boundedStream(1).compile.drain
 
     def asyncIterable[F[_]: Async]: F[Iterable[T]] =
-      Async[F].async_ { k =>
-        publisher.subscribe(new Subscriber[T] {
-          private val results: ListBuffer[T]     = ListBuffer.empty[T]
-          private var subscription: Subscription = null
+      Async[F].widen[List[T], Iterable[T]](boundedStream(Int.MaxValue).compile.toList)
 
-          override def onSubscribe(s: Subscription): Unit = {
-            subscription = s
-            subscription.request(Long.MaxValue)
-          }
-
-          override def onNext(result: T): Unit =
-            results += result
-
-          override def onError(e: Throwable): Unit = {
-            subscription.cancel()
-            k(Left(e))
-          }
-
-          override def onComplete(): Unit = {
-            subscription.cancel()
-            k(Right(results.toList))
-          }
-        })
-      }
     def stream[F[_]: Async]: Stream[F, T] =
-      reactivestreams.fromPublisher(publisher, Int.MaxValue)
+      reactivestreams.fromPublisher(publisher, DefaultStreamChunkSize)
 
-    def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
-      reactivestreams.fromPublisher(publisher, capacity)
+    def boundedStream[F[_]: Async](chunkSize: Int): Stream[F, T] =
+      reactivestreams.fromPublisher(publisher, chunkSize)
   }
 }
