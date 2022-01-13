@@ -64,18 +64,29 @@ lazy val root = project
     crossScalaVersions := Nil
   )
   .aggregate(
+    core,
     `mongo4cats-core`,
     `mongo4cats-circe`,
     `mongo4cats-examples`,
     `mongo4cats-embedded`
   )
 
+lazy val core = project
+  .in(file("core0"))
+  .dependsOn(`mongo4cats-embedded` % "test->compile")
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-core",
+    libraryDependencies ++= Dependencies.core ++ Dependencies.test,
+    test / parallelExecution := false)
+  .enablePlugins(AutomateHeaderPlugin)
+
 lazy val `mongo4cats-core` = project
   .in(file("core"))
   .dependsOn(`mongo4cats-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
-    name := "mongo4cats-core",
+    name := "mongo4cats-core-bak",
     libraryDependencies ++= Dependencies.core ++ Dependencies.test,
     test / parallelExecution := false,
     mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
