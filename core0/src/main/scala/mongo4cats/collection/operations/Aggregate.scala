@@ -16,7 +16,13 @@
 
 package mongo4cats.collection.operations
 
-import com.mongodb.client.model.{Aggregates, BucketAutoOptions, GraphLookupOptions, MergeOptions, UnwindOptions}
+import com.mongodb.client.model.{
+  Aggregates,
+  BucketAutoOptions,
+  GraphLookupOptions,
+  MergeOptions,
+  UnwindOptions
+}
 import mongo4cats.bson.Encoder
 import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
@@ -76,7 +82,7 @@ final case class Aggregate private (private val aggs: List[Bson]) {
     add(Aggregates.replaceWith(value.asBson))
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
-    add(Aggregates.lookup(from, pipeline.toBsons, as))
+    add(Aggregates.lookup(from, pipeline.toBsons.asJava, as))
 
   def graphLookup[T: Encoder](
       from: String,
@@ -86,16 +92,25 @@ final case class Aggregate private (private val aggs: List[Bson]) {
       as: String,
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate =
-    add(Aggregates.graphLookup(from, startWith.asBson, connectFromField, connectToField, as, options))
+    add(
+      Aggregates.graphLookup(
+        from,
+        startWith.asBson,
+        connectFromField,
+        connectToField,
+        as,
+        options
+      )
+    )
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
-    add(Aggregates.unionWith(collection, pipeline.toBsons))
+    add(Aggregates.unionWith(collection, pipeline.toBsons.asJava))
 
   def combineWith(other: Aggregate) =
     copy(aggs = other.aggs ::: aggs)
 
-  def toBsons: java.util.List[Bson] =
-    aggs.reverse.asJava
+  def toBsons: List[Bson] =
+    aggs.reverse
 
   private def add(doc: Bson): Aggregate =
     copy(aggs = doc :: aggs)

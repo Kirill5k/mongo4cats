@@ -166,7 +166,13 @@ object Filter {
   def nearSphere(fieldName: String, geometry: Bson, maxDistance: Double, minDistance: Double) =
     Filter(Filters.nearSphere(fieldName, geometry, maxDistance, minDistance))
 
-  def nearSphere(fieldName: String, x: Double, y: Double, maxDistance: Double, minDistance: Double) =
+  def nearSphere(
+      fieldName: String,
+      x: Double,
+      y: Double,
+      maxDistance: Double,
+      minDistance: Double
+  ) =
     Filter(Filters.nearSphere(fieldName, x, y, maxDistance, minDistance))
 
   def jsonSchema(schema: Bson) =

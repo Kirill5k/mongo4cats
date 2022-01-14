@@ -35,9 +35,6 @@ object helpers {
     def asyncVoid[F[_]: Async]: F[Unit] =
       boundedStream(1).compile.drain
 
-    def asyncIterable[F[_]: Async]: F[Iterable[T]] =
-      Async[F].widen[List[T], Iterable[T]](boundedStream(Int.MaxValue).compile.toList)
-
     def stream[F[_]: Async]: Stream[F, T] =
       reactivestreams.fromPublisher(publisher, DefaultStreamChunkSize)
 

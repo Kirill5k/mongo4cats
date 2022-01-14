@@ -18,7 +18,7 @@ package mongo4cats.bson
 
 import org.bson.{BsonDocument, BsonValue}
 
-import Decoder.DecodeError
+final case class DecodeError(msg: String) extends Throwable
 
 trait Decoder[A] extends Serializable { self =>
   def apply(b: BsonValue): Either[DecodeError, A]
@@ -42,19 +42,30 @@ trait DocumentDecoder[A] extends Serializable { self =>
       self(b).map(f)
   }
 
-  final def flatMap[B](f: A => DocumentDecoder[B]): DocumentDecoder[B] = new DocumentDecoder[B] {
-    final def apply(b: BsonDocument): Either[DecodeError, B] =
-      self(b).flatMap(a => f(a)(b))
-  }
+  final def flatMap[B](f: A => DocumentDecoder[B]): DocumentDecoder[B] =
+    new DocumentDecoder[B] {
+      final def apply(b: BsonDocument): Either[DecodeError, B] =
+        self(b).flatMap(a => f(a)(b))
+    }
 }
 
 object DocumentDecoder {
   def apply[A](implicit ev: DocumentDecoder[A]): DocumentDecoder[A] = ev
+
+  implicit def narrowDecoder[A: Decoder]: DocumentDecoder[A] = new DocumentDecoder[A] {
+    def apply(b: BsonDocument) = Decoder[A].apply(b: BsonValue)
+  }
+
+  implicit val bsonDocumentDecoder: DocumentDecoder[BsonDocument] =
+    new DocumentDecoder[BsonDocument] {
+      def apply(b: BsonDocument) = Right(b)
+    }
 }
 
 object Decoder {
-  // NB: Not this
-  type DecodeError = String
-
   def apply[A](implicit ev: Decoder[A]): Decoder[A] = ev
+
+  implicit val bsonDecoder: Decoder[BsonValue] = new Decoder[BsonValue] {
+    def apply(b: BsonValue) = Right(b)
+  }
 }

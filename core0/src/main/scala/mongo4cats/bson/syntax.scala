@@ -28,10 +28,10 @@ object syntax {
   }
 
   implicit class DecoderOps(val value: BsonValue) {
-    def as[A: Decoder]: Either[Decoder.DecodeError, A] = Decoder[A].apply(value)
+    def as[A: Decoder]: Either[DecodeError, A] = Decoder[A].apply(value)
   }
 
   implicit class DocDecoderOps(val value: BsonDocument) {
-    def as[A: DocumentDecoder]: Either[Decoder.DecodeError, A] = DocumentDecoder[A].apply(value)
+    def as[A: DocumentDecoder]: Either[DecodeError, A] = DocumentDecoder[A].apply(value)
   }
 }

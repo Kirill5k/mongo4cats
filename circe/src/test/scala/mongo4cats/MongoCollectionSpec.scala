@@ -41,7 +41,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
     abstract class Gender(val value: String)
     object Gender {
-      case object Male   extends Gender("male")
+      case object Male extends Gender("male")
       case object Female extends Gender("female")
 
       val all = List(Male, Female)
@@ -74,11 +74,14 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
-          db   <- client.getDatabase("test")
-          _    <- db.createCollection("people")
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
           coll <- db.getCollectionWithCodec[Person]("people")
-          _    <- coll.insertOne(p)
-          filter = Filter.lt("dob", LocalDate.now()) && Filter.lt("registrationDate", Instant.now())
+          _ <- coll.insertOne(p)
+          filter = Filter.lt("dob", LocalDate.now()) && Filter.lt(
+            "registrationDate",
+            Instant.now()
+          )
           people <- coll.find(filter).all
         } yield people
 
@@ -90,10 +93,10 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
-          db     <- client.getDatabase("test")
-          _      <- db.createCollection("people")
-          coll   <- db.getCollectionWithCodec[Person]("people")
-          _      <- coll.insertOne(p)
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
+          _ <- coll.insertOne(p)
           people <- coll.find.all
         } yield people
 
@@ -104,10 +107,12 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     "find distinct nested objects" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db        <- client.getDatabase("test")
-          _         <- db.createCollection("people")
-          coll      <- db.getCollectionWithCodec[Person]("people")
-          _         <- coll.insertMany(List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
+          _ <- coll.insertMany(
+            List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith"))
+          )
           addresses <- coll.withAddedCodec[Address].distinct[Address]("address").all
         } yield addresses
 
@@ -120,10 +125,12 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     "find distinct nested objects via distinctWithCode" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db        <- client.getDatabase("test")
-          _         <- db.createCollection("people")
-          coll      <- db.getCollectionWithCodec[Person]("people")
-          _         <- coll.insertMany(List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith")))
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
+          _ <- coll.insertMany(
+            List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith"))
+          )
           addresses <- coll.distinctWithCodec[Address]("address").all
         } yield addresses
 
@@ -136,10 +143,12 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     "find distinct nested enums" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db      <- client.getDatabase("test")
-          _       <- db.createCollection("people")
-          coll    <- db.getCollectionWithCodec[Person]("people")
-          _       <- coll.insertMany(List(person("Jane", "Doe", Gender.Female), person("John", "Smith")))
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
+          _ <- coll.insertMany(
+            List(person("Jane", "Doe", Gender.Female), person("John", "Smith"))
+          )
           genders <- coll.distinctWithCodec[Gender]("gender").all
         } yield genders
 
@@ -152,10 +161,12 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     "search by nested classes" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db      <- client.getDatabase("test")
-          _       <- db.createCollection("people")
-          coll    <- db.getCollectionWithCodec[Person]("people")
-          _       <- coll.insertMany(List(person("John", "Doe"), person("Jane", "Doe", Gender.Female)))
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
+          _ <- coll.insertMany(
+            List(person("John", "Doe"), person("Jane", "Doe", Gender.Female))
+          )
           females <- coll.withAddedCodec[Gender].find(Filter.eq("gender", Gender.Female)).all
         } yield females
 
@@ -166,8 +177,9 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     }
 
     sealed trait PaymentMethod
-    final case class CreditCard(name: String, number: String, expiry: String, cvv: Int) extends PaymentMethod
-    final case class Paypal(email: String)                                              extends PaymentMethod
+    final case class CreditCard(name: String, number: String, expiry: String, cvv: Int)
+        extends PaymentMethod
+    final case class Paypal(email: String) extends PaymentMethod
 
     final case class Payment(
         id: ObjectId,
@@ -178,15 +190,21 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
     "encode and decode case classes that extend sealed traits" in {
       val ts = Instant.parse("2020-01-01T00:00:00Z")
-      val p1 = Payment(ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
-      val p2 = Payment(ObjectId(), BigDecimal(25), CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
+      val p1 =
+        Payment(ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
+      val p2 = Payment(
+        ObjectId(),
+        BigDecimal(25),
+        CreditCard("John Bloggs", "1234", "1021", 123),
+        ts.plus(2, ChronoUnit.DAYS)
+      )
 
       withEmbeddedMongoClient { client =>
         val result = for {
-          db       <- client.getDatabase("test")
-          _        <- db.createCollection("payments")
-          coll     <- db.getCollectionWithCodec[Payment]("payments")
-          _        <- coll.insertMany(List(p1, p2))
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("payments")
+          coll <- db.getCollectionWithCodec[Payment]("payments")
+          _ <- coll.insertMany(List(p1, p2))
           payments <- coll.find.filter(Filter.gt("date", ts)).all
         } yield payments
 
@@ -194,7 +212,11 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
-    def person(firstName: String = "John", lastName: String = "Bloggs", gender: Gender = Gender.Male): Person =
+    def person(
+        firstName: String = "John",
+        lastName: String = "Bloggs",
+        gender: Gender = Gender.Male
+    ): Person =
       Person(
         ObjectId(),
         gender,
