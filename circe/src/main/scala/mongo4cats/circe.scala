@@ -19,8 +19,8 @@ package mongo4cats
 import cats.implicits._
 import io.circe.{parser, Decoder => JDecoder, Encoder => JEncoder}
 import io.circe.syntax._
-import org.bson.codecs.{BsonValueCodec, DecoderContext, EncoderContext}
-import mongo4cats.bson.{DecodeError, Decoder, Encoder}
+import org.bson.codecs.{BsonDocumentCodec, BsonValueCodec, DecoderContext, EncoderContext}
+import mongo4cats.bson.{DecodeError, Decoder, DocumentEncoder, Encoder}
 import org.bson._
 import org.bson.json.{JsonReader, JsonWriter}
 import java.io.{StringReader, StringWriter}
@@ -44,6 +44,18 @@ object circe extends JsonCodecs {
       val codec = new BsonValueCodec()
       codec.encode(writer, b, EncoderContext.builder.build)
       parser.parse(writer.toString).flatMap(_.as[A]).leftMap(x => DecodeError(x.toString))
+    }
+  }
+
+  object unsafe {
+    implicit def circeEncoderToDocumentEncoder[A: JEncoder] = new DocumentEncoder[A] {
+      def apply(a: A): BsonDocument = {
+        val json = a.asJson.noSpaces
+        val stringReader = new StringReader(json)
+        val reader = new JsonReader(stringReader)
+        val codec = new BsonDocumentCodec()
+        codec.decode(reader, DecoderContext.builder.build)
+      }
     }
   }
 }
