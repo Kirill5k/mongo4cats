@@ -17,77 +17,68 @@
 package mongo4cats.collection.queries
 
 import cats.effect.Async
+import cats.implicits._
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.DistinctPublisher
+import fs2.Stream
 import mongo4cats.helpers._
-import mongo4cats.collection.operations
+import mongo4cats.bson.Decoder
+import mongo4cats.bson.syntax._
+import mongo4cats.collection.operations.{Filter => OFilter}
+import mongo4cats.collection.queries.DistinctCommand, DistinctCommand._
+import org.bson.BsonValue
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
-final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: DistinctPublisher[T],
-    protected val commands: List[DistinctCommand[T]]
-) extends QueryBuilder[DistinctPublisher, T] {
+final case class DistinctQueryBuilder(
+    private val publisher: DistinctPublisher[BsonValue],
+    private val commands: List[DistinctCommand]
+) {
 
-  /** Sets the maximum execution time on the server for this operation.
-    *
-    * @param duration
-    *   the max time
-    * @return
-    *   DistinctQueryBuilder
-    */
-  def maxTime(duration: Duration): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.MaxTime[T](duration) :: commands)
+  def maxTime(duration: Duration) =
+    add(MaxTime(duration))
 
-  /** Sets the query filter to apply to the query.
-    *
-    * @param filter
-    *   the filter.
-    * @return
-    *   DistinctQueryBuilder
-    */
-  def filter(filter: Bson): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.Filter[T](filter) :: commands)
+  def filter(filter: Bson) =
+    add(Filter(filter))
 
-  def filter(filters: operations.Filter): DistinctQueryBuilder[F, T] =
-    filter(filters.toBson)
+  def filter(filter: OFilter) =
+    add(Filter(filter.toBson))
 
-  /** Sets the number of documents to return per batch.
-    *
-    * <p>Overrides the Subscription#request value for setting the batch size, allowing for fine grained control over the underlying
-    * cursor.</p>
-    *
-    * @param size
-    *   the batch size
-    * @return
-    *   DistinctQueryBuilder
-    * @since 1.8
-    */
-  def batchSize(size: Int): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.BatchSize[T](size) :: commands)
+  def batchSize(size: Int) =
+    add(BatchSize(size))
 
-  /** Sets the collation options
-    *
-    * @param collation
-    *   the collation options to use
-    * @return
-    *   DistinctQueryBuilder
-    * @since 1.3
-    */
-  def collation(collation: model.Collation): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.Collation[T](collation) :: commands)
+  def collation(collation: model.Collation) =
+    add(Collation(collation))
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncOption[F]
+  def first[F[_]: Async, A: Decoder]: F[Option[A]] =
+    applyCommands.first
+      .asyncOption[F]
+      .flatMap(_.traverse { bson =>
+        bson.as[A].liftTo[F]
+      })
 
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
+  def stream[F[_]: Async, A: Decoder]: Stream[F, A] =
+    applyCommands.stream[F].evalMap(_.as[A].liftTo[F])
 
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+  def boundedStream[F[_]: Async, A: Decoder](c: Int) =
+    applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F])
 
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
+  private def applyCommands =
+    commands.foldRight(publisher) { (command, acc) =>
+      command match {
+        case MaxTime(d) =>
+          acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+        case Filter(f) =>
+          acc.filter(f)
+        case BatchSize(s) =>
+          acc.batchSize(s)
+        case Collation(c) =>
+          acc.collation(c)
+      }
+    }
+
+  private def add(command: DistinctCommand): DistinctQueryBuilder =
+    copy(commands = command :: commands)
 }

@@ -16,373 +16,107 @@
 
 package mongo4cats.collection.operations
 
-import com.mongodb.client.model.{Aggregates, BucketAutoOptions, GraphLookupOptions, MergeOptions, UnwindOptions}
+import com.mongodb.client.model.{
+  Aggregates,
+  BucketAutoOptions,
+  GraphLookupOptions,
+  MergeOptions,
+  UnwindOptions
+}
+import mongo4cats.bson.Encoder
+import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
 
-trait Aggregate {
+final case class Aggregate private (private val aggs: List[Bson]) {
+  def bucketAuto[T: Encoder](groupBy: T, buckets: Int, options: BucketAutoOptions): Aggregate =
+    add(Aggregates.bucketAuto(groupBy.asBson, buckets, options))
 
-  /** Creates a \$bucketAuto pipeline stage
-    *
-    * @param groupBy
-    *   the criteria to group By
-    * @param buckets
-    *   the number of the buckets
-    * @param options
-    *   the optional values for the \$bucketAuto stage
-    * @return
-    *   the \$bucketAuto pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/bucketAuto/]]
-    * @since 3.4
-    */
-  def bucketAuto[TExpression](
-      groupBy: TExpression,
-      buckets: Int,
-      options: BucketAutoOptions = new BucketAutoOptions()
-  ): Aggregate
+  def sample(size: Int): Aggregate =
+    add(Aggregates.sample(size))
 
-  /** Creates a \$sample pipeline stage with the specified sample size
-    *
-    * @param size
-    *   the sample size
-    * @return
-    *   the \$sample pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sample/]]
-    * @since 3.2
-    */
-  def sample(size: Int): Aggregate
+  def count: Aggregate =
+    add(Aggregates.count())
 
-  /** Creates a \$count pipeline stage using the field name "count" to store the result
-    *
-    * @return
-    *   the \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
-    * @since 3.4
-    */
-  def count: Aggregate
+  def count(field: String): Aggregate =
+    add(Aggregates.count(field))
 
-  /** Creates a \$count pipeline stage using the named field to store the result
-    *
-    * @param field
-    *   the field in which to store the count
-    * @return
-    *   the \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
-    * @since 3.4
-    */
-  def count(field: String): Aggregate
+  def matchBy(filter: Filter): Aggregate =
+    add(Aggregates.`match`(filter.toBson))
 
-  /** Creates a \$match pipeline stage for the specified filter
-    *
-    * @param filter
-    *   the filter to match
-    * @return
-    *   the \$match pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/match/]]
-    */
-  def matchBy(filter: Filter): Aggregate
+  def project(projection: Projection): Aggregate =
+    add(Aggregates.project(projection.toBson))
 
-  /** Creates a \$project pipeline stage for the specified projection
-    *
-    * @param projection
-    *   the projection
-    * @return
-    *   the \$project pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/project/]]
-    */
-  def project(projection: Projection): Aggregate
+  def sort(sort: Sort): Aggregate =
+    add(Aggregates.sort(sort.toBson))
 
-  /** Creates a \$sort pipeline stage for the specified sort specification
-    *
-    * @param sort
-    *   the sort specification
-    * @return
-    *   the \$sort pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sort/]]
-    */
-  def sort(sort: Sort): Aggregate
+  def sortByCount[T: Encoder](filter: T): Aggregate =
+    add(Aggregates.sortByCount(filter.asBson))
 
-  /** Creates a \$sortByCount pipeline stage for the specified filter
-    *
-    * @param filter
-    *   the filter specification
-    * @return
-    *   the \$sortByCount pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sortByCount/]]
-    * @since 3.4
-    */
-  def sortByCount[TExpression](filter: TExpression): Aggregate
+  def skip(n: Int): Aggregate =
+    add(Aggregates.skip(n))
 
-  /** Creates a \$skip pipeline stage
-    *
-    * @param n
-    *   the number of documents to skip
-    * @return
-    *   the \$skip pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/skip/]]
-    */
-  def skip(n: Int): Aggregate
+  def limit(n: Int): Aggregate =
+    add(Aggregates.limit(n))
 
-  /** Creates a \$limit pipeline stage for the specified filter
-    *
-    * @param n
-    *   the limit
-    * @return
-    *   the \$limit pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/limi/]]
-    */
-  def limit(n: Int): Aggregate
+  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
+    add(Aggregates.lookup(from, localField, foreignField, as))
 
-  /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using equality match between the
-    * local field and the foreign field
-    *
-    * @param from
-    *   the name of the collection in the same database to perform the join with.
-    * @param localField
-    *   the field from the local collection to match values against.
-    * @param foreignField
-    *   the field in the from collection to match values against.
-    * @param as
-    *   the name of the new array field to add to the input documents.
-    * @return
-    *   the \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
-    * @since 3.2
-    */
-  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate
+  def group[T: Encoder](id: T, fieldAccumulator: Accumulator): Aggregate =
+    add(Aggregates.group(id.asBson, fieldAccumulator.toBsonFields))
 
-  /** Creates a \$group pipeline stage for the specified filter
-    *
-    * @param id
-    *   the id expression for the group
-    * @param fieldAccumulators
-    *   zero or more field accumulator pairs
-    * @return
-    *   the \$group pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/group/]]
-    */
-  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate
+  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
+    add(Aggregates.unwind(fieldName, unwindOptions))
 
-  /** Creates a \$unwind pipeline stage for the specified field name, which must be prefixed by a '\$' sign.
-    *
-    * @param fieldName
-    *   the field name, prefixed by a '\$' sign
-    * @param unwindOptions
-    *   options for the unwind pipeline stage
-    * @return
-    *   the \$unwind pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/]]
-    * @since 3.2
-    */
-  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate
+  def out(collectionName: String): Aggregate =
+    add(Aggregates.out(collectionName))
 
-  /** Creates a \$out pipeline stage that writes into the specified collection
-    *
-    * @param collectionName
-    *   the collection name
-    * @return
-    *   the \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
-    */
-  def out(collectionName: String): Aggregate
+  def out(databaseName: String, collectionName: String): Aggregate =
+    add(Aggregates.out(databaseName, collectionName))
 
-  /** Creates a \$out pipeline stage that supports outputting to a different database.
-    *
-    * @param databaseName
-    *   the database name
-    * @param collectionName
-    *   the collection name
-    * @return
-    *   the \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
-    * @since 4.1
-    */
-  def out(databaseName: String, collectionName: String): Aggregate
+  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate =
+    add(Aggregates.merge(collectionName, options))
 
-  /** Creates a \$merge pipeline stage that merges into the specified collection using the specified options.
-    *
-    * @param collectionName
-    *   the name of the collection to merge into
-    * @param options
-    *   the merge options
-    * @return
-    *   the \$merge pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/merge/]]
-    * @since 3.11
-    */
-  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate
+  def replaceWith[T: Encoder](value: T): Aggregate =
+    add(Aggregates.replaceWith(value.asBson))
 
-  /** Creates a \$replaceRoot pipeline stage
-    *
-    * <p>With \$replaceWith, you can promote an embedded document to the top-level. You can also specify a new document as the
-    * replacement.</p>
-    *
-    * @param value
-    *   the new root value
-    * @return
-    *   the \$replaceRoot pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/replaceWith/]]
-    * @since 3.11
-    */
-  def replaceWith[TExpression](value: TExpression): Aggregate
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
+    add(Aggregates.lookup(from, pipeline.toBsons.asJava, as))
 
-  /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using the given pipeline
-    *
-    * @param from
-    *   the name of the collection in the same database to perform the join with.
-    * @param pipeline
-    *   the pipeline to run on the joined collection.
-    * @param as
-    *   the name of the new array field to add to the input documents.
-    * @return
-    *   the \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
-    * @since 3.7
-    */
-  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate
-
-  /** Creates a graphLookup pipeline stage for the specified filter
-    *
-    * @param from
-    *   the collection to query
-    * @param startWith
-    *   the expression to start the graph lookup with
-    * @param connectFromField
-    *   the from field
-    * @param connectToField
-    *   the to field
-    * @param as
-    *   name of field in output document
-    * @param options
-    *   optional values for the graphLookup
-    * @return
-    *   the \$graphLookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/graphLookup/]]
-    * @since 3.4
-    */
-  def graphLookup[TExpression](
+  def graphLookup[T: Encoder](
       from: String,
-      startWith: TExpression,
+      startWith: T,
       connectFromField: String,
       connectToField: String,
       as: String,
       options: GraphLookupOptions = new GraphLookupOptions()
-  ): Aggregate
+  ): Aggregate =
+    add(
+      Aggregates.graphLookup(
+        from,
+        startWith.asBson,
+        connectFromField,
+        connectToField,
+        as,
+        options
+      )
+    )
 
-  /** Creates a \$unionWith pipeline stage.
-    *
-    * @param collection
-    *   the name of the collection in the same database to perform the union with.
-    * @param pipeline
-    *   the pipeline to run on the union.
-    * @return
-    *   the \$unionWith pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unionWith/]]
-    * @since 4.1
-    */
-  def unionWith(collection: String, pipeline: Aggregate): Aggregate
+  def unionWith(collection: String, pipeline: Aggregate): Aggregate =
+    add(Aggregates.unionWith(collection, pipeline.toBsons.asJava))
 
-  /** Merges 2 aggregation pipelines together.
-    *
-    * @param anotherAggregate
-    *   the aggregate to be merged with
-    * @return
-    *   the aggregate pipeline
-    */
-  def combinedWith(anotherAggregate: Aggregate): Aggregate
+  def combineWith(other: Aggregate) =
+    copy(aggs = other.aggs ::: aggs)
 
-  private[operations] def aggregates: List[Bson]
-  private[collection] def toBson: java.util.List[Bson]
+  def toBsons: List[Bson] =
+    aggs.reverse
+
+  private def add(doc: Bson): Aggregate =
+    copy(aggs = doc :: aggs)
+
 }
 
 object Aggregate {
-  val empty: Aggregate = AggregateBuilder(Nil)
-
-  def bucketAuto[TExpression](
-      groupBy: TExpression,
-      buckets: Int,
-      options: BucketAutoOptions = new BucketAutoOptions()
-  ): Aggregate = empty.bucketAuto(groupBy, buckets, options)
-
-  def sample(size: Int): Aggregate                             = empty.sample(size)
-  def count: Aggregate                                         = empty.count
-  def count(field: String): Aggregate                          = empty.count(field)
-  def matchBy(filter: Filter): Aggregate                       = empty.matchBy(filter)
-  def project(projection: Projection): Aggregate               = empty.project(projection)
-  def sort(sort: Sort): Aggregate                              = empty.sort(sort)
-  def sortByCount[TExpression](filter: TExpression): Aggregate = empty.sortByCount(filter)
-  def skip(n: Int): Aggregate                                  = empty.skip(n)
-  def limit(n: Int): Aggregate                                 = empty.limit(n)
-
-  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
-    empty.lookup(from, localField, foreignField, as)
-
-  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate = empty.group(id, fieldAccumulators)
-
-  def unwind(fieldName: String, options: UnwindOptions = new UnwindOptions()): Aggregate = empty.unwind(fieldName, options)
-
-  def out(collectionName: String): Aggregate                                               = empty.out(collectionName)
-  def out(databaseName: String, collectionName: String): Aggregate                         = empty.out(databaseName, collectionName)
-  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate = empty.merge(collectionName, options)
-  def replaceWith[TExpression](value: TExpression): Aggregate                              = empty.replaceWith(value)
-  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate                     = empty.lookup(from, pipeline, as)
-
-  def graphLookup[TExpression](
-      from: String,
-      startWith: TExpression,
-      connectFromField: String,
-      connectToField: String,
-      as: String,
-      options: GraphLookupOptions = new GraphLookupOptions()
-  ): Aggregate = empty.graphLookup(from, startWith, connectFromField, connectToField, as, options)
-
-  def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
-}
-
-final private case class AggregateBuilder(
-    override val aggregates: List[Bson]
-) extends Aggregate {
-
-  def bucketAuto[TExpression](
-      groupBy: TExpression,
-      buckets: Int,
-      options: BucketAutoOptions = new BucketAutoOptions()
-  ): Aggregate = AggregateBuilder(Aggregates.bucketAuto(groupBy, buckets, options) :: aggregates)
-
-  def sample(size: Int): Aggregate = AggregateBuilder(Aggregates.sample(size) :: aggregates)
-
-  def count: Aggregate = AggregateBuilder(Aggregates.count() :: aggregates)
-
-  def count(field: String): Aggregate = AggregateBuilder(Aggregates.count(field) :: aggregates)
-
-  def matchBy(filter: Filter): Aggregate = AggregateBuilder(Aggregates.`match`(filter.toBson) :: aggregates)
-
-  def project(projection: Projection): Aggregate = AggregateBuilder(Aggregates.project(projection.toBson) :: aggregates)
-
-  def sort(sort: Sort): Aggregate = AggregateBuilder(Aggregates.sort(sort.toBson) :: aggregates)
-
-  def sortByCount[TExpression](filter: TExpression): Aggregate = AggregateBuilder(Aggregates.sortByCount(filter) :: aggregates)
-
-  def skip(n: Int): Aggregate = AggregateBuilder(Aggregates.skip(n) :: aggregates)
-
-  def limit(n: Int): Aggregate = AggregateBuilder(Aggregates.limit(n) :: aggregates)
-
-  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
-    AggregateBuilder(Aggregates.lookup(from, localField, foreignField, as) :: aggregates)
-
-  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate =
-    AggregateBuilder(Aggregates.group(id, fieldAccumulators.toBson) :: aggregates)
-
-  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
-    AggregateBuilder(Aggregates.unwind(fieldName, unwindOptions) :: aggregates)
-
-  def out(collectionName: String): Aggregate = AggregateBuilder(Aggregates.out(collectionName) :: aggregates)
-
-  def out(databaseName: String, collectionName: String): Aggregate =
-    AggregateBuilder(Aggregates.out(databaseName, collectionName) :: aggregates)
-
-  def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate =
-    AggregateBuilder(Aggregates.merge(collectionName, options) :: aggregates)
-
-  def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
-
-  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
-    AggregateBuilder(Aggregates.lookup(from, pipeline.toBson, as) :: aggregates)
-
-  def graphLookup[TExpression](
-      from: String,
-      startWith: TExpression,
-      connectFromField: String,
-      connectToField: String,
-      as: String,
-      options: GraphLookupOptions = new GraphLookupOptions()
-  ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
-
-  def unionWith(collection: String, pipeline: Aggregate): Aggregate =
-    AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
-
-  override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
-
-  override private[collection] def toBson: java.util.List[Bson] = aggregates.reverse.asJava
+  def empty: Aggregate = Aggregate(List.empty)
 }

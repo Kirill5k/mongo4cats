@@ -20,16 +20,13 @@ import org.bson.types.{ObjectId => JObjectId}
 import org.bson.{Document => JDocument}
 import cats.syntax.alternative._
 import cats.syntax.functor._
-import mongo4cats.codecs.MongoCodecProvider
-import org.bson.codecs.DocumentCodecProvider
-import org.bson.codecs.configuration.CodecProvider
 
 import java.time.Instant
 import java.util.Date
 import scala.collection.Iterable
 import scala.jdk.CollectionConverters._
 
-object bson {
+package object bson {
 
   type Document = JDocument
   object Document {
@@ -47,19 +44,15 @@ object bson {
 
     def apply[A](entries: (String, A)*): Document = apply[A](entries.toMap[String, A])
     def apply[A](key: String, value: A): Document = apply(key -> value)
-    def parse(json: String): Document             = JDocument.parse(json)
-    def from(json: String): Document              = parse(json)
-    def from(doc: Document): Document             = parse(doc.toJson)
-
-    implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
-      override def get: CodecProvider = new DocumentCodecProvider()
-    }
+    def parse(json: String): Document = JDocument.parse(json)
+    def from(json: String): Document = parse(json)
+    def from(doc: Document): Document = parse(doc.toJson)
   }
 
   type ObjectId = JObjectId
   object ObjectId {
-    def apply(): ObjectId             = new JObjectId()
-    def get: ObjectId                 = apply()
+    def apply(): ObjectId = new JObjectId()
+    def get: ObjectId = apply()
     def isValid(hex: String): Boolean = JObjectId.isValid(hex)
 
     /** Constructs a new instance from a 24-byte hexadecimal string representation.

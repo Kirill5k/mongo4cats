@@ -18,20 +18,22 @@ package mongo4cats.bson
 
 import org.bson.{BsonDocument, BsonValue}
 
-object syntax {
-  implicit class EncoderOps[A: Encoder](val value: A) {
-    def asBson: BsonValue = Encoder[A].apply(value)
+trait CodecOps {
+  implicit final class BEncoderOps[A](val value: A) {
+    def asBson(implicit encoder: Encoder[A]): BsonValue = encoder(value)
   }
 
-  implicit class DocEncoderOps[A: DocumentEncoder](val value: A) {
-    def asDoc: BsonDocument = DocumentEncoder[A].apply(value)
+  implicit final class BDocEncoderOps[A](val value: A) {
+    def asDoc(implicit encoder: DocumentEncoder[A]): BsonDocument = encoder(value)
   }
 
-  implicit class DecoderOps(val value: BsonValue) {
+  implicit class BDecoderOps(val value: BsonValue) {
     def as[A: Decoder]: Either[DecodeError, A] = Decoder[A].apply(value)
   }
 
-  implicit class DocDecoderOps(val value: BsonDocument) {
+  implicit class BDocDecoderOps(val value: BsonDocument) {
     def as[A: DocumentDecoder]: Either[DecodeError, A] = DocumentDecoder[A].apply(value)
   }
 }
+
+object syntax extends CodecOps

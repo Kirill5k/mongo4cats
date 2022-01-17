@@ -16,7 +16,7 @@
 
 package mongo4cats.bson
 
-import org.bson.{BsonDocument, BsonValue}
+import org.bson._
 
 trait Encoder[A] extends Serializable { self =>
   def apply(a: A): BsonValue
@@ -38,8 +38,26 @@ trait DocumentEncoder[A] extends Serializable { self =>
 
 object DocumentEncoder {
   def apply[A](implicit ev: DocumentEncoder[A]): DocumentEncoder[A] = ev
+
+  implicit val reify: DocumentEncoder[BsonDocument] = new DocumentEncoder[BsonDocument] {
+    def apply(b: BsonDocument): BsonDocument = b
+  }
+
+  implicit val document: DocumentEncoder[Document] = new DocumentEncoder[Document] {
+    def apply(b: Document): BsonDocument = b.toBsonDocument
+  }
 }
 
 object Encoder {
   def apply[A](implicit ev: Encoder[A]): Encoder[A] = ev
+
+  implicit val reify: Encoder[BsonValue] = new Encoder[BsonValue] {
+    def apply(b: BsonValue): BsonValue = b
+  }
+  implicit val int: Encoder[Int] = new Encoder[Int] {
+    def apply(i: Int) = new BsonInt32(i)
+  }
+  implicit val string: Encoder[String] = new Encoder[String] {
+    def apply(s: String) = new BsonString(s)
+  }
 }

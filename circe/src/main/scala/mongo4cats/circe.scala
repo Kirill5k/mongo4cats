@@ -17,45 +17,47 @@
 package mongo4cats
 
 import cats.implicits._
-import io.circe.{parser, Decoder => JDecoder, Encoder => JEncoder}
+import io.circe.{parser, Decoder => JDecoder, Encoder => JEncoder, Json}
 import io.circe.syntax._
-import org.bson.codecs.{BsonDocumentCodec, BsonValueCodec, DecoderContext, EncoderContext}
-import mongo4cats.bson.{DecodeError, Decoder, DocumentEncoder, Encoder}
+import mongo4cats.bson.{DecodeError, Decoder, Document, DocumentEncoder, Encoder}
 import org.bson._
-import org.bson.json.{JsonReader, JsonWriter}
-import java.io.{StringReader, StringWriter}
 
 object circe extends JsonCodecs {
-
-  implicit def circeEncoderToEncoder[A: JEncoder] = new Encoder[A] {
-    def apply(a: A): BsonValue = {
-      val json = a.asJson.noSpaces
-      val stringReader = new StringReader(json)
-      val reader = new JsonReader(stringReader)
-      val codec = new BsonValueCodec()
-      codec.decode(reader, DecoderContext.builder.build)
-    }
-  }
-
-  implicit def circeDecoderToDecoder[A: JDecoder] = new Decoder[A] {
-    def apply(b: BsonValue) = {
-      val stringWriter = new StringWriter()
-      val writer = new JsonWriter(stringWriter)
-      val codec = new BsonValueCodec()
-      codec.encode(writer, b, EncoderContext.builder.build)
-      parser.parse(writer.toString).flatMap(_.as[A]).leftMap(x => DecodeError(x.toString))
-    }
-  }
-
-  object unsafe {
-    implicit def circeEncoderToDocumentEncoder[A: JEncoder] = new DocumentEncoder[A] {
-      def apply(a: A): BsonDocument = {
-        val json = a.asJson.noSpaces
-        val stringReader = new StringReader(json)
-        val reader = new JsonReader(stringReader)
-        val codec = new BsonDocumentCodec()
-        codec.decode(reader, DecoderContext.builder.build)
+  trait Syntax extends JsonCodecs {
+    implicit def circeEncoderToEncoder[A: JEncoder] = new Encoder[A] {
+      def apply(a: A): BsonValue = {
+        val json = a.asJson
+        val wrapped = Json.obj("xyz" := json)
+        val bson = BsonDocument.parse(wrapped.noSpaces)
+        println(s"???\n${a}\n${json}\n${wrapped}\n${bson}\n???")
+        bson.get("xyz")
       }
     }
+
+    implicit def circeDecoderToDecoder[A: JDecoder] = new Decoder[A] {
+      def apply(b: BsonValue) = {
+        val doc = Document("xyz" -> b).toJson()
+        val json = parser.parse(doc)
+        val decoder = JDecoder.instance[A](_.get[A]("xyz"))
+        json.flatMap(decoder.decodeJson(_)).leftMap(x => DecodeError(x.toString))
+      }
+    }
+  }
+
+  trait Unsafe extends Syntax {
+    implicit def circeEncoderToDocumentEncoder[A: JEncoder] = new DocumentEncoder[A] {
+      def apply(a: A): BsonDocument = {
+        val json = a.asJson
+        BsonDocument
+          .parse(Json.obj("xyz" := json).noSpaces)
+          .get("xyz")
+          .asInstanceOf[BsonDocument]
+      }
+    }
+  }
+  object syntax extends Syntax
+
+  object unsafe {
+    object syntax extends Unsafe
   }
 }

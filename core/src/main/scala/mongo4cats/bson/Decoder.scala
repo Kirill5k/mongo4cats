@@ -16,7 +16,7 @@
 
 package mongo4cats.bson
 
-import org.bson.{BsonDocument, BsonValue}
+import org.bson._
 
 final case class DecodeError(msg: String) extends Throwable
 
@@ -67,5 +67,12 @@ object Decoder {
 
   implicit val bsonDecoder: Decoder[BsonValue] = new Decoder[BsonValue] {
     def apply(b: BsonValue) = Right(b)
+  }
+  implicit val document: Decoder[Document] = new Decoder[Document] {
+    def apply(b: BsonValue) = b match {
+      case b: BsonDocument => Right(Document.parse(b.toJson()))
+      case _               => Left(DecodeError("Incorrect document"))
+
+    }
   }
 }

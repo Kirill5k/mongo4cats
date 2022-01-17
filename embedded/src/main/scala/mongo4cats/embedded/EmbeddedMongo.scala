@@ -38,14 +38,22 @@ object EmbeddedMongo {
       lastError: Option[Throwable] = None
   )(implicit F: Async[F]): Resource[F, MongodProcess] =
     if (attempt >= maxAttempts) {
-      val error = lastError.getOrElse(new RuntimeException("Failed to start embedded mongo too many times"))
+      val error = lastError.getOrElse(
+        new RuntimeException("Failed to start embedded mongo too many times")
+      )
       Resource.eval(error.raiseError[F, MongodProcess])
     } else
       Resource
         .make(F.delay(starter.prepare(config)))(ex => F.delay(ex.stop()))
         .flatMap(ex => Resource.make(F.delay(ex.start()))(p => F.delay(p.stop())))
         .handleErrorWith[MongodProcess, Throwable] { e =>
-          Resource.eval(F.sleep(attempt.seconds)) *> start[F](config, starter, maxAttempts, attempt + 1, Some(e))
+          Resource.eval(F.sleep(attempt.seconds)) *> start[F](
+            config,
+            starter,
+            maxAttempts,
+            attempt + 1,
+            Some(e)
+          )
         }
 }
 

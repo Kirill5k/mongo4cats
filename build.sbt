@@ -65,32 +65,19 @@ lazy val root = project
   )
   .aggregate(
     core,
-    `mongo4cats-core`,
     `mongo4cats-circe`,
     `mongo4cats-examples`,
     `mongo4cats-embedded`
   )
 
 lazy val core = project
-  .in(file("core0"))
+  .in(file("core"))
   .dependsOn(`mongo4cats-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core ++ Dependencies.test,
     test / parallelExecution := false)
-  .enablePlugins(AutomateHeaderPlugin)
-
-lazy val `mongo4cats-core` = project
-  .in(file("core"))
-  .dependsOn(`mongo4cats-embedded` % "test->compile")
-  .settings(commonSettings)
-  .settings(
-    name := "mongo4cats-core-bak",
-    libraryDependencies ++= Dependencies.core ++ Dependencies.test,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
-  )
   .enablePlugins(AutomateHeaderPlugin)
 
 lazy val `mongo4cats-circe` = project
@@ -107,7 +94,7 @@ lazy val `mongo4cats-circe` = project
 
 lazy val `mongo4cats-examples` = project
   .in(file("examples"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, `mongo4cats-circe`, `mongo4cats-embedded`)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
@@ -129,7 +116,7 @@ lazy val `mongo4cats-embedded` = project
 
 lazy val docs = project
   .in(file("docs"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, `mongo4cats-circe`, `mongo4cats-embedded`)
   .enablePlugins(MicrositesPlugin)
   .settings(noPublish)
   .settings(commonSettings)

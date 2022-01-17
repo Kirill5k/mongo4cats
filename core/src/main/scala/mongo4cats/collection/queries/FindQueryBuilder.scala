@@ -17,245 +17,151 @@
 package mongo4cats.collection.queries
 
 import cats.effect.Async
+import cats.implicits._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.FindPublisher
-import mongo4cats.bson.Document
+import fs2.Stream
+import mongo4cats.bson.Decoder
+import mongo4cats.bson.syntax._
 import mongo4cats.helpers._
 import mongo4cats.collection.operations
-import mongo4cats.collection.operations.{Projection, Sort}
+import mongo4cats.collection.queries.FindCommand, FindCommand._
+import org.bson.{BsonValue, Document}
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
-final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: FindPublisher[T],
-    protected val commands: List[FindCommand[T]]
-) extends QueryBuilder[FindPublisher, T] {
+final case class FindQueryBuilder(
+    private val publisher: FindPublisher[BsonValue],
+    private val commands: List[FindCommand]
+) {
 
-  /** Sets the maximum execution time on the server for this operation.
-    *
-    * @param duration
-    *   the max time
-    * @return
-    *   FindQueryBuilder
-    */
-  def maxTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.MaxTime[T](duration) :: commands)
+  def maxTime(duration: Duration) =
+    add(MaxTime(duration))
 
-  /** The maximum amount of time for the server to wait on new documents to satisfy a tailable cursor query. This only applies to a
-    * TAILABLE_AWAIT cursor. When the cursor is not a TAILABLE_AWAIT cursor, this option is ignored.
-    *
-    * On servers &gt;= 3.2, this option will be specified on the getMore command as "maxTimeMS". The default is no value: no "maxTimeMS" is
-    * sent to the server with the getMore command.
-    *
-    * On servers &lt; 3.2, this option is ignored, and indicates that the driver should respect the server's default value
-    *
-    * A zero value will be ignored.
-    *
-    * @param duration
-    *   the max await time
-    * @return
-    *   the maximum await execution time in the given time unit
-    */
-  def maxAwaitTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.MaxAwaitTime[T](duration) :: commands)
+  def maxAwaitTime(duration: Duration) =
+    add(MaxAwaitTime(duration))
 
-  /** Sets the collation options
-    *
-    * <p>A null value represents the server default.</p>
-    *
-    * @param collation
-    *   the collation options to use
-    * @return
-    *   FindQueryBuilder
-    * @since 1.3
-    */
-  def collation(collation: model.Collation): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Collation[T](collation) :: commands)
+  def collation(collation: model.Collation) =
+    add(Collation(collation))
 
-  /** Get partial results from a sharded cluster if one or more shards are unreachable (instead of throwing an error).
-    *
-    * @param partial
-    *   if partial results for sharded clusters is enabled
-    * @return
-    *   FindQueryBuilder
-    */
-  def partial(partial: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Partial[T](partial) :: commands)
+  def partial(p: Boolean) =
+    add(Partial(p))
 
-  /** Sets the comment to the query. A null value means no comment is set.
-    *
-    * @param comment
-    *   the comment
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def comment(comment: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Comment[T](comment) :: commands)
+  def comment(c: String) =
+    add(Comment(c))
 
-  /** Sets the returnKey. If true the find operation will return only the index keys in the resulting documents.
-    *
-    * @param returnKey
-    *   the returnKey
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def returnKey(returnKey: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.ReturnKey[T](returnKey) :: commands)
+  def returnKey(rk: Boolean) =
+    add(ReturnKey(rk))
 
-  /** Sets the showRecordId. Set to true to add a field \$recordId to the returned documents.
-    *
-    * @param showRecordId
-    *   the showRecordId
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def showRecordId(showRecordId: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.ShowRecordId[T](showRecordId) :: commands)
+  def showRecordId(s: Boolean) =
+    add(ShowRecordId(s))
 
-  /** Sets the hint for which index to use. A null value means no hint is set.
-    *
-    * @param index
-    *   the name of the index which should be used for the operation
-    * @return
-    *   FindQueryBuilder
-    * @since 1.13
-    */
-  def hint(index: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.HintString[T](index) :: commands)
+  def hint(index: String) =
+    add(HintString(index))
 
-  /** Sets the hint for which index to use. A null value means no hint is set.
-    *
-    * @param hint
-    *   the hint
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def hint(hint: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Hint[T](hint) :: commands)
+  def hint(h: Bson) =
+    add(Hint(h))
 
-  /** Sets the exclusive upper bound for a specific index. A null value means no max is set.
-    *
-    * @param max
-    *   the max
-    * @return
-    *   this
-    * @since 1.6
-    */
-  def max(max: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Max[T](max) :: commands)
+  def max(m: Bson) =
+    add(Max(m))
 
-  /** Sets the minimum inclusive lower bound for a specific index. A null value means no max is set.
-    *
-    * @param min
-    *   the min
-    * @return
-    *   this
-    * @since 1.6
-    */
-  def min(min: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Min[T](min) :: commands)
+  def min(m: Bson) =
+    add(Min(m))
 
-  /** Sets the sort criteria to apply to the query.
-    *
-    * @param sort
-    *   the sort criteria, which may be null.
-    * @return
-    *   FindQueryBuilder
-    */
-  def sort(sort: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Sort[T](sort) :: commands)
+  def sort(s: Bson): FindQueryBuilder =
+    add(Sort(s))
 
-  def sort(sorts: Sort): FindQueryBuilder[F, T] =
-    sort(sorts.toBson)
+  def sort(s: operations.Sort): FindQueryBuilder =
+    sort(s.toBson)
 
-  def sortBy(fieldNames: String*): FindQueryBuilder[F, T] =
-    sort(Sort.asc(fieldNames: _*))
+  def sortBy(fieldNames: String*) =
+    sort(operations.Sort.asc(fieldNames: _*))
 
-  def sortByDesc(fieldNames: String*): FindQueryBuilder[F, T] =
-    sort(Sort.desc(fieldNames: _*))
+  def sortByDesc(fieldNames: String*) =
+    sort(operations.Sort.desc(fieldNames: _*))
 
-  /** Sets the query filter to apply to the query.
-    *
-    * @param filter
-    *   the filter
-    * @return
-    *   FindQueryBuilder
-    */
-  def filter(filter: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Filter[T](filter) :: commands)
+  def filter(f: Bson): FindQueryBuilder =
+    add(Filter(f))
 
-  def filter(filters: operations.Filter): FindQueryBuilder[F, T] =
-    filter(filters.toBson)
+  def filter(f: operations.Filter): FindQueryBuilder =
+    filter(f.toBson)
 
-  /** Sets a document describing the fields to return for all matching documents.
-    *
-    * @param projection
-    *   the project document, which may be null.
-    * @return
-    *   FindQueryBuilder
-    */
-  def projection(projection: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Projection[T](projection) :: commands)
+  def projection(p: Bson): FindQueryBuilder =
+    add(Projection(p))
 
-  def projection(projection: Projection): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Projection[T](projection.toBson) :: commands)
+  def projection(p: operations.Projection): FindQueryBuilder =
+    projection(p.toBson)
 
-  /** Sets the number of documents to skip.
-    *
-    * @param skip
-    *   the number of documents to skip
-    * @return
-    *   FindQueryBuilder
-    */
-  def skip(skip: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Skip[T](skip) :: commands)
+  def skip(s: Int) =
+    add(Skip(s))
 
-  /** Sets the limit to apply.
-    *
-    * @param limit
-    *   the limit
-    * @return
-    *   FindQueryBuilder
-    */
-  def limit(limit: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Limit[T](limit) :: commands)
+  def limit(l: Int) =
+    add(Limit(l))
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncOption[F]
+  //
 
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
+  def first[F[_]: Async, A: Decoder]: F[Option[A]] =
+    applyCommands.first
+      .asyncOption[F]
+      .flatMap(_.traverse { bson =>
+        bson.as[A].liftTo[F]
+      })
 
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+  def stream[F[_]: Async, A: Decoder]: Stream[F, A] =
+    applyCommands.stream[F].evalMap(_.as[A].liftTo[F])
 
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
+  def boundedStream[F[_]: Async, A: Decoder](c: Int) =
+    applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F])
 
-  /** Explain the execution plan for this operation with the server's default verbosity level
-    *
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F]
+  def explain[F[_]: Async]: F[Document] =
+    applyCommands.explain.asyncSingle[F]
 
-  /** Explain the execution plan for this operation with the given verbosity level
-    *
-    * @param verbosity
-    *   the verbosity of the explanation
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F]
+  def explain[F[_]: Async](verbosity: ExplainVerbosity): F[Document] =
+    applyCommands.explain(verbosity).asyncSingle[F]
+
+  //
+
+  private def applyCommands: FindPublisher[BsonValue] =
+    commands.foldRight(publisher) { (command, acc) =>
+      command match {
+        case ShowRecordId(s) =>
+          acc.showRecordId(s)
+        case ReturnKey(r) =>
+          acc.returnKey(r)
+        case Comment(c) =>
+          acc.comment(c)
+        case Collation(c) =>
+          acc.collation(c)
+        case Partial(b) =>
+          acc.partial(b)
+        case MaxTime(d) =>
+          acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+        case MaxAwaitTime(d) =>
+          acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+        case HintString(s) =>
+          acc.hintString(s)
+        case Hint(h) =>
+          acc.hint(h)
+        case Max(m) =>
+          acc.max(m)
+        case Min(m) =>
+          acc.min(m)
+        case Skip(s) =>
+          acc.skip(s)
+        case Limit(l) =>
+          acc.limit(l)
+        case Filter(f) =>
+          acc.filter(f)
+        case Projection(p) =>
+          acc.projection(p)
+        case Sort(s) =>
+          acc.sort(s)
+      }
+    }
+
+  private def add(command: FindCommand): FindQueryBuilder =
+    copy(commands = command :: commands)
 }

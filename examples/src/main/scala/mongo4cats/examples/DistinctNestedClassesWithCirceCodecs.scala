@@ -18,7 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import io.circe.generic.auto._
-import mongo4cats.circe._
+import mongo4cats.circe.unsafe.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 
@@ -27,20 +27,25 @@ import java.time.Instant
 object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMongo {
 
   final case class Address(city: String, country: String)
-  final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
+  final case class Person(
+      firstName: String,
+      lastName: String,
+      address: Address,
+      registrationDate: Instant
+  )
 
   override val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
-          coll <- db.getCollectionWithCodec[Person]("people")
+          db <- client.getDatabase[IO]("testdb")
+          coll <- db.getCollection[IO]("people")
           person1 = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
           person2 = Person("John", "Doe", Address("Los-Angeles", "USA"), Instant.now())
           person3 = Person("John", "Smith", Address("Chicago", "USA"), Instant.now())
-          _                 <- coll.insertMany(List(person1, person2, person3))
-          distinctAddresses <- coll.distinctWithCodec[Address]("address").all
-          _                 <- IO.println(distinctAddresses)
+          _ <- coll.insertMany[IO, Person](List(person1, person2, person3))
+          distinctAddresses <- coll.distinct("address").stream[IO, Address].compile.to(List)
+          _ <- IO.println(distinctAddresses)
         } yield ()
       }
     }

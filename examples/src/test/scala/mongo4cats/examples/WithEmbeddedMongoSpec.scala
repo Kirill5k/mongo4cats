@@ -32,24 +32,30 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
     "create and retrieve documents from a db" in withRunningEmbeddedMongo {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
-          coll <- db.getCollection("docs")
+          db <- client.getDatabase[IO]("testdb")
+          coll <- db.getCollection[IO]("docs")
           testDoc = Document("Hello", "World!")
-          _        <- coll.insertOne(testDoc)
-          foundDoc <- coll.find.first
-        } yield foundDoc mustBe Some(testDoc)
+          _ <- coll.insertOne[IO, Document](testDoc)
+          foundDoc <- coll.find().first[IO, Document]
+        } yield {
+          foundDoc.map(_.remove("_id"))
+          foundDoc mustBe Some(testDoc)
+        }
       }
     }.unsafeToFuture()
 
     "start instance on different port" in withRunningEmbeddedMongo("localhost", 12355) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
-          coll <- db.getCollection("docs")
+          db <- client.getDatabase[IO]("testdb")
+          coll <- db.getCollection[IO]("docs")
           testDoc = Document("Hello", "World!")
-          _        <- coll.insertOne(testDoc)
-          foundDoc <- coll.find.first
-        } yield foundDoc mustBe Some(testDoc)
+          _ <- coll.insertOne[IO, Document](testDoc)
+          foundDoc <- coll.find().first[IO, Document]
+        } yield {
+          foundDoc.map(_.remove("_id"))
+          foundDoc mustBe Some(testDoc)
+        }
       }
     }.unsafeToFuture()
   }

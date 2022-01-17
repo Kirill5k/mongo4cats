@@ -20,8 +20,9 @@ import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Update}
 import mongo4cats.bson.Document
+import mongo4cats.embedded.EmbeddedMongo
 
-object JsonDocumentFindAndUpdate extends IOApp.Simple {
+object JsonDocumentFindAndUpdate extends IOApp.Simple with EmbeddedMongo {
 
   val json =
     """{
@@ -39,14 +40,16 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
     .unset("lastName")
 
   val run: IO[Unit] =
-    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
-      for {
-        db      <- client.getDatabase("testdb")
-        coll    <- db.getCollection("jsoncoll")
-        _       <- coll.insertOne(Document.parse(json))
-        old     <- coll.findOneAndUpdate(filterQuery, updateQuery)
-        updated <- coll.find.first
-        _       <- IO.println(s"old: ${old.get.toJson()}\nupdated: ${updated.get.toJson()}")
-      } yield ()
+    withRunningEmbeddedMongo("localhost", 27017) {
+      MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+        for {
+          db <- client.getDatabase[IO]("testdb")
+          coll <- db.getCollection[IO]("jsoncoll")
+          _ <- coll.insertOne[IO, Document](Document.parse(json))
+          old <- coll.findOneAndUpdate[IO, Document](filterQuery, updateQuery)
+          updated <- coll.find().first[IO, Document]
+          _ <- IO.println(s"old: ${old.get.toJson()}\nupdated: ${updated.get.toJson()}")
+        } yield ()
+      }
     }
 }
