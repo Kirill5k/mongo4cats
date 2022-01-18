@@ -47,7 +47,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple with EmbeddedMongo {
           coll <- db.getCollection[IO]("jsoncoll")
           _ <- coll.insertOne[IO, Document](Document.parse(json))
           old <- coll.findOneAndUpdate[IO, Document](filterQuery, updateQuery)
-          updated <- coll.find().first[IO, Document]
+          updated <- coll.find.first[IO, Document]
           _ <- IO.println(s"old: ${old.get.toJson()}\nupdated: ${updated.get.toJson()}")
         } yield ()
       }

@@ -36,7 +36,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
           coll <- db.getCollection[IO]("docs")
           testDoc = Document("Hello", "World!")
           _ <- coll.insertOne[IO, Document](testDoc)
-          foundDoc <- coll.find().first[IO, Document]
+          foundDoc <- coll.find.first[IO, Document]
         } yield {
           foundDoc.map(_.remove("_id"))
           foundDoc mustBe Some(testDoc)
@@ -51,7 +51,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
           coll <- db.getCollection[IO]("docs")
           testDoc = Document("Hello", "World!")
           _ <- coll.insertOne[IO, Document](testDoc)
-          foundDoc <- coll.find().first[IO, Document]
+          foundDoc <- coll.find.first[IO, Document]
         } yield {
           foundDoc.map(_.remove("_id"))
           foundDoc mustBe Some(testDoc)

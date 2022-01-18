@@ -20,21 +20,25 @@ import cats.effect.Async
 import cats.implicits._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
-import com.mongodb.reactivestreams.client.AggregatePublisher
+import com.mongodb.reactivestreams.client.{AggregatePublisher, MongoCollection => JCollection}
 import fs2.Stream
 import mongo4cats.helpers._
 import mongo4cats.bson.Decoder
 import mongo4cats.bson.syntax._
-import mongo4cats.collection.operations.Index
+import mongo4cats.client.ClientSession
+import mongo4cats.collection.operations.{Aggregate, Index}
 import mongo4cats.collection.queries.AggregateCommand, AggregateCommand._
-import org.bson.{BsonValue, Document}
+import org.bson.{BsonDocument, BsonValue, Document}
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters._
 
 final case class AggregateQueryBuilder(
-    private val publisher: AggregatePublisher[BsonValue],
+    private val collection: JCollection[BsonDocument],
+    private val pipeline: Seq[Bson],
+    private val clientSession: Option[ClientSession],
     private val commands: List[AggregateCommand]
 ) {
 
@@ -67,6 +71,19 @@ final case class AggregateQueryBuilder(
 
   def batchSize(batchSize: Int) =
     add(BatchSize(batchSize))
+
+  //
+  def session(cs: ClientSession) =
+    copy(clientSession = Some(cs))
+
+  def noSession =
+    copy(clientSession = None)
+
+  def pipeline(p: Seq[Bson]) =
+    copy(pipeline = p)
+
+  def pipeline(p: Aggregate) =
+    copy(pipeline = p.toBsons)
 
   //
   def toCollection[F[_]: Async]: F[Unit] =
@@ -114,6 +131,12 @@ final case class AggregateQueryBuilder(
         case BatchSize(i) =>
           acc.batchSize(i)
       }
+    }
+
+  private def publisher: AggregatePublisher[BsonValue] =
+    clientSession match {
+      case None     => collection.aggregate(pipeline.asJava, classOf[BsonValue])
+      case Some(cs) => collection.aggregate(cs.session, pipeline.asJava, classOf[BsonValue])
     }
 
   private def add(command: AggregateCommand): AggregateQueryBuilder =

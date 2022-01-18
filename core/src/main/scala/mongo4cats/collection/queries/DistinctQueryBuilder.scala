@@ -19,21 +19,24 @@ package mongo4cats.collection.queries
 import cats.effect.Async
 import cats.implicits._
 import com.mongodb.client.model
-import com.mongodb.reactivestreams.client.DistinctPublisher
+import com.mongodb.reactivestreams.client.{DistinctPublisher, MongoCollection => JCollection}
 import fs2.Stream
 import mongo4cats.helpers._
 import mongo4cats.bson.Decoder
 import mongo4cats.bson.syntax._
+import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Filter => OFilter}
 import mongo4cats.collection.queries.DistinctCommand, DistinctCommand._
-import org.bson.BsonValue
+import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
 final case class DistinctQueryBuilder(
-    private val publisher: DistinctPublisher[BsonValue],
+    private val fieldName: String,
+    private val collection: JCollection[BsonDocument],
+    private val clientSession: Option[ClientSession],
     private val commands: List[DistinctCommand]
 ) {
 
@@ -58,6 +61,14 @@ final case class DistinctQueryBuilder(
       .flatMap(_.traverse { bson =>
         bson.as[A].liftTo[F]
       })
+  //
+  def session(cs: ClientSession) =
+    copy(clientSession = Some(cs))
+
+  def noSession =
+    copy(clientSession = None)
+
+  //
 
   def stream[F[_]: Async, A: Decoder]: Stream[F, A] =
     applyCommands.stream[F].evalMap(_.as[A].liftTo[F])
@@ -81,4 +92,11 @@ final case class DistinctQueryBuilder(
 
   private def add(command: DistinctCommand): DistinctQueryBuilder =
     copy(commands = command :: commands)
+
+  private def publisher: DistinctPublisher[BsonValue] =
+    clientSession match {
+      case None     => collection.distinct(fieldName, classOf[BsonValue])
+      case Some(cs) => collection.distinct(cs.session, fieldName, classOf[BsonValue])
+    }
+
 }

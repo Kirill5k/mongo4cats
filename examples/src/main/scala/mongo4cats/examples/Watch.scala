@@ -19,7 +19,6 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.operations.Aggregate
 import fs2.Stream
 
 object Watch extends IOApp.Simple {
@@ -30,7 +29,7 @@ object Watch extends IOApp.Simple {
         for {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("docs")
-          watchStream = coll.watch(Aggregate.empty).stream[IO]
+          watchStream = coll.watch.stream[IO]
           insertStream = Stream
             .range(0, 10)
             .evalMap(i => coll.insertOne[IO, Document](Document("name" -> s"doc-$i")))

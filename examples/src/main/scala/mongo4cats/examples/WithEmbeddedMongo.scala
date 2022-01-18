@@ -31,8 +31,7 @@ object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("jsoncoll")
           _ <- coll.insertOne[IO, Document](Document("Hello", "World!"))
-          res <- coll
-            .find()
+          res <- coll.find
             .projection(Projection.excludeId)
             .stream[IO, Document]
             .compile

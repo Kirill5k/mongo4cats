@@ -18,7 +18,8 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import io.circe.generic.auto._
-import mongo4cats.circe.unsafe.syntax._
+import mongo4cats.circe.implicits._
+import mongo4cats.circe.unsafe
 import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 
@@ -33,6 +34,9 @@ object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMo
       address: Address,
       registrationDate: Instant
   )
+
+  implicit val addressEnc = unsafe.circeDocumentEncoder[Address]
+  implicit val personEnc = unsafe.circeDocumentEncoder[Person]
 
   override val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {

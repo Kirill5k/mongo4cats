@@ -19,7 +19,8 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import io.circe.generic.auto._
 import mongo4cats.client.MongoClient
-import mongo4cats.circe.unsafe.syntax._
+import mongo4cats.circe.implicits._
+import mongo4cats.circe.unsafe
 import mongo4cats.embedded.EmbeddedMongo
 
 import java.time.Instant
@@ -34,6 +35,9 @@ object CaseClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMongo {
       registrationDate: Instant
   )
 
+  implicit val addressEnc = unsafe.circeDocumentEncoder[Address]
+  implicit val personEnc = unsafe.circeDocumentEncoder[Person]
+
   override val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
@@ -42,7 +46,7 @@ object CaseClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMongo {
           coll <- db.getCollection[IO]("people")
           person = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
           _ <- coll.insertOne[IO, Person](person)
-          docs <- coll.find().stream[IO, Person].compile.toList
+          docs <- coll.find.stream[IO, Person].compile.toList
           _ <- IO.println(docs)
         } yield ()
       }

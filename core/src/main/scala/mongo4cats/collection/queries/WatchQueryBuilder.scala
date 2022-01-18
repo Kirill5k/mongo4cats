@@ -23,19 +23,28 @@ import com.mongodb.client.model.changestream.{
   ChangeStreamDocument,
   FullDocument => JFullDocument
 }
-import com.mongodb.reactivestreams.client.ChangeStreamPublisher
+import com.mongodb.reactivestreams.client.{
+  ChangeStreamPublisher,
+  MongoCollection => JCollection
+}
 import fs2.Stream
 import mongo4cats.helpers._
 import mongo4cats.bson.Decoder
 import mongo4cats.bson.syntax._
+import mongo4cats.client.ClientSession
+import mongo4cats.collection.operations.Aggregate
 import mongo4cats.collection.queries.WatchCommand, WatchCommand._
 import org.bson.{BsonDocument, BsonTimestamp, BsonValue}
+import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters._
 
 final case class WatchQueryBuilder(
-    private val publisher: ChangeStreamPublisher[BsonValue],
+    private val collection: JCollection[BsonDocument],
+    private val pipeline: Seq[Bson],
+    private val clientSession: Option[ClientSession],
     private val commands: List[WatchCommand]
 ) {
 
@@ -60,6 +69,20 @@ final case class WatchQueryBuilder(
   def startAtOperationTime(saot: BsonTimestamp) =
     add(StartAtOperationTime(saot))
 
+  //
+  def session(cs: ClientSession) =
+    copy(clientSession = Some(cs))
+
+  def noSession =
+    copy(clientSession = None)
+
+  def pipeline(p: Seq[Bson]) =
+    copy(pipeline = p)
+
+  def pipeline(p: Aggregate) =
+    copy(pipeline = p.toBsons)
+
+  //
   def stream[F[_]: Async]: Stream[F, ChangeStreamDocument[BsonValue]] =
     boundedStream[F](1)
 
@@ -68,6 +91,8 @@ final case class WatchQueryBuilder(
 
   def updateStream[F[_]: Async, A: Decoder]: Stream[F, A] =
     stream.map(_.getFullDocument).evalMap(_.as[A].liftTo[F])
+
+  //
 
   private def applyCommands: ChangeStreamPublisher[BsonValue] =
     commands.foldRight(publisher) { (command, acc) =>
@@ -91,4 +116,11 @@ final case class WatchQueryBuilder(
 
   private def add(command: WatchCommand): WatchQueryBuilder =
     copy(commands = command :: commands)
+
+  private def publisher: ChangeStreamPublisher[BsonValue] =
+    clientSession match {
+      case None     => collection.watch(pipeline.asJava, classOf[BsonValue])
+      case Some(cs) => collection.watch(cs.session, pipeline.asJava, classOf[BsonValue])
+    }
+
 }

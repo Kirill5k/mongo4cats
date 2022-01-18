@@ -32,7 +32,7 @@ import mongo4cats.collection.queries.{
   WatchQueryBuilder
 }
 import mongo4cats.helpers._
-import org.bson.{BsonDocument, BsonValue}
+import org.bson.BsonDocument
 import org.bson.conversions.Bson
 import scala.jdk.CollectionConverters._
 
@@ -52,48 +52,10 @@ trait MongoCollection {
   def drop[F[_]: Async](session: ClientSession = ClientSession.void): F[Unit]
 
   //
-  def aggregate(
-      pipeline: Seq[Bson],
-      session: ClientSession
-  ): AggregateQueryBuilder
-
-  def aggregate(
-      pipeline: Aggregate,
-      session: ClientSession = ClientSession.void
-  ): AggregateQueryBuilder =
-    aggregate(pipeline.toBsons, session)
-
-  //
-  def watch(pipeline: Seq[Bson], session: ClientSession): WatchQueryBuilder
-
-  def watch(
-      pipeline: Aggregate,
-      session: ClientSession = ClientSession.void
-  ): WatchQueryBuilder =
-    watch(pipeline.toBsons, session)
-
-  //
-  def distinct(
-      fieldName: String,
-      filter: Bson,
-      session: ClientSession
-  ): DistinctQueryBuilder
-
-  def distinct(
-      fieldName: String,
-      filter: Filter = Filter.empty,
-      session: ClientSession = ClientSession.void
-  ): DistinctQueryBuilder =
-    distinct(fieldName, filter.toBson, session)
-
-  //
-  def find(filter: Bson, session: ClientSession): FindQueryBuilder
-
-  def find(
-      filter: Filter = Filter.empty,
-      session: ClientSession = ClientSession.void
-  ): FindQueryBuilder =
-    find(filter.toBson, session)
+  def aggregate: AggregateQueryBuilder
+  def watch: WatchQueryBuilder
+  def distinct(fieldName: String): DistinctQueryBuilder
+  def find: FindQueryBuilder
 
   //
   def findOneAndDelete[F[_]: Async, A: Decoder](
@@ -342,52 +304,17 @@ object MongoCollection {
       else
         collection.drop.asyncVoid[F]
 
-    def aggregate(pipeline: Seq[Bson], session: ClientSession) =
-      if (!session.isNull)
-        AggregateQueryBuilder(
-          collection.aggregate(session.session, pipeline.asJava, classOf[BsonValue]),
-          List.empty
-        )
-      else
-        AggregateQueryBuilder(
-          collection.aggregate(pipeline.asJava, classOf[BsonValue]),
-          List.empty
-        )
+    def aggregate: AggregateQueryBuilder =
+      AggregateQueryBuilder(collection, List.empty, None, List.empty)
 
-    def watch(pipeline: Seq[Bson], session: ClientSession) =
-      if (!session.isNull)
-        WatchQueryBuilder(
-          collection.watch(session.session, pipeline.asJava, classOf[BsonValue]),
-          List.empty
-        )
-      else
-        WatchQueryBuilder(
-          collection.watch(pipeline.asJava, classOf[BsonValue]),
-          List.empty
-        )
+    def watch =
+      WatchQueryBuilder(collection, List.empty, None, List.empty)
 
-    def find(find: Bson, session: ClientSession) =
-      if (!session.isNull)
-        FindQueryBuilder(collection.find(session.session, find, classOf[BsonValue]), List.empty)
-      else
-        FindQueryBuilder(collection.find(find, classOf[BsonValue]), List.empty)
+    def find =
+      FindQueryBuilder(collection, None, List.empty)
 
-    def distinct(
-        fieldName: String,
-        filter: Bson,
-        session: ClientSession
-    ) =
-      if (session.isNull) {
-        DistinctQueryBuilder(
-          collection.distinct(fieldName, filter, classOf[BsonValue]),
-          List.empty
-        )
-      } else {
-        DistinctQueryBuilder(
-          collection.distinct(session.session, fieldName, filter, classOf[BsonValue]),
-          List.empty
-        )
-      }
+    def distinct(fieldName: String) =
+      DistinctQueryBuilder(fieldName, collection, None, List.empty)
 
     def findOneAndDelete[F[_]: Async, A: Decoder](
         filter: Bson,

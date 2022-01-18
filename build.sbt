@@ -65,14 +65,14 @@ lazy val root = project
   )
   .aggregate(
     core,
-    `mongo4cats-circe`,
-    `mongo4cats-examples`,
-    `mongo4cats-embedded`
+    circe,
+    examples,
+    embedded
   )
 
 lazy val core = project
   .in(file("core"))
-  .dependsOn(`mongo4cats-embedded` % "test->compile")
+  .dependsOn(embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
@@ -80,9 +80,9 @@ lazy val core = project
     test / parallelExecution := false)
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-circe` = project
+lazy val circe = project
   .in(file("circe"))
-  .dependsOn(core, `mongo4cats-embedded` % "test->compile")
+  .dependsOn(core, embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
@@ -92,9 +92,9 @@ lazy val `mongo4cats-circe` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-examples` = project
+lazy val examples = project
   .in(file("examples"))
-  .dependsOn(core, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, circe, embedded)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
@@ -103,7 +103,7 @@ lazy val `mongo4cats-examples` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-embedded` = project
+lazy val embedded = project
   .in(file("embedded"))
   .settings(commonSettings)
   .settings(
@@ -114,27 +114,3 @@ lazy val `mongo4cats-embedded` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val docs = project
-  .in(file("docs"))
-  .dependsOn(core, `mongo4cats-circe`, `mongo4cats-embedded`)
-  .enablePlugins(MicrositesPlugin)
-  .settings(noPublish)
-  .settings(commonSettings)
-  .settings(
-    name                      := "mongo4cats-docs",
-    micrositeName             := "mongo4cats",
-    micrositeAuthor           := "Kirill",
-    micrositeDescription      := "MongoDB Java client wrapper for Cats-Effect & FS2",
-    micrositeBaseUrl          := "/mongo4cats",
-    micrositeDocumentationUrl := "/mongo4cats/docs",
-    micrositeHomepage         := "https://github.com/kirill5k/mongo4cats",
-    micrositeGithubOwner      := "kirill5k",
-    micrositeGithubRepo       := "mongo4cats",
-    micrositeHighlightTheme   := "docco",
-    micrositeGitterChannel    := false,
-    micrositeShareOnSocial    := false,
-    mdocIn                    := (Compile / sourceDirectory).value / "mdoc",
-    micrositeCDNDirectives := CdnDirectives(
-      cssList = List("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css")
-    )
-  )

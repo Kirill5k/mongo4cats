@@ -119,4 +119,71 @@ final case class Aggregate private (private val aggs: List[Bson]) {
 
 object Aggregate {
   def empty: Aggregate = Aggregate(List.empty)
+
+  def bucketAuto[T: Encoder](groupBy: T, buckets: Int, options: BucketAutoOptions): Aggregate =
+    empty.bucketAuto[T](groupBy, buckets, options)
+
+  def sample(size: Int): Aggregate =
+    empty.sample(size)
+
+  def count: Aggregate =
+    empty.count
+
+  def count(field: String): Aggregate =
+    empty.count(field)
+
+  def matchBy(filter: Filter): Aggregate =
+    empty.matchBy(filter)
+
+  def project(projection: Projection): Aggregate =
+    empty.project(projection)
+
+  def sort(sort: Sort): Aggregate =
+    empty.sort(sort)
+
+  def sortByCount[T: Encoder](filter: T): Aggregate =
+    empty.sortByCount[T](filter)
+
+  def skip(n: Int): Aggregate =
+    empty.skip(n)
+
+  def limit(n: Int): Aggregate =
+    empty.limit(n)
+
+  def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
+    empty.lookup(from, localField, foreignField, as)
+
+  def group[T: Encoder](id: T, fieldAccumulator: Accumulator): Aggregate =
+    empty.group[T](id, fieldAccumulator)
+
+  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
+    empty.unwind(fieldName, unwindOptions)
+
+  def out(collectionName: String): Aggregate =
+    empty.out(collectionName)
+
+  def out(databaseName: String, collectionName: String): Aggregate =
+    empty.out(databaseName, collectionName)
+
+  def merge(name: String, options: MergeOptions = new MergeOptions()): Aggregate =
+    empty.merge(name, options)
+
+  def replaceWith[T: Encoder](value: T): Aggregate =
+    empty.replaceWith[T](value)
+
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
+    empty.lookup(from, pipeline, as)
+
+  def graphLookup[T: Encoder](
+      from: String,
+      startWith: T,
+      connectFromField: String,
+      connectToField: String,
+      as: String,
+      options: GraphLookupOptions = new GraphLookupOptions()
+  ): Aggregate =
+    empty.graphLookup[T](from, startWith, connectFromField, connectToField, as, options)
+
+  def unionWith(collection: String, pipeline: Aggregate): Aggregate =
+    empty.unionWith(collection, pipeline)
 }

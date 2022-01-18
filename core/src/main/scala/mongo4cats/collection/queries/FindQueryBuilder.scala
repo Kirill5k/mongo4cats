@@ -20,21 +20,23 @@ import cats.effect.Async
 import cats.implicits._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
-import com.mongodb.reactivestreams.client.FindPublisher
+import com.mongodb.reactivestreams.client.{FindPublisher, MongoCollection => JCollection}
 import fs2.Stream
 import mongo4cats.bson.Decoder
 import mongo4cats.bson.syntax._
 import mongo4cats.helpers._
+import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations
 import mongo4cats.collection.queries.FindCommand, FindCommand._
-import org.bson.{BsonValue, Document}
+import org.bson.{BsonDocument, BsonValue, Document}
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
 final case class FindQueryBuilder(
-    private val publisher: FindPublisher[BsonValue],
+    private val collection: JCollection[BsonDocument],
+    private val clientSession: Option[ClientSession],
     private val commands: List[FindCommand]
 ) {
 
@@ -102,6 +104,12 @@ final case class FindQueryBuilder(
     add(Limit(l))
 
   //
+  def session(s: ClientSession) =
+    copy(clientSession = Some(s))
+
+  def noSession =
+    copy(clientSession = None)
+  //
 
   def first[F[_]: Async, A: Decoder]: F[Option[A]] =
     applyCommands.first
@@ -164,4 +172,10 @@ final case class FindQueryBuilder(
 
   private def add(command: FindCommand): FindQueryBuilder =
     copy(commands = command :: commands)
+
+  private def publisher: FindPublisher[BsonValue] =
+    clientSession match {
+      case None     => collection.find(classOf[BsonValue])
+      case Some(cs) => collection.find(cs.session, classOf[BsonValue])
+    }
 }
