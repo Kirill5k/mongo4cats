@@ -16,7 +16,6 @@
 
 package mongo4cats.collection.operations
 
-//import cats.implicits._
 import com.mongodb.client.model.{Accumulators, BsonField}
 import mongo4cats.bson.Encoder
 import mongo4cats.bson.syntax._
