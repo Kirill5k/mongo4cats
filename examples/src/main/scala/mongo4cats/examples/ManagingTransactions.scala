@@ -18,7 +18,8 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import cats.syntax.foldable._
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 
 object ManagingTransactions extends IOApp.Simple {
@@ -33,7 +34,10 @@ object ManagingTransactions extends IOApp.Simple {
           _ <- session.startTransaction[IO]()
           _ <- (0 to 99).toList
             .traverse_(i =>
-              coll.insertOne[IO, Document](Document("name" -> s"doc-$i"), session = session)
+              coll.insertOne[IO, BsonDocument](
+                BsonDocument("name" -> s"doc-$i".asBson),
+                session = session
+              )
             )
           _ <- session.abortTransaction[IO]
           count1 <- coll.count[IO]()
@@ -41,7 +45,10 @@ object ManagingTransactions extends IOApp.Simple {
           _ <- session.startTransaction[IO]()
           _ <- (0 to 99).toList
             .traverse_(i =>
-              coll.insertOne[IO, Document](Document("name" -> s"doc-$i"), session = session)
+              coll.insertOne[IO, BsonDocument](
+                BsonDocument("name" -> s"doc-$i".asBson),
+                session = session
+              )
             )
           _ <- session.commitTransaction[IO]
           count2 <- coll.count[IO]()

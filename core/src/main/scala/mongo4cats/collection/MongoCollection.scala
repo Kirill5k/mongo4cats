@@ -365,14 +365,14 @@ object MongoCollection {
     ): F[Option[A]] =
       if (!session.isNull)
         collection
-          .findOneAndReplace(session.session, filter, replacement.asDoc, options)
+          .findOneAndReplace(session.session, filter, replacement.asBsonDoc, options)
           .asyncOption[F]
           .flatMap(_.traverse { bson =>
             bson.as[A].liftTo[F]
           })
       else
         collection
-          .findOneAndReplace(filter, replacement.asDoc, options)
+          .findOneAndReplace(filter, replacement.asBsonDoc, options)
           .asyncOption[F]
           .flatMap(_.traverse { bson =>
             bson.as[A].liftTo[F]
@@ -469,10 +469,10 @@ object MongoCollection {
     ): F[UpdateResult] =
       if (!session.isNull)
         collection
-          .replaceOne(session.session, filter, replacement.asDoc, options)
+          .replaceOne(session.session, filter, replacement.asBsonDoc, options)
           .asyncSingle[F]
       else
-        collection.replaceOne(filter, replacement.asDoc, options).asyncSingle[F]
+        collection.replaceOne(filter, replacement.asBsonDoc, options).asyncSingle[F]
 
     def deleteOne[F[_]: Async](
         filter: Bson,
@@ -500,9 +500,9 @@ object MongoCollection {
         session: ClientSession = ClientSession.void
     ): F[InsertOneResult] =
       if (!session.isNull)
-        collection.insertOne(session.session, document.asDoc, options).asyncSingle[F]
+        collection.insertOne(session.session, document.asBsonDoc, options).asyncSingle[F]
       else
-        collection.insertOne(document.asDoc, options).asyncSingle[F]
+        collection.insertOne(document.asBsonDoc, options).asyncSingle[F]
 
     def insertMany[F[_]: Async, T: DocumentEncoder](
         documents: Seq[T],
@@ -511,11 +511,11 @@ object MongoCollection {
     ): F[InsertManyResult] =
       if (!session.isNull)
         collection
-          .insertMany(session.session, documents.map(_.asDoc).asJava, options)
+          .insertMany(session.session, documents.map(_.asBsonDoc).asJava, options)
           .asyncSingle[F]
       else
         collection
-          .insertMany(documents.map(_.asDoc).asJava, options)
+          .insertMany(documents.map(_.asBsonDoc).asJava, options)
           .asyncSingle[F]
 
     def count[F[_]: Async](

@@ -23,56 +23,51 @@ final case class DecodeError(msg: String) extends Throwable
 trait Decoder[A] extends Serializable { self =>
   def apply(b: BsonValue): Either[DecodeError, A]
 
-  final def map[B](f: A => B) = new Decoder[B] {
-    final def apply(b: BsonValue): Either[DecodeError, B] =
-      self(b).map(f)
-  }
-
-  final def flatMap[B](f: A => Decoder[B]): Decoder[B] = new Decoder[B] {
-    final def apply(b: BsonValue): Either[DecodeError, B] =
-      self(b).flatMap(a => f(a)(b))
+  def map[B](f: A => B): Decoder[B] = new Decoder[B] {
+    def apply(b: BsonValue): Either[DecodeError, B] =
+      self.apply(b).map(f)
   }
 }
 
 trait DocumentDecoder[A] extends Serializable { self =>
   def apply(b: BsonDocument): Either[DecodeError, A]
 
-  final def map[B](f: A => B) = new DocumentDecoder[B] {
-    final def apply(b: BsonDocument): Either[DecodeError, B] =
-      self(b).map(f)
+  def map[B](f: A => B): DocumentDecoder[B] = new DocumentDecoder[B] {
+    def apply(b: BsonDocument): Either[DecodeError, B] =
+      self.apply(b).map(f)
   }
-
-  final def flatMap[B](f: A => DocumentDecoder[B]): DocumentDecoder[B] =
-    new DocumentDecoder[B] {
-      final def apply(b: BsonDocument): Either[DecodeError, B] =
-        self(b).flatMap(a => f(a)(b))
-    }
 }
 
-object DocumentDecoder {
+object DocumentDecoder extends LowLevelDocumentDecoder {
   def apply[A](implicit ev: DocumentDecoder[A]): DocumentDecoder[A] = ev
 
-  implicit def narrowDecoder[A: Decoder]: DocumentDecoder[A] = new DocumentDecoder[A] {
-    def apply(b: BsonDocument) = Decoder[A].apply(b: BsonValue)
+  def instance[A](f: BsonDocument => Either[DecodeError, A]) = new DocumentDecoder[A] {
+    def apply(b: BsonDocument) = f(b)
   }
 
   implicit val bsonDocumentDecoder: DocumentDecoder[BsonDocument] =
-    new DocumentDecoder[BsonDocument] {
-      def apply(b: BsonDocument) = Right(b)
-    }
+    DocumentDecoder.instance[BsonDocument](Right(_))
+}
+
+trait LowLevelDocumentDecoder {
+  implicit def narrowDecoder[A: Decoder] = DocumentDecoder.instance[A] { (b: BsonDocument) =>
+    Decoder[A].apply(b: BsonValue)
+  }
 }
 
 object Decoder {
   def apply[A](implicit ev: Decoder[A]): Decoder[A] = ev
 
-  implicit val bsonDecoder: Decoder[BsonValue] = new Decoder[BsonValue] {
-    def apply(b: BsonValue) = Right(b)
+  def instance[A](f: BsonValue => Either[DecodeError, A]) = new Decoder[A] {
+    def apply(b: BsonValue) = f(b)
   }
-  implicit val document: Decoder[Document] = new Decoder[Document] {
-    def apply(b: BsonValue) = b match {
-      case b: BsonDocument => Right(Document.parse(b.toJson()))
-      case _               => Left(DecodeError("Incorrect document"))
 
-    }
+  implicit val bsonDecoder: Decoder[BsonValue] =
+    Decoder.instance[BsonValue](Right(_))
+
+  implicit val bsonDocumentDecoder: Decoder[BsonDocument] = Decoder.instance[BsonDocument] {
+    case bd: BsonDocument => Right(bd)
+    case _                => Left(DecodeError("Incorrect BsonDocument"))
   }
+
 }

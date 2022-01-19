@@ -17,7 +17,7 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.Projection
 import mongo4cats.embedded.EmbeddedMongo
@@ -30,10 +30,10 @@ object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
         for {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("jsoncoll")
-          _ <- coll.insertOne[IO, Document](Document("Hello", "World!"))
+          _ <- coll.insertOne[IO, BsonDocument](BsonDocument("Hello", "World!"))
           res <- coll.find
             .projection(Projection.excludeId)
-            .stream[IO, Document]
+            .stream[IO, BsonDocument]
             .compile
             .to(List)
           _ <- IO.println(res.map(_.toJson).mkString)

@@ -24,7 +24,7 @@ trait CodecOps {
   }
 
   implicit final class BDocEncoderOps[A](val value: A) {
-    def asDoc(implicit encoder: DocumentEncoder[A]): BsonDocument = encoder(value)
+    def asBsonDoc(implicit encoder: DocumentEncoder[A]): BsonDocument = encoder(value)
   }
 
   implicit class BDecoderOps(val value: BsonValue) {

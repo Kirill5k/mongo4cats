@@ -19,7 +19,7 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Update}
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
 import mongo4cats.embedded.EmbeddedMongo
 
 object JsonDocumentFindAndUpdate extends IOApp.Simple with EmbeddedMongo {
@@ -45,9 +45,9 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple with EmbeddedMongo {
         for {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("jsoncoll")
-          _ <- coll.insertOne[IO, Document](Document.parse(json))
-          old <- coll.findOneAndUpdate[IO, Document](filterQuery, updateQuery)
-          updated <- coll.find.first[IO, Document]
+          _ <- coll.insertOne[IO, BsonDocument](BsonDocument.parse(json))
+          old <- coll.findOneAndUpdate[IO, BsonDocument](filterQuery, updateQuery)
+          updated <- coll.find.first[IO, BsonDocument]
           _ <- IO.println(s"old: ${old.get.toJson()}\nupdated: ${updated.get.toJson()}")
         } yield ()
       }

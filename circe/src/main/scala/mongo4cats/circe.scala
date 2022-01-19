@@ -19,7 +19,7 @@ package mongo4cats
 import cats.implicits._
 import io.circe.{parser, Decoder => JDecoder, Encoder => JEncoder, Json}
 import io.circe.syntax._
-import mongo4cats.bson.{DecodeError, Decoder, Document, DocumentEncoder, Encoder}
+import mongo4cats.bson.{BsonDocument, DecodeError, Decoder, DocumentEncoder, Encoder}
 import org.bson._
 
 object circe extends JsonCodecs {
@@ -37,7 +37,7 @@ object circe extends JsonCodecs {
 
     implicit def circeDecoderToDecoder[A: JDecoder] = new Decoder[A] {
       def apply(b: BsonValue) = {
-        val doc = Document(RootTag -> b).toJson()
+        val doc = BsonDocument(RootTag -> b).toJson()
         val json = parser.parse(doc)
         val decoder = JDecoder.instance[A](_.get[A](RootTag))
         json.flatMap(decoder.decodeJson(_)).leftMap(x => DecodeError(x.toString))

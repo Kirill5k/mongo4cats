@@ -17,7 +17,8 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import fs2.Stream
 
@@ -32,7 +33,9 @@ object Watch extends IOApp.Simple {
           watchStream = coll.watch.stream[IO]
           insertStream = Stream
             .range(0, 10)
-            .evalMap(i => coll.insertOne[IO, Document](Document("name" -> s"doc-$i")))
+            .evalMap(i =>
+              coll.insertOne[IO, BsonDocument](BsonDocument("name" -> s"doc-$i".asBson))
+            )
           updates <- watchStream.concurrently(insertStream).take(10).compile.toList
           _ <- IO.println(updates)
         } yield ()

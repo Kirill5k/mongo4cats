@@ -18,11 +18,13 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
+import mongo4cats.bson.BsonDocument
+import mongo4cats.bson.syntax._
 import mongo4cats.collection.operations.Filter
-import mongo4cats.bson.Document
 import mongo4cats.embedded.EmbeddedMongo
 
 object FilteringAndSorting extends IOApp.Simple with EmbeddedMongo {
+  implicitly[mongo4cats.bson.DocumentDecoder[org.bson.BsonDocument]]
 
   override val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
@@ -30,14 +32,14 @@ object FilteringAndSorting extends IOApp.Simple with EmbeddedMongo {
         for {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("docs")
-          _ <- coll.insertMany[IO, Document](
-            (0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i))
+          _ <- coll.insertMany[IO, BsonDocument](
+            (0 to 100).map(i => BsonDocument("name" -> s"doc-$i".asBson, "index" -> i.asBson))
           )
           docs <- coll.find
             .filter(Filter.lt("index", 10) || Filter.regex("name", "doc-[1-9]0"))
             .sortByDesc("name")
             .limit(5)
-            .stream[IO, Document]
+            .stream[IO, BsonDocument]
             .compile
             .to(List)
           _ <- IO.println(docs)
