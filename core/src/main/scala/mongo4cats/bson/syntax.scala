@@ -16,7 +16,7 @@
 
 package mongo4cats.bson
 
-import org.bson.{BsonDocument, BsonValue}
+import org.bson.BsonValue
 
 trait CodecOps {
   implicit final class BEncoderOps[A](val value: A) {

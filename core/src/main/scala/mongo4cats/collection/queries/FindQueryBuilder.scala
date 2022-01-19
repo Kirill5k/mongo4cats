@@ -29,7 +29,7 @@ import mongo4cats.bson.syntax._
 import mongo4cats.helpers._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations
-import mongo4cats.collection.queries.FindCommand, FindCommand._
+import mongo4cats.collection.queries.FindCommand._
 import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 

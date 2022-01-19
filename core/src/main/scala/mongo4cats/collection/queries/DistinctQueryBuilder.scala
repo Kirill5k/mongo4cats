@@ -28,7 +28,7 @@ import mongo4cats.bson.Decoder
 import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Filter => OFilter}
-import mongo4cats.collection.queries.DistinctCommand, DistinctCommand._
+import mongo4cats.collection.queries.DistinctCommand._
 import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 

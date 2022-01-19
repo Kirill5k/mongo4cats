@@ -35,7 +35,7 @@ import mongo4cats.bson.Decoder
 import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.Aggregate
-import mongo4cats.collection.queries.WatchCommand, WatchCommand._
+import mongo4cats.collection.queries.WatchCommand._
 import org.bson.{BsonDocument, BsonTimestamp, BsonValue}
 import org.bson.conversions.Bson
 
