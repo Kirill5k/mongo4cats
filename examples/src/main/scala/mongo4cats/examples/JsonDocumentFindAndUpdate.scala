@@ -43,11 +43,11 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple with EmbeddedMongo {
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
-          db <- client.getDatabase[IO]("testdb")
-          coll <- db.getCollection[IO]("jsoncoll")
-          _ <- coll.insertOne[IO, BsonDocument](BsonDocument.parse(json))
-          old <- coll.findOneAndUpdate[IO, BsonDocument](filterQuery, updateQuery)
-          updated <- coll.find.first[IO, BsonDocument]
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("jsoncoll")
+          _ <- coll.insertOne[BsonDocument](BsonDocument.parse(json))
+          old <- coll.findOneAndUpdate[BsonDocument](filterQuery, updateQuery)
+          updated <- coll.find.first[BsonDocument]
           _ <- IO.println(s"old: ${old.get.toJson()}\nupdated: ${updated.get.toJson()}")
         } yield ()
       }

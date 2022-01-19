@@ -48,15 +48,15 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
-          db <- client.getDatabase[IO]("test")
-          _ <- db.createCollection[IO]("people")
-          coll <- db.getCollection[IO]("people")
-          _ <- coll.insertOne[IO, Person](p)
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollection("people")
+          _ <- coll.insertOne[Person](p)
           filter = Filter.lt("dob", LocalDate.now()) && Filter.lt(
             "registrationDate",
             Instant.now()
           )
-          people <- coll.find.stream[IO, Person].compile.to(List)
+          people <- coll.find.stream[Person].compile.to(List)
         } yield people
 
         result.map(_ mustBe List(p))
@@ -66,13 +66,13 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     "find distinct nested objects" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db <- client.getDatabase[IO]("test")
-          _ <- db.createCollection[IO]("people")
-          coll <- db.getCollection[IO]("people")
-          _ <- coll.insertMany[IO, Person](
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollection("people")
+          _ <- coll.insertMany[Person](
             List(person("John", "Bloggs"), person("John", "Doe"), person("John", "Smith"))
           )
-          addresses <- coll.distinct("address").stream[IO, Address].compile.to(List)
+          addresses <- coll.distinct("address").stream[Address].compile.to(List)
         } yield addresses
 
         result.map { res =>
@@ -84,13 +84,13 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     "find distinct nested enums" in {
       withEmbeddedMongoClient { client =>
         val result = for {
-          db <- client.getDatabase[IO]("test")
-          _ <- db.createCollection[IO]("people")
-          coll <- db.getCollection[IO]("people")
-          _ <- coll.insertMany[IO, Person](
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollection("people")
+          _ <- coll.insertMany[Person](
             List(person("Jane", "Doe", Gender.Female), person("John", "Smith"))
           )
-          genders <- coll.distinct("gender").stream[IO, Gender].compile.to(List)
+          genders <- coll.distinct("gender").stream[Gender].compile.to(List)
         } yield genders
 
         result.map { res =>
@@ -103,13 +103,13 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       import io.circe.syntax._
       withEmbeddedMongoClient { client =>
         val result = for {
-          db <- client.getDatabase[IO]("test")
-          _ <- db.createCollection[IO]("people")
-          coll <- db.getCollection[IO]("people")
-          _ <- coll.insertMany[IO, Person](
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("people")
+          coll <- db.getCollection("people")
+          _ <- coll.insertMany[Person](
             List(person("John", "Doe"), person("Jane", "Doe", Gender.Female))
           )
-          all <- coll.find.stream[IO, Person].compile.to(List)
+          all <- coll.find.stream[Person].compile.to(List)
           _ <- IO.println(s"\n***\n${all}\n***")
           flt = Filter.eq("gender", Gender.Female)
           _ <- IO.println(s"\n***\n${flt}\n***")
@@ -119,7 +119,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
             // Gender.Female to {})
             .find
             .filter(Filter.eq[Gender]("gender", Gender.Female))
-            .stream[IO, Person]
+            .stream[Person]
             .compile
             .to(List)
         } yield females
@@ -143,13 +143,13 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
       withEmbeddedMongoClient { client =>
         val result = for {
-          db <- client.getDatabase[IO]("test")
-          _ <- db.createCollection[IO]("payments")
-          coll <- db.getCollection[IO]("payments")
-          _ <- coll.insertMany[IO, Payment](List(p1, p2))
+          db <- client.getDatabase("test")
+          _ <- db.createCollection("payments")
+          coll <- db.getCollection("payments")
+          _ <- coll.insertMany[Payment](List(p1, p2))
           payments <- coll.find
             .filter(Filter.gt("date", ts))
-            .stream[IO, Payment]
+            .stream[Payment]
             .compile
             .to(List)
         } yield payments
@@ -158,7 +158,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
   }
-  def withEmbeddedMongoClient[A](test: MongoClient => IO[A]): Future[A] =
+  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] =
     withRunningEmbeddedMongo {
       MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")

@@ -42,11 +42,11 @@ object CaseClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMongo {
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
-          db <- client.getDatabase[IO]("testdb")
-          coll <- db.getCollection[IO]("people")
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("people")
           person = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
-          _ <- coll.insertOne[IO, Person](person)
-          docs <- coll.find.stream[IO, Person].compile.toList
+          _ <- coll.insertOne[Person](person)
+          docs <- coll.find.stream[Person].compile.toList
           _ <- IO.println(docs)
         } yield ()
       }

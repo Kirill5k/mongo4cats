@@ -16,34 +16,63 @@
 
 package mongo4cats.client
 
+import cats.~>
+import cats.arrow.FunctionK
 import cats.effect.Async
 import cats.implicits._
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
 import mongo4cats.helpers._
 
-final case class ClientSession(session: JClientSession) {
-  def hasActiveTransaction[F[_]: Async]: F[Boolean] =
-    Async[F].delay(session.hasActiveTransaction)
-
-  def transactionOptions[F[_]: Async]: F[Option[TransactionOptions]] =
-    hasActiveTransaction[F] flatMap { x =>
-      Async[F].delay(x.guard[Option].as(session.getTransactionOptions))
-    }
-
-  def startTransaction[F[_]: Async](
+trait ClientSession[F[_]] {
+  def session: JClientSession
+  def hasActiveTransaction: F[Boolean]
+  def transactionOptions: F[Option[TransactionOptions]]
+  def startTransaction(
       options: TransactionOptions = TransactionOptions()
-  ): F[Unit] =
-    Async[F].delay(session.startTransaction(options))
+  ): F[Unit]
+  def abortTransaction: F[Unit]
+  def commitTransaction: F[Unit]
 
-  def abortTransaction[F[_]: Async]: F[Unit] =
-    session.abortTransaction().asyncVoid[F]
-
-  def commitTransaction[F[_]: Async]: F[Unit] =
-    session.commitTransaction().asyncVoid[F]
-
-  def isNull = session == null
+  def mapK[G[_]](f: F ~> G): ClientSession[G]
+  def asK[G[_]: Async]: ClientSession[G]
 }
 
 object ClientSession {
-  val void: ClientSession = ClientSession(null)
+  def apply[F[_]: Async](session: JClientSession): ClientSession[F] =
+    TransformedClientSession[F, F](session, FunctionK.id)
+
+  final private case class TransformedClientSession[F[_]: Async, G[_]](
+      session: JClientSession,
+      transform: F ~> G
+  ) extends ClientSession[G] {
+    def hasActiveTransaction = transform {
+      Async[F].delay(session.hasActiveTransaction)
+    }
+
+    def transactionOptions = transform {
+      Async[F].delay {
+        session.hasActiveTransaction.guard[Option].as(session.getTransactionOptions)
+      }
+    }
+
+    def startTransaction(
+        options: TransactionOptions = TransactionOptions()
+    ) = transform {
+      Async[F].delay(session.startTransaction(options))
+    }
+
+    def abortTransaction = transform {
+      session.abortTransaction().asyncVoid[F]
+    }
+
+    def commitTransaction = transform {
+      session.commitTransaction().asyncVoid[F]
+    }
+
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f)
+
+    def asK[H[_]: Async] =
+      new TransformedClientSession(session, FunctionK.id)
+  }
 }

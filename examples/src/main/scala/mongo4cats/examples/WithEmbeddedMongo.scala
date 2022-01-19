@@ -28,12 +28,12 @@ object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
-          db <- client.getDatabase[IO]("testdb")
-          coll <- db.getCollection[IO]("jsoncoll")
-          _ <- coll.insertOne[IO, BsonDocument](BsonDocument("Hello", "World!"))
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("jsoncoll")
+          _ <- coll.insertOne[BsonDocument](BsonDocument("Hello", "World!"))
           res <- coll.find
             .projection(Projection.excludeId)
-            .stream[IO, BsonDocument]
+            .stream[BsonDocument]
             .compile
             .to(List)
           _ <- IO.println(res.map(_.toJson).mkString)

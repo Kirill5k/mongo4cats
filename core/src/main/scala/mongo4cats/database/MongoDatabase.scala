@@ -16,6 +16,8 @@
 
 package mongo4cats.database
 
+import cats.~>
+import cats.arrow.FunctionK
 import cats.effect.Async
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
@@ -26,89 +28,127 @@ import mongo4cats.helpers._
 import org.bson.{BsonDocument, Document}
 import org.bson.conversions.Bson
 
-trait MongoDatabase {
+trait MongoDatabase[F[_]] {
   def name: String
 
   def readPreference: ReadPreference
-  def withReadPreference(readPreference: ReadPreference): MongoDatabase
+  def withReadPreference(readPreference: ReadPreference): MongoDatabase[F]
 
   def writeConcern: WriteConcern
-  def withWriteConcern(writeConcert: WriteConcern): MongoDatabase
+  def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F]
 
   def readConcern: ReadConcern
-  def witReadConcern(readConcern: ReadConcern): MongoDatabase
+  def witReadConcern(readConcern: ReadConcern): MongoDatabase[F]
 
-  def listCollectionNames[F[_]: Async](
-      session: ClientSession = ClientSession.void
+  def listCollectionNames(
+      clientSession: Option[ClientSession[F]] = None
   ): Stream[F, String]
 
-  def listCollections[F[_]: Async](
-      session: ClientSession = ClientSession.void
-  ): Stream[F, Document]
+  def listCollections(clientSession: Option[ClientSession[F]] = None): Stream[F, Document]
 
-  def createCollection[F[_]: Async](
+  def createCollection(
       name: String,
       options: CreateCollectionOptions = CreateCollectionOptions()
   ): F[Unit]
 
-  def getCollection[F[_]: Async](name: String): F[MongoCollection]
+  def getCollection(name: String): F[MongoCollection[F]]
 
-  def runCommand[F[_]: Async](
+  def runCommand(
       command: Bson,
       readPreference: ReadPreference = ReadPreference.primary,
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Document]
 
-  def drop[F[_]: Async](clientSession: ClientSession = ClientSession.void): F[Unit]
+  def drop(clientSession: Option[ClientSession[F]] = None): F[Unit]
+
+  def mapK[G[_]](f: F ~> G): MongoDatabase[G]
+  def asK[G[_]: Async]: MongoDatabase[G]
 }
 
 object MongoDatabase {
-  def apply(database: JMongoDatabase): MongoDatabase = new MongoDatabase {
+  def apply[F[_]: Async](database: JMongoDatabase): MongoDatabase[F] =
+    new TransformedMongoDatabase[F, F](database, FunctionK.id)
+
+  final private case class TransformedMongoDatabase[F[_]: Async, G[_]](
+      database: JMongoDatabase,
+      transform: F ~> G
+  ) extends MongoDatabase[G] {
     def name: String =
       database.getName
 
-    def readPreference: ReadPreference =
+    def readPreference =
       database.getReadPreference
-    def withReadPreference(readPreference: ReadPreference): MongoDatabase =
-      MongoDatabase(database.withReadPreference(readPreference))
+    def withReadPreference(readPreference: ReadPreference) =
+      copy(database = database.withReadPreference(readPreference))
 
-    def writeConcern: WriteConcern =
+    def writeConcern =
       database.getWriteConcern
-    def withWriteConcern(writeConcert: WriteConcern): MongoDatabase =
-      MongoDatabase(database.withWriteConcern(writeConcern))
+    def withWriteConcern(writeConcert: WriteConcern) =
+      copy(database = database.withWriteConcern(writeConcern))
 
-    def readConcern: ReadConcern =
+    def readConcern =
       database.getReadConcern
-    def witReadConcern(readConcern: ReadConcern): MongoDatabase =
-      MongoDatabase(database.withReadConcern(readConcern))
+    def witReadConcern(readConcern: ReadConcern) =
+      copy(database = database.withReadConcern(readConcern))
 
-    def listCollectionNames[F[_]: Async](
-        session: ClientSession = ClientSession.void
-    ): Stream[F, String] =
-      database.listCollectionNames(session.session).stream[F]
+    def listCollectionNames(
+        clientSession: Option[ClientSession[G]] = None
+    ) = clientSession match {
+      case Some(session) =>
+        database.listCollectionNames(session.session).stream[F].translate(transform)
+      case None =>
+        database.listCollectionNames.stream[F].translate(transform)
+    }
 
-    def listCollections[F[_]: Async](
-        session: ClientSession = ClientSession.void
-    ): Stream[F, Document] =
-      database.listCollections(session.session).stream[F]
+    def listCollections(
+        clientSession: Option[ClientSession[G]] = None
+    ) = clientSession match {
+      case Some(session) =>
+        database.listCollections(session.session).stream[F].translate(transform)
+      case None =>
+        database.listCollections.stream[F].translate(transform)
+    }
 
-    def createCollection[F[_]: Async](
+    def createCollection(
         name: String,
         options: CreateCollectionOptions = CreateCollectionOptions()
-    ): F[Unit] =
+    ) = transform {
       database.createCollection(name, options).asyncVoid[F]
+    }
 
-    def getCollection[F[_]: Async](name: String): F[MongoCollection] =
-      Async[F].delay(MongoCollection(database.getCollection(name, classOf[BsonDocument])))
+    def getCollection(name: String) = transform {
+      Async[F].delay {
+        MongoCollection[F](database.getCollection(name, classOf[BsonDocument]))
+          .mapK(transform)
+      }
+    }
 
-    def runCommand[F[_]: Async](
+    def runCommand(
         command: Bson,
         readPreference: ReadPreference = ReadPreference.primary,
-        session: ClientSession = ClientSession.void
-    ): F[Document] =
-      database.runCommand(session.session, command, readPreference).asyncSingle[F]
+        clientSession: Option[ClientSession[G]] = None
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          database.runCommand(session.session, command, readPreference).asyncSingle[F]
+        case None =>
+          database.runCommand(command, readPreference).asyncSingle[F]
+      }
+    }
 
-    def drop[F[_]: Async](session: ClientSession = ClientSession.void): F[Unit] =
-      database.drop(session.session).asyncVoid[F]
+    def drop(clientSession: Option[ClientSession[G]] = None) = transform {
+      clientSession match {
+        case Some(session) =>
+          database.drop(session.session).asyncVoid[F]
+        case None =>
+          database.drop.asyncVoid[F]
+      }
+    }
+
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f)
+
+    def asK[H[_]: Async] =
+      new TransformedMongoDatabase[H, H](database, FunctionK.id)
   }
 }

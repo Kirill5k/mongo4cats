@@ -28,30 +28,30 @@ object ManagingTransactions extends IOApp.Simple {
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use {
       client =>
         for {
-          db <- client.getDatabase[IO]("testdb")
-          coll <- db.getCollection[IO]("docs")
-          session <- client.startSession[IO]()
-          _ <- session.startTransaction[IO]()
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          session <- client.startSession()
+          _ <- session.startTransaction()
           _ <- (0 to 99).toList
             .traverse_(i =>
-              coll.insertOne[IO, BsonDocument](
+              coll.insertOne[BsonDocument](
                 BsonDocument("name" -> s"doc-$i".asBson),
-                session = session
+                clientSession = Some(session)
               )
             )
-          _ <- session.abortTransaction[IO]
-          count1 <- coll.count[IO]()
+          _ <- session.abortTransaction
+          count1 <- coll.count()
           _ <- IO.println(s"should be 0 since transaction was aborted: $count1")
-          _ <- session.startTransaction[IO]()
+          _ <- session.startTransaction()
           _ <- (0 to 99).toList
             .traverse_(i =>
-              coll.insertOne[IO, BsonDocument](
+              coll.insertOne[BsonDocument](
                 BsonDocument("name" -> s"doc-$i".asBson),
-                session = session
+                clientSession = Some(session)
               )
             )
-          _ <- session.commitTransaction[IO]
-          count2 <- coll.count[IO]()
+          _ <- session.commitTransaction
+          count2 <- coll.count()
           _ <- IO.println(s"should be 100 since transaction was committed: $count2")
         } yield ()
     }

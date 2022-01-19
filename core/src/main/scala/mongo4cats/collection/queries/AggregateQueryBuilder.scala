@@ -50,7 +50,7 @@ trait AggregateQueryBuilder[F[_]] {
   def batchSize(batchSize: Int): AggregateQueryBuilder[F]
 
   //
-  def session(cs: ClientSession): AggregateQueryBuilder[F]
+  def session(cs: ClientSession[F]): AggregateQueryBuilder[F]
   def noSession: AggregateQueryBuilder[F]
 
   def pipeline(p: Aggregate): AggregateQueryBuilder[F]
@@ -80,7 +80,7 @@ object AggregateQueryBuilder {
   final private case class TransformedAggregateQueryBuilder[F[_]: Async, G[_]](
       collection: JCollection[BsonDocument],
       pipeline: Seq[Bson],
-      clientSession: Option[ClientSession],
+      clientSession: Option[ClientSession[G]],
       commands: List[AggregateCommand],
       transform: F ~> G
   ) extends AggregateQueryBuilder[G] {
@@ -116,7 +116,7 @@ object AggregateQueryBuilder {
       add(BatchSize(batchSize))
 
     //
-    def session(cs: ClientSession) =
+    def session(cs: ClientSession[G]) =
       copy(clientSession = Some(cs))
 
     def noSession =
@@ -152,7 +152,7 @@ object AggregateQueryBuilder {
     }
     //
     def mapK[H[_]](f: G ~> H): AggregateQueryBuilder[H] =
-      copy(transform = transform andThen f)
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
 
     //
     private def applyCommands: AggregatePublisher[BsonValue] =

@@ -30,16 +30,16 @@ object FilteringAndSorting extends IOApp.Simple with EmbeddedMongo {
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
-          db <- client.getDatabase[IO]("testdb")
-          coll <- db.getCollection[IO]("docs")
-          _ <- coll.insertMany[IO, BsonDocument](
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          _ <- coll.insertMany[BsonDocument](
             (0 to 100).map(i => BsonDocument("name" -> s"doc-$i".asBson, "index" -> i.asBson))
           )
           docs <- coll.find
             .filter(Filter.lt("index", 10) || Filter.regex("name", "doc-[1-9]0"))
             .sortByDesc("name")
             .limit(5)
-            .stream[IO, BsonDocument]
+            .stream[BsonDocument]
             .compile
             .to(List)
           _ <- IO.println(docs)

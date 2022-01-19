@@ -28,13 +28,13 @@ object Watch extends IOApp.Simple {
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use {
       client =>
         for {
-          db <- client.getDatabase[IO]("testdb")
-          coll <- db.getCollection[IO]("docs")
-          watchStream = coll.watch.stream[IO]
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          watchStream = coll.watch.stream
           insertStream = Stream
             .range(0, 10)
             .evalMap(i =>
-              coll.insertOne[IO, BsonDocument](BsonDocument("name" -> s"doc-$i".asBson))
+              coll.insertOne[BsonDocument](BsonDocument("name" -> s"doc-$i".asBson))
             )
           updates <- watchStream.concurrently(insertStream).take(10).compile.toList
           _ <- IO.println(updates)

@@ -53,7 +53,7 @@ trait WatchQueryBuilder[F[_]] {
   def startAtOperationTime(saot: BsonTimestamp): WatchQueryBuilder[F]
 
   //
-  def session(cs: ClientSession): WatchQueryBuilder[F]
+  def session(cs: ClientSession[F]): WatchQueryBuilder[F]
   def noSession: WatchQueryBuilder[F]
   def pipeline(p: Aggregate): WatchQueryBuilder[F]
 
@@ -61,6 +61,8 @@ trait WatchQueryBuilder[F[_]] {
   def stream: Stream[F, ChangeStreamDocument[BsonValue]]
   def boundedStream(c: Int): Stream[F, ChangeStreamDocument[BsonValue]]
   def updateStream[A: Decoder]: Stream[F, A]
+
+  def mapK[G[_]](f: F ~> G): WatchQueryBuilder[G]
 }
 
 object WatchQueryBuilder {
@@ -76,7 +78,7 @@ object WatchQueryBuilder {
   final private case class TransformedWatchQueryBuilder[F[_]: Async, G[_]](
       collection: JCollection[BsonDocument],
       pipeline: Seq[Bson],
-      clientSession: Option[ClientSession],
+      clientSession: Option[ClientSession[G]],
       commands: List[WatchCommand],
       transform: F ~> G
   ) extends WatchQueryBuilder[G] {
@@ -103,7 +105,7 @@ object WatchQueryBuilder {
       add(StartAtOperationTime(saot))
 
     //
-    def session(cs: ClientSession) =
+    def session(cs: ClientSession[G]) =
       copy(clientSession = Some(cs))
 
     def noSession =
@@ -127,7 +129,7 @@ object WatchQueryBuilder {
 
     //
     def mapK[H[_]](f: G ~> H) =
-      copy(transform = transform andThen f)
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
 
     //
     private def boundedStreamF(c: Int): Stream[F, ChangeStreamDocument[BsonValue]] =

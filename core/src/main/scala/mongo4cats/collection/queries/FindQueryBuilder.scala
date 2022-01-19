@@ -57,7 +57,7 @@ trait FindQueryBuilder[F[_]] {
   def limit(l: Int): FindQueryBuilder[F]
 
   //
-  def session(s: ClientSession): FindQueryBuilder[F]
+  def session(s: ClientSession[F]): FindQueryBuilder[F]
 
   def noSession: FindQueryBuilder[F]
 
@@ -81,7 +81,7 @@ object FindQueryBuilder {
 
   final private case class TransformedFindQueryBuilder[F[_]: Async, G[_]](
       collection: JCollection[BsonDocument],
-      clientSession: Option[ClientSession],
+      clientSession: Option[ClientSession[G]],
       commands: List[FindCommand],
       transform: F ~> G
   ) extends FindQueryBuilder[G] {
@@ -141,7 +141,7 @@ object FindQueryBuilder {
       add(Limit(l))
 
     //
-    def session(s: ClientSession) =
+    def session(s: ClientSession[G]) =
       copy(clientSession = Some(s))
 
     def noSession =
@@ -172,7 +172,7 @@ object FindQueryBuilder {
 
     //
     def mapK[H[_]](f: G ~> H) =
-      copy(transform = transform andThen f)
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
 
     //
 

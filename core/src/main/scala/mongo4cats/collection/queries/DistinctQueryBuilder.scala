@@ -42,7 +42,7 @@ trait DistinctQueryBuilder[F[_]] {
   def collation(collation: model.Collation): DistinctQueryBuilder[F]
 
   //
-  def session(cs: ClientSession): DistinctQueryBuilder[F]
+  def session(cs: ClientSession[F]): DistinctQueryBuilder[F]
 
   def noSession: DistinctQueryBuilder[F]
 
@@ -71,7 +71,7 @@ object DistinctQueryBuilder {
   final private case class TransformedDistinctQueryBuilder[F[_]: Async, G[_]](
       fieldName: String,
       collection: JCollection[BsonDocument],
-      clientSession: Option[ClientSession],
+      clientSession: Option[ClientSession[G]],
       commands: List[DistinctCommand],
       transform: F ~> G
   ) extends DistinctQueryBuilder[G] {
@@ -92,7 +92,7 @@ object DistinctQueryBuilder {
       add(Collation(collation))
 
     //
-    def session(cs: ClientSession) =
+    def session(cs: ClientSession[G]) =
       copy(clientSession = Some(cs))
 
     def noSession =
@@ -116,7 +116,7 @@ object DistinctQueryBuilder {
 
     //
     def mapK[H[_]](f: G ~> H) =
-      copy(transform = transform andThen f)
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
 
     private def applyCommands =
       commands.foldRight(publisher) { (command, acc) =>

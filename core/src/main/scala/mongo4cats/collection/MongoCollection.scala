@@ -16,6 +16,8 @@
 
 package mongo4cats.collection
 
+import cats.arrow.FunctionK
+import cats.~>
 import cats.effect.Async
 import cats.implicits._
 import com.mongodb.client.result._
@@ -36,502 +38,572 @@ import org.bson.BsonDocument
 import org.bson.conversions.Bson
 import scala.jdk.CollectionConverters._
 
-trait MongoCollection {
+trait MongoCollection[F[_]] {
   def namespace: MongoNamespace
 
   def readPreference: ReadPreference
-  def withReadPreference(readPreference: ReadPreference): MongoCollection
+  def withReadPreference(readPreference: ReadPreference): MongoCollection[F]
 
   def writeConcern: WriteConcern
-  def withWriteConcern(writeConcern: WriteConcern): MongoCollection
+  def withWriteConcern(writeConcern: WriteConcern): MongoCollection[F]
 
   def readConcern: ReadConcern
-  def withReadConcern(readConcern: ReadConcern): MongoCollection
+  def withReadConcern(readConcern: ReadConcern): MongoCollection[F]
 
   //
-  def drop[F[_]: Async](session: ClientSession = ClientSession.void): F[Unit]
+  def drop(clientSession: Option[ClientSession[F]] = None): F[Unit]
 
   //
-  def aggregate[F[_]: Async]: AggregateQueryBuilder[F]
-  def watch[F[_]: Async]: WatchQueryBuilder[F]
-  def distinct[F[_]: Async](fieldName: String): DistinctQueryBuilder[F]
-  def find[F[_]: Async]: FindQueryBuilder[F]
+  def aggregate: AggregateQueryBuilder[F]
+  def watch: WatchQueryBuilder[F]
+  def distinct(fieldName: String): DistinctQueryBuilder[F]
+  def find: FindQueryBuilder[F]
 
   //
-  def findOneAndDelete[F[_]: Async, A: Decoder](
+  def findOneAndDelete[A: Decoder](
       filter: Bson,
       options: FindOneAndDeleteOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[Option[A]]
 
-  def findOneAndDelete[F[_]: Async, A: Decoder](
+  def findOneAndDelete[A: Decoder](
       filter: Filter,
       options: FindOneAndDeleteOptions = FindOneAndDeleteOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Option[A]] =
-    findOneAndDelete[F, A](filter.toBson, options, session)
+    findOneAndDelete[A](filter.toBson, options, clientSession)
 
   //
-  def findOneAndUpdate[F[_]: Async, A: Decoder](
+  def findOneAndUpdate[A: Decoder](
       filter: Bson,
       update: Bson,
       options: FindOneAndUpdateOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[Option[A]]
 
-  def findOneAndUpdate[F[_]: Async, A: Decoder](
+  def findOneAndUpdate[A: Decoder](
       filter: Filter,
       update: Update,
       options: FindOneAndUpdateOptions = FindOneAndUpdateOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Option[A]] =
-    findOneAndUpdate[F, A](filter.toBson, update.toBson, options, session)
+    findOneAndUpdate[A](filter.toBson, update.toBson, options, clientSession)
 
   //
-  def findOneAndReplace[F[_]: Async, A: Decoder: DocumentEncoder](
+  def findOneAndReplace[A: Decoder: DocumentEncoder](
       filter: Bson,
       replacement: A,
       options: FindOneAndReplaceOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[Option[A]]
 
-  def findOneAndReplace[F[_]: Async, A: Decoder: DocumentEncoder](
+  def findOneAndReplace[A: Decoder: DocumentEncoder](
       filter: Filter,
       replacement: A,
       options: FindOneAndReplaceOptions = FindOneAndReplaceOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Option[A]] =
-    findOneAndReplace[F, A](filter.toBson, replacement, options, session)
+    findOneAndReplace[A](filter.toBson, replacement, options, clientSession)
 
   //
-  def dropIndexByName[F[_]: Async](
+  def dropIndexByName(
       name: String,
       options: DropIndexOptions = DropIndexOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Unit]
 
-  def dropIndex[F[_]: Async](
+  def dropIndex(
       keys: Bson,
       options: DropIndexOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[Unit]
 
-  def dropIndex[F[_]: Async](
+  def dropIndex(
       keys: Index,
       options: DropIndexOptions = DropIndexOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Unit] =
-    dropIndex[F](keys.toBson, options, session)
+    dropIndex(keys.toBson, options, clientSession)
 
   //
-  def dropIndexes[F[_]: Async](
+  def dropIndexes(
       options: DropIndexOptions = DropIndexOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Unit]
 
   //
-  def createIndex[F[_]: Async](
+  def createIndex(
       key: Bson,
       options: IndexOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[String]
 
-  def createIndex[F[_]: Async](
+  def createIndex(
       index: Index,
       options: IndexOptions = IndexOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[String] =
-    createIndex[F](index.toBson, options, session)
+    createIndex(index.toBson, options, clientSession)
 
   //
-  def updateMany[F[_]: Async](
+  def updateMany(
       filter: Bson,
       update: Bson,
       options: UpdateOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[UpdateResult]
 
-  def updateMany[F[_]: Async](
+  def updateMany(
       filter: Filter,
       update: Update,
       options: UpdateOptions = UpdateOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[UpdateResult] =
-    updateMany[F](filter.toBson, update.toBson, options, session)
+    updateMany(filter.toBson, update.toBson, options, clientSession)
 
-  def updateManyAggregate[F[_]: Async](
+  def updateManyAggregate(
       filter: Bson,
       update: Seq[Bson],
       options: UpdateOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[UpdateResult]
 
-  def updateManyAggregate[F[_]: Async](
+  def updateManyAggregate(
       filter: Bson,
       update: Aggregate,
       options: UpdateOptions = UpdateOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[UpdateResult] =
-    updateManyAggregate[F](filter, update.toBsons, options, session)
+    updateManyAggregate(filter, update.toBsons, options, clientSession)
 
   //
-  def updateOne[F[_]: Async](
+  def updateOne(
       filter: Bson,
       update: Bson,
       options: UpdateOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[UpdateResult]
 
-  def updateOne[F[_]: Async](
+  def updateOne(
       filter: Filter,
       update: Update,
       options: UpdateOptions = UpdateOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[UpdateResult] =
-    updateOne[F](filter.toBson, update.toBson, options, session)
+    updateOne(filter.toBson, update.toBson, options, clientSession)
 
-  def updateOneAggregate[F[_]: Async](
+  def updateOneAggregate(
       filter: Bson,
       update: Seq[Bson],
       options: UpdateOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[UpdateResult]
 
-  def updateOneAggregate[F[_]: Async](
+  def updateOneAggregate(
       filter: Bson,
       update: Aggregate,
       options: UpdateOptions = UpdateOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[UpdateResult] =
-    updateOneAggregate[F](filter, update.toBsons, options, session)
+    updateOneAggregate(filter, update.toBsons, options, clientSession)
 
   //
-  def replaceOne[F[_]: Async, T: DocumentEncoder](
+  def replaceOne[T: DocumentEncoder](
       filter: Bson,
       replacement: T,
       options: ReplaceOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[UpdateResult]
 
-  def replaceOne[F[_]: Async, T: DocumentEncoder](
+  def replaceOne[T: DocumentEncoder](
       filter: Filter,
       replacement: T,
       options: ReplaceOptions = ReplaceOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[UpdateResult] =
-    replaceOne[F, T](filter.toBson, replacement, options, session)
+    replaceOne[T](filter.toBson, replacement, options, clientSession)
 
   //
-  def deleteOne[F[_]: Async](
+  def deleteOne(
       filter: Bson,
       options: DeleteOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[DeleteResult]
 
-  def deleteOne[F[_]: Async](
+  def deleteOne(
       filter: Filter,
       options: DeleteOptions = DeleteOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[DeleteResult] =
-    deleteOne[F](filter.toBson, options, session)
+    deleteOne(filter.toBson, options, clientSession)
 
   //
-  def deleteMany[F[_]: Async](
+  def deleteMany(
       filter: Bson,
       options: DeleteOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[DeleteResult]
 
-  def deleteMany[F[_]: Async](
+  def deleteMany(
       filter: Filter,
       options: DeleteOptions = DeleteOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[DeleteResult] =
-    deleteMany[F](filter.toBson, options, session)
+    deleteMany(filter.toBson, options, clientSession)
 
   //
-  def insertOne[F[_]: Async, T: DocumentEncoder](
+  def insertOne[T: DocumentEncoder](
       document: T,
       options: InsertOneOptions = InsertOneOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[InsertOneResult]
 
   //
-  def insertMany[F[_]: Async, T: DocumentEncoder](
+  def insertMany[T: DocumentEncoder](
       documents: Seq[T],
       options: InsertManyOptions = InsertManyOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[InsertManyResult]
 
   //
-  def count[F[_]: Async](
+  def count(
       filter: Bson,
       options: CountOptions,
-      session: ClientSession
+      clientSession: Option[ClientSession[F]]
   ): F[Long]
 
-  def count[F[_]: Async](
+  def count(
       filter: Filter = Filter.empty,
       options: CountOptions = CountOptions(),
-      session: ClientSession = ClientSession.void
+      clientSession: Option[ClientSession[F]] = None
   ): F[Long] =
-    count(filter.toBson, options, session)
+    count(filter.toBson, options, clientSession)
+
+  def mapK[G[_]](f: F ~> G): MongoCollection[G]
+  def asK[G[_]: Async]: MongoCollection[G]
 }
 
 object MongoCollection {
-  def apply(collection: JMongoCollection[BsonDocument]): MongoCollection = new MongoCollection {
+  def apply[F[_]: Async](collection: JMongoCollection[BsonDocument]): MongoCollection[F] =
+    new TransformedMongoCollection[F, F](collection, FunctionK.id)
+
+  final private case class TransformedMongoCollection[F[_]: Async, G[_]](
+      collection: JMongoCollection[BsonDocument],
+      transform: F ~> G
+  ) extends MongoCollection[G] {
     def namespace =
       collection.getNamespace
 
     def readPreference =
       collection.getReadPreference
     def withReadPreference(readPreference: ReadPreference) =
-      MongoCollection(collection.withReadPreference(readPreference))
+      copy(collection = collection.withReadPreference(readPreference))
 
     def writeConcern =
       collection.getWriteConcern
     def withWriteConcern(writeConcern: WriteConcern) =
-      MongoCollection(collection.withWriteConcern(writeConcern))
+      copy(collection = collection.withWriteConcern(writeConcern))
 
     def readConcern =
       collection.getReadConcern
     def withReadConcern(readConcern: ReadConcern) =
-      MongoCollection(collection.withReadConcern(readConcern))
+      copy(collection = collection.withReadConcern(readConcern))
 
-    def drop[F[_]: Async](session: ClientSession): F[Unit] =
-      if (!session.isNull)
-        collection.drop(session.session).asyncVoid[F]
-      else
-        collection.drop.asyncVoid[F]
+    def drop(clientSession: Option[ClientSession[G]]) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.drop(session.session).asyncVoid[F]
+        case None =>
+          collection.drop.asyncVoid[F]
+      }
+    }
 
-    def aggregate[F[_]: Async]: AggregateQueryBuilder[F] =
-      AggregateQueryBuilder[F](collection)
+    def aggregate =
+      AggregateQueryBuilder[F](collection).mapK(transform)
 
-    def watch[F[_]: Async] =
-      WatchQueryBuilder[F](collection)
+    def watch =
+      WatchQueryBuilder[F](collection).mapK(transform)
 
-    def find[F[_]: Async] =
-      FindQueryBuilder[F](collection)
+    def find =
+      FindQueryBuilder[F](collection).mapK(transform)
 
-    def distinct[F[_]: Async](fieldName: String) =
-      DistinctQueryBuilder[F](fieldName, collection)
+    def distinct(fieldName: String) =
+      DistinctQueryBuilder[F](fieldName, collection).mapK(transform)
 
-    def findOneAndDelete[F[_]: Async, A: Decoder](
+    def findOneAndDelete[A: Decoder](
         filter: Bson,
         options: FindOneAndDeleteOptions,
-        session: ClientSession
-    ): F[Option[A]] =
-      if (session.isNull)
-        collection
-          .findOneAndDelete(session.session, filter, options)
-          .asyncOption[F]
-          .flatMap(_.traverse { bson =>
-            bson.as[A].liftTo[F]
-          })
-      else
-        collection
-          .findOneAndDelete(filter, options)
-          .asyncOption[F]
-          .flatMap(_.traverse { bson =>
-            bson.as[A].liftTo[F]
-          })
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection
+            .findOneAndDelete(session.session, filter, options)
+            .asyncOption[F]
+            .flatMap(_.traverse { bson =>
+              bson.as[A].liftTo[F]
+            })
+        case None =>
+          collection
+            .findOneAndDelete(filter, options)
+            .asyncOption[F]
+            .flatMap(_.traverse { bson =>
+              bson.as[A].liftTo[F]
+            })
+      }
+    }
 
-    def findOneAndUpdate[F[_]: Async, A: Decoder](
+    def findOneAndUpdate[A: Decoder](
         filter: Bson,
         update: Bson,
         options: FindOneAndUpdateOptions,
-        session: ClientSession
-    ): F[Option[A]] =
-      if (!session.isNull)
-        collection
-          .findOneAndUpdate(session.session, filter, update, options)
-          .asyncOption[F]
-          .flatMap(_.traverse { bson =>
-            bson.as[A].liftTo[F]
-          })
-      else
-        collection
-          .findOneAndUpdate(filter, update, options)
-          .asyncOption[F]
-          .flatMap(_.traverse { bson =>
-            bson.as[A].liftTo[F]
-          })
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection
+            .findOneAndUpdate(session.session, filter, update, options)
+            .asyncOption[F]
+            .flatMap(_.traverse { bson =>
+              bson.as[A].liftTo[F]
+            })
+        case None =>
+          collection
+            .findOneAndUpdate(filter, update, options)
+            .asyncOption[F]
+            .flatMap(_.traverse { bson =>
+              bson.as[A].liftTo[F]
+            })
+      }
+    }
 
-    def findOneAndReplace[F[_]: Async, A: Decoder: DocumentEncoder](
+    def findOneAndReplace[A: Decoder: DocumentEncoder](
         filter: Bson,
         replacement: A,
         options: FindOneAndReplaceOptions,
-        session: ClientSession
-    ): F[Option[A]] =
-      if (!session.isNull)
-        collection
-          .findOneAndReplace(session.session, filter, replacement.asBsonDoc, options)
-          .asyncOption[F]
-          .flatMap(_.traverse { bson =>
-            bson.as[A].liftTo[F]
-          })
-      else
-        collection
-          .findOneAndReplace(filter, replacement.asBsonDoc, options)
-          .asyncOption[F]
-          .flatMap(_.traverse { bson =>
-            bson.as[A].liftTo[F]
-          })
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection
+            .findOneAndReplace(session.session, filter, replacement.asBsonDoc, options)
+            .asyncOption[F]
+            .flatMap(_.traverse { bson =>
+              bson.as[A].liftTo[F]
+            })
+        case None =>
+          collection
+            .findOneAndReplace(filter, replacement.asBsonDoc, options)
+            .asyncOption[F]
+            .flatMap(_.traverse { bson =>
+              bson.as[A].liftTo[F]
+            })
+      }
+    }
 
-    def dropIndexByName[F[_]: Async](
+    def dropIndexByName(
         name: String,
         options: DropIndexOptions = DropIndexOptions(),
-        session: ClientSession = ClientSession.void
-    ): F[Unit] =
-      if (!session.isNull)
-        collection.dropIndex(session.session, name, options).asyncVoid[F]
-      else
-        collection.dropIndex(name, options).asyncVoid[F]
+        clientSession: Option[ClientSession[G]] = None
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.dropIndex(session.session, name, options).asyncVoid[F]
+        case None =>
+          collection.dropIndex(name, options).asyncVoid[F]
+      }
+    }
 
-    def dropIndex[F[_]: Async](
+    def dropIndex(
         keys: Bson,
         options: DropIndexOptions,
-        session: ClientSession
-    ): F[Unit] =
-      if (!session.isNull)
-        collection.dropIndex(session.session, keys, options).asyncVoid[F]
-      else
-        collection.dropIndex(keys, options).asyncVoid[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.dropIndex(session.session, keys, options).asyncVoid[F]
+        case None =>
+          collection.dropIndex(keys, options).asyncVoid[F]
+      }
+    }
 
-    def dropIndexes[F[_]: Async](
+    def dropIndexes(
         options: DropIndexOptions = DropIndexOptions(),
-        session: ClientSession = ClientSession.void
-    ): F[Unit] =
-      if (!session.isNull)
-        collection.dropIndexes(session.session, options).asyncVoid[F]
-      else
-        collection.dropIndexes(options).asyncVoid[F]
+        clientSession: Option[ClientSession[G]] = None
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.dropIndexes(session.session, options).asyncVoid[F]
+        case None =>
+          collection.dropIndexes(options).asyncVoid[F]
+      }
+    }
 
-    def createIndex[F[_]: Async](
+    def createIndex(
         key: Bson,
         options: IndexOptions,
-        session: ClientSession
-    ): F[String] =
-      if (!session.isNull)
-        collection.createIndex(session.session, key, options).asyncSingle[F]
-      else
-        collection.createIndex(key, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.createIndex(session.session, key, options).asyncSingle[F]
+        case None =>
+          collection.createIndex(key, options).asyncSingle[F]
+      }
+    }
 
-    def updateMany[F[_]: Async](
+    def updateMany(
         filter: Bson,
         update: Bson,
         options: UpdateOptions,
-        session: ClientSession
-    ): F[UpdateResult] =
-      if (!session.isNull)
-        collection.updateMany(session.session, filter, update, options).asyncSingle[F]
-      else
-        collection.updateMany(filter, update, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.updateMany(session.session, filter, update, options).asyncSingle[F]
+        case None =>
+          collection.updateMany(filter, update, options).asyncSingle[F]
+      }
+    }
 
-    def updateManyAggregate[F[_]: Async](
+    def updateManyAggregate(
         filter: Bson,
         update: Seq[Bson],
         options: UpdateOptions,
-        session: ClientSession
-    ): F[UpdateResult] =
-      if (!session.isNull)
-        collection.updateMany(session.session, filter, update.asJava, options).asyncSingle[F]
-      else
-        collection.updateMany(filter, update.asJava, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.updateMany(session.session, filter, update.asJava, options).asyncSingle[F]
+        case None =>
+          collection.updateMany(filter, update.asJava, options).asyncSingle[F]
+      }
+    }
 
-    def updateOne[F[_]: Async](
+    def updateOne(
         filter: Bson,
         update: Bson,
         options: UpdateOptions,
-        session: ClientSession
-    ): F[UpdateResult] =
-      if (!session.isNull)
-        collection.updateOne(session.session, filter, update, options).asyncSingle[F]
-      else
-        collection.updateOne(filter, update, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.updateOne(session.session, filter, update, options).asyncSingle[F]
+        case None =>
+          collection.updateOne(filter, update, options).asyncSingle[F]
+      }
+    }
 
-    def updateOneAggregate[F[_]: Async](
+    def updateOneAggregate(
         filter: Bson,
         update: Seq[Bson],
         options: UpdateOptions,
-        session: ClientSession
-    ): F[UpdateResult] =
-      if (!session.isNull)
-        collection.updateOne(session.session, filter, update.asJava, options).asyncSingle[F]
-      else
-        collection.updateOne(filter, update.asJava, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.updateOne(session.session, filter, update.asJava, options).asyncSingle[F]
+        case None =>
+          collection.updateOne(filter, update.asJava, options).asyncSingle[F]
+      }
+    }
 
-    def replaceOne[F[_]: Async, T: DocumentEncoder](
+    def replaceOne[T: DocumentEncoder](
         filter: Bson,
         replacement: T,
         options: ReplaceOptions,
-        session: ClientSession
-    ): F[UpdateResult] =
-      if (!session.isNull)
-        collection
-          .replaceOne(session.session, filter, replacement.asBsonDoc, options)
-          .asyncSingle[F]
-      else
-        collection.replaceOne(filter, replacement.asBsonDoc, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection
+            .replaceOne(session.session, filter, replacement.asBsonDoc, options)
+            .asyncSingle[F]
+        case None =>
+          collection.replaceOne(filter, replacement.asBsonDoc, options).asyncSingle[F]
+      }
+    }
 
-    def deleteOne[F[_]: Async](
+    def deleteOne(
         filter: Bson,
         options: DeleteOptions,
-        session: ClientSession
-    ): F[DeleteResult] =
-      if (!session.isNull)
-        collection.deleteOne(session.session, filter, options).asyncSingle[F]
-      else
-        collection.deleteOne(filter, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.deleteOne(session.session, filter, options).asyncSingle[F]
+        case None =>
+          collection.deleteOne(filter, options).asyncSingle[F]
+      }
+    }
 
-    def deleteMany[F[_]: Async](
+    def deleteMany(
         filter: Bson,
         options: DeleteOptions,
-        session: ClientSession
-    ): F[DeleteResult] =
-      if (!session.isNull)
-        collection.deleteMany(session.session, filter, options).asyncSingle[F]
-      else
-        collection.deleteMany(filter, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.deleteMany(session.session, filter, options).asyncSingle[F]
+        case None =>
+          collection.deleteMany(filter, options).asyncSingle[F]
+      }
+    }
 
-    def insertOne[F[_]: Async, T: DocumentEncoder](
+    def insertOne[T: DocumentEncoder](
         document: T,
         options: InsertOneOptions = InsertOneOptions(),
-        session: ClientSession = ClientSession.void
-    ): F[InsertOneResult] =
-      if (!session.isNull)
-        collection.insertOne(session.session, document.asBsonDoc, options).asyncSingle[F]
-      else
-        collection.insertOne(document.asBsonDoc, options).asyncSingle[F]
+        clientSession: Option[ClientSession[G]] = None
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection.insertOne(session.session, document.asBsonDoc, options).asyncSingle[F]
+        case None =>
+          collection.insertOne(document.asBsonDoc, options).asyncSingle[F]
+      }
+    }
 
-    def insertMany[F[_]: Async, T: DocumentEncoder](
+    def insertMany[T: DocumentEncoder](
         documents: Seq[T],
         options: InsertManyOptions = InsertManyOptions(),
-        session: ClientSession = ClientSession.void
-    ): F[InsertManyResult] =
-      if (!session.isNull)
-        collection
-          .insertMany(session.session, documents.map(_.asBsonDoc).asJava, options)
-          .asyncSingle[F]
-      else
-        collection
-          .insertMany(documents.map(_.asBsonDoc).asJava, options)
-          .asyncSingle[F]
+        clientSession: Option[ClientSession[G]] = None
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection
+            .insertMany(session.session, documents.map(_.asBsonDoc).asJava, options)
+            .asyncSingle[F]
+        case None =>
+          collection
+            .insertMany(documents.map(_.asBsonDoc).asJava, options)
+            .asyncSingle[F]
+      }
+    }
 
-    def count[F[_]: Async](
+    def count(
         filter: Bson,
         options: CountOptions,
-        session: ClientSession
-    ): F[Long] =
-      if (!session.isNull)
-        collection
-          .countDocuments(session.session, filter, options)
-          .asyncSingle[F]
-          .map(_.longValue())
-      else
-        collection
-          .countDocuments(filter, options)
-          .asyncSingle[F]
-          .map(_.longValue())
+        clientSession: Option[ClientSession[G]]
+    ) = transform {
+      clientSession match {
+        case Some(session) =>
+          collection
+            .countDocuments(session.session, filter, options)
+            .asyncSingle[F]
+            .map(_.longValue())
+        case None =>
+          collection
+            .countDocuments(filter, options)
+            .asyncSingle[F]
+            .map(_.longValue())
+      }
+    }
+
+    //
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f)
+
+    def asK[H[_]: Async] =
+      new TransformedMongoCollection[H, H](collection, FunctionK.id)
   }
 }
