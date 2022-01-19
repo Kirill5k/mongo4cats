@@ -16,6 +16,8 @@
 
 package mongo4cats.collection.queries
 
+import cats.arrow.FunctionK
+import cats.~>
 import cats.effect.Async
 import cats.implicits._
 import com.mongodb.client.model
@@ -41,86 +43,124 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
 
-final case class WatchQueryBuilder(
-    private val collection: JCollection[BsonDocument],
-    private val pipeline: Seq[Bson],
-    private val clientSession: Option[ClientSession],
-    private val commands: List[WatchCommand]
-) {
-
-  def batchSize(s: Int) =
-    add(BatchSize(s))
-
-  def collation(c: model.Collation) =
-    add(Collation(c))
-
-  def fullDocument(f: JFullDocument) =
-    add(FullDocument(f))
-
-  def maxAwaitTime(d: Duration) =
-    add(MaxAwaitTime(d))
-
-  def resumeAfter(rt: BsonDocument) =
-    add(ResumeAfter(rt))
-
-  def startAfter(sa: BsonDocument) =
-    add(StartAfter(sa))
-
-  def startAtOperationTime(saot: BsonTimestamp) =
-    add(StartAtOperationTime(saot))
+trait WatchQueryBuilder[F[_]] {
+  def batchSize(s: Int): WatchQueryBuilder[F]
+  def collation(c: model.Collation): WatchQueryBuilder[F]
+  def fullDocument(f: JFullDocument): WatchQueryBuilder[F]
+  def maxAwaitTime(d: Duration): WatchQueryBuilder[F]
+  def resumeAfter(rt: BsonDocument): WatchQueryBuilder[F]
+  def startAfter(sa: BsonDocument): WatchQueryBuilder[F]
+  def startAtOperationTime(saot: BsonTimestamp): WatchQueryBuilder[F]
 
   //
-  def session(cs: ClientSession) =
-    copy(clientSession = Some(cs))
-
-  def noSession =
-    copy(clientSession = None)
-
-  def pipeline(p: Seq[Bson]) =
-    copy(pipeline = p)
-
-  def pipeline(p: Aggregate) =
-    copy(pipeline = p.toBsons)
+  def session(cs: ClientSession): WatchQueryBuilder[F]
+  def noSession: WatchQueryBuilder[F]
+  def pipeline(p: Aggregate): WatchQueryBuilder[F]
 
   //
-  def stream[F[_]: Async]: Stream[F, ChangeStreamDocument[BsonValue]] =
-    boundedStream[F](1)
+  def stream: Stream[F, ChangeStreamDocument[BsonValue]]
+  def boundedStream(c: Int): Stream[F, ChangeStreamDocument[BsonValue]]
+  def updateStream[A: Decoder]: Stream[F, A]
+}
 
-  def boundedStream[F[_]: Async](c: Int): Stream[F, ChangeStreamDocument[BsonValue]] =
-    applyCommands.boundedStream[F](c)
+object WatchQueryBuilder {
+  def apply[F[_]: Async](collection: JCollection[BsonDocument]): WatchQueryBuilder[F] =
+    new TransformedWatchQueryBuilder[F, F](
+      collection,
+      List.empty,
+      None,
+      List.empty,
+      FunctionK.id
+    )
 
-  def updateStream[F[_]: Async, A: Decoder]: Stream[F, A] =
-    stream.map(_.getFullDocument).evalMap(_.as[A].liftTo[F])
+  final private case class TransformedWatchQueryBuilder[F[_]: Async, G[_]](
+      collection: JCollection[BsonDocument],
+      pipeline: Seq[Bson],
+      clientSession: Option[ClientSession],
+      commands: List[WatchCommand],
+      transform: F ~> G
+  ) extends WatchQueryBuilder[G] {
 
-  //
+    def batchSize(s: Int) =
+      add(BatchSize(s))
 
-  private def applyCommands: ChangeStreamPublisher[BsonValue] =
-    commands.foldRight(publisher) { (command, acc) =>
-      command match {
-        case BatchSize(s) =>
-          acc.batchSize(s)
-        case Collation(c) =>
-          acc.collation(c)
-        case FullDocument(fd) =>
-          acc.fullDocument(fd)
-        case MaxAwaitTime(d) =>
-          acc.maxAwaitTime(d.toNanos, TimeUnit.NANOSECONDS)
-        case ResumeAfter(b) =>
-          acc.resumeAfter(b)
-        case StartAfter(b) =>
-          acc.startAfter(b)
-        case StartAtOperationTime(t) =>
-          acc.startAtOperationTime(t)
+    def collation(c: model.Collation) =
+      add(Collation(c))
+
+    def fullDocument(f: JFullDocument) =
+      add(FullDocument(f))
+
+    def maxAwaitTime(d: Duration) =
+      add(MaxAwaitTime(d))
+
+    def resumeAfter(rt: BsonDocument) =
+      add(ResumeAfter(rt))
+
+    def startAfter(sa: BsonDocument) =
+      add(StartAfter(sa))
+
+    def startAtOperationTime(saot: BsonTimestamp) =
+      add(StartAtOperationTime(saot))
+
+    //
+    def session(cs: ClientSession) =
+      copy(clientSession = Some(cs))
+
+    def noSession =
+      copy(clientSession = None)
+
+    def pipeline(p: Seq[Bson]) =
+      copy(pipeline = p)
+
+    def pipeline(p: Aggregate) =
+      copy(pipeline = p.toBsons)
+
+    //
+    def stream =
+      boundedStream(1)
+
+    def boundedStream(c: Int) =
+      boundedStreamF(c).translate(transform)
+
+    def updateStream[A: Decoder] =
+      boundedStreamF(1).map(_.getFullDocument).evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    //
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f)
+
+    //
+    private def boundedStreamF(c: Int): Stream[F, ChangeStreamDocument[BsonValue]] =
+      applyCommands.boundedStream(c)
+
+    private def applyCommands: ChangeStreamPublisher[BsonValue] =
+      commands.foldRight(publisher) { (command, acc) =>
+        command match {
+          case BatchSize(s) =>
+            acc.batchSize(s)
+          case Collation(c) =>
+            acc.collation(c)
+          case FullDocument(fd) =>
+            acc.fullDocument(fd)
+          case MaxAwaitTime(d) =>
+            acc.maxAwaitTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case ResumeAfter(b) =>
+            acc.resumeAfter(b)
+          case StartAfter(b) =>
+            acc.startAfter(b)
+          case StartAtOperationTime(t) =>
+            acc.startAtOperationTime(t)
+        }
       }
-    }
 
-  private def add(command: WatchCommand): WatchQueryBuilder =
-    copy(commands = command :: commands)
+    private def add(command: WatchCommand): TransformedWatchQueryBuilder[F, G] =
+      copy(commands = command :: commands)
 
-  private def publisher: ChangeStreamPublisher[BsonValue] =
-    clientSession match {
-      case None     => collection.watch(pipeline.asJava, classOf[BsonValue])
-      case Some(cs) => collection.watch(cs.session, pipeline.asJava, classOf[BsonValue])
-    }
+    private def publisher: ChangeStreamPublisher[BsonValue] =
+      clientSession match {
+        case None     => collection.watch(pipeline.asJava, classOf[BsonValue])
+        case Some(cs) => collection.watch(cs.session, pipeline.asJava, classOf[BsonValue])
+      }
 
+  }
 }

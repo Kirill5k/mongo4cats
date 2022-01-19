@@ -18,7 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
 import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
@@ -34,9 +34,9 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
         for {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("docs")
-          testDoc = Document("Hello", "World!")
-          _ <- coll.insertOne[IO, Document](testDoc)
-          foundDoc <- coll.find.first[IO, Document]
+          testDoc = BsonDocument("Hello", "World!")
+          _ <- coll.insertOne[IO, BsonDocument](testDoc)
+          foundDoc <- coll.find.first[IO, BsonDocument]
         } yield {
           foundDoc.map(_.remove("_id"))
           foundDoc mustBe Some(testDoc)
@@ -49,9 +49,9 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
         for {
           db <- client.getDatabase[IO]("testdb")
           coll <- db.getCollection[IO]("docs")
-          testDoc = Document("Hello", "World!")
-          _ <- coll.insertOne[IO, Document](testDoc)
-          foundDoc <- coll.find.first[IO, Document]
+          testDoc = BsonDocument("Hello", "World!")
+          _ <- coll.insertOne[IO, BsonDocument](testDoc)
+          foundDoc <- coll.find.first[IO, BsonDocument]
         } yield {
           foundDoc.map(_.remove("_id"))
           foundDoc mustBe Some(testDoc)

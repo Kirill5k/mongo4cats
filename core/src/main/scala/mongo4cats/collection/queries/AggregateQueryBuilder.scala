@@ -16,6 +16,8 @@
 
 package mongo4cats.collection.queries
 
+import cats.~>
+import cats.arrow.FunctionK
 import cats.effect.Async
 import cats.implicits._
 import com.mongodb.ExplainVerbosity
@@ -28,117 +30,162 @@ import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Aggregate, Index}
 import mongo4cats.collection.queries.AggregateCommand, AggregateCommand._
-import org.bson.{BsonDocument, BsonValue, Document}
+import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
 
-final case class AggregateQueryBuilder(
-    private val collection: JCollection[BsonDocument],
-    private val pipeline: Seq[Bson],
-    private val clientSession: Option[ClientSession],
-    private val commands: List[AggregateCommand]
-) {
-
-  def allowDiskUse(allowDiskUse: Boolean) =
-    add(AllowDiskUse(allowDiskUse))
-
-  def maxTime(duration: Duration) =
-    add(MaxTime(duration))
-
-  def maxAwaitTime(duration: Duration) =
-    add(MaxAwaitTime(duration))
-
-  def bypassDocumentValidation(bypass: Boolean) =
-    add(BypassDocumentValidation(bypass))
-
-  def collation(collation: model.Collation) =
-    add(Collation(collation))
-
-  def comment(comment: String) =
-    add(Comment(comment))
-
-  def let(variables: Bson) =
-    add(Let(variables))
-
-  def hint(hint: Bson) =
-    add(Hint(hint))
-
-  def hint(index: Index) =
-    add(Hint(index.toBson))
-
-  def batchSize(batchSize: Int) =
-    add(BatchSize(batchSize))
+trait AggregateQueryBuilder[F[_]] {
+  def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[F]
+  def maxTime(duration: Duration): AggregateQueryBuilder[F]
+  def maxAwaitTime(duration: Duration): AggregateQueryBuilder[F]
+  def bypassDocumentValidation(bypass: Boolean): AggregateQueryBuilder[F]
+  def collation(collation: model.Collation): AggregateQueryBuilder[F]
+  def comment(comment: String): AggregateQueryBuilder[F]
+  def let(variables: Bson): AggregateQueryBuilder[F]
+  def hint(hint: Bson): AggregateQueryBuilder[F]
+  def hint(index: Index): AggregateQueryBuilder[F]
+  def batchSize(batchSize: Int): AggregateQueryBuilder[F]
 
   //
-  def session(cs: ClientSession) =
-    copy(clientSession = Some(cs))
+  def session(cs: ClientSession): AggregateQueryBuilder[F]
+  def noSession: AggregateQueryBuilder[F]
 
-  def noSession =
-    copy(clientSession = None)
-
-  def pipeline(p: Seq[Bson]) =
-    copy(pipeline = p)
-
-  def pipeline(p: Aggregate) =
-    copy(pipeline = p.toBsons)
+  def pipeline(p: Aggregate): AggregateQueryBuilder[F]
 
   //
-  def toCollection[F[_]: Async]: F[Unit] =
-    applyCommands.toCollection.asyncVoid[F]
-
-  def first[F[_]: Async, A: Decoder]: F[Option[A]] =
-    applyCommands.first
-      .asyncOption[F]
-      .flatMap(_.traverse { bson =>
-        bson.as[A].liftTo[F]
-      })
-
-  def stream[F[_]: Async, A: Decoder]: Stream[F, A] =
-    applyCommands.stream[F].evalMap(_.as[A].liftTo[F])
-
-  def boundedStream[F[_]: Async, A: Decoder](c: Int) =
-    applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F])
-
-  def explain[F[_]: Async]: F[Document] =
-    applyCommands.explain.asyncSingle[F]
-
-  def explain[F[_]: Async](verbosity: ExplainVerbosity): F[Document] =
-    applyCommands.explain(verbosity).asyncSingle[F]
+  def toCollection: F[Unit]
+  def first[A: Decoder]: F[Option[A]]
+  def stream[A: Decoder]: Stream[F, A]
+  def boundedStream[A: Decoder](c: Int): Stream[F, A]
+  def explain: F[BsonDocument]
+  def explain(verbosity: ExplainVerbosity): F[BsonDocument]
 
   //
-  private def applyCommands: AggregatePublisher[BsonValue] =
-    commands.foldRight(publisher) { (command, acc) =>
-      command match {
-        case AllowDiskUse(b) =>
-          acc.allowDiskUse(b)
-        case MaxTime(d) =>
-          acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
-        case MaxAwaitTime(d) =>
-          acc.maxAwaitTime(d.toNanos, TimeUnit.NANOSECONDS)
-        case BypassDocumentValidation(b) =>
-          acc.bypassDocumentValidation(b)
-        case Collation(c) =>
-          acc.collation(c)
-        case Comment(c) =>
-          acc.comment(c)
-        case Let(v) =>
-          acc.let(v)
-        case Hint(h) =>
-          acc.hint(h)
-        case BatchSize(i) =>
-          acc.batchSize(i)
+  def mapK[G[_]](nat: F ~> G): AggregateQueryBuilder[G]
+}
+
+object AggregateQueryBuilder {
+  def apply[F[_]: Async](collection: JCollection[BsonDocument]): AggregateQueryBuilder[F] =
+    new TransformedAggregateQueryBuilder[F, F](
+      collection,
+      List.empty,
+      None,
+      List.empty,
+      FunctionK.id
+    )
+
+  final private case class TransformedAggregateQueryBuilder[F[_]: Async, G[_]](
+      collection: JCollection[BsonDocument],
+      pipeline: Seq[Bson],
+      clientSession: Option[ClientSession],
+      commands: List[AggregateCommand],
+      transform: F ~> G
+  ) extends AggregateQueryBuilder[G] {
+
+    def allowDiskUse(allowDiskUse: Boolean) =
+      add(AllowDiskUse(allowDiskUse))
+
+    def maxTime(duration: Duration) =
+      add(MaxTime(duration))
+
+    def maxAwaitTime(duration: Duration) =
+      add(MaxAwaitTime(duration))
+
+    def bypassDocumentValidation(bypass: Boolean) =
+      add(BypassDocumentValidation(bypass))
+
+    def collation(collation: model.Collation) =
+      add(Collation(collation))
+
+    def comment(comment: String) =
+      add(Comment(comment))
+
+    def let(variables: Bson) =
+      add(Let(variables))
+
+    def hint(hint: Bson) =
+      add(Hint(hint))
+
+    def hint(index: Index) =
+      add(Hint(index.toBson))
+
+    def batchSize(batchSize: Int) =
+      add(BatchSize(batchSize))
+
+    //
+    def session(cs: ClientSession) =
+      copy(clientSession = Some(cs))
+
+    def noSession =
+      copy(clientSession = None)
+
+    def pipeline(p: Aggregate) =
+      copy(pipeline = p.toBsons)
+
+    //
+    def toCollection: G[Unit] =
+      transform(applyCommands.toCollection.asyncVoid[F])
+
+    def first[A: Decoder]: G[Option[A]] = transform {
+      applyCommands.first
+        .asyncOption[F]
+        .flatMap(_.traverse { bson =>
+          bson.as[A].liftTo[F]
+        })
+    }
+
+    def stream[A: Decoder]: Stream[G, A] =
+      applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    def boundedStream[A: Decoder](c: Int): Stream[G, A] =
+      applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    def explain: G[BsonDocument] = transform {
+      applyCommands.explain(classOf[BsonDocument]).asyncSingle[F]
+    }
+
+    def explain(verbosity: ExplainVerbosity): G[BsonDocument] = transform {
+      applyCommands.explain(classOf[BsonDocument], verbosity).asyncSingle[F]
+    }
+    //
+    def mapK[H[_]](f: G ~> H): AggregateQueryBuilder[H] =
+      copy(transform = transform andThen f)
+
+    //
+    private def applyCommands: AggregatePublisher[BsonValue] =
+      commands.foldRight(publisher) { (command, acc) =>
+        command match {
+          case AllowDiskUse(b) =>
+            acc.allowDiskUse(b)
+          case MaxTime(d) =>
+            acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case MaxAwaitTime(d) =>
+            acc.maxAwaitTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case BypassDocumentValidation(b) =>
+            acc.bypassDocumentValidation(b)
+          case Collation(c) =>
+            acc.collation(c)
+          case Comment(c) =>
+            acc.comment(c)
+          case Let(v) =>
+            acc.let(v)
+          case Hint(h) =>
+            acc.hint(h)
+          case BatchSize(i) =>
+            acc.batchSize(i)
+        }
       }
-    }
 
-  private def publisher: AggregatePublisher[BsonValue] =
-    clientSession match {
-      case None     => collection.aggregate(pipeline.asJava, classOf[BsonValue])
-      case Some(cs) => collection.aggregate(cs.session, pipeline.asJava, classOf[BsonValue])
-    }
+    private def publisher: AggregatePublisher[BsonValue] =
+      clientSession match {
+        case None     => collection.aggregate(pipeline.asJava, classOf[BsonValue])
+        case Some(cs) => collection.aggregate(cs.session, pipeline.asJava, classOf[BsonValue])
+      }
 
-  private def add(command: AggregateCommand): AggregateQueryBuilder =
-    copy(commands = command :: commands)
+    private def add(command: AggregateCommand): TransformedAggregateQueryBuilder[F, G] =
+      copy(commands = command :: commands)
+  }
 }

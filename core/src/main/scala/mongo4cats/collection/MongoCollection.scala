@@ -52,10 +52,10 @@ trait MongoCollection {
   def drop[F[_]: Async](session: ClientSession = ClientSession.void): F[Unit]
 
   //
-  def aggregate: AggregateQueryBuilder
-  def watch: WatchQueryBuilder
-  def distinct(fieldName: String): DistinctQueryBuilder
-  def find: FindQueryBuilder
+  def aggregate[F[_]: Async]: AggregateQueryBuilder[F]
+  def watch[F[_]: Async]: WatchQueryBuilder[F]
+  def distinct[F[_]: Async](fieldName: String): DistinctQueryBuilder[F]
+  def find[F[_]: Async]: FindQueryBuilder[F]
 
   //
   def findOneAndDelete[F[_]: Async, A: Decoder](
@@ -304,17 +304,17 @@ object MongoCollection {
       else
         collection.drop.asyncVoid[F]
 
-    def aggregate: AggregateQueryBuilder =
-      AggregateQueryBuilder(collection, List.empty, None, List.empty)
+    def aggregate[F[_]: Async]: AggregateQueryBuilder[F] =
+      AggregateQueryBuilder[F](collection)
 
-    def watch =
-      WatchQueryBuilder(collection, List.empty, None, List.empty)
+    def watch[F[_]: Async] =
+      WatchQueryBuilder[F](collection)
 
-    def find =
-      FindQueryBuilder(collection, None, List.empty)
+    def find[F[_]: Async] =
+      FindQueryBuilder[F](collection)
 
-    def distinct(fieldName: String) =
-      DistinctQueryBuilder(fieldName, collection, None, List.empty)
+    def distinct[F[_]: Async](fieldName: String) =
+      DistinctQueryBuilder[F](fieldName, collection)
 
     def findOneAndDelete[F[_]: Async, A: Decoder](
         filter: Bson,
