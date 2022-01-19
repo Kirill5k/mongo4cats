@@ -67,7 +67,7 @@ trait MongoDatabase[F[_]] {
 
 object MongoDatabase {
   def apply[F[_]: Async](database: JMongoDatabase): MongoDatabase[F] =
-    new TransformedMongoDatabase[F, F](database, FunctionK.id)
+    TransformedMongoDatabase[F, F](database, FunctionK.id)
 
   final private case class TransformedMongoDatabase[F[_]: Async, G[_]](
       database: JMongoDatabase,
@@ -149,6 +149,6 @@ object MongoDatabase {
       copy(transform = transform andThen f)
 
     def asK[H[_]: Async] =
-      new TransformedMongoDatabase[H, H](database, FunctionK.id)
+      TransformedMongoDatabase[H, H](database, FunctionK.id)
   }
 }

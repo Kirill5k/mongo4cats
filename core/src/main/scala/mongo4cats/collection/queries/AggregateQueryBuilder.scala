@@ -69,7 +69,7 @@ trait AggregateQueryBuilder[F[_]] {
 
 object AggregateQueryBuilder {
   def apply[F[_]: Async](collection: JCollection[BsonDocument]): AggregateQueryBuilder[F] =
-    new TransformedAggregateQueryBuilder[F, F](
+    TransformedAggregateQueryBuilder[F, F](
       collection,
       List.empty,
       None,

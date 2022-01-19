@@ -77,7 +77,7 @@ trait FindQueryBuilder[F[_]] {
 }
 object FindQueryBuilder {
   def apply[F[_]: Async](collection: JCollection[BsonDocument]): FindQueryBuilder[F] =
-    new TransformedFindQueryBuilder[F, F](collection, None, List.empty, FunctionK.id)
+    TransformedFindQueryBuilder[F, F](collection, None, List.empty, FunctionK.id)
 
   final private case class TransformedFindQueryBuilder[F[_]: Async, G[_]](
       collection: JCollection[BsonDocument],

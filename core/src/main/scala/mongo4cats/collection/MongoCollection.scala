@@ -285,7 +285,7 @@ trait MongoCollection[F[_]] {
 
 object MongoCollection {
   def apply[F[_]: Async](collection: JMongoCollection[BsonDocument]): MongoCollection[F] =
-    new TransformedMongoCollection[F, F](collection, FunctionK.id)
+    TransformedMongoCollection[F, F](collection, FunctionK.id)
 
   final private case class TransformedMongoCollection[F[_]: Async, G[_]](
       collection: JMongoCollection[BsonDocument],
@@ -604,6 +604,6 @@ object MongoCollection {
       copy(transform = transform andThen f)
 
     def asK[H[_]: Async] =
-      new TransformedMongoCollection[H, H](collection, FunctionK.id)
+      TransformedMongoCollection[H, H](collection, FunctionK.id)
   }
 }

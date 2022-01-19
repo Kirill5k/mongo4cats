@@ -76,7 +76,7 @@ object MongoClient {
       copy(transform = transform andThen f)
 
     def asK[H[_]: Async] =
-      new TransformedMongoClient[H, H](client, FunctionK.id)
+      TransformedMongoClient[H, H](client, FunctionK.id)
   }
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
@@ -107,5 +107,5 @@ object MongoClient {
   ): Resource[F, MongoClient[F]] =
     Resource
       .fromAutoCloseable(Async[F].delay(client))
-      .map(x => new TransformedMongoClient[F, F](x, FunctionK.id))
+      .map(x => TransformedMongoClient[F, F](x, FunctionK.id))
 }

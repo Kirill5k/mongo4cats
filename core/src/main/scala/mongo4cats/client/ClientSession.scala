@@ -73,6 +73,6 @@ object ClientSession {
       copy(transform = transform andThen f)
 
     def asK[H[_]: Async] =
-      new TransformedClientSession(session, FunctionK.id)
+      TransformedClientSession[H, H](session, FunctionK.id)
   }
 }

@@ -60,7 +60,7 @@ object DistinctQueryBuilder {
       fieldName: String,
       collection: JCollection[BsonDocument]
   ): DistinctQueryBuilder[F] =
-    new TransformedDistinctQueryBuilder[F, F](
+    TransformedDistinctQueryBuilder[F, F](
       fieldName,
       collection,
       None,

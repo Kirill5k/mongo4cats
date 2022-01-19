@@ -67,7 +67,7 @@ trait WatchQueryBuilder[F[_]] {
 
 object WatchQueryBuilder {
   def apply[F[_]: Async](collection: JCollection[BsonDocument]): WatchQueryBuilder[F] =
-    new TransformedWatchQueryBuilder[F, F](
+    TransformedWatchQueryBuilder[F, F](
       collection,
       List.empty,
       None,
