@@ -24,7 +24,7 @@ import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.{DistinctPublisher, MongoCollection => JCollection}
 import fs2.Stream
 import mongo4cats.helpers._
-import mongo4cats.bson.Decoder
+import mongo4cats.bson.BsonDecoder
 import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Filter => OFilter}
@@ -47,9 +47,9 @@ trait DistinctQueryBuilder[F[_]] {
   def noSession: DistinctQueryBuilder[F]
 
   //
-  def first[A: Decoder]: F[Option[A]]
-  def stream[A: Decoder]: Stream[F, A]
-  def boundedStream[A: Decoder](c: Int): Stream[F, A]
+  def first[A: BsonDecoder]: F[Option[A]]
+  def stream[A: BsonDecoder]: Stream[F, A]
+  def boundedStream[A: BsonDecoder](c: Int): Stream[F, A]
 
   //
   def mapK[G[_]](f: F ~> G): DistinctQueryBuilder[G]
@@ -100,7 +100,7 @@ object DistinctQueryBuilder {
 
     //
 
-    def first[A: Decoder]: G[Option[A]] = transform {
+    def first[A: BsonDecoder]: G[Option[A]] = transform {
       applyCommands.first
         .asyncOption[F]
         .flatMap(_.traverse { bson =>
@@ -108,10 +108,10 @@ object DistinctQueryBuilder {
         })
     }
 
-    def stream[A: Decoder] =
+    def stream[A: BsonDecoder] =
       applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
 
-    def boundedStream[A: Decoder](c: Int) =
+    def boundedStream[A: BsonDecoder](c: Int) =
       applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
 
     //

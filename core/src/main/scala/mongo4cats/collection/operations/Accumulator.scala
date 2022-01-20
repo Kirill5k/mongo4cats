@@ -17,40 +17,40 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{Accumulators, BsonField}
-import mongo4cats.bson.Encoder
+import mongo4cats.bson.BsonEncoder
 import mongo4cats.bson.syntax._
 
 import scala.jdk.CollectionConverters._
 
 final case class Accumulator private (private val accumulators: List[BsonField]) {
-  def sum[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def sum[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.sum(fieldName, expression.asBson))
 
-  def avg[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def avg[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.avg(fieldName, expression.asBson))
 
-  def first[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def first[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.first(fieldName, expression.asBson))
 
-  def last[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def last[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.last(fieldName, expression.asBson))
 
-  def max[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def max[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.max(fieldName, expression.asBson))
 
-  def min[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def min[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.min(fieldName, expression.asBson))
 
-  def push[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def push[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.push(fieldName, expression.asBson))
 
-  def addToSet[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def addToSet[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.addToSet(fieldName, expression.asBson))
 
-  def stdDevPop[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def stdDevPop[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.stdDevPop(fieldName, expression.asBson))
 
-  def stdDevSamp[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def stdDevSamp[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     add(Accumulators.stdDevSamp(fieldName, expression.asBson))
 
   def combinedWith(other: Accumulator): Accumulator =
@@ -66,24 +66,24 @@ final case class Accumulator private (private val accumulators: List[BsonField])
 object Accumulator {
   private val empty = Accumulator(List.empty)
 
-  def sum[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def sum[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.sum(fieldName, expression)
-  def avg[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def avg[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.avg(fieldName, expression)
-  def first[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def first[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.first(fieldName, expression)
-  def last[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def last[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.last(fieldName, expression)
-  def max[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def max[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.max(fieldName, expression)
-  def min[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def min[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.min(fieldName, expression)
-  def push[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def push[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.push(fieldName, expression)
-  def addToSet[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def addToSet[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.addToSet(fieldName, expression)
-  def stdDevPop[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def stdDevPop[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.stdDevPop(fieldName, expression)
-  def stdDevSamp[T: Encoder](fieldName: String, expression: T): Accumulator =
+  def stdDevSamp[T: BsonEncoder](fieldName: String, expression: T): Accumulator =
     empty.stdDevSamp(fieldName, expression)
 }

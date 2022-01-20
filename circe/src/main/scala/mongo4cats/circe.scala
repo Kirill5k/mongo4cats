@@ -17,16 +17,22 @@
 package mongo4cats
 
 import cats.syntax.all._
-import io.circe.{parser, Decoder => JDecoder, Encoder => JEncoder, Json}
+import io.circe.{parser, Decoder, Encoder, Json}
 import io.circe.syntax._
-import mongo4cats.bson.{BsonDocument, DecodeError, Decoder, DocumentEncoder, Encoder}
+import mongo4cats.bson.{
+  BsonDecodeError,
+  BsonDecoder,
+  BsonDocument,
+  BsonDocumentEncoder,
+  BsonEncoder
+}
 import org.bson._
 
 object circe extends JsonCodecs {
   private val RootTag = "a"
 
   trait Instances extends JsonCodecs {
-    implicit def circeEncoderToEncoder[A: JEncoder] = new Encoder[A] {
+    implicit def circeEncoderToEncoder[A: Encoder] = new BsonEncoder[A] {
       def apply(a: A): BsonValue = {
         val json = a.asJson
         val wrapped = Json.obj(RootTag := json)
@@ -35,18 +41,18 @@ object circe extends JsonCodecs {
       }
     }
 
-    implicit def circeDecoderToDecoder[A: JDecoder] = new Decoder[A] {
+    implicit def circeDecoderToDecoder[A: Decoder] = new BsonDecoder[A] {
       def apply(b: BsonValue) = {
         val doc = BsonDocument(RootTag -> b).toJson()
         val json = parser.parse(doc)
-        val decoder = JDecoder.instance[A](_.get[A](RootTag))
-        json.flatMap(decoder.decodeJson(_)).leftMap(x => DecodeError(x.toString))
+        val decoder = Decoder.instance[A](_.get[A](RootTag))
+        json.flatMap(decoder.decodeJson(_)).leftMap(x => BsonDecodeError(x.toString))
       }
     }
   }
 
   object unsafe {
-    def circeDocumentEncoder[A: JEncoder] = new DocumentEncoder[A] {
+    def circeDocumentEncoder[A: Encoder] = new BsonDocumentEncoder[A] {
       def apply(a: A): BsonDocument =
         BsonDocument.parse(a.asJson.noSpaces)
     }

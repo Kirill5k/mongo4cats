@@ -18,7 +18,7 @@ package mongo4cats.collection.operations
 
 import com.mongodb.client.model.geojson.{Geometry, Point}
 import com.mongodb.client.model.{Filters, TextSearchOptions}
-import mongo4cats.bson.Encoder
+import mongo4cats.bson.BsonEncoder
 import mongo4cats.bson.syntax._
 import org.bson.BsonType
 import org.bson.conversions.Bson
@@ -52,34 +52,34 @@ object Filter {
   def empty: Filter =
     Filter(Filters.empty())
 
-  def idEq[A: Encoder](value: A) =
+  def idEq[A: BsonEncoder](value: A) =
     Filter(Filters.eq(value.asBson))
 
   def isNull(fieldName: String) =
     Filter(Filters.eq(fieldName, null))
 
-  def eq[A: Encoder](fieldName: String, value: A) =
+  def eq[A: BsonEncoder](fieldName: String, value: A) =
     Filter(Filters.eq(fieldName, value.asBson))
 
-  def ne[A: Encoder](fieldName: String, value: A) =
+  def ne[A: BsonEncoder](fieldName: String, value: A) =
     Filter(Filters.ne(fieldName, value.asBson))
 
-  def gt[A: Encoder](fieldName: String, value: A) =
+  def gt[A: BsonEncoder](fieldName: String, value: A) =
     Filter(Filters.gt(fieldName, value.asBson))
 
-  def lt[A: Encoder](fieldName: String, value: A) =
+  def lt[A: BsonEncoder](fieldName: String, value: A) =
     Filter(Filters.lt(fieldName, value.asBson))
 
-  def gte[A: Encoder](fieldName: String, value: A) =
+  def gte[A: BsonEncoder](fieldName: String, value: A) =
     Filter(Filters.gte(fieldName, value.asBson))
 
-  def lte[A: Encoder](fieldName: String, value: A) =
+  def lte[A: BsonEncoder](fieldName: String, value: A) =
     Filter(Filters.lte(fieldName, value.asBson))
 
-  def in[A: Encoder](fieldName: String, values: Seq[A]) =
+  def in[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     Filter(Filters.in(fieldName, values.map(_.asBson).asJava))
 
-  def nin[A: Encoder](fieldName: String, values: Seq[A]) =
+  def nin[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     Filter(Filters.nin(fieldName, values.map(_.asBson).asJava))
 
   def exists(fieldName: String) =
@@ -109,7 +109,7 @@ object Filter {
   def where(js: String) =
     Filter(Filters.where(js))
 
-  def all[A: Encoder](fieldName: String, values: Seq[A]) =
+  def all[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     Filter(Filters.all(fieldName, values.map(_.asBson).asJava))
 
   def elemMatch(fieldName: String, filter: Filter) =

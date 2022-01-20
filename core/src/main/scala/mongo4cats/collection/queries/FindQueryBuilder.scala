@@ -24,7 +24,7 @@ import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.{FindPublisher, MongoCollection => JCollection}
 import fs2.Stream
-import mongo4cats.bson.Decoder
+import mongo4cats.bson.BsonDecoder
 import mongo4cats.bson.syntax._
 import mongo4cats.helpers._
 import mongo4cats.client.ClientSession
@@ -62,11 +62,11 @@ trait FindQueryBuilder[F[_]] {
   def noSession: FindQueryBuilder[F]
 
   //
-  def first[A: Decoder]: F[Option[A]]
+  def first[A: BsonDecoder]: F[Option[A]]
 
-  def stream[A: Decoder]: Stream[F, A]
+  def stream[A: BsonDecoder]: Stream[F, A]
 
-  def boundedStream[A: Decoder](c: Int): Stream[F, A]
+  def boundedStream[A: BsonDecoder](c: Int): Stream[F, A]
 
   def explain: F[BsonDocument]
 
@@ -148,7 +148,7 @@ object FindQueryBuilder {
       copy(clientSession = None)
     //
 
-    def first[A: Decoder] = transform {
+    def first[A: BsonDecoder] = transform {
       applyCommands.first
         .asyncOption[F]
         .flatMap(_.traverse { bson =>
@@ -156,10 +156,10 @@ object FindQueryBuilder {
         })
     }
 
-    def stream[A: Decoder] =
+    def stream[A: BsonDecoder] =
       applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
 
-    def boundedStream[A: Decoder](c: Int) =
+    def boundedStream[A: BsonDecoder](c: Int) =
       applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
 
     def explain = transform {

@@ -23,14 +23,18 @@ import com.mongodb.client.model.{
   MergeOptions,
   UnwindOptions
 }
-import mongo4cats.bson.Encoder
+import mongo4cats.bson.BsonEncoder
 import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
 
 final case class Aggregate private (private val aggs: List[Bson]) {
-  def bucketAuto[T: Encoder](groupBy: T, buckets: Int, options: BucketAutoOptions): Aggregate =
+  def bucketAuto[T: BsonEncoder](
+      groupBy: T,
+      buckets: Int,
+      options: BucketAutoOptions
+  ): Aggregate =
     add(Aggregates.bucketAuto(groupBy.asBson, buckets, options))
 
   def sample(size: Int): Aggregate =
@@ -51,7 +55,7 @@ final case class Aggregate private (private val aggs: List[Bson]) {
   def sort(sort: Sort): Aggregate =
     add(Aggregates.sort(sort.toBson))
 
-  def sortByCount[T: Encoder](filter: T): Aggregate =
+  def sortByCount[T: BsonEncoder](filter: T): Aggregate =
     add(Aggregates.sortByCount(filter.asBson))
 
   def skip(n: Int): Aggregate =
@@ -63,7 +67,7 @@ final case class Aggregate private (private val aggs: List[Bson]) {
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
     add(Aggregates.lookup(from, localField, foreignField, as))
 
-  def group[T: Encoder](id: T, fieldAccumulator: Accumulator): Aggregate =
+  def group[T: BsonEncoder](id: T, fieldAccumulator: Accumulator): Aggregate =
     add(Aggregates.group(id.asBson, fieldAccumulator.toBsonFields))
 
   def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
@@ -78,13 +82,13 @@ final case class Aggregate private (private val aggs: List[Bson]) {
   def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate =
     add(Aggregates.merge(collectionName, options))
 
-  def replaceWith[T: Encoder](value: T): Aggregate =
+  def replaceWith[T: BsonEncoder](value: T): Aggregate =
     add(Aggregates.replaceWith(value.asBson))
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
     add(Aggregates.lookup(from, pipeline.toBsons.asJava, as))
 
-  def graphLookup[T: Encoder](
+  def graphLookup[T: BsonEncoder](
       from: String,
       startWith: T,
       connectFromField: String,
@@ -120,7 +124,11 @@ final case class Aggregate private (private val aggs: List[Bson]) {
 object Aggregate {
   def empty: Aggregate = Aggregate(List.empty)
 
-  def bucketAuto[T: Encoder](groupBy: T, buckets: Int, options: BucketAutoOptions): Aggregate =
+  def bucketAuto[T: BsonEncoder](
+      groupBy: T,
+      buckets: Int,
+      options: BucketAutoOptions
+  ): Aggregate =
     empty.bucketAuto[T](groupBy, buckets, options)
 
   def sample(size: Int): Aggregate =
@@ -141,7 +149,7 @@ object Aggregate {
   def sort(sort: Sort): Aggregate =
     empty.sort(sort)
 
-  def sortByCount[T: Encoder](filter: T): Aggregate =
+  def sortByCount[T: BsonEncoder](filter: T): Aggregate =
     empty.sortByCount[T](filter)
 
   def skip(n: Int): Aggregate =
@@ -153,7 +161,7 @@ object Aggregate {
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
     empty.lookup(from, localField, foreignField, as)
 
-  def group[T: Encoder](id: T, fieldAccumulator: Accumulator): Aggregate =
+  def group[T: BsonEncoder](id: T, fieldAccumulator: Accumulator): Aggregate =
     empty.group[T](id, fieldAccumulator)
 
   def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
@@ -168,13 +176,13 @@ object Aggregate {
   def merge(name: String, options: MergeOptions = new MergeOptions()): Aggregate =
     empty.merge(name, options)
 
-  def replaceWith[T: Encoder](value: T): Aggregate =
+  def replaceWith[T: BsonEncoder](value: T): Aggregate =
     empty.replaceWith[T](value)
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
     empty.lookup(from, pipeline, as)
 
-  def graphLookup[T: Encoder](
+  def graphLookup[T: BsonEncoder](
       from: String,
       startWith: T,
       connectFromField: String,

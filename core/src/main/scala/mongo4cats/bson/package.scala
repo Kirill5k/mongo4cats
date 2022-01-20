@@ -39,7 +39,7 @@ package object bson {
     def apply(entries: (String, BsonValue)*): BsonDocument = apply(
       entries.toMap[String, BsonValue]
     )
-    def apply[A: Encoder](key: String, value: A): BsonDocument = apply(key -> value.asBson)
+    def apply[A: BsonEncoder](key: String, value: A): BsonDocument = apply(key -> value.asBson)
     def parse(json: String): BsonDocument = JDocument.parse(json)
     def from(json: String): BsonDocument = parse(json)
   }

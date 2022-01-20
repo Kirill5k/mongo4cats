@@ -23,7 +23,7 @@ import cats.implicits._
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
-import mongo4cats.bson.{Decoder, DocumentEncoder}
+import mongo4cats.bson.{BsonDecoder, BsonDocumentEncoder}
 import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
@@ -60,13 +60,13 @@ trait MongoCollection[F[_]] {
   def find: FindQueryBuilder[F]
 
   //
-  def findOneAndDelete[A: Decoder](
+  def findOneAndDelete[A: BsonDecoder](
       filter: Bson,
       options: FindOneAndDeleteOptions,
       clientSession: Option[ClientSession[F]]
   ): F[Option[A]]
 
-  def findOneAndDelete[A: Decoder](
+  def findOneAndDelete[A: BsonDecoder](
       filter: Filter,
       options: FindOneAndDeleteOptions = FindOneAndDeleteOptions(),
       clientSession: Option[ClientSession[F]] = None
@@ -74,14 +74,14 @@ trait MongoCollection[F[_]] {
     findOneAndDelete[A](filter.toBson, options, clientSession)
 
   //
-  def findOneAndUpdate[A: Decoder](
+  def findOneAndUpdate[A: BsonDecoder](
       filter: Bson,
       update: Bson,
       options: FindOneAndUpdateOptions,
       clientSession: Option[ClientSession[F]]
   ): F[Option[A]]
 
-  def findOneAndUpdate[A: Decoder](
+  def findOneAndUpdate[A: BsonDecoder](
       filter: Filter,
       update: Update,
       options: FindOneAndUpdateOptions = FindOneAndUpdateOptions(),
@@ -90,14 +90,14 @@ trait MongoCollection[F[_]] {
     findOneAndUpdate[A](filter.toBson, update.toBson, options, clientSession)
 
   //
-  def findOneAndReplace[A: Decoder: DocumentEncoder](
+  def findOneAndReplace[A: BsonDecoder: BsonDocumentEncoder](
       filter: Bson,
       replacement: A,
       options: FindOneAndReplaceOptions,
       clientSession: Option[ClientSession[F]]
   ): F[Option[A]]
 
-  def findOneAndReplace[A: Decoder: DocumentEncoder](
+  def findOneAndReplace[A: BsonDecoder: BsonDocumentEncoder](
       filter: Filter,
       replacement: A,
       options: FindOneAndReplaceOptions = FindOneAndReplaceOptions(),
@@ -208,14 +208,14 @@ trait MongoCollection[F[_]] {
     updateOneAggregate(filter, update.toBsons, options, clientSession)
 
   //
-  def replaceOne[T: DocumentEncoder](
+  def replaceOne[T: BsonDocumentEncoder](
       filter: Bson,
       replacement: T,
       options: ReplaceOptions,
       clientSession: Option[ClientSession[F]]
   ): F[UpdateResult]
 
-  def replaceOne[T: DocumentEncoder](
+  def replaceOne[T: BsonDocumentEncoder](
       filter: Filter,
       replacement: T,
       options: ReplaceOptions = ReplaceOptions(),
@@ -252,14 +252,14 @@ trait MongoCollection[F[_]] {
     deleteMany(filter.toBson, options, clientSession)
 
   //
-  def insertOne[T: DocumentEncoder](
+  def insertOne[T: BsonDocumentEncoder](
       document: T,
       options: InsertOneOptions = InsertOneOptions(),
       clientSession: Option[ClientSession[F]] = None
   ): F[InsertOneResult]
 
   //
-  def insertMany[T: DocumentEncoder](
+  def insertMany[T: BsonDocumentEncoder](
       documents: Seq[T],
       options: InsertManyOptions = InsertManyOptions(),
       clientSession: Option[ClientSession[F]] = None
@@ -330,7 +330,7 @@ object MongoCollection {
     def distinct(fieldName: String) =
       DistinctQueryBuilder[F](fieldName, collection).mapK(transform)
 
-    def findOneAndDelete[A: Decoder](
+    def findOneAndDelete[A: BsonDecoder](
         filter: Bson,
         options: FindOneAndDeleteOptions,
         clientSession: Option[ClientSession[G]]
@@ -353,7 +353,7 @@ object MongoCollection {
       }
     }
 
-    def findOneAndUpdate[A: Decoder](
+    def findOneAndUpdate[A: BsonDecoder](
         filter: Bson,
         update: Bson,
         options: FindOneAndUpdateOptions,
@@ -377,7 +377,7 @@ object MongoCollection {
       }
     }
 
-    def findOneAndReplace[A: Decoder: DocumentEncoder](
+    def findOneAndReplace[A: BsonDecoder: BsonDocumentEncoder](
         filter: Bson,
         replacement: A,
         options: FindOneAndReplaceOptions,
@@ -508,7 +508,7 @@ object MongoCollection {
       }
     }
 
-    def replaceOne[T: DocumentEncoder](
+    def replaceOne[T: BsonDocumentEncoder](
         filter: Bson,
         replacement: T,
         options: ReplaceOptions,
@@ -550,7 +550,7 @@ object MongoCollection {
       }
     }
 
-    def insertOne[T: DocumentEncoder](
+    def insertOne[T: BsonDocumentEncoder](
         document: T,
         options: InsertOneOptions = InsertOneOptions(),
         clientSession: Option[ClientSession[G]] = None
@@ -563,7 +563,7 @@ object MongoCollection {
       }
     }
 
-    def insertMany[T: DocumentEncoder](
+    def insertMany[T: BsonDocumentEncoder](
         documents: Seq[T],
         options: InsertManyOptions = InsertManyOptions(),
         clientSession: Option[ClientSession[G]] = None

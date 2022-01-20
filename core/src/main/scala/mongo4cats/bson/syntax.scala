@@ -19,20 +19,21 @@ package mongo4cats.bson
 import org.bson.BsonValue
 
 trait CodecOps {
-  implicit final class BEncoderOps[A](val value: A) {
-    def asBson(implicit encoder: Encoder[A]): BsonValue = encoder(value)
+  implicit final class BsonEncoderOps[A](val value: A) {
+    def asBson(implicit encoder: BsonEncoder[A]): BsonValue = encoder(value)
   }
 
-  implicit final class BDocEncoderOps[A](val value: A) {
-    def asBsonDoc(implicit encoder: DocumentEncoder[A]): BsonDocument = encoder(value)
+  implicit final class BsonDocumentEncoderOps[A](val value: A) {
+    def asBsonDoc(implicit encoder: BsonDocumentEncoder[A]): BsonDocument = encoder(value)
   }
 
-  implicit class BDecoderOps(val value: BsonValue) {
-    def as[A: Decoder]: Either[DecodeError, A] = Decoder[A].apply(value)
+  implicit class BsonDecoderOps(val value: BsonValue) {
+    def as[A: BsonDecoder]: Either[BsonDecodeError, A] = BsonDecoder[A].apply(value)
   }
 
   implicit class BDocDecoderOps(val value: BsonDocument) {
-    def as[A: DocumentDecoder]: Either[DecodeError, A] = DocumentDecoder[A].apply(value)
+    def as[A: BsonDocumentDecoder]: Either[BsonDecodeError, A] =
+      BsonDocumentDecoder[A].apply(value)
   }
 }
 

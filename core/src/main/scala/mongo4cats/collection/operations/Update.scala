@@ -17,20 +17,20 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{PushOptions, Updates}
-import mongo4cats.bson.Encoder
+import mongo4cats.bson.BsonEncoder
 import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
 
 final case class Update private (private val us: List[Bson]) {
-  def set[A: Encoder](fieldName: String, value: A) =
+  def set[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.set(fieldName, value.asBson))
 
   def unset(fieldName: String) =
     add(Updates.unset(fieldName))
 
-  def setOnInsert[A: Encoder](fieldName: String, value: A) =
+  def setOnInsert[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.setOnInsert(fieldName, value.asBson))
 
   def rename(fieldName: String, newFieldName: String) =
@@ -42,10 +42,10 @@ final case class Update private (private val us: List[Bson]) {
   def mul(fieldName: String, number: Number) =
     add(Updates.mul(fieldName, number))
 
-  def min[A: Encoder](fieldName: String, value: A) =
+  def min[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.min(fieldName, value.asBson))
 
-  def max[A: Encoder](fieldName: String, value: A) =
+  def max[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.max(fieldName, value.asBson))
 
   def currentDate(fieldName: String) =
@@ -54,28 +54,28 @@ final case class Update private (private val us: List[Bson]) {
   def currentTimestamp(fieldName: String) =
     add(Updates.currentTimestamp(fieldName))
 
-  def addToSet[A: Encoder](fieldName: String, value: A) =
+  def addToSet[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.addToSet(fieldName, value.asBson))
 
-  def addEachToSet[A: Encoder](fieldName: String, values: Seq[A]) =
+  def addEachToSet[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     add(Updates.addEachToSet(fieldName, values.map(_.asBson).asJava))
 
-  def push[A: Encoder](fieldName: String, value: A) =
+  def push[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.push(fieldName, value.asBson))
 
-  def pushEach[A: Encoder](fieldName: String, values: Seq[A]) =
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     add(Updates.pushEach(fieldName, values.map(_.asBson).asJava))
 
-  def pushEach[A: Encoder](fieldName: String, values: Seq[A], options: PushOptions) =
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A], options: PushOptions) =
     add(Updates.pushEach(fieldName, values.map(_.asBson).asJava, options))
 
-  def pull[A: Encoder](fieldName: String, value: A) =
+  def pull[A: BsonEncoder](fieldName: String, value: A) =
     add(Updates.pull(fieldName, value.asBson))
 
   def pullByFilter(filter: Filter) =
     add(Updates.pullByFilter(filter.toBson))
 
-  def pullAll[A: Encoder](fieldName: String, values: Seq[A]) =
+  def pullAll[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     add(Updates.pullAll(fieldName, values.map(_.asBson).asJava))
 
   def popFirst(fieldName: String) =
@@ -115,13 +115,13 @@ final case class Update private (private val us: List[Bson]) {
 object Update {
   private val empty: Update = Update(List.empty)
 
-  def set[A: Encoder](fieldName: String, value: A) =
+  def set[A: BsonEncoder](fieldName: String, value: A) =
     empty.set(fieldName, value)
 
   def unset(fieldName: String) =
     empty.unset(fieldName)
 
-  def setOnInsert[A: Encoder](fieldName: String, value: A) =
+  def setOnInsert[A: BsonEncoder](fieldName: String, value: A) =
     empty.setOnInsert(fieldName, value)
 
   def rename(fieldName: String, newFieldName: String) =
@@ -133,10 +133,10 @@ object Update {
   def mul(fieldName: String, number: Number) =
     empty.mul(fieldName, number)
 
-  def min[A: Encoder](fieldName: String, value: A) =
+  def min[A: BsonEncoder](fieldName: String, value: A) =
     empty.min(fieldName, value)
 
-  def max[A: Encoder](fieldName: String, value: A) =
+  def max[A: BsonEncoder](fieldName: String, value: A) =
     empty.max(fieldName, value)
 
   def currentDate(fieldName: String) =
@@ -145,28 +145,28 @@ object Update {
   def currentTimestamp(fieldName: String) =
     empty.currentTimestamp(fieldName)
 
-  def addToSet[A: Encoder](fieldName: String, value: A) =
+  def addToSet[A: BsonEncoder](fieldName: String, value: A) =
     empty.addToSet(fieldName, value)
 
-  def addEachToSet[A: Encoder](fieldName: String, values: Seq[A]) =
+  def addEachToSet[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     empty.addEachToSet(fieldName, values)
 
-  def push[A: Encoder](fieldName: String, value: A) =
+  def push[A: BsonEncoder](fieldName: String, value: A) =
     empty.push(fieldName, value)
 
-  def pushEach[A: Encoder](fieldName: String, values: Seq[A]) =
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     empty.pushEach(fieldName, values)
 
-  def pushEach[A: Encoder](fieldName: String, values: Seq[A], options: PushOptions) =
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A], options: PushOptions) =
     empty.pushEach(fieldName, values, options)
 
-  def pull[A: Encoder](fieldName: String, value: A) =
+  def pull[A: BsonEncoder](fieldName: String, value: A) =
     empty.pull(fieldName, value)
 
   def pullByFilter(filter: Filter) =
     empty.pullByFilter(filter)
 
-  def pullAll[A: Encoder](fieldName: String, values: Seq[A]) =
+  def pullAll[A: BsonEncoder](fieldName: String, values: Seq[A]) =
     empty.pullAll(fieldName, values)
 
   def popFirst(fieldName: String) =

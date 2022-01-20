@@ -25,7 +25,7 @@ import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.{AggregatePublisher, MongoCollection => JCollection}
 import fs2.Stream
 import mongo4cats.helpers._
-import mongo4cats.bson.Decoder
+import mongo4cats.bson.BsonDecoder
 import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.{Aggregate, Index}
@@ -57,9 +57,9 @@ trait AggregateQueryBuilder[F[_]] {
 
   //
   def toCollection: F[Unit]
-  def first[A: Decoder]: F[Option[A]]
-  def stream[A: Decoder]: Stream[F, A]
-  def boundedStream[A: Decoder](c: Int): Stream[F, A]
+  def first[A: BsonDecoder]: F[Option[A]]
+  def stream[A: BsonDecoder]: Stream[F, A]
+  def boundedStream[A: BsonDecoder](c: Int): Stream[F, A]
   def explain: F[BsonDocument]
   def explain(verbosity: ExplainVerbosity): F[BsonDocument]
 
@@ -129,7 +129,7 @@ object AggregateQueryBuilder {
     def toCollection: G[Unit] =
       transform(applyCommands.toCollection.asyncVoid[F])
 
-    def first[A: Decoder]: G[Option[A]] = transform {
+    def first[A: BsonDecoder]: G[Option[A]] = transform {
       applyCommands.first
         .asyncOption[F]
         .flatMap(_.traverse { bson =>
@@ -137,10 +137,10 @@ object AggregateQueryBuilder {
         })
     }
 
-    def stream[A: Decoder]: Stream[G, A] =
+    def stream[A: BsonDecoder]: Stream[G, A] =
       applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
 
-    def boundedStream[A: Decoder](c: Int): Stream[G, A] =
+    def boundedStream[A: BsonDecoder](c: Int): Stream[G, A] =
       applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
 
     def explain: G[BsonDocument] = transform {

@@ -24,8 +24,6 @@ import mongo4cats.collection.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
 
 object FilteringAndSorting extends IOApp.Simple with EmbeddedMongo {
-  implicitly[mongo4cats.bson.DocumentDecoder[org.bson.BsonDocument]]
-
   override val run: IO[Unit] =
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>

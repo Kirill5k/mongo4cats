@@ -100,7 +100,6 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     }
 
     "search by nested classes" in {
-      import io.circe.syntax._
       withEmbeddedMongoClient { client =>
         val result = for {
           db <- client.getDatabase("test")
@@ -109,7 +108,6 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           _ <- coll.insertMany[Person](
             List(person("John", "Doe"), person("Jane", "Doe", Gender.Female))
           )
-          all <- coll.find.stream[Person].compile.to(List)
           females <- coll
             // w/o auto derive codecs, this type annotation is redundant (idk, what it finds, but it encodes
             // Gender.Female to {})

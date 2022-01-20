@@ -17,12 +17,12 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Projections
-import mongo4cats.bson.Encoder
+import mongo4cats.bson.BsonEncoder
 import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
 
 final case class Projection private (private val ps: List[Bson]) {
-  def computed[A: Encoder](fieldName: String, expression: A) =
+  def computed[A: BsonEncoder](fieldName: String, expression: A) =
     add(Projections.computed(fieldName, expression.asBson))
 
   def include(fieldName: String) =
@@ -71,7 +71,7 @@ final case class Projection private (private val ps: List[Bson]) {
 object Projection {
   def empty: Projection = Projection(List.empty)
 
-  def computed[T: Encoder](fieldName: String, expression: T) =
+  def computed[T: BsonEncoder](fieldName: String, expression: T) =
     empty.computed(fieldName, expression)
 
   def include(fieldName: String): Projection =
