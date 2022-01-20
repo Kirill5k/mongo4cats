@@ -66,8 +66,6 @@ trait FindQueryBuilder[F[_]] {
 
   def stream[A: BsonDecoder]: Stream[F, A]
 
-  def boundedStream[A: BsonDecoder](c: Int): Stream[F, A]
-
   def explain: F[BsonDocument]
 
   def explain(verbosity: ExplainVerbosity): F[BsonDocument]
@@ -158,9 +156,6 @@ object FindQueryBuilder {
 
     def stream[A: BsonDecoder] =
       applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
-
-    def boundedStream[A: BsonDecoder](c: Int) =
-      applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
 
     def explain = transform {
       applyCommands.explain(classOf[BsonDocument]).asyncSingle[F]

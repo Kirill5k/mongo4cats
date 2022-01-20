@@ -24,7 +24,7 @@ import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
 import mongo4cats.helpers._
 
 trait ClientSession[F[_]] {
-  def session: JClientSession
+  private[mongo4cats] def session: JClientSession
   def hasActiveTransaction: F[Boolean]
   def transactionOptions: F[Option[TransactionOptions]]
   def startTransaction(
@@ -42,7 +42,7 @@ object ClientSession {
     TransformedClientSession[F, F](session, FunctionK.id)
 
   final private case class TransformedClientSession[F[_]: Async, G[_]](
-      session: JClientSession,
+      private[mongo4cats] session: JClientSession,
       transform: F ~> G
   ) extends ClientSession[G] {
     def hasActiveTransaction = transform {

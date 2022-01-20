@@ -23,12 +23,12 @@ import org.bson.conversions.Bson
 
 import scala.concurrent.duration.Duration
 
-sealed trait DistinctCommand extends Product with Serializable
-sealed trait FindCommand extends Product with Serializable
-sealed trait WatchCommand extends Product with Serializable
-sealed trait AggregateCommand extends Product with Serializable
+sealed private[queries] trait DistinctCommand extends Product with Serializable
+sealed private[queries] trait FindCommand extends Product with Serializable
+sealed private[queries] trait WatchCommand extends Product with Serializable
+sealed private[queries] trait AggregateCommand extends Product with Serializable
 
-object FindCommand {
+private[queries] object FindCommand {
   final case class ShowRecordId(showRecordId: Boolean) extends FindCommand
   final case class ReturnKey(returnKey: Boolean) extends FindCommand
   final case class Comment(comment: String) extends FindCommand
@@ -47,14 +47,14 @@ object FindCommand {
   final case class Skip(skip: Int) extends FindCommand
 }
 
-object DistinctCommand {
+private[queries] object DistinctCommand {
   final case class MaxTime(duration: Duration) extends DistinctCommand
   final case class Filter(filter: Bson) extends DistinctCommand
   final case class BatchSize(size: Int) extends DistinctCommand
   final case class Collation(collation: model.Collation) extends DistinctCommand
 }
 
-object WatchCommand {
+private[queries] object WatchCommand {
   final case class BatchSize(size: Int) extends WatchCommand
   final case class Collation(collation: model.Collation) extends WatchCommand
   final case class FullDocument(fullDocument: changestream.FullDocument) extends WatchCommand
@@ -64,7 +64,7 @@ object WatchCommand {
   final case class StartAtOperationTime(operationTime: BsonTimestamp) extends WatchCommand
 }
 
-object AggregateCommand {
+private[queries] object AggregateCommand {
   final case class AllowDiskUse(allowDiskUse: Boolean) extends AggregateCommand
   final case class MaxTime(duration: Duration) extends AggregateCommand
   final case class MaxAwaitTime(duration: Duration) extends AggregateCommand

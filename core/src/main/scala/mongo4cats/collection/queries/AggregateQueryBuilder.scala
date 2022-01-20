@@ -59,7 +59,6 @@ trait AggregateQueryBuilder[F[_]] {
   def toCollection: F[Unit]
   def first[A: BsonDecoder]: F[Option[A]]
   def stream[A: BsonDecoder]: Stream[F, A]
-  def boundedStream[A: BsonDecoder](c: Int): Stream[F, A]
   def explain: F[BsonDocument]
   def explain(verbosity: ExplainVerbosity): F[BsonDocument]
 
@@ -139,9 +138,6 @@ object AggregateQueryBuilder {
 
     def stream[A: BsonDecoder]: Stream[G, A] =
       applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
-
-    def boundedStream[A: BsonDecoder](c: Int): Stream[G, A] =
-      applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
 
     def explain: G[BsonDocument] = transform {
       applyCommands.explain(classOf[BsonDocument]).asyncSingle[F]

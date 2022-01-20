@@ -49,7 +49,6 @@ trait DistinctQueryBuilder[F[_]] {
   //
   def first[A: BsonDecoder]: F[Option[A]]
   def stream[A: BsonDecoder]: Stream[F, A]
-  def boundedStream[A: BsonDecoder](c: Int): Stream[F, A]
 
   //
   def mapK[G[_]](f: F ~> G): DistinctQueryBuilder[G]
@@ -110,9 +109,6 @@ object DistinctQueryBuilder {
 
     def stream[A: BsonDecoder] =
       applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
-
-    def boundedStream[A: BsonDecoder](c: Int) =
-      applyCommands.boundedStream[F](c).evalMap(_.as[A].liftTo[F]).translate(transform)
 
     //
     def mapK[H[_]](f: G ~> H) =

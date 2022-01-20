@@ -25,7 +25,7 @@ import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient, MongoClients}
 import mongo4cats.database.MongoDatabase
 import mongo4cats.helpers._
-import org.bson.Document
+import org.bson.BsonDocument
 
 import scala.jdk.CollectionConverters._
 
@@ -35,7 +35,7 @@ trait MongoClient[F[_]] {
   def listDatabaseNames: Stream[F, String]
   def listDatabases(
       clientSession: Option[ClientSession[F]] = None
-  ): Stream[F, Document]
+  ): Stream[F, BsonDocument]
   def startSession(
       options: ClientSessionOptions = ClientSessionOptions.apply()
   ): F[ClientSession[F]]
@@ -64,9 +64,12 @@ object MongoClient {
 
     def listDatabases(clientSession: Option[ClientSession[G]] = None) = clientSession match {
       case Some(session) =>
-        client.listDatabases(session.session).stream[F].translate(transform)
+        client
+          .listDatabases(session.session, classOf[BsonDocument])
+          .stream[F]
+          .translate(transform)
       case None =>
-        client.listDatabases.stream[F].translate(transform)
+        client.listDatabases(classOf[BsonDocument]).stream[F].translate(transform)
     }
 
     def startSession(options: ClientSessionOptions = ClientSessionOptions.apply()) = transform {

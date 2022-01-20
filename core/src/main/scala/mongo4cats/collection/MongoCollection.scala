@@ -19,7 +19,7 @@ package mongo4cats.collection
 import cats.arrow.FunctionK
 import cats.~>
 import cats.effect.Async
-import cats.implicits._
+import cats.syntax.all._
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}

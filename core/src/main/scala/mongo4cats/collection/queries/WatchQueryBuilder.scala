@@ -59,7 +59,6 @@ trait WatchQueryBuilder[F[_]] {
 
   //
   def stream: Stream[F, ChangeStreamDocument[BsonValue]]
-  def boundedStream(c: Int): Stream[F, ChangeStreamDocument[BsonValue]]
   def updateStream[A: BsonDecoder]: Stream[F, A]
 
   def mapK[G[_]](f: F ~> G): WatchQueryBuilder[G]
@@ -119,10 +118,7 @@ object WatchQueryBuilder {
 
     //
     def stream =
-      boundedStream(1)
-
-    def boundedStream(c: Int) =
-      boundedStreamF(c).translate(transform)
+      boundedStreamF(1).translate(transform)
 
     def updateStream[A: BsonDecoder] =
       boundedStreamF(1).map(_.getFullDocument).evalMap(_.as[A].liftTo[F]).translate(transform)

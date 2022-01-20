@@ -25,7 +25,7 @@ import fs2.Stream
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.MongoCollection
 import mongo4cats.helpers._
-import org.bson.{BsonDocument, Document}
+import org.bson.BsonDocument
 import org.bson.conversions.Bson
 
 trait MongoDatabase[F[_]] {
@@ -44,7 +44,7 @@ trait MongoDatabase[F[_]] {
       clientSession: Option[ClientSession[F]] = None
   ): Stream[F, String]
 
-  def listCollections(clientSession: Option[ClientSession[F]] = None): Stream[F, Document]
+  def listCollections(clientSession: Option[ClientSession[F]] = None): Stream[F, BsonDocument]
 
   def createCollection(
       name: String,
@@ -57,7 +57,7 @@ trait MongoDatabase[F[_]] {
       command: Bson,
       readPreference: ReadPreference = ReadPreference.primary,
       clientSession: Option[ClientSession[F]] = None
-  ): F[Document]
+  ): F[BsonDocument]
 
   def drop(clientSession: Option[ClientSession[F]] = None): F[Unit]
 
@@ -104,9 +104,12 @@ object MongoDatabase {
         clientSession: Option[ClientSession[G]] = None
     ) = clientSession match {
       case Some(session) =>
-        database.listCollections(session.session).stream[F].translate(transform)
+        database
+          .listCollections(session.session, classOf[BsonDocument])
+          .stream[F]
+          .translate(transform)
       case None =>
-        database.listCollections.stream[F].translate(transform)
+        database.listCollections(classOf[BsonDocument]).stream[F].translate(transform)
     }
 
     def createCollection(
@@ -130,9 +133,11 @@ object MongoDatabase {
     ) = transform {
       clientSession match {
         case Some(session) =>
-          database.runCommand(session.session, command, readPreference).asyncSingle[F]
+          database
+            .runCommand(session.session, command, readPreference, classOf[BsonDocument])
+            .asyncSingle[F]
         case None =>
-          database.runCommand(command, readPreference).asyncSingle[F]
+          database.runCommand(command, readPreference, classOf[BsonDocument]).asyncSingle[F]
       }
     }
 
