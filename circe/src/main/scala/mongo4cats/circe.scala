@@ -16,7 +16,7 @@
 
 package mongo4cats
 
-import cats.implicits._
+import cats.syntax.all._
 import io.circe.{parser, Decoder => JDecoder, Encoder => JEncoder, Json}
 import io.circe.syntax._
 import mongo4cats.bson.{BsonDocument, DecodeError, Decoder, DocumentEncoder, Encoder}

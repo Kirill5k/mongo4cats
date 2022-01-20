@@ -58,14 +58,8 @@ object Filter {
   def isNull(fieldName: String) =
     Filter(Filters.eq(fieldName, null))
 
-  def eq[A: Encoder](fieldName: String, value: A) = {
-    println("&&&&&&")
-    println(value)
-    println(value.asBson)
-
-    println("&&&&&&")
+  def eq[A: Encoder](fieldName: String, value: A) =
     Filter(Filters.eq(fieldName, value.asBson))
-  }
 
   def ne[A: Encoder](fieldName: String, value: A) =
     Filter(Filters.ne(fieldName, value.asBson))

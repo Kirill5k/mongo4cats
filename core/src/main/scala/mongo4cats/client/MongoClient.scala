@@ -30,7 +30,7 @@ import org.bson.Document
 import scala.jdk.CollectionConverters._
 
 trait MongoClient[F[_]] {
-  def clusterDescription: ClusterDescription
+  def clusterDescription: F[ClusterDescription]
   def getDatabase(name: String): F[MongoDatabase[F]]
   def listDatabaseNames: Stream[F, String]
   def listDatabases(
@@ -49,13 +49,14 @@ object MongoClient {
       client: JMongoClient,
       transform: F ~> G
   ) extends MongoClient[G] {
-    def clusterDescription =
-      client.getClusterDescription
+    def clusterDescription = transform {
+      Async[F].delay(client.getClusterDescription)
+    }
 
     def getDatabase(name: String) = transform {
-      Async[F].delay {
-        MongoDatabase[F](client.getDatabase(name)).mapK(transform)
-      }
+      Async[F]
+        .delay(client.getDatabase(name))
+        .map(MongoDatabase[F](_).mapK(transform))
     }
 
     def listDatabaseNames =
