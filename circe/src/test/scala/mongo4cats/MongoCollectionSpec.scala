@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
+import mongo4cats.circe.codecs._
 import mongo4cats.circe.implicits._
 import mongo4cats.circe.unsafe
 import mongo4cats.client.MongoClient

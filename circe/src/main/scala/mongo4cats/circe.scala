@@ -31,7 +31,14 @@ import org.bson._
 object circe extends JsonCodecs {
   private val RootTag = "a"
 
-  trait Instances extends JsonCodecs {
+  object unsafe {
+    def circeDocumentEncoder[A: Encoder] = new BsonDocumentEncoder[A] {
+      def apply(a: A): BsonDocument =
+        BsonDocument.parse(a.asJson.noSpaces)
+    }
+  }
+
+  object implicits {
     implicit def circeEncoderToEncoder[A: Encoder] = new BsonEncoder[A] {
       def apply(a: A): BsonValue = {
         val json = a.asJson
@@ -46,17 +53,16 @@ object circe extends JsonCodecs {
         val doc = BsonDocument(RootTag -> b).toJson()
         val json = parser.parse(doc)
         val decoder = Decoder.instance[A](_.get[A](RootTag))
-        json.flatMap(decoder.decodeJson(_)).leftMap(x => BsonDecodeError(x.toString))
+        json
+          .flatMap(decoder.decodeJson(_))
+          .leftMap(x =>
+            BsonDecodeError {
+              s"An error occured during decoding BsonValue ${b}: $x"
+            }
+          )
       }
     }
   }
 
-  object unsafe {
-    def circeDocumentEncoder[A: Encoder] = new BsonDocumentEncoder[A] {
-      def apply(a: A): BsonDocument =
-        BsonDocument.parse(a.asJson.noSpaces)
-    }
-  }
-
-  object implicits extends Instances
+  object codecs extends JsonCodecs
 }
