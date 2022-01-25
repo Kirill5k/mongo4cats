@@ -28,33 +28,37 @@ import com.mongodb.{
 package object client {
   type ServerAddress = JServerAddress
   object ServerAddress {
-    def apply(host: String, port: Int): ServerAddress    = new JServerAddress(host, port)
-    def apply(address: InetSocketAddress): ServerAddress = apply(address.getHostName, address.getPort)
+    def apply(host: String, port: Int): ServerAddress = new JServerAddress(host, port)
+    def apply(address: InetSocketAddress): ServerAddress =
+      apply(address.getHostName, address.getPort)
   }
 
   type MongoClientSettings = JMongoClientSettings
   object MongoClientSettings {
-    def builder: JMongoClientSettings.Builder                                = JMongoClientSettings.builder()
-    def builder(settings: MongoClientSettings): JMongoClientSettings.Builder = JMongoClientSettings.builder(settings)
+    def builder: JMongoClientSettings.Builder = JMongoClientSettings.builder()
+    def builder(settings: MongoClientSettings): JMongoClientSettings.Builder =
+      JMongoClientSettings.builder(settings)
   }
 
   type MongoDriverInformation = JMongoDriverInformation
   object MongoDriverInformation {
-    def apply(): JMongoDriverInformation                                              = builder.build()
-    def builder: JMongoDriverInformation.Builder                                      = JMongoDriverInformation.builder()
-    def builder(information: MongoDriverInformation): JMongoDriverInformation.Builder = JMongoDriverInformation.builder(information)
+    def apply(): JMongoDriverInformation = builder.build()
+    def builder: JMongoDriverInformation.Builder = JMongoDriverInformation.builder()
+    def builder(information: MongoDriverInformation): JMongoDriverInformation.Builder =
+      JMongoDriverInformation.builder(information)
   }
 
   type ClientSessionOptions = JClientSessionOptions
   object ClientSessionOptions {
-    def apply(): JClientSessionOptions                                            = builder.build()
-    def builder: JClientSessionOptions.Builder                                    = JClientSessionOptions.builder()
-    def builder(information: ClientSessionOptions): JClientSessionOptions.Builder = JClientSessionOptions.builder(information)
+    def apply(): JClientSessionOptions = builder.build()
+    def builder: JClientSessionOptions.Builder = JClientSessionOptions.builder()
+    def builder(information: ClientSessionOptions): JClientSessionOptions.Builder =
+      JClientSessionOptions.builder(information)
   }
 
   type TransactionOptions = JTransactionOptions
   object TransactionOptions {
-    def apply(): JTransactionOptions         = builder.build()
+    def apply(): JTransactionOptions = builder.build()
     def builder: JTransactionOptions.Builder = JTransactionOptions.builder()
   }
 }

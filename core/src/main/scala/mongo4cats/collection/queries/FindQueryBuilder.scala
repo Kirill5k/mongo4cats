@@ -16,246 +16,206 @@
 
 package mongo4cats.collection.queries
 
+import cats.arrow.FunctionK
+import cats.~>
 import cats.effect.Async
+import cats.implicits._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
-import com.mongodb.reactivestreams.client.FindPublisher
-import mongo4cats.bson.Document
+import com.mongodb.reactivestreams.client.{FindPublisher, MongoCollection => JCollection}
+import fs2.Stream
+import mongo4cats.bson.BsonDecoder
+import mongo4cats.bson.syntax._
 import mongo4cats.helpers._
+import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations
-import mongo4cats.collection.operations.{Projection, Sort}
+import mongo4cats.collection.queries.FindCommand._
+import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
-final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: FindPublisher[T],
-    protected val commands: List[FindCommand[T]]
-) extends QueryBuilder[FindPublisher, T] {
+trait FindQueryBuilder[F[_]] {
+  def maxTime(duration: Duration): FindQueryBuilder[F]
+  def maxAwaitTime(duration: Duration): FindQueryBuilder[F]
+  def collation(collation: model.Collation): FindQueryBuilder[F]
+  def partial(p: Boolean): FindQueryBuilder[F]
+  def comment(c: String): FindQueryBuilder[F]
+  def returnKey(rk: Boolean): FindQueryBuilder[F]
+  def showRecordId(s: Boolean): FindQueryBuilder[F]
+  def hint(index: String): FindQueryBuilder[F]
+  def hint(h: Bson): FindQueryBuilder[F]
+  def max(m: Bson): FindQueryBuilder[F]
+  def min(m: Bson): FindQueryBuilder[F]
+  def sort(s: operations.Sort): FindQueryBuilder[F]
+  def sortBy(fieldNames: String*): FindQueryBuilder[F]
+  def sortByDesc(fieldNames: String*): FindQueryBuilder[F]
+  def filter(f: operations.Filter): FindQueryBuilder[F]
+  def projection(p: operations.Projection): FindQueryBuilder[F]
+  def skip(s: Int): FindQueryBuilder[F]
+  def limit(l: Int): FindQueryBuilder[F]
 
-  /** Sets the maximum execution time on the server for this operation.
-    *
-    * @param duration
-    *   the max time
-    * @return
-    *   FindQueryBuilder
-    */
-  def maxTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.MaxTime[T](duration) :: commands)
+  //
+  def session(s: ClientSession[F]): FindQueryBuilder[F]
 
-  /** The maximum amount of time for the server to wait on new documents to satisfy a tailable cursor query. This only applies to a
-    * TAILABLE_AWAIT cursor. When the cursor is not a TAILABLE_AWAIT cursor, this option is ignored.
-    *
-    * On servers &gt;= 3.2, this option will be specified on the getMore command as "maxTimeMS". The default is no value: no "maxTimeMS" is
-    * sent to the server with the getMore command.
-    *
-    * On servers &lt; 3.2, this option is ignored, and indicates that the driver should respect the server's default value
-    *
-    * A zero value will be ignored.
-    *
-    * @param duration
-    *   the max await time
-    * @return
-    *   the maximum await execution time in the given time unit
-    */
-  def maxAwaitTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.MaxAwaitTime[T](duration) :: commands)
+  def noSession: FindQueryBuilder[F]
 
-  /** Sets the collation options
-    *
-    * <p>A null value represents the server default.</p>
-    *
-    * @param collation
-    *   the collation options to use
-    * @return
-    *   FindQueryBuilder
-    * @since 1.3
-    */
-  def collation(collation: model.Collation): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Collation[T](collation) :: commands)
+  //
+  def first[A: BsonDecoder]: F[Option[A]]
 
-  /** Get partial results from a sharded cluster if one or more shards are unreachable (instead of throwing an error).
-    *
-    * @param partial
-    *   if partial results for sharded clusters is enabled
-    * @return
-    *   FindQueryBuilder
-    */
-  def partial(partial: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Partial[T](partial) :: commands)
+  def stream[A: BsonDecoder]: Stream[F, A]
 
-  /** Sets the comment to the query. A null value means no comment is set.
-    *
-    * @param comment
-    *   the comment
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def comment(comment: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Comment[T](comment) :: commands)
+  def explain: F[BsonDocument]
 
-  /** Sets the returnKey. If true the find operation will return only the index keys in the resulting documents.
-    *
-    * @param returnKey
-    *   the returnKey
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def returnKey(returnKey: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.ReturnKey[T](returnKey) :: commands)
+  def explain(verbosity: ExplainVerbosity): F[BsonDocument]
 
-  /** Sets the showRecordId. Set to true to add a field \$recordId to the returned documents.
-    *
-    * @param showRecordId
-    *   the showRecordId
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def showRecordId(showRecordId: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.ShowRecordId[T](showRecordId) :: commands)
+  //
+  def mapK[G[_]](f: F ~> G): FindQueryBuilder[G]
+}
+object FindQueryBuilder {
+  def apply[F[_]: Async](collection: JCollection[BsonDocument]): FindQueryBuilder[F] =
+    TransformedFindQueryBuilder[F, F](collection, None, List.empty, FunctionK.id)
 
-  /** Sets the hint for which index to use. A null value means no hint is set.
-    *
-    * @param index
-    *   the name of the index which should be used for the operation
-    * @return
-    *   FindQueryBuilder
-    * @since 1.13
-    */
-  def hint(index: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.HintString[T](index) :: commands)
+  final private case class TransformedFindQueryBuilder[F[_]: Async, G[_]](
+      collection: JCollection[BsonDocument],
+      clientSession: Option[ClientSession[G]],
+      commands: List[FindCommand],
+      transform: F ~> G
+  ) extends FindQueryBuilder[G] {
 
-  /** Sets the hint for which index to use. A null value means no hint is set.
-    *
-    * @param hint
-    *   the hint
-    * @return
-    *   FindQueryBuilder
-    * @since 1.6
-    */
-  def hint(hint: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Hint[T](hint) :: commands)
+    def maxTime(duration: Duration) =
+      add(MaxTime(duration))
 
-  /** Sets the exclusive upper bound for a specific index. A null value means no max is set.
-    *
-    * @param max
-    *   the max
-    * @return
-    *   this
-    * @since 1.6
-    */
-  def max(max: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Max[T](max) :: commands)
+    def maxAwaitTime(duration: Duration) =
+      add(MaxAwaitTime(duration))
 
-  /** Sets the minimum inclusive lower bound for a specific index. A null value means no max is set.
-    *
-    * @param min
-    *   the min
-    * @return
-    *   this
-    * @since 1.6
-    */
-  def min(min: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Min[T](min) :: commands)
+    def collation(collation: model.Collation) =
+      add(Collation(collation))
 
-  /** Sets the sort criteria to apply to the query.
-    *
-    * @param sort
-    *   the sort criteria, which may be null.
-    * @return
-    *   FindQueryBuilder
-    */
-  def sort(sort: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Sort[T](sort) :: commands)
+    def partial(p: Boolean) =
+      add(Partial(p))
 
-  def sort(sorts: Sort): FindQueryBuilder[F, T] =
-    sort(sorts.toBson)
+    def comment(c: String) =
+      add(Comment(c))
 
-  def sortBy(fieldNames: String*): FindQueryBuilder[F, T] =
-    sort(Sort.asc(fieldNames: _*))
+    def returnKey(rk: Boolean) =
+      add(ReturnKey(rk))
 
-  def sortByDesc(fieldNames: String*): FindQueryBuilder[F, T] =
-    sort(Sort.desc(fieldNames: _*))
+    def showRecordId(s: Boolean) =
+      add(ShowRecordId(s))
 
-  /** Sets the query filter to apply to the query.
-    *
-    * @param filter
-    *   the filter
-    * @return
-    *   FindQueryBuilder
-    */
-  def filter(filter: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Filter[T](filter) :: commands)
+    def hint(index: String) =
+      add(HintString(index))
 
-  def filter(filters: operations.Filter): FindQueryBuilder[F, T] =
-    filter(filters.toBson)
+    def hint(h: Bson) =
+      add(Hint(h))
 
-  /** Sets a document describing the fields to return for all matching documents.
-    *
-    * @param projection
-    *   the project document, which may be null.
-    * @return
-    *   FindQueryBuilder
-    */
-  def projection(projection: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Projection[T](projection) :: commands)
+    def max(m: Bson) =
+      add(Max(m))
 
-  def projection(projection: Projection): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Projection[T](projection.toBson) :: commands)
+    def min(m: Bson) =
+      add(Min(m))
 
-  /** Sets the number of documents to skip.
-    *
-    * @param skip
-    *   the number of documents to skip
-    * @return
-    *   FindQueryBuilder
-    */
-  def skip(skip: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Skip[T](skip) :: commands)
+    def sort(s: operations.Sort) =
+      add(Sort(s.toBson))
 
-  /** Sets the limit to apply.
-    *
-    * @param limit
-    *   the limit
-    * @return
-    *   FindQueryBuilder
-    */
-  def limit(limit: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Limit[T](limit) :: commands)
+    def sortBy(fieldNames: String*) =
+      sort(operations.Sort.asc(fieldNames: _*))
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncOption[F]
+    def sortByDesc(fieldNames: String*) =
+      sort(operations.Sort.desc(fieldNames: _*))
 
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
+    def filter(f: operations.Filter) =
+      add(Filter(f.toBson))
 
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+    def projection(p: operations.Projection) =
+      add(Projection(p.toBson))
 
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
+    def skip(s: Int) =
+      add(Skip(s))
 
-  /** Explain the execution plan for this operation with the server's default verbosity level
-    *
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F]
+    def limit(l: Int) =
+      add(Limit(l))
 
-  /** Explain the execution plan for this operation with the given verbosity level
-    *
-    * @param verbosity
-    *   the verbosity of the explanation
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F]
+    //
+    def session(s: ClientSession[G]) =
+      copy(clientSession = Some(s))
+
+    def noSession =
+      copy(clientSession = None)
+    //
+
+    def first[A: BsonDecoder] = transform {
+      applyCommands.first
+        .asyncOption[F]
+        .flatMap(_.traverse { bson =>
+          bson.as[A].liftTo[F]
+        })
+    }
+
+    def stream[A: BsonDecoder] =
+      applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    def explain = transform {
+      applyCommands.explain(classOf[BsonDocument]).asyncSingle[F]
+    }
+
+    def explain(verbosity: ExplainVerbosity) = transform {
+      applyCommands.explain(classOf[BsonDocument], verbosity).asyncSingle[F]
+    }
+
+    //
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
+
+    //
+
+    private def applyCommands: FindPublisher[BsonValue] =
+      commands.foldRight(publisher) { (command, acc) =>
+        command match {
+          case ShowRecordId(s) =>
+            acc.showRecordId(s)
+          case ReturnKey(r) =>
+            acc.returnKey(r)
+          case Comment(c) =>
+            acc.comment(c)
+          case Collation(c) =>
+            acc.collation(c)
+          case Partial(b) =>
+            acc.partial(b)
+          case MaxTime(d) =>
+            acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case MaxAwaitTime(d) =>
+            acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case HintString(s) =>
+            acc.hintString(s)
+          case Hint(h) =>
+            acc.hint(h)
+          case Max(m) =>
+            acc.max(m)
+          case Min(m) =>
+            acc.min(m)
+          case Skip(s) =>
+            acc.skip(s)
+          case Limit(l) =>
+            acc.limit(l)
+          case Filter(f) =>
+            acc.filter(f)
+          case Projection(p) =>
+            acc.projection(p)
+          case Sort(s) =>
+            acc.sort(s)
+        }
+      }
+
+    private def add(command: FindCommand): TransformedFindQueryBuilder[F, G] =
+      copy(commands = command :: commands)
+
+    private def publisher: FindPublisher[BsonValue] =
+      clientSession match {
+        case None     => collection.find(classOf[BsonValue])
+        case Some(cs) => collection.find(cs.session, classOf[BsonValue])
+      }
+  }
 }

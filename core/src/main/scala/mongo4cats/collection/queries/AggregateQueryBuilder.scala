@@ -16,173 +16,172 @@
 
 package mongo4cats.collection.queries
 
+import cats.~>
+import cats.arrow.FunctionK
 import cats.effect.Async
+import cats.implicits._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
-import com.mongodb.reactivestreams.client.AggregatePublisher
-import mongo4cats.bson.Document
+import com.mongodb.reactivestreams.client.{AggregatePublisher, MongoCollection => JCollection}
+import fs2.Stream
 import mongo4cats.helpers._
-import mongo4cats.collection.operations.Index
+import mongo4cats.bson.BsonDecoder
+import mongo4cats.bson.syntax._
+import mongo4cats.client.ClientSession
+import mongo4cats.collection.operations.{Aggregate, Index}
+import mongo4cats.collection.queries.AggregateCommand._
+import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
+import scala.jdk.CollectionConverters._
 
-final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: AggregatePublisher[T],
-    protected val commands: List[AggregateCommand[T]]
-) extends QueryBuilder[AggregatePublisher, T] {
+trait AggregateQueryBuilder[F[_]] {
+  def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[F]
+  def maxTime(duration: Duration): AggregateQueryBuilder[F]
+  def maxAwaitTime(duration: Duration): AggregateQueryBuilder[F]
+  def bypassDocumentValidation(bypass: Boolean): AggregateQueryBuilder[F]
+  def collation(collation: model.Collation): AggregateQueryBuilder[F]
+  def comment(comment: String): AggregateQueryBuilder[F]
+  def let(variables: Bson): AggregateQueryBuilder[F]
+  def hint(hint: Bson): AggregateQueryBuilder[F]
+  def hint(index: Index): AggregateQueryBuilder[F]
+  def batchSize(batchSize: Int): AggregateQueryBuilder[F]
 
-  /** Enables writing to temporary files. A null value indicates that it's unspecified.
-    *
-    * @param allowDiskUse
-    *   true if writing to temporary files is enabled
-    * @return
-    *   AggregateQueryBuilder
-    */
-  def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.AllowDiskUse[T](allowDiskUse) :: commands)
+  //
+  def session(cs: ClientSession[F]): AggregateQueryBuilder[F]
+  def noSession: AggregateQueryBuilder[F]
 
-  /** Sets the maximum execution time on the server for this operation.
-    *
-    * @param duration
-    *   the max time
-    * @return
-    *   AggregateQueryBuilder
-    */
-  def maxTime(duration: Duration): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.MaxTime[T](duration) :: commands)
+  def pipeline(p: Aggregate): AggregateQueryBuilder[F]
 
-  /** The maximum amount of time for the server to wait on new documents to satisfy a \$changeStream aggregation.
-    *
-    * A zero value will be ignored.
-    *
-    * @param duration
-    *   the max await time
-    * @return
-    *   the maximum await execution time in the given time unit
-    * @since 1.6
-    */
-  def maxAwaitTime(duration: Duration): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.MaxAwaitTime[T](duration) :: commands)
+  //
+  def toCollection: F[Unit]
+  def first[A: BsonDecoder]: F[Option[A]]
+  def stream[A: BsonDecoder]: Stream[F, A]
+  def explain: F[BsonDocument]
+  def explain(verbosity: ExplainVerbosity): F[BsonDocument]
 
-  /** Sets the bypass document level validation flag.
-    *
-    * <p>Note: This only applies when an \$out stage is specified</p>.
-    *
-    * @param bypassDocumentValidation
-    *   If true, allows the write to opt-out of document level validation.
-    * @return
-    *   AggregateQueryBuilder
-    * @since 1.2
-    */
-  def bypassDocumentValidation(bypassDocumentValidation: Boolean): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.BypassDocumentValidation[T](bypassDocumentValidation) :: commands)
+  //
+  def mapK[G[_]](nat: F ~> G): AggregateQueryBuilder[G]
+}
 
-  /** Sets the collation options
-    *
-    * <p>A null value represents the server default.</p>
-    *
-    * @param collation
-    *   the collation options to use
-    * @return
-    *   AggregateQueryBuilder
-    * @since 1.3
-    */
-  def collation(collation: model.Collation): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Collation[T](collation) :: commands)
+object AggregateQueryBuilder {
+  def apply[F[_]: Async](collection: JCollection[BsonDocument]): AggregateQueryBuilder[F] =
+    TransformedAggregateQueryBuilder[F, F](
+      collection,
+      List.empty,
+      None,
+      List.empty,
+      FunctionK.id
+    )
 
-  /** Sets the comment to the aggregation.
-    *
-    * @param comment
-    *   the comment
-    * @return
-    *   AggregateQueryBuilder
-    * @since 1.7
-    */
-  def comment(comment: String): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Comment[T](comment) :: commands)
+  final private case class TransformedAggregateQueryBuilder[F[_]: Async, G[_]](
+      collection: JCollection[BsonDocument],
+      pipeline: Seq[Bson],
+      clientSession: Option[ClientSession[G]],
+      commands: List[AggregateCommand],
+      transform: F ~> G
+  ) extends AggregateQueryBuilder[G] {
 
-  /** Add top-level variables to the aggregation. <p> For MongoDB 5.0+, the aggregate command accepts a {@code let} option. This option is a
-    * document consisting of zero or more fields representing variables that are accessible to the aggregation pipeline. The key is the name
-    * of the variable and the value is a constant in the aggregate expression language. Each parameter name is then usable to access the
-    * value of the corresponding expression with the "\$\$" syntax within aggregate expression contexts which may require the use of \$expr
-    * or a pipeline. </p>
-    *
-    * @param variables
-    *   the variables
-    * @return
-    *   AggregateQueryBuilder
-    * @since 4.3
-    */
-  def let(variables: Bson): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Let[T](variables) :: commands)
+    def allowDiskUse(allowDiskUse: Boolean) =
+      add(AllowDiskUse(allowDiskUse))
 
-  /** Sets the hint for which index to use.
-    *
-    * @param hint
-    *   the hint
-    * @return
-    *   AggregateQueryBuilder
-    * @since 1.7
-    */
-  def hint(hint: Bson): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Hint[T](hint) :: commands)
+    def maxTime(duration: Duration) =
+      add(MaxTime(duration))
 
-  def hint(index: Index): AggregateQueryBuilder[F, T] =
-    hint(index.toBson)
+    def maxAwaitTime(duration: Duration) =
+      add(MaxAwaitTime(duration))
 
-  /** Sets the number of documents to return per batch.
-    *
-    * <p>Overrides the Subscription#request value for setting the batch size, allowing for fine grained control over the underlying
-    * cursor.</p>
-    *
-    * @param batchSize
-    *   the batch size
-    * @return
-    *   AggregateQueryBuilder
-    * @since 1.8
-    */
-  def batchSize(batchSize: Int): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.BatchSize[T](batchSize) :: commands)
+    def bypassDocumentValidation(bypass: Boolean) =
+      add(BypassDocumentValidation(bypass))
 
-  /** Aggregates documents according to the specified aggregation pipeline, which must end with a \$out stage.
-    *
-    * @return
-    *   a unit, that indicates when the operation has completed
-    */
-  def toCollection: F[Unit] =
-    applyCommands().toCollection.asyncVoid[F]
+    def collation(collation: model.Collation) =
+      add(Collation(collation))
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncOption[F]
+    def comment(comment: String) =
+      add(Comment(comment))
 
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
+    def let(variables: Bson) =
+      add(Let(variables))
 
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+    def hint(hint: Bson) =
+      add(Hint(hint))
 
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
+    def hint(index: Index) =
+      add(Hint(index.toBson))
 
-  /** Explain the execution plan for this operation with the server's default verbosity level
-    *
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F]
+    def batchSize(batchSize: Int) =
+      add(BatchSize(batchSize))
 
-  /** Explain the execution plan for this operation with the given verbosity level
-    *
-    * @param verbosity
-    *   the verbosity of the explanation
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F]
+    //
+    def session(cs: ClientSession[G]) =
+      copy(clientSession = Some(cs))
+
+    def noSession =
+      copy(clientSession = None)
+
+    def pipeline(p: Aggregate) =
+      copy(pipeline = p.toBsons)
+
+    //
+    def toCollection: G[Unit] =
+      transform(applyCommands.toCollection.asyncVoid[F])
+
+    def first[A: BsonDecoder]: G[Option[A]] = transform {
+      applyCommands.first
+        .asyncOption[F]
+        .flatMap(_.traverse { bson =>
+          bson.as[A].liftTo[F]
+        })
+    }
+
+    def stream[A: BsonDecoder]: Stream[G, A] =
+      applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    def explain: G[BsonDocument] = transform {
+      applyCommands.explain(classOf[BsonDocument]).asyncSingle[F]
+    }
+
+    def explain(verbosity: ExplainVerbosity): G[BsonDocument] = transform {
+      applyCommands.explain(classOf[BsonDocument], verbosity).asyncSingle[F]
+    }
+    //
+    def mapK[H[_]](f: G ~> H): AggregateQueryBuilder[H] =
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
+
+    //
+    private def applyCommands: AggregatePublisher[BsonValue] =
+      commands.foldRight(publisher) { (command, acc) =>
+        command match {
+          case AllowDiskUse(b) =>
+            acc.allowDiskUse(b)
+          case MaxTime(d) =>
+            acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case MaxAwaitTime(d) =>
+            acc.maxAwaitTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case BypassDocumentValidation(b) =>
+            acc.bypassDocumentValidation(b)
+          case Collation(c) =>
+            acc.collation(c)
+          case Comment(c) =>
+            acc.comment(c)
+          case Let(v) =>
+            acc.let(v)
+          case Hint(h) =>
+            acc.hint(h)
+          case BatchSize(i) =>
+            acc.batchSize(i)
+        }
+      }
+
+    private def publisher: AggregatePublisher[BsonValue] =
+      clientSession match {
+        case None     => collection.aggregate(pipeline.asJava, classOf[BsonValue])
+        case Some(cs) => collection.aggregate(cs.session, pipeline.asJava, classOf[BsonValue])
+      }
+
+    private def add(command: AggregateCommand): TransformedAggregateQueryBuilder[F, G] =
+      copy(commands = command :: commands)
+  }
 }

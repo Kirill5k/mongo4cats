@@ -16,55 +16,79 @@
 
 package mongo4cats.client
 
-import cats.effect.{Async, Resource, Sync}
-import cats.syntax.flatMap._
+import cats.~>
+import cats.arrow.FunctionK
+import cats.effect.{Async, Resource}
+import cats.implicits._
+import fs2.Stream
 import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient, MongoClients}
-import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
 import mongo4cats.helpers._
+import org.bson.BsonDocument
 
 import scala.jdk.CollectionConverters._
 
-abstract class MongoClient[F[_]] {
-  def clusterDescription: ClusterDescription
+trait MongoClient[F[_]] {
+  def clusterDescription: F[ClusterDescription]
   def getDatabase(name: String): F[MongoDatabase[F]]
-  def listDatabaseNames: F[Iterable[String]]
-  def listDatabases: F[Iterable[Document]]
-  def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
-  def startSession(options: ClientSessionOptions): F[ClientSession[F]]
-  def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
-}
+  def listDatabaseNames: Stream[F, String]
+  def listDatabases(
+      clientSession: Option[ClientSession[F]] = None
+  ): Stream[F, BsonDocument]
+  def startSession(
+      options: ClientSessionOptions = ClientSessionOptions.apply()
+  ): F[ClientSession[F]]
 
-final private class LiveMongoClient[F[_]](
-    private val client: JMongoClient
-)(implicit
-    val F: Async[F]
-) extends MongoClient[F] {
-  def clusterDescription: ClusterDescription = client.getClusterDescription
-
-  def getDatabase(name: String): F[MongoDatabase[F]] =
-    F.delay(client.getDatabase(name)).flatMap(MongoDatabase.make[F])
-
-  def listDatabaseNames: F[Iterable[String]] =
-    client.listDatabaseNames().asyncIterable[F]
-
-  def listDatabases: F[Iterable[Document]] =
-    client.listDatabases().asyncIterable[F]
-
-  def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
-    client.listDatabases(cs.session).asyncIterable[F]
-
-  def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
-    client.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
+  def mapK[G[_]](f: F ~> G): MongoClient[G]
+  def asK[G[_]: Async]: MongoClient[G]
 }
 
 object MongoClient {
+  final private case class TransformedMongoClient[F[_]: Async, G[_]](
+      client: JMongoClient,
+      transform: F ~> G
+  ) extends MongoClient[G] {
+    def clusterDescription = transform {
+      Async[F].delay(client.getClusterDescription)
+    }
+
+    def getDatabase(name: String) = transform {
+      Async[F]
+        .delay(client.getDatabase(name))
+        .map(MongoDatabase[F](_).mapK(transform))
+    }
+
+    def listDatabaseNames =
+      client.listDatabaseNames().stream[F].translate(transform)
+
+    def listDatabases(clientSession: Option[ClientSession[G]] = None) = clientSession match {
+      case Some(session) =>
+        client
+          .listDatabases(session.session, classOf[BsonDocument])
+          .stream[F]
+          .translate(transform)
+      case None =>
+        client.listDatabases(classOf[BsonDocument]).stream[F].translate(transform)
+    }
+
+    def startSession(options: ClientSessionOptions = ClientSessionOptions.apply()) = transform {
+      client.startSession(options).asyncSingle[F].map(ClientSession(_).mapK(transform))
+    }
+
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f)
+
+    def asK[H[_]: Async] =
+      TransformedMongoClient[H, H](client, FunctionK.id)
+  }
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
     clientResource[F](MongoClients.create(connectionString))
 
-  def fromServerAddress[F[_]: Async](serverAddresses: ServerAddress*): Resource[F, MongoClient[F]] =
+  def fromServerAddress[F[_]: Async](
+      serverAddresses: ServerAddress*
+  ): Resource[F, MongoClient[F]] =
     create {
       MongoClientSettings.builder
         .applyToClusterSettings { builder =>
@@ -76,9 +100,16 @@ object MongoClient {
   def create[F[_]: Async](settings: MongoClientSettings): Resource[F, MongoClient[F]] =
     create(settings, null)
 
-  def create[F[_]: Async](settings: MongoClientSettings, driver: MongoDriverInformation): Resource[F, MongoClient[F]] =
-    clientResource(MongoClients.create(settings, driver))
+  def create[F[_]: Async](
+      settings: MongoClientSettings,
+      driver: MongoDriverInformation
+  ): Resource[F, MongoClient[F]] =
+    clientResource[F](MongoClients.create(settings, driver))
 
-  private def clientResource[F[_]: Async](client: => JMongoClient): Resource[F, MongoClient[F]] =
-    Resource.fromAutoCloseable(Sync[F].delay(client)).map(c => new LiveMongoClient[F](c))
+  private def clientResource[F[_]: Async](
+      client: => JMongoClient
+  ): Resource[F, MongoClient[F]] =
+    Resource
+      .fromAutoCloseable(Async[F].delay(client))
+      .map(x => TransformedMongoClient[F, F](x, FunctionK.id))
 }

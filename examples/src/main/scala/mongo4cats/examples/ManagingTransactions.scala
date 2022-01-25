@@ -18,27 +18,41 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import cats.syntax.foldable._
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 
 object ManagingTransactions extends IOApp.Simple {
 
   override val run: IO[Unit] =
-    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
-      for {
-        db      <- client.getDatabase("testdb")
-        coll    <- db.getCollection("docs")
-        session <- client.startSession
-        _       <- session.startTransaction
-        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
-        _       <- session.abortTransaction
-        count1  <- coll.count
-        _       <- IO.println(s"should be 0 since transaction was aborted: $count1")
-        _       <- session.startTransaction
-        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
-        _       <- session.commitTransaction
-        count2  <- coll.count
-        _       <- IO.println(s"should be 100 since transaction was committed: $count2")
-      } yield ()
+    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use {
+      client =>
+        for {
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          session <- client.startSession()
+          _ <- session.startTransaction()
+          _ <- (0 to 99).toList
+            .traverse_(i =>
+              coll.insertOne[BsonDocument](
+                BsonDocument("name" -> s"doc-$i".asBson),
+                clientSession = Some(session)
+              )
+            )
+          _ <- session.abortTransaction
+          count1 <- coll.count()
+          _ <- IO.println(s"should be 0 since transaction was aborted: $count1")
+          _ <- session.startTransaction()
+          _ <- (0 to 99).toList
+            .traverse_(i =>
+              coll.insertOne[BsonDocument](
+                BsonDocument("name" -> s"doc-$i".asBson),
+                clientSession = Some(session)
+              )
+            )
+          _ <- session.commitTransaction
+          count2 <- coll.count()
+          _ <- IO.println(s"should be 100 since transaction was committed: $count2")
+        } yield ()
     }
 }

@@ -6,6 +6,7 @@ object Dependencies {
     val fs2         = "3.2.4"
     val scalaCompat = "2.6.0"
     val circe       = "0.14.1"
+    val findbugsJsr305Version = "1.3.9"
 
     val logback   = "1.2.10"
     val scalaTest = "3.2.10"
@@ -19,6 +20,7 @@ object Dependencies {
     val mongodbBson          = "org.mongodb" % "bson"                           % Versions.mongodb
     val mongodbDriverCore    = "org.mongodb" % "mongodb-driver-core"            % Versions.mongodb
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
+    val findbugsJsr305Version = "com.google.code.findbugs" % "jsr305" % Versions.findbugsJsr305Version % Provided
 
     val fs2Core     = "co.fs2"                 %% "fs2-core"                % Versions.fs2
     val fs2RS       = "co.fs2"                 %% "fs2-reactive-streams"    % Versions.fs2
@@ -40,6 +42,7 @@ object Dependencies {
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
+    Libraries.findbugsJsr305Version,
     Libraries.fs2Core,
     Libraries.fs2RS,
     Libraries.scalaCompat

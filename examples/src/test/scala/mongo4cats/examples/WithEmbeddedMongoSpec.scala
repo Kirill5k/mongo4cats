@@ -18,7 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
 import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
@@ -32,11 +32,11 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
     "create and retrieve documents from a db" in withRunningEmbeddedMongo {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
+          db <- client.getDatabase("testdb")
           coll <- db.getCollection("docs")
-          testDoc = Document("Hello", "World!")
-          _        <- coll.insertOne(testDoc)
-          foundDoc <- coll.find.first
+          testDoc = BsonDocument("Hello", "World!")
+          _ <- coll.insertOne[BsonDocument](testDoc)
+          foundDoc <- coll.find.first[BsonDocument]
         } yield foundDoc mustBe Some(testDoc)
       }
     }.unsafeToFuture()
@@ -44,11 +44,11 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
     "start instance on different port" in withRunningEmbeddedMongo("localhost", 12355) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
+          db <- client.getDatabase("testdb")
           coll <- db.getCollection("docs")
-          testDoc = Document("Hello", "World!")
-          _        <- coll.insertOne(testDoc)
-          foundDoc <- coll.find.first
+          testDoc = BsonDocument("Hello", "World!")
+          _ <- coll.insertOne[BsonDocument](testDoc)
+          foundDoc <- coll.find.first[BsonDocument]
         } yield foundDoc mustBe Some(testDoc)
       }
     }.unsafeToFuture()

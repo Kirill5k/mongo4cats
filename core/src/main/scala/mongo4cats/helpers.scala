@@ -21,14 +21,9 @@ import fs2.Stream
 import fs2.interop.reactivestreams
 import org.reactivestreams.Publisher
 
-import scala.reflect.ClassTag
-
-private[mongo4cats] object helpers {
+object helpers {
 
   val DefaultStreamChunkSize: Int = 4096
-
-  def clazz[Y: ClassTag]: Class[Y] =
-    implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
 
   implicit final class PublisherOps[T](private val publisher: Publisher[T]) extends AnyVal {
     def asyncSingle[F[_]: Async]: F[T] =
@@ -39,9 +34,6 @@ private[mongo4cats] object helpers {
 
     def asyncVoid[F[_]: Async]: F[Unit] =
       boundedStream(1).compile.drain
-
-    def asyncIterable[F[_]: Async]: F[Iterable[T]] =
-      Async[F].widen[List[T], Iterable[T]](boundedStream(Int.MaxValue).compile.toList)
 
     def stream[F[_]: Async]: Stream[F, T] =
       reactivestreams.fromPublisher(publisher, DefaultStreamChunkSize)

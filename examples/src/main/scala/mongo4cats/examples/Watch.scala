@@ -17,21 +17,27 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
-import mongo4cats.bson.Document
+import mongo4cats.bson.BsonDocument
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import fs2.Stream
 
 object Watch extends IOApp.Simple {
 
   override val run: IO[Unit] =
-    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
-      for {
-        db   <- client.getDatabase("testdb")
-        coll <- db.getCollection("docs")
-        watchStream  = coll.watch[Document].stream
-        insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" -> s"doc-$i")))
-        updates <- watchStream.concurrently(insertStream).take(10).compile.toList
-        _       <- IO.println(updates)
-      } yield ()
+    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use {
+      client =>
+        for {
+          db <- client.getDatabase("testdb")
+          coll <- db.getCollection("docs")
+          watchStream = coll.watch.stream
+          insertStream = Stream
+            .range(0, 10)
+            .evalMap(i =>
+              coll.insertOne[BsonDocument](BsonDocument("name" -> s"doc-$i".asBson))
+            )
+          updates <- watchStream.concurrently(insertStream).take(10).compile.toList
+          _ <- IO.println(updates)
+        } yield ()
     }
 }

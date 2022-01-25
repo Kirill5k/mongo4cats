@@ -16,78 +16,126 @@
 
 package mongo4cats.collection.queries
 
+import cats.~>
+import cats.arrow.FunctionK
 import cats.effect.Async
+import cats.implicits._
 import com.mongodb.client.model
-import com.mongodb.reactivestreams.client.DistinctPublisher
+import com.mongodb.reactivestreams.client.{DistinctPublisher, MongoCollection => JCollection}
+import fs2.Stream
 import mongo4cats.helpers._
-import mongo4cats.collection.operations
+import mongo4cats.bson.BsonDecoder
+import mongo4cats.bson.syntax._
+import mongo4cats.client.ClientSession
+import mongo4cats.collection.operations.{Filter => OFilter}
+import mongo4cats.collection.queries.DistinctCommand._
+import org.bson.{BsonDocument, BsonValue}
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
-final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: DistinctPublisher[T],
-    protected val commands: List[DistinctCommand[T]]
-) extends QueryBuilder[DistinctPublisher, T] {
+trait DistinctQueryBuilder[F[_]] {
+  def maxTime(duration: Duration): DistinctQueryBuilder[F]
+  def filter(filter: OFilter): DistinctQueryBuilder[F]
+  def batchSize(size: Int): DistinctQueryBuilder[F]
+  def collation(collation: model.Collation): DistinctQueryBuilder[F]
 
-  /** Sets the maximum execution time on the server for this operation.
-    *
-    * @param duration
-    *   the max time
-    * @return
-    *   DistinctQueryBuilder
-    */
-  def maxTime(duration: Duration): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.MaxTime[T](duration) :: commands)
+  //
+  def session(cs: ClientSession[F]): DistinctQueryBuilder[F]
 
-  /** Sets the query filter to apply to the query.
-    *
-    * @param filter
-    *   the filter.
-    * @return
-    *   DistinctQueryBuilder
-    */
-  def filter(filter: Bson): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.Filter[T](filter) :: commands)
+  def noSession: DistinctQueryBuilder[F]
 
-  def filter(filters: operations.Filter): DistinctQueryBuilder[F, T] =
-    filter(filters.toBson)
+  //
+  def first[A: BsonDecoder]: F[Option[A]]
+  def stream[A: BsonDecoder]: Stream[F, A]
 
-  /** Sets the number of documents to return per batch.
-    *
-    * <p>Overrides the Subscription#request value for setting the batch size, allowing for fine grained control over the underlying
-    * cursor.</p>
-    *
-    * @param size
-    *   the batch size
-    * @return
-    *   DistinctQueryBuilder
-    * @since 1.8
-    */
-  def batchSize(size: Int): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.BatchSize[T](size) :: commands)
+  //
+  def mapK[G[_]](f: F ~> G): DistinctQueryBuilder[G]
+}
 
-  /** Sets the collation options
-    *
-    * @param collation
-    *   the collation options to use
-    * @return
-    *   DistinctQueryBuilder
-    * @since 1.3
-    */
-  def collation(collation: model.Collation): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.Collation[T](collation) :: commands)
+object DistinctQueryBuilder {
+  def apply[F[_]: Async](
+      fieldName: String,
+      collection: JCollection[BsonDocument]
+  ): DistinctQueryBuilder[F] =
+    TransformedDistinctQueryBuilder[F, F](
+      fieldName,
+      collection,
+      None,
+      List.empty,
+      FunctionK.id
+    )
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncOption[F]
+  final private case class TransformedDistinctQueryBuilder[F[_]: Async, G[_]](
+      fieldName: String,
+      collection: JCollection[BsonDocument],
+      clientSession: Option[ClientSession[G]],
+      commands: List[DistinctCommand],
+      transform: F ~> G
+  ) extends DistinctQueryBuilder[G] {
 
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
+    def maxTime(duration: Duration) =
+      add(MaxTime(duration))
 
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
+    def filter(filter: Bson) =
+      add(Filter(filter))
 
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
+    def filter(filter: OFilter) =
+      add(Filter(filter.toBson))
+
+    def batchSize(size: Int) =
+      add(BatchSize(size))
+
+    def collation(collation: model.Collation) =
+      add(Collation(collation))
+
+    //
+    def session(cs: ClientSession[G]) =
+      copy(clientSession = Some(cs))
+
+    def noSession =
+      copy(clientSession = None)
+
+    //
+
+    def first[A: BsonDecoder]: G[Option[A]] = transform {
+      applyCommands.first
+        .asyncOption[F]
+        .flatMap(_.traverse { bson =>
+          bson.as[A].liftTo[F]
+        })
+    }
+
+    def stream[A: BsonDecoder] =
+      applyCommands.stream[F].evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    //
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
+
+    private def applyCommands =
+      commands.foldRight(publisher) { (command, acc) =>
+        command match {
+          case MaxTime(d) =>
+            acc.maxTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case Filter(f) =>
+            acc.filter(f)
+          case BatchSize(s) =>
+            acc.batchSize(s)
+          case Collation(c) =>
+            acc.collation(c)
+        }
+      }
+
+    private def add(command: DistinctCommand): TransformedDistinctQueryBuilder[F, G] =
+      copy(commands = command :: commands)
+
+    private def publisher: DistinctPublisher[BsonValue] =
+      clientSession match {
+        case None     => collection.distinct(fieldName, classOf[BsonValue])
+        case Some(cs) => collection.distinct(cs.session, fieldName, classOf[BsonValue])
+      }
+
+  }
 }

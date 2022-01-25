@@ -17,411 +17,179 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{PushOptions, Updates}
+import mongo4cats.bson.BsonEncoder
+import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
 
-trait Update {
+final case class Update private (private val us: List[Bson]) {
+  def set[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.set(fieldName, value.asBson))
 
-  /** Creates an update that sets the value of the field with the given name to the given value.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value, which may be null
-    * @return
-    *   the update
-    */
-  def set[A](fieldName: String, value: A): Update
+  def unset(fieldName: String) =
+    add(Updates.unset(fieldName))
 
-  /** Creates an update that deletes the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @return
-    *   the update
-    */
-  def unset(fieldName: String): Update
+  def setOnInsert[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.setOnInsert(fieldName, value.asBson))
 
-  /** Creates an update that sets the values for the document, but only if the update is an upsert that results in an insert of a document.
-    *
-    * @param value
-    *   the value
-    * @return
-    *   the update .0
-    * @see
-    *   UpdateOptions#upsert(boolean)
-    */
-  def setOnInsert(value: Bson): Update
+  def rename(fieldName: String, newFieldName: String) =
+    add(Updates.rename(fieldName, newFieldName))
 
-  /** Creates an update that sets the value of the field with the given name to the given value, but only if the update is an upsert that
-    * results in an insert of a document.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value, which may be null
-    * @return
-    *   the update ee UpdateOptions#upsert(boolean)
-    */
-  def setOnInsert[A](fieldName: String, value: A): Update
+  def inc(fieldName: String, number: Number) =
+    add(Updates.inc(fieldName, number))
 
-  /** Creates an update that renames a field.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param newFieldName
-    *   the non-null new field name
-    * @return
-    *   the update
-    */
-  def rename(fieldName: String, newFieldName: String): Update
+  def mul(fieldName: String, number: Number) =
+    add(Updates.mul(fieldName, number))
 
-  /** Creates an update that increments the value of the field with the given name by the given value.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param number
-    *   the value
-    * @return
-    *   the update
-    */
-  def inc(fieldName: String, number: Number): Update
+  def min[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.min(fieldName, value.asBson))
 
-  /** Creates an update that multiplies the value of the field with the given name by the given number.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param number
-    *   the non-null number
-    * @return
-    *   the update
-    */
-  def mul(fieldName: String, number: Number): Update
+  def max[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.max(fieldName, value.asBson))
 
-  /** Creates an update that sets the value of the field to the given value if the given value is less than the current value of the field.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value
-    * @return
-    *   the update
-    */
-  def min[A](fieldName: String, value: A): Update
+  def currentDate(fieldName: String) =
+    add(Updates.currentDate(fieldName))
 
-  /** Creates an update that sets the value of the field to the given value if the given value is greater than the current value of the
-    * field.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value
-    * @return
-    *   the update
-    */
-  def max[A](fieldName: String, value: A): Update
+  def currentTimestamp(fieldName: String) =
+    add(Updates.currentTimestamp(fieldName))
 
-  /** Creates an update that sets the value of the field to the current date as a BSON date.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @return
-    *   the update
-    */
-  def currentDate(fieldName: String): Update
+  def addToSet[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.addToSet(fieldName, value.asBson))
 
-  /** Creates an update that sets the value of the field to the current date as a BSON timestamp.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @return
-    *   the update
-    */
-  def currentTimestamp(fieldName: String): Update
+  def addEachToSet[A: BsonEncoder](fieldName: String, values: Seq[A]) =
+    add(Updates.addEachToSet(fieldName, values.map(_.asBson).asJava))
 
-  /** Creates an update that adds the given value to the array value of the field with the given name, unless the value is already present,
-    * in which case it does nothing
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value, which may be null
-    * @return
-    *   the update
-    */
-  def addToSet[A](fieldName: String, value: A): Update
+  def push[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.push(fieldName, value.asBson))
 
-  /** Creates an update that adds each of the given values to the array value of the field with the given name, unless the value is already
-    * present, in which case it does nothing
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param values
-    *   the values
-    * @return
-    *   the update
-    */
-  def addEachToSet[A](fieldName: String, values: Seq[A]): Update
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A]) =
+    add(Updates.pushEach(fieldName, values.map(_.asBson).asJava))
 
-  /** Creates an update that adds the given value to the array value of the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value, which may be null
-    * @return
-    *   the update
-    */
-  def push[A](fieldName: String, value: A): Update
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A], options: PushOptions) =
+    add(Updates.pushEach(fieldName, values.map(_.asBson).asJava, options))
 
-  /** Creates an update that adds each of the given values to the array value of the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param values
-    *   the values
-    * @return
-    *   the update
-    */
-  def pushEach[A](fieldName: String, values: Seq[A]): Update
+  def pull[A: BsonEncoder](fieldName: String, value: A) =
+    add(Updates.pull(fieldName, value.asBson))
 
-  /** Creates an update that adds each of the given values to the array value of the field with the given name, applying the given options
-    * for positioning the pushed values, and then slicing and/or sorting the array.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param values
-    *   the values
-    * @param options
-    *   the non-null push options
-    * @return
-    *   the update
-    */
-  def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update
+  def pullByFilter(filter: Filter) =
+    add(Updates.pullByFilter(filter.toBson))
 
-  /** Creates an update that removes all instances of the given value from the array value of the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param value
-    *   the value, which may be null
-    * @return
-    *   the update
-    */
-  def pull[A](fieldName: String, value: A): Update
+  def pullAll[A: BsonEncoder](fieldName: String, values: Seq[A]) =
+    add(Updates.pullAll(fieldName, values.map(_.asBson).asJava))
 
-  /** Creates an update that removes from an array all elements that match the given filter.
-    *
-    * @param filter
-    *   the query filter
-    * @return
-    *   the update
-    */
-  def pullByFilter(filter: Filter): Update
+  def popFirst(fieldName: String) =
+    add(Updates.popFirst(fieldName))
 
-  /** Creates an update that removes all instances of the given values from the array value of the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @param values
-    *   the values
-    * @return
-    *   the update
-    */
-  def pullAll[A](fieldName: String, values: Seq[A]): Update
+  def popLast(fieldName: String) =
+    add(Updates.popLast(fieldName))
 
-  /** Creates an update that pops the first element of an array that is the value of the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @return
-    *   the update
-    */
-  def popFirst(fieldName: String): Update
+  def bitwiseAnd(fieldName: String, value: Int) =
+    add(Updates.bitwiseAnd(fieldName, value))
 
-  /** Creates an update that pops the last element of an array that is the value of the field with the given name.
-    *
-    * @param fieldName
-    *   the non-null field name
-    * @return
-    *   the update
-    */
-  def popLast(fieldName: String): Update
+  def bitwiseAnd(fieldName: String, value: Long) =
+    add(Updates.bitwiseAnd(fieldName, value))
 
-  /** Creates an update that performs a bitwise and between the given integer value and the integral value of the field with the given name.
-    *
-    * @param fieldName
-    *   the field name
-    * @param value
-    *   the value
-    * @return
-    *   the update
-    */
-  def bitwiseAnd(fieldName: String, value: Int): Update
+  def bitwiseOr(fieldName: String, value: Int) =
+    add(Updates.bitwiseOr(fieldName, value))
 
-  def bitwiseAnd(fieldName: String, value: Long): Update
+  def bitwiseOr(fieldName: String, value: Long) =
+    add(Updates.bitwiseOr(fieldName, value))
 
-  /** Creates an update that performs a bitwise or between the given integer value and the integral value of the field with the given name.
-    *
-    * @param fieldName
-    *   the field name
-    * @param value
-    *   the value
-    * @return
-    *   the update
-    */
-  def bitwiseOr(fieldName: String, value: Int): Update
+  def bitwiseXor(fieldName: String, value: Int) =
+    add(Updates.bitwiseXor(fieldName, value))
 
-  def bitwiseOr(fieldName: String, value: Long): Update
+  def bitwiseXor(fieldName: String, value: Long) =
+    add(Updates.bitwiseXor(fieldName, value))
 
-  /** Creates an update that performs a bitwise xor between the given integer value and the integral value of the field with the given name.
-    *
-    * @param fieldName
-    *   the field name
-    * @param value
-    *   the value
-    * @return
-    *   the update
-    */
-  def bitwiseXor(fieldName: String, value: Int): Update
+  def combinedWith(other: Update) =
+    copy(us = other.us ::: us)
 
-  def bitwiseXor(fieldName: String, value: Long): Update
+  def toBson: Bson =
+    Updates.combine(us.reverse.asJava)
 
-  /** Merges 2 sequences of update operations together.
-    *
-    * @param anotherUpdate
-    *   the update to be merged with
-    * @return
-    *   the update
-    */
-  def combinedWith(anotherUpdate: Update): Update
-
-  private[collection] def toBson: Bson
-  private[operations] def updates: List[Bson]
+  private def add(b: Bson): Update =
+    copy(us = b :: us)
 }
 
 object Update {
-  private val empty: Update = UpdateBuilder(List.empty[Bson])
+  private val empty: Update = Update(List.empty)
 
-  def set[A](fieldName: String, value: A): Update                                  = empty.set(fieldName, value)
-  def unset(fieldName: String): Update                                             = empty.unset(fieldName)
-  def setOnInsert(value: Bson): Update                                             = empty.setOnInsert(value)
-  def setOnInsert[A](fieldName: String, value: A): Update                          = empty.setOnInsert(fieldName, value)
-  def rename(fieldName: String, newFieldName: String): Update                      = empty.rename(fieldName, newFieldName)
-  def inc(fieldName: String, number: Number): Update                               = empty.inc(fieldName, number)
-  def mul(fieldName: String, number: Number): Update                               = empty.mul(fieldName, number)
-  def min[A](fieldName: String, value: A): Update                                  = empty.min(fieldName, value)
-  def max[A](fieldName: String, value: A): Update                                  = empty.max(fieldName, value)
-  def currentDate(fieldName: String): Update                                       = empty.currentDate(fieldName)
-  def currentTimestamp(fieldName: String): Update                                  = empty.currentTimestamp(fieldName)
-  def addToSet[A](fieldName: String, value: A): Update                             = empty.addToSet(fieldName, value)
-  def addEachToSet[A](fieldName: String, values: Seq[A]): Update                   = empty.addEachToSet(fieldName, values)
-  def push[A](fieldName: String, value: A): Update                                 = empty.push(fieldName, value)
-  def pushEach[A](fieldName: String, values: Seq[A]): Update                       = empty.pushEach(fieldName, values)
-  def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update = empty.pushEach(fieldName, values, options)
-  def pull[A](fieldName: String, value: A): Update                                 = empty.pull(fieldName, value)
-  def pullByFilter(filter: Filter): Update                                         = empty.pullByFilter(filter)
-  def pullAll[A](fieldName: String, values: Seq[A]): Update                        = empty.pullAll(fieldName, values)
-  def popFirst(fieldName: String): Update                                          = empty.popFirst(fieldName)
-  def popLast(fieldName: String): Update                                           = empty.popLast(fieldName)
-  def bitwiseAnd(fieldName: String, value: Int): Update                            = empty.bitwiseAnd(fieldName, value)
-  def bitwiseAnd(fieldName: String, value: Long): Update                           = empty.bitwiseAnd(fieldName, value)
-  def bitwiseOr(fieldName: String, value: Int): Update                             = empty.bitwiseOr(fieldName, value)
-  def bitwiseOr(fieldName: String, value: Long): Update                            = empty.bitwiseOr(fieldName, value)
-  def bitwiseXor(fieldName: String, value: Int): Update                            = empty.bitwiseXor(fieldName, value)
-  def bitwiseXor(fieldName: String, value: Long): Update                           = empty.bitwiseXor(fieldName, value)
+  def set[A: BsonEncoder](fieldName: String, value: A) =
+    empty.set(fieldName, value)
 
-}
+  def unset(fieldName: String) =
+    empty.unset(fieldName)
 
-final private case class UpdateBuilder(
-    override val updates: List[Bson]
-) extends Update {
+  def setOnInsert[A: BsonEncoder](fieldName: String, value: A) =
+    empty.setOnInsert(fieldName, value)
 
-  def set[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.set(fieldName, value) :: updates)
+  def rename(fieldName: String, newFieldName: String) =
+    empty.rename(fieldName, newFieldName)
 
-  def unset(fieldName: String): Update =
-    UpdateBuilder(Updates.unset(fieldName) :: updates)
+  def inc(fieldName: String, number: Number) =
+    empty.inc(fieldName, number)
 
-  def setOnInsert(value: Bson): Update =
-    UpdateBuilder(Updates.setOnInsert(value) :: updates)
+  def mul(fieldName: String, number: Number) =
+    empty.mul(fieldName, number)
 
-  def setOnInsert[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.setOnInsert(fieldName, value) :: updates)
+  def min[A: BsonEncoder](fieldName: String, value: A) =
+    empty.min(fieldName, value)
 
-  def rename(fieldName: String, newFieldName: String): Update =
-    UpdateBuilder(Updates.rename(fieldName, newFieldName) :: updates)
+  def max[A: BsonEncoder](fieldName: String, value: A) =
+    empty.max(fieldName, value)
 
-  def inc(fieldName: String, number: Number): Update =
-    UpdateBuilder(Updates.inc(fieldName, number) :: updates)
+  def currentDate(fieldName: String) =
+    empty.currentDate(fieldName)
 
-  def mul(fieldName: String, number: Number): Update =
-    UpdateBuilder(Updates.mul(fieldName, number) :: updates)
+  def currentTimestamp(fieldName: String) =
+    empty.currentTimestamp(fieldName)
 
-  def min[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.min(fieldName, value) :: updates)
+  def addToSet[A: BsonEncoder](fieldName: String, value: A) =
+    empty.addToSet(fieldName, value)
 
-  def max[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.max(fieldName, value) :: updates)
+  def addEachToSet[A: BsonEncoder](fieldName: String, values: Seq[A]) =
+    empty.addEachToSet(fieldName, values)
 
-  def currentDate(fieldName: String): Update =
-    UpdateBuilder(Updates.currentDate(fieldName) :: updates)
+  def push[A: BsonEncoder](fieldName: String, value: A) =
+    empty.push(fieldName, value)
 
-  def currentTimestamp(fieldName: String): Update =
-    UpdateBuilder(Updates.currentTimestamp(fieldName) :: updates)
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A]) =
+    empty.pushEach(fieldName, values)
 
-  def addToSet[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.addToSet(fieldName, value) :: updates)
+  def pushEach[A: BsonEncoder](fieldName: String, values: Seq[A], options: PushOptions) =
+    empty.pushEach(fieldName, values, options)
 
-  def addEachToSet[A](fieldName: String, values: Seq[A]): Update =
-    UpdateBuilder(Updates.addEachToSet(fieldName, values.asJava) :: updates)
+  def pull[A: BsonEncoder](fieldName: String, value: A) =
+    empty.pull(fieldName, value)
 
-  def push[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.push(fieldName, value) :: updates)
+  def pullByFilter(filter: Filter) =
+    empty.pullByFilter(filter)
 
-  def pushEach[A](fieldName: String, values: Seq[A]): Update =
-    UpdateBuilder(Updates.pushEach(fieldName, values.asJava) :: updates)
+  def pullAll[A: BsonEncoder](fieldName: String, values: Seq[A]) =
+    empty.pullAll(fieldName, values)
 
-  def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update =
-    UpdateBuilder(Updates.pushEach(fieldName, values.asJava, options) :: updates)
+  def popFirst(fieldName: String) =
+    empty.popFirst(fieldName)
 
-  def pull[A](fieldName: String, value: A): Update =
-    UpdateBuilder(Updates.pull(fieldName, value) :: updates)
+  def popLast(fieldName: String) =
+    empty.popLast(fieldName)
 
-  def pullByFilter(filter: Filter): Update =
-    UpdateBuilder(Updates.pullByFilter(filter.toBson) :: updates)
+  def bitwiseAnd(fieldName: String, value: Int) =
+    empty.bitwiseAnd(fieldName, value)
 
-  def pullAll[A](fieldName: String, values: Seq[A]): Update =
-    UpdateBuilder(Updates.pullAll(fieldName, values.asJava) :: updates)
+  def bitwiseAnd(fieldName: String, value: Long) =
+    empty.bitwiseAnd(fieldName, value)
 
-  def popFirst(fieldName: String): Update =
-    UpdateBuilder(Updates.popFirst(fieldName) :: updates)
+  def bitwiseOr(fieldName: String, value: Int) =
+    empty.bitwiseOr(fieldName, value)
 
-  def popLast(fieldName: String): Update =
-    UpdateBuilder(Updates.popLast(fieldName) :: updates)
+  def bitwiseOr(fieldName: String, value: Long) =
+    empty.bitwiseOr(fieldName, value)
 
-  def bitwiseAnd(fieldName: String, value: Int): Update =
-    UpdateBuilder(Updates.bitwiseAnd(fieldName, value) :: updates)
+  def bitwiseXor(fieldName: String, value: Int) =
+    empty.bitwiseXor(fieldName, value)
 
-  def bitwiseAnd(fieldName: String, value: Long): Update =
-    UpdateBuilder(Updates.bitwiseAnd(fieldName, value) :: updates)
-
-  def bitwiseOr(fieldName: String, value: Int): Update =
-    UpdateBuilder(Updates.bitwiseOr(fieldName, value) :: updates)
-
-  def bitwiseOr(fieldName: String, value: Long): Update =
-    UpdateBuilder(Updates.bitwiseOr(fieldName, value) :: updates)
-
-  def bitwiseXor(fieldName: String, value: Int): Update =
-    UpdateBuilder(Updates.bitwiseXor(fieldName, value) :: updates)
-
-  def bitwiseXor(fieldName: String, value: Long): Update =
-    UpdateBuilder(Updates.bitwiseXor(fieldName, value) :: updates)
-
-  def combinedWith(anotherUpdate: Update): Update =
-    UpdateBuilder(anotherUpdate.updates ::: updates)
-
-  override private[collection] def toBson: Bson = Updates.combine(updates.reverse.asJava)
-
+  def bitwiseXor(fieldName: String, value: Long) =
+    empty.bitwiseXor(fieldName, value)
 }

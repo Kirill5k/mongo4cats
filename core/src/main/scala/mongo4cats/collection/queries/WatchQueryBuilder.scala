@@ -16,108 +16,149 @@
 
 package mongo4cats.collection.queries
 
+import cats.arrow.FunctionK
+import cats.~>
 import cats.effect.Async
+import cats.implicits._
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
-import com.mongodb.reactivestreams.client.ChangeStreamPublisher
+import com.mongodb.client.model.changestream.{
+  ChangeStreamDocument,
+  FullDocument => JFullDocument
+}
+import com.mongodb.reactivestreams.client.{
+  ChangeStreamPublisher,
+  MongoCollection => JCollection
+}
+import fs2.Stream
 import mongo4cats.helpers._
-import org.bson.{BsonDocument, BsonTimestamp}
+import mongo4cats.bson.BsonDecoder
+import mongo4cats.bson.syntax._
+import mongo4cats.client.ClientSession
+import mongo4cats.collection.operations.Aggregate
+import mongo4cats.collection.queries.WatchCommand._
+import org.bson.{BsonDocument, BsonTimestamp, BsonValue}
+import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
+import scala.jdk.CollectionConverters._
 
-final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: ChangeStreamPublisher[T],
-    protected val commands: List[WatchCommand[T]]
-) extends QueryBuilder[ChangeStreamPublisher, T] {
+trait WatchQueryBuilder[F[_]] {
+  def batchSize(s: Int): WatchQueryBuilder[F]
+  def collation(c: model.Collation): WatchQueryBuilder[F]
+  def fullDocument(f: JFullDocument): WatchQueryBuilder[F]
+  def maxAwaitTime(d: Duration): WatchQueryBuilder[F]
+  def resumeAfter(rt: BsonDocument): WatchQueryBuilder[F]
+  def startAfter(sa: BsonDocument): WatchQueryBuilder[F]
+  def startAtOperationTime(saot: BsonTimestamp): WatchQueryBuilder[F]
 
-  /** Sets the number of documents to return per batch.
-    *
-    * <p>Overrides the Subscription#request value for setting the batch size, allowing for fine grained control over the underlying
-    * cursor.</p>
-    *
-    * @param size
-    *   the batch size
-    * @return
-    *   WatchQueryBuilder
-    * @since 1.8
-    */
-  def batchSize(size: Int): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.BatchSize[T](size) :: commands)
+  //
+  def session(cs: ClientSession[F]): WatchQueryBuilder[F]
+  def noSession: WatchQueryBuilder[F]
+  def pipeline(p: Aggregate): WatchQueryBuilder[F]
 
-  /** Sets the collation options
-    *
-    * @param collation
-    *   the collation options to use
-    * @return
-    *   WatchQueryBuilder
-    */
-  def collation(collation: model.Collation): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.Collation[T](collation) :: commands)
+  //
+  def stream: Stream[F, ChangeStreamDocument[BsonValue]]
+  def updateStream[A: BsonDecoder]: Stream[F, A]
 
-  /** Sets the fullDocument value.
-    *
-    * @param fullDocument
-    *   the fullDocument
-    * @return
-    *   WatchQueryBuilder
-    */
-  def fullDocument(fullDocument: FullDocument): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.FullDocument[T](fullDocument) :: commands)
+  def mapK[G[_]](f: F ~> G): WatchQueryBuilder[G]
+}
 
-  /** Sets the maximum await execution time on the server for this operation.
-    *
-    * @param maxAwaitTime
-    *   the max await time.
-    * @return
-    *   WatchQueryBuilder
-    */
-  def maxAwaitTime(maxAwaitTime: Duration): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.MaxAwaitTime[T](maxAwaitTime) :: commands)
+object WatchQueryBuilder {
+  def apply[F[_]: Async](collection: JCollection[BsonDocument]): WatchQueryBuilder[F] =
+    TransformedWatchQueryBuilder[F, F](
+      collection,
+      List.empty,
+      None,
+      List.empty,
+      FunctionK.id
+    )
 
-  /** Sets the logical starting point for the new change stream.
-    *
-    * @param resumeToken
-    *   the resume token
-    * @return
-    *   WatchQueryBuilder
-    */
-  def resumeAfter(resumeToken: BsonDocument): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.ResumeAfter[T](resumeToken) :: commands)
+  final private case class TransformedWatchQueryBuilder[F[_]: Async, G[_]](
+      collection: JCollection[BsonDocument],
+      pipeline: Seq[Bson],
+      clientSession: Option[ClientSession[G]],
+      commands: List[WatchCommand],
+      transform: F ~> G
+  ) extends WatchQueryBuilder[G] {
 
-  /** Similar to {@code resumeAfter}, this option takes a resume token and starts a new change stream returning the first notification after
-    * the token.
-    *
-    * <p>This will allow users to watch collections that have been dropped and recreated or newly renamed collections without missing any
-    * notifications.</p>
-    *
-    * <p>Note: The server will report an error if both {@code startAfter} and {@code resumeAfter} are specified.</p>
-    *
-    * @param startAfter
-    *   the startAfter resumeToken
-    * @return
-    *   WatchQueryBuilder
-    */
-  def startAfter(startAfter: BsonDocument): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.StartAfter[T](startAfter) :: commands)
+    def batchSize(s: Int) =
+      add(BatchSize(s))
 
-  /** The change stream will only provide changes that occurred after the specified timestamp.
-    *
-    * <p>Any command run against the server will return an operation time that can be used here.</p> <p>The default value is an operation
-    * time obtained from the server before the change stream was created.</p>
-    *
-    * @param startAtOperationTime
-    *   the start at operation time
-    * @since 1.9
-    * @return
-    *   WatchQueryBuilder
-    */
-  def startAtOperationTime(startAtOperationTime: BsonTimestamp): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, WatchCommand.StartAtOperationTime[T](startAtOperationTime) :: commands)
+    def collation(c: model.Collation) =
+      add(Collation(c))
 
-  def stream: fs2.Stream[F, ChangeStreamDocument[T]] =
-    applyCommands().boundedStream[F](1) // minimal latency
+    def fullDocument(f: JFullDocument) =
+      add(FullDocument(f))
 
-  def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] =
-    applyCommands().boundedStream[F](capacity)
+    def maxAwaitTime(d: Duration) =
+      add(MaxAwaitTime(d))
+
+    def resumeAfter(rt: BsonDocument) =
+      add(ResumeAfter(rt))
+
+    def startAfter(sa: BsonDocument) =
+      add(StartAfter(sa))
+
+    def startAtOperationTime(saot: BsonTimestamp) =
+      add(StartAtOperationTime(saot))
+
+    //
+    def session(cs: ClientSession[G]) =
+      copy(clientSession = Some(cs))
+
+    def noSession =
+      copy(clientSession = None)
+
+    def pipeline(p: Seq[Bson]) =
+      copy(pipeline = p)
+
+    def pipeline(p: Aggregate) =
+      copy(pipeline = p.toBsons)
+
+    //
+    def stream =
+      boundedStreamF(1).translate(transform)
+
+    def updateStream[A: BsonDecoder] =
+      boundedStreamF(1).map(_.getFullDocument).evalMap(_.as[A].liftTo[F]).translate(transform)
+
+    //
+    def mapK[H[_]](f: G ~> H) =
+      copy(transform = transform andThen f, clientSession = clientSession.map(_.mapK(f)))
+
+    //
+    private def boundedStreamF(c: Int): Stream[F, ChangeStreamDocument[BsonValue]] =
+      applyCommands.boundedStream(c)
+
+    private def applyCommands: ChangeStreamPublisher[BsonValue] =
+      commands.foldRight(publisher) { (command, acc) =>
+        command match {
+          case BatchSize(s) =>
+            acc.batchSize(s)
+          case Collation(c) =>
+            acc.collation(c)
+          case FullDocument(fd) =>
+            acc.fullDocument(fd)
+          case MaxAwaitTime(d) =>
+            acc.maxAwaitTime(d.toNanos, TimeUnit.NANOSECONDS)
+          case ResumeAfter(b) =>
+            acc.resumeAfter(b)
+          case StartAfter(b) =>
+            acc.startAfter(b)
+          case StartAtOperationTime(t) =>
+            acc.startAtOperationTime(t)
+        }
+      }
+
+    private def add(command: WatchCommand): TransformedWatchQueryBuilder[F, G] =
+      copy(commands = command :: commands)
+
+    private def publisher: ChangeStreamPublisher[BsonValue] =
+      clientSession match {
+        case None     => collection.watch(pipeline.asJava, classOf[BsonValue])
+        case Some(cs) => collection.watch(cs.session, pipeline.asJava, classOf[BsonValue])
+      }
+
+  }
 }

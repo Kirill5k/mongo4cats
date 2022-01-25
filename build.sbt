@@ -4,8 +4,7 @@ import microsites.CdnDirectives
 
 lazy val scala212               = "2.12.14"
 lazy val scala213               = "2.13.7"
-lazy val scala3                 = "3.1.0"
-lazy val supportedScalaVersions = List(scala212, scala213, scala3)
+lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion           := scala213
 ThisBuild / organization           := "com.precog"
@@ -64,27 +63,25 @@ lazy val root = project
     crossScalaVersions := Nil
   )
   .aggregate(
-    `mongo4cats-core`,
-    `mongo4cats-circe`,
-    `mongo4cats-examples`,
-    `mongo4cats-embedded`
+    core,
+    circe,
+    examples,
+    embedded
   )
 
-lazy val `mongo4cats-core` = project
+lazy val core = project
   .in(file("core"))
-  .dependsOn(`mongo4cats-embedded` % "test->compile")
+  .dependsOn(embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core ++ Dependencies.test,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
-  )
+    test / parallelExecution := false)
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-circe` = project
+lazy val circe = project
   .in(file("circe"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
+  .dependsOn(core, embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
@@ -94,9 +91,9 @@ lazy val `mongo4cats-circe` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-examples` = project
+lazy val examples = project
   .in(file("examples"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, circe, embedded)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
@@ -105,7 +102,7 @@ lazy val `mongo4cats-examples` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-embedded` = project
+lazy val embedded = project
   .in(file("embedded"))
   .settings(commonSettings)
   .settings(
@@ -116,27 +113,3 @@ lazy val `mongo4cats-embedded` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val docs = project
-  .in(file("docs"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
-  .enablePlugins(MicrositesPlugin)
-  .settings(noPublish)
-  .settings(commonSettings)
-  .settings(
-    name                      := "mongo4cats-docs",
-    micrositeName             := "mongo4cats",
-    micrositeAuthor           := "Kirill",
-    micrositeDescription      := "MongoDB Java client wrapper for Cats-Effect & FS2",
-    micrositeBaseUrl          := "/mongo4cats",
-    micrositeDocumentationUrl := "/mongo4cats/docs",
-    micrositeHomepage         := "https://github.com/kirill5k/mongo4cats",
-    micrositeGithubOwner      := "kirill5k",
-    micrositeGithubRepo       := "mongo4cats",
-    micrositeHighlightTheme   := "docco",
-    micrositeGitterChannel    := false,
-    micrositeShareOnSocial    := false,
-    mdocIn                    := (Compile / sourceDirectory).value / "mdoc",
-    micrositeCDNDirectives := CdnDirectives(
-      cssList = List("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css")
-    )
-  )

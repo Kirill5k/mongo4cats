@@ -17,49 +17,37 @@
 package mongo4cats
 
 import org.bson.types.{ObjectId => JObjectId}
-import org.bson.{Document => JDocument}
+import org.bson.{BsonDocument => JDocument, BsonElement, BsonValue}
 import cats.syntax.alternative._
 import cats.syntax.functor._
-import mongo4cats.codecs.MongoCodecProvider
-import org.bson.codecs.DocumentCodecProvider
-import org.bson.codecs.configuration.CodecProvider
+import mongo4cats.bson.syntax._
 
 import java.time.Instant
 import java.util.Date
-import scala.collection.Iterable
 import scala.jdk.CollectionConverters._
 
-object bson {
+package object bson {
 
-  type Document = JDocument
-  object Document {
-    val empty: Document = new JDocument()
+  type BsonDocument = JDocument
+  object BsonDocument {
+    val empty: BsonDocument = new JDocument()
 
-    def apply[A](entries: Map[String, A]): Document = new JDocument(
-      entries
-        .map {
-          case (k, v: Iterable[_]) => (k, v.asJava)
-          case (k, v)              => (k, v)
-        }
-        .asInstanceOf[Map[String, AnyRef]]
-        .asJava
+    def apply(entries: Map[String, BsonValue]): BsonDocument = new JDocument(
+      entries.toList.map { case (k, v) => new BsonElement(k, v) }.asJava
     )
 
-    def apply[A](entries: (String, A)*): Document = apply[A](entries.toMap[String, A])
-    def apply[A](key: String, value: A): Document = apply(key -> value)
-    def parse(json: String): Document             = JDocument.parse(json)
-    def from(json: String): Document              = parse(json)
-    def from(doc: Document): Document             = parse(doc.toJson)
-
-    implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
-      override def get: CodecProvider = new DocumentCodecProvider()
-    }
+    def apply(entries: (String, BsonValue)*): BsonDocument = apply(
+      entries.toMap[String, BsonValue]
+    )
+    def apply[A: BsonEncoder](key: String, value: A): BsonDocument = apply(key -> value.asBson)
+    def parse(json: String): BsonDocument = JDocument.parse(json)
+    def from(json: String): BsonDocument = parse(json)
   }
 
   type ObjectId = JObjectId
   object ObjectId {
-    def apply(): ObjectId             = new JObjectId()
-    def get: ObjectId                 = apply()
+    def apply(): ObjectId = new JObjectId()
+    def get: ObjectId = apply()
     def isValid(hex: String): Boolean = JObjectId.isValid(hex)
 
     /** Constructs a new instance from a 24-byte hexadecimal string representation.
