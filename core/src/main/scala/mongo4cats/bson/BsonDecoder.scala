@@ -18,7 +18,7 @@ package mongo4cats.bson
 
 import org.bson._
 
-final case class BsonDecodeError(msg: String) extends Throwable
+final case class BsonDecodeError(msg: String) extends Exception(msg)
 
 trait BsonDecoder[A] extends Serializable { self =>
   def apply(b: BsonValue): Either[BsonDecodeError, A]
