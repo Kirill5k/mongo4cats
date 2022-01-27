@@ -11,6 +11,8 @@ object Dependencies {
     val logback   = "1.2.10"
     val scalaTest = "3.2.10"
 
+    val testContainers = "0.39.12"
+
     val embeddedMongo   = "3.2.5"
     val immutableValue  = "2.8.8"
     val commonsCompress = "1.21"
@@ -33,9 +35,12 @@ object Dependencies {
     val scalaTest = "org.scalatest" %% "scalatest"       % Versions.scalaTest
     val logback   = "ch.qos.logback" % "logback-classic" % Versions.logback
 
+    val testContainersMongodb = "com.dimafeng" %% "testcontainers-scala-mongodb" % Versions.testContainers
+
     val embeddedMongo   = "de.flapdoodle.embed" % "de.flapdoodle.embed.mongo" % Versions.embeddedMongo
     val immutableValue  = "org.immutables"      % "value"                     % Versions.immutableValue
     val commonsCompress = "org.apache.commons"  % "commons-compress"          % Versions.commonsCompress
+
   }
 
   lazy val core = Seq(
@@ -69,5 +74,9 @@ object Dependencies {
     Libraries.embeddedMongo,
     Libraries.immutableValue,
     Libraries.commonsCompress
+  )
+
+  lazy val testkit = Seq(
+    Libraries.testContainersMongodb
   )
 }
