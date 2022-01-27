@@ -102,10 +102,12 @@ abstract class MongoDatabase[F[_]] {
     * @since 1.7
     */
   def drop(clientSession: ClientSession[F]): F[Unit]
+
+  def database: JMongoDatabase
 }
 
 final private class LiveMongoDatabase[F[_]](
-    private val database: JMongoDatabase
+    val database: JMongoDatabase
 )(implicit
     val F: Async[F]
 ) extends MongoDatabase[F] {
@@ -130,10 +132,10 @@ final private class LiveMongoDatabase[F[_]](
     new LiveMongoDatabase[F](database.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
   def listCollectionNames: F[Iterable[String]]                       = database.listCollectionNames().asyncIterable[F]
-  def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = database.listCollectionNames(cs.session).asyncIterable[F]
+  def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = database.listCollectionNames(cs.underlying).asyncIterable[F]
   def listCollections[T: ClassTag]: F[Iterable[T]]                   = database.listCollections[T](clazz[T]).asyncIterable[F]
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
-    database.listCollections[T](cs.session, clazz[T]).asyncIterable[F]
+    database.listCollections[T](cs.underlying, clazz[T]).asyncIterable[F]
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {
@@ -147,13 +149,17 @@ final private class LiveMongoDatabase[F[_]](
     database.createCollection(name, options).asyncVoid[F]
 
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[T] =
-    withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(cs.session, command, readPreference, clazz[T]).asyncSingle[F]
+    withAddedCodec[T]
+      .asInstanceOf[LiveMongoDatabase[F]]
+      .database
+      .runCommand(cs.underlying, command, readPreference, clazz[T])
+      .asyncSingle[F]
 
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, readPreference: ReadPreference): F[T] =
     withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(command, readPreference, clazz[T]).asyncSingle[F]
 
   def drop: F[Unit]                       = database.drop().asyncVoid[F]
-  def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.session).asyncVoid[F]
+  def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.underlying).asyncVoid[F]
 }
 
 object MongoDatabase {

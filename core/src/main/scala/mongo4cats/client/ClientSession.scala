@@ -58,27 +58,27 @@ abstract class ClientSession[F[_]] {
     */
   def commitTransaction: F[Unit]
 
-  private[mongo4cats] def session: JClientSession
+  def underlying: JClientSession
 }
 
 final private class LiveClientSession[F[_]](
-    private[mongo4cats] val session: JClientSession
+    val underlying: JClientSession
 )(implicit F: Async[F])
     extends ClientSession[F] {
 
-  override def hasActiveTransaction: Boolean = session.hasActiveTransaction
+  override def hasActiveTransaction: Boolean = underlying.hasActiveTransaction
 
   override def transactionOptions: Option[TransactionOptions] =
-    hasActiveTransaction.guard[Option].as(session.getTransactionOptions)
+    hasActiveTransaction.guard[Option].as(underlying.getTransactionOptions)
 
   override def startTransaction(options: TransactionOptions): F[Unit] =
-    F.fromTry(Try(session.startTransaction(options)))
+    F.fromTry(Try(underlying.startTransaction(options)))
 
   override def commitTransaction: F[Unit] =
-    session.commitTransaction().asyncVoid[F]
+    underlying.commitTransaction().asyncVoid[F]
 
   override def abortTransaction: F[Unit] =
-    session.abortTransaction().asyncVoid[F]
+    underlying.abortTransaction().asyncVoid[F]
 }
 
 object ClientSession {

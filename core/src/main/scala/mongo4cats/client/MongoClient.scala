@@ -34,29 +34,30 @@ abstract class MongoClient[F[_]] {
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
   def startSession(options: ClientSessionOptions): F[ClientSession[F]]
   def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
+  def underlying: JMongoClient
 }
 
 final private class LiveMongoClient[F[_]](
-    private val client: JMongoClient
+    val underlying: JMongoClient
 )(implicit
     val F: Async[F]
 ) extends MongoClient[F] {
-  def clusterDescription: ClusterDescription = client.getClusterDescription
+  def clusterDescription: ClusterDescription = underlying.getClusterDescription
 
   def getDatabase(name: String): F[MongoDatabase[F]] =
-    F.delay(client.getDatabase(name)).flatMap(MongoDatabase.make[F])
+    F.delay(underlying.getDatabase(name)).flatMap(MongoDatabase.make[F])
 
   def listDatabaseNames: F[Iterable[String]] =
-    client.listDatabaseNames().asyncIterable[F]
+    underlying.listDatabaseNames().asyncIterable[F]
 
   def listDatabases: F[Iterable[Document]] =
-    client.listDatabases().asyncIterable[F]
+    underlying.listDatabases().asyncIterable[F]
 
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
-    client.listDatabases(cs.session).asyncIterable[F]
+    underlying.listDatabases(cs.underlying).asyncIterable[F]
 
   def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
-    client.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
+    underlying.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
 }
 
 object MongoClient {
