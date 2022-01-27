@@ -358,8 +358,7 @@ abstract class MongoCollection[F[_], T] {
     * @param filter
     *   the query filter to apply the the delete operation
     * @param options
-    *   the options to apply to the delete operation
-    * @since
+    *   the options to apply to the delete operation \@since
     * 1.2
     */
   def deleteOne(filter: Bson, options: DeleteOptions): F[DeleteResult]
@@ -374,8 +373,7 @@ abstract class MongoCollection[F[_], T] {
     * @param filter
     *   the query filter to apply the the delete operation
     * @param options
-    *   the options to apply to the delete operation
-    * @since
+    *   the options to apply to the delete operation \@since
     * 1.2
     */
   def deleteMany(filter: Bson, options: DeleteOptions): F[DeleteResult]
@@ -390,8 +388,7 @@ abstract class MongoCollection[F[_], T] {
     * @param document
     *   the document to insert
     * @param options
-    *   the options to apply to the operation
-    * @since
+    *   the options to apply to the operation \@since
     * 1.1
     */
   def insertOne(document: T, options: InsertOneOptions): F[InsertOneResult]
