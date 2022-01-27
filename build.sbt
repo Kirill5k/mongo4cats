@@ -2,8 +2,8 @@ import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 import microsites.CdnDirectives
 
-lazy val scala212               = "2.12.14"
-lazy val scala213               = "2.13.7"
+lazy val scala212               = "2.12.15"
+lazy val scala213               = "2.13.8"
 lazy val scala3                 = "3.1.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
@@ -34,14 +34,14 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-lazy val noPublish = Seq(
+val noPublish = Seq(
   publish         := {},
   publishLocal    := {},
   publishArtifact := false,
   publish / skip  := true
 )
 
-lazy val commonSettings = Seq(
+val commonSettings = Seq(
   organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2",
   startYear        := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -54,21 +54,18 @@ lazy val commonSettings = Seq(
   )
 )
 
-lazy val root = project
-  .in(file("."))
-  .settings(noPublish)
+val `mongo4cats-embedded` = project
+  .in(file("embedded"))
+  .settings(commonSettings)
   .settings(
-    name               := "mongo4cats",
-    crossScalaVersions := Nil
+    name := "mongo4cats-embedded",
+    libraryDependencies ++= Dependencies.embedded,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
   )
-  .aggregate(
-    `mongo4cats-core`,
-    `mongo4cats-circe`,
-    `mongo4cats-examples`,
-    `mongo4cats-embedded`
-  )
+  .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-core` = project
+val `mongo4cats-core` = project
   .in(file("core"))
   .dependsOn(`mongo4cats-embedded` % "test->compile")
   .settings(commonSettings)
@@ -80,7 +77,7 @@ lazy val `mongo4cats-core` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-circe` = project
+val `mongo4cats-circe` = project
   .in(file("circe"))
   .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
   .settings(commonSettings)
@@ -92,7 +89,7 @@ lazy val `mongo4cats-circe` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-examples` = project
+val `mongo4cats-examples` = project
   .in(file("examples"))
   .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
   .settings(noPublish)
@@ -103,18 +100,7 @@ lazy val `mongo4cats-examples` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val `mongo4cats-embedded` = project
-  .in(file("embedded"))
-  .settings(commonSettings)
-  .settings(
-    name := "mongo4cats-embedded",
-    libraryDependencies ++= Dependencies.embedded,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
-  )
-  .enablePlugins(AutomateHeaderPlugin)
-
-lazy val docs = project
+val docs = project
   .in(file("docs"))
   .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
   .enablePlugins(MicrositesPlugin)
@@ -137,4 +123,18 @@ lazy val docs = project
     micrositeCDNDirectives := CdnDirectives(
       cssList = List("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css")
     )
+  )
+
+val root = project
+  .in(file("."))
+  .settings(noPublish)
+  .settings(
+    name               := "mongo4cats",
+    crossScalaVersions := Nil
+  )
+  .aggregate(
+    `mongo4cats-core`,
+    `mongo4cats-circe`,
+    `mongo4cats-examples`,
+    `mongo4cats-embedded`
   )
