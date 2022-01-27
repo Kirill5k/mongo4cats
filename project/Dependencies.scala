@@ -2,27 +2,16 @@ import sbt._
 
 object Dependencies {
   private object Versions {
-<<<<<<< HEAD
-    val mongodb     = "4.4.0"
-=======
     val mongodb     = "4.4.1"
->>>>>>> 6b1015f (Update dependencies)
     val fs2         = "3.2.4"
     val scalaCompat = "2.6.0"
     val circe       = "0.14.1"
 
     val logback   = "1.2.10"
-<<<<<<< HEAD
-    val scalaTest = "3.2.10"
-
-    val embeddedMongo   = "3.2.5"
-    val immutableValue  = "2.8.8"
-=======
     val scalaTest = "3.2.11"
 
     val embeddedMongo   = "3.3.0"
     val immutableValue  = "2.9.0"
->>>>>>> 6b1015f (Update dependencies)
     val commonsCompress = "1.21"
   }
 
