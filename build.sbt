@@ -66,7 +66,8 @@ lazy val root = project
     core,
     circe,
     examples,
-    embedded
+    embedded,
+    testkit
   )
 
 lazy val core = project
@@ -113,3 +114,12 @@ lazy val embedded = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+lazy val testkit = project
+  .in(file("testkit"))
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-testkit",
+    libraryDependencies ++= Dependencies.testkit,
+  )
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
