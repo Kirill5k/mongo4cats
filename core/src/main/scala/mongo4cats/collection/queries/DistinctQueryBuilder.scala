@@ -24,12 +24,13 @@ import mongo4cats.helpers._
 import mongo4cats.collection.operations
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
 final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: DistinctPublisher[T],
-    protected val commands: List[DistinctCommand[T]]
+    private val observable: DistinctPublisher[T],
+    private val commands: List[QueryCommand]
 ) extends QueryBuilder[DistinctPublisher, T] {
 
   /** Sets the maximum execution time on the server for this operation.
@@ -40,7 +41,7 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     *   DistinctQueryBuilder
     */
   def maxTime(duration: Duration): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.MaxTime[T](duration) :: commands)
+    DistinctQueryBuilder[F, T](observable, QueryCommand.MaxTime(duration) :: commands)
 
   /** Sets the query filter to apply to the query.
     *
@@ -50,7 +51,7 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     *   DistinctQueryBuilder
     */
   def filter(filter: Bson): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.Filter[T](filter) :: commands)
+    DistinctQueryBuilder[F, T](observable, QueryCommand.Filter(filter) :: commands)
 
   def filter(filters: operations.Filter): DistinctQueryBuilder[F, T] =
     filter(filters.toBson)
@@ -67,7 +68,7 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     * @since 1.8
     */
   def batchSize(size: Int): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.BatchSize[T](size) :: commands)
+    DistinctQueryBuilder[F, T](observable, QueryCommand.BatchSize(size) :: commands)
 
   /** Sets the collation options
     *
@@ -78,7 +79,7 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     * @since 1.3
     */
   def collation(collation: model.Collation): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, DistinctCommand.Collation[T](collation) :: commands)
+    DistinctQueryBuilder[F, T](observable, QueryCommand.Collation(collation) :: commands)
 
   def first: F[Option[T]] =
     applyCommands().first().asyncSingle[F].map(Option.apply)
@@ -91,4 +92,15 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
 
   def boundedStream(capacity: Int): fs2.Stream[F, T] =
     applyCommands().boundedStream[F](capacity)
+
+  override protected def applyCommands(): DistinctPublisher[T] =
+    commands.reverse.foldLeft(observable) { case (obs, command) =>
+      command match {
+        case QueryCommand.Collation(collation) => obs.collation(collation)
+        case QueryCommand.MaxTime(duration)    => obs.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.Filter(filter)       => obs.filter(filter)
+        case QueryCommand.BatchSize(size)      => obs.batchSize(size)
+        case _                                 => obs
+      }
+    }
 }

@@ -19,9 +19,5 @@ package mongo4cats.collection.queries
 import org.reactivestreams.Publisher
 
 private[queries] trait QueryBuilder[O[_] <: Publisher[_], T] {
-  protected def observable: O[T]
-  protected def commands: List[QueryCommand[O, T]]
-
-  protected def applyCommands(): O[T] =
-    commands.reverse.foldLeft(observable) { case (obs, comm) => comm.run(obs) }
+  protected def applyCommands(): O[T]
 }

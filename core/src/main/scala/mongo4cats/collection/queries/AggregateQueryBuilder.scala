@@ -26,12 +26,13 @@ import mongo4cats.helpers._
 import mongo4cats.collection.operations.Index
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
 final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
     protected val observable: AggregatePublisher[T],
-    protected val commands: List[AggregateCommand[T]]
+    protected val commands: List[QueryCommand]
 ) extends QueryBuilder[AggregatePublisher, T] {
 
   /** Enables writing to temporary files. A null value indicates that it's unspecified.
@@ -42,7 +43,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     */
   def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.AllowDiskUse[T](allowDiskUse) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.AllowDiskUse(allowDiskUse) :: commands)
 
   /** Sets the maximum execution time on the server for this operation.
     *
@@ -52,7 +53,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     */
   def maxTime(duration: Duration): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.MaxTime[T](duration) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.MaxTime(duration) :: commands)
 
   /** The maximum amount of time for the server to wait on new documents to satisfy a \$changeStream aggregation.
     *
@@ -65,7 +66,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 1.6
     */
   def maxAwaitTime(duration: Duration): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.MaxAwaitTime[T](duration) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.MaxAwaitTime(duration) :: commands)
 
   /** Sets the bypass document level validation flag.
     *
@@ -78,7 +79,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 1.2
     */
   def bypassDocumentValidation(bypassDocumentValidation: Boolean): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.BypassDocumentValidation[T](bypassDocumentValidation) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.BypassDocumentValidation(bypassDocumentValidation) :: commands)
 
   /** Sets the collation options
     *
@@ -91,7 +92,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 1.3
     */
   def collation(collation: model.Collation): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Collation[T](collation) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.Collation(collation) :: commands)
 
   /** Sets the comment to the aggregation.
     *
@@ -102,7 +103,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 1.7
     */
   def comment(comment: String): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Comment[T](comment) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.Comment(comment) :: commands)
 
   /** Add top-level variables to the aggregation. <p> For MongoDB 5.0+, the aggregate command accepts a {@code let} option. This option is a
     * document consisting of zero or more fields representing variables that are accessible to the aggregation pipeline. The key is the name
@@ -117,7 +118,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 4.3
     */
   def let(variables: Bson): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Let[T](variables) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.Let(variables) :: commands)
 
   /** Sets the hint for which index to use.
     *
@@ -128,7 +129,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 1.7
     */
   def hint(hint: Bson): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.Hint[T](hint) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.Hint(hint) :: commands)
 
   def hint(index: Index): AggregateQueryBuilder[F, T] =
     hint(index.toBson)
@@ -145,7 +146,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 1.8
     */
   def batchSize(batchSize: Int): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, AggregateCommand.BatchSize[T](batchSize) :: commands)
+    AggregateQueryBuilder(observable, QueryCommand.BatchSize(batchSize) :: commands)
 
   /** Aggregates documents according to the specified aggregation pipeline, which must end with a \$out stage.
     *
@@ -186,4 +187,21 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     */
   def explain(verbosity: ExplainVerbosity): F[Document] =
     applyCommands().explain(verbosity).asyncSingle[F]
+
+  override protected def applyCommands(): AggregatePublisher[T] =
+    commands.reverse.foldLeft(observable) { case (obs, command) =>
+      command match {
+        case QueryCommand.Comment(comment)                                   => obs.comment(comment)
+        case QueryCommand.Collation(collation)                               => obs.collation(collation)
+        case QueryCommand.MaxTime(duration)                                  => obs.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.MaxAwaitTime(duration)                             => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.HintString(hint)                                   => obs.hintString(hint)
+        case QueryCommand.Hint(hint)                                         => obs.hint(hint)
+        case QueryCommand.BatchSize(size)                                    => obs.batchSize(size)
+        case QueryCommand.AllowDiskUse(allowDiskUse)                         => obs.allowDiskUse(allowDiskUse)
+        case QueryCommand.BypassDocumentValidation(bypassDocumentValidation) => obs.bypassDocumentValidation(bypassDocumentValidation)
+        case QueryCommand.Let(variables)                                     => obs.let(variables)
+        case _                                                               => obs
+      }
+    }
 }

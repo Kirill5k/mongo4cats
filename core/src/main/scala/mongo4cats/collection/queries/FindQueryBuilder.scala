@@ -27,12 +27,13 @@ import mongo4cats.collection.operations
 import mongo4cats.collection.operations.{Projection, Sort}
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
 final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: FindPublisher[T],
-    protected val commands: List[FindCommand[T]]
+    private val observable: FindPublisher[T],
+    private val commands: List[QueryCommand]
 ) extends QueryBuilder[FindPublisher, T] {
 
   /** Sets the maximum execution time on the server for this operation.
@@ -43,7 +44,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def maxTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.MaxTime[T](duration) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.MaxTime(duration) :: commands)
 
   /** The maximum amount of time for the server to wait on new documents to satisfy a tailable cursor query. This only applies to a
     * TAILABLE_AWAIT cursor. When the cursor is not a TAILABLE_AWAIT cursor, this option is ignored.
@@ -61,7 +62,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   the maximum await execution time in the given time unit
     */
   def maxAwaitTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.MaxAwaitTime[T](duration) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.MaxAwaitTime(duration) :: commands)
 
   /** Sets the collation options
     *
@@ -74,7 +75,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.3
     */
   def collation(collation: model.Collation): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Collation[T](collation) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Collation(collation) :: commands)
 
   /** Get partial results from a sharded cluster if one or more shards are unreachable (instead of throwing an error).
     *
@@ -84,7 +85,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def partial(partial: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Partial[T](partial) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Partial(partial) :: commands)
 
   /** Sets the comment to the query. A null value means no comment is set.
     *
@@ -95,7 +96,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.6
     */
   def comment(comment: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Comment[T](comment) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Comment(comment) :: commands)
 
   /** Sets the returnKey. If true the find operation will return only the index keys in the resulting documents.
     *
@@ -106,7 +107,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.6
     */
   def returnKey(returnKey: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.ReturnKey[T](returnKey) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.ReturnKey(returnKey) :: commands)
 
   /** Sets the showRecordId. Set to true to add a field \$recordId to the returned documents.
     *
@@ -117,7 +118,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.6
     */
   def showRecordId(showRecordId: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.ShowRecordId[T](showRecordId) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.ShowRecordId(showRecordId) :: commands)
 
   /** Sets the hint for which index to use. A null value means no hint is set.
     *
@@ -128,7 +129,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.13
     */
   def hint(index: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.HintString[T](index) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.HintString(index) :: commands)
 
   /** Sets the hint for which index to use. A null value means no hint is set.
     *
@@ -139,7 +140,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.6
     */
   def hint(hint: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Hint[T](hint) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Hint(hint) :: commands)
 
   /** Sets the exclusive upper bound for a specific index. A null value means no max is set.
     *
@@ -150,7 +151,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.6
     */
   def max(max: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Max[T](max) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Max(max) :: commands)
 
   /** Sets the minimum inclusive lower bound for a specific index. A null value means no max is set.
     *
@@ -161,7 +162,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 1.6
     */
   def min(min: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Min[T](min) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Min(min) :: commands)
 
   /** Sets the sort criteria to apply to the query.
     *
@@ -171,7 +172,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def sort(sort: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Sort[T](sort) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Sort(sort) :: commands)
 
   def sort(sorts: Sort): FindQueryBuilder[F, T] =
     sort(sorts.toBson)
@@ -190,7 +191,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def filter(filter: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Filter[T](filter) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Filter(filter) :: commands)
 
   def filter(filters: operations.Filter): FindQueryBuilder[F, T] =
     filter(filters.toBson)
@@ -203,10 +204,10 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def projection(projection: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Projection[T](projection) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Projection(projection) :: commands)
 
   def projection(projection: Projection): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Projection[T](projection.toBson) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Projection(projection.toBson) :: commands)
 
   /** Sets the number of documents to skip.
     *
@@ -216,7 +217,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def skip(skip: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Skip[T](skip) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Skip(skip) :: commands)
 
   /** Sets the limit to apply.
     *
@@ -226,7 +227,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     */
   def limit(limit: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, FindCommand.Limit[T](limit) :: commands)
+    FindQueryBuilder[F, T](observable, QueryCommand.Limit(limit) :: commands)
 
   def first: F[Option[T]] =
     applyCommands().first().asyncSingle[F].map(Option.apply)
@@ -259,4 +260,29 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     */
   def explain(verbosity: ExplainVerbosity): F[Document] =
     applyCommands().explain(verbosity).asyncSingle[F]
+
+  override protected def applyCommands(): FindPublisher[T] =
+    commands.reverse.foldLeft(observable) { case (obs, command) =>
+      command match {
+        case QueryCommand.ShowRecordId(showRecordId) => obs.showRecordId(showRecordId)
+        case QueryCommand.ReturnKey(returnKey)       => obs.returnKey(returnKey)
+        case QueryCommand.Comment(comment)           => obs.comment(comment)
+        case QueryCommand.Collation(collation)       => obs.collation(collation)
+        case QueryCommand.Partial(partial)           => obs.partial(partial)
+        case QueryCommand.MaxTime(duration)          => obs.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.MaxAwaitTime(duration)     => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.HintString(hint)           => obs.hintString(hint)
+        case QueryCommand.Hint(hint)                 => obs.hint(hint)
+        case QueryCommand.Max(index)                 => obs.max(index)
+        case QueryCommand.Min(index)                 => obs.min(index)
+        case QueryCommand.Skip(n)                    => obs.skip(n)
+        case QueryCommand.Limit(n)                   => obs.limit(n)
+        case QueryCommand.Sort(order)                => obs.sort(order)
+        case QueryCommand.Filter(filter)             => obs.filter(filter)
+        case QueryCommand.Projection(projection)     => obs.projection(projection)
+        case QueryCommand.BatchSize(size)            => obs.batchSize(size)
+        case QueryCommand.AllowDiskUse(allowDiskUse) => obs.allowDiskUse(allowDiskUse)
+        case _                                       => obs
+      }
+    }
 }
