@@ -125,10 +125,10 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
   override protected def applyCommands(): ChangeStreamPublisher[T] =
     commands.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
+        case QueryCommand.FullDocument(fullDocument)          => obs.fullDocument(fullDocument)
         case QueryCommand.Collation(collation)                => obs.collation(collation)
         case QueryCommand.MaxAwaitTime(duration)              => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
         case QueryCommand.BatchSize(size)                     => obs.batchSize(size)
-        case QueryCommand.FullDocument(fullDocument)          => obs.fullDocument(fullDocument)
         case QueryCommand.ResumeAfter(after)                  => obs.resumeAfter(after)
         case QueryCommand.StartAfter(after)                   => obs.startAfter(after)
         case QueryCommand.StartAtOperationTime(operationTime) => obs.startAtOperationTime(operationTime)
