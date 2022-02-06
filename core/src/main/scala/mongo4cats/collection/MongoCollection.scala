@@ -19,6 +19,7 @@ package mongo4cats.collection
 import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
+import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
@@ -424,6 +425,18 @@ abstract class MongoCollection[F[_], T] {
   def count(filter: Filter): F[Long]                            = count(filter, CountOptions())
   def count(session: ClientSession[F], filter: Filter): F[Long] = count(session, filter, CountOptions())
 
+  /** Executes a mix of inserts, updates, replaces, and deletes.
+    *
+    * @param commands
+    *   the writes to execute
+    * @param options
+    *   the options to apply to the bulk write operation
+    */
+  def bulkWrite(commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult]
+  def bulkWrite(commands: Seq[WriteCommand[T]]): F[BulkWriteResult] = bulkWrite(commands, BulkWriteOptions())
+  def bulkWrite(cs: ClientSession[F], commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult]
+  def bulkWrite(cs: ClientSession[F], commands: Seq[WriteCommand[T]]): F[BulkWriteResult] = bulkWrite(cs, commands, BulkWriteOptions())
+
   /** Counts the number of documents in the collection.
     *
     * @since 2.4
@@ -576,6 +589,12 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def count(filter: Bson, options: CountOptions): F[Long] = underlying.countDocuments(filter, options).asyncSingle[F].map(_.longValue())
   def count(cs: ClientSession[F], filter: Filter, options: CountOptions): F[Long] =
     underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].map(_.longValue())
+
+  override def bulkWrite(commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult] =
+    underlying.bulkWrite(commands.map(_.writeModel).asJava, options).asyncSingle[F]
+
+  override def bulkWrite(cs: ClientSession[F], commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult] =
+    underlying.bulkWrite(cs.underlying, commands.map(_.writeModel).asJava, options).asyncSingle[F]
 }
 
 object MongoCollection {
