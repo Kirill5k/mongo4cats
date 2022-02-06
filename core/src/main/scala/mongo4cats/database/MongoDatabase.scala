@@ -103,63 +103,63 @@ abstract class MongoDatabase[F[_]] {
     */
   def drop(clientSession: ClientSession[F]): F[Unit]
 
-  def database: JMongoDatabase
+  def underlying: JMongoDatabase
 }
 
 final private class LiveMongoDatabase[F[_]](
-    val database: JMongoDatabase
+    val underlying: JMongoDatabase
 )(implicit
     val F: Async[F]
 ) extends MongoDatabase[F] {
 
   def name: String =
-    database.getName
+    underlying.getName
 
-  def readPreference: ReadPreference = database.getReadPreference
+  def readPreference: ReadPreference = underlying.getReadPreference
   def withReadPreference(readPreference: ReadPreference): MongoDatabase[F] =
-    new LiveMongoDatabase[F](database.withReadPreference(readPreference))
+    new LiveMongoDatabase[F](underlying.withReadPreference(readPreference))
 
-  def writeConcern: WriteConcern = database.getWriteConcern
+  def writeConcern: WriteConcern = underlying.getWriteConcern
   def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F] =
-    new LiveMongoDatabase[F](database.withWriteConcern(writeConcert))
+    new LiveMongoDatabase[F](underlying.withWriteConcern(writeConcert))
 
-  def readConcern: ReadConcern = database.getReadConcern
+  def readConcern: ReadConcern = underlying.getReadConcern
   def witReadConcern(readConcern: ReadConcern): MongoDatabase[F] =
-    new LiveMongoDatabase[F](database.withReadConcern(readConcern))
+    new LiveMongoDatabase[F](underlying.withReadConcern(readConcern))
 
-  def codecs: CodecRegistry = database.getCodecRegistry
+  def codecs: CodecRegistry = underlying.getCodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
-    new LiveMongoDatabase[F](database.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
+    new LiveMongoDatabase[F](underlying.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
-  def listCollectionNames: F[Iterable[String]]                       = database.listCollectionNames().asyncIterable[F]
-  def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = database.listCollectionNames(cs.underlying).asyncIterable[F]
-  def listCollections[T: ClassTag]: F[Iterable[T]]                   = database.listCollections[T](clazz[T]).asyncIterable[F]
+  def listCollectionNames: F[Iterable[String]]                       = underlying.listCollectionNames().asyncIterable[F]
+  def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = underlying.listCollectionNames(cs.underlying).asyncIterable[F]
+  def listCollections[T: ClassTag]: F[Iterable[T]]                   = underlying.listCollections[T](clazz[T]).asyncIterable[F]
   def listCollections[T: ClassTag](cs: ClientSession[F]): F[Iterable[T]] =
-    database.listCollections[T](cs.underlying, clazz[T]).asyncIterable[F]
+    underlying.listCollections[T](cs.underlying, clazz[T]).asyncIterable[F]
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {
-      database
+      underlying
         .getCollection[T](name, clazz[T])
         .withCodecRegistry(codecRegistry)
         .withDocumentClass[T](clazz[T])
     }.flatMap(MongoCollection.make[F, T])
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
-    database.createCollection(name, options).asyncVoid[F]
+    underlying.createCollection(name, options).asyncVoid[F]
 
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[T] =
     withAddedCodec[T]
       .asInstanceOf[LiveMongoDatabase[F]]
-      .database
+      .underlying
       .runCommand(cs.underlying, command, readPreference, clazz[T])
       .asyncSingle[F]
 
   def runCommandWithCodec[T: ClassTag: MongoCodecProvider](command: Bson, readPreference: ReadPreference): F[T] =
-    withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].database.runCommand(command, readPreference, clazz[T]).asyncSingle[F]
+    withAddedCodec[T].asInstanceOf[LiveMongoDatabase[F]].underlying.runCommand(command, readPreference, clazz[T]).asyncSingle[F]
 
-  def drop: F[Unit]                       = database.drop().asyncVoid[F]
-  def drop(cs: ClientSession[F]): F[Unit] = database.drop(cs.underlying).asyncVoid[F]
+  def drop: F[Unit]                       = underlying.drop().asyncVoid[F]
+  def drop(cs: ClientSession[F]): F[Unit] = underlying.drop(cs.underlying).asyncVoid[F]
 }
 
 object MongoDatabase {
