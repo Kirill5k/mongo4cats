@@ -17,6 +17,7 @@
 package mongo4cats
 
 import com.mongodb.client.model.{
+  BulkWriteOptions => JBulkWriteOptions,
   CountOptions => JCountOptions,
   DeleteOptions => JDeleteOptions,
   DropIndexOptions => JDropIndexOptions,
@@ -26,11 +27,25 @@ import com.mongodb.client.model.{
   IndexOptions => JIndexOptions,
   InsertManyOptions => JInsertManyOptions,
   InsertOneOptions => JInsertOneOptions,
+  RenameCollectionOptions => JRenameCollectionOptions,
   ReplaceOptions => JReplaceOptions,
   UpdateOptions => JUpdateOptions
 }
 
 package object collection {
+
+  type BulkWriteOptions = JBulkWriteOptions
+  object BulkWriteOptions {
+    def apply(
+        ordered: Boolean = true,
+        bypassDocumentValidation: Boolean = false
+    ): BulkWriteOptions = new JBulkWriteOptions().ordered(ordered).bypassDocumentValidation(bypassDocumentValidation)
+  }
+
+  type RenameCollectionOptions = JRenameCollectionOptions
+  object RenameCollectionOptions {
+    def apply(dropTarget: Boolean = false): RenameCollectionOptions = new JRenameCollectionOptions().dropTarget(dropTarget)
+  }
 
   type IndexOptions = JIndexOptions
   object IndexOptions {
