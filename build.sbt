@@ -4,7 +4,7 @@ import microsites.CdnDirectives
 
 lazy val scala212               = "2.12.15"
 lazy val scala213               = "2.13.8"
-lazy val scala3                 = "3.1.0"
+lazy val scala3                 = "3.1.1"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion           := scala213
@@ -17,7 +17,7 @@ ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
-ThisBuild / githubWorkflowJavaVersions          := Seq("amazon-corretto@1.17")
+ThisBuild / githubWorkflowJavaVersions          := List("amazon-corretto@1.17")
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
