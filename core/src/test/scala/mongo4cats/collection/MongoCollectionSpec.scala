@@ -482,7 +482,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
 
       "distinct" should {
-        "distinct fields of a doc" in {
+        "return distinct fields of a doc" in {
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -492,6 +492,30 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
             result.map { res =>
               res.toSet mustBe Set(TestData.USD, TestData.EUR, TestData.GBP)
+            }
+          }
+        }
+      }
+
+      "bulkWrite" should {
+        "perform multiple operations at once" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll <- db.getCollection("coll")
+              _    <- coll.insertMany(TestData.accounts)
+              res <- coll.bulkWrite(
+                List(
+                  WriteCommand.InsertOne(TestData.lvlAccount),
+                  WriteCommand.DeleteOne(Filter.eq("name", "eur-acc")),
+                  WriteCommand.UpdateOne(Filter.eq("name", "gbp-acc"), Update.set("foo", "bar"))
+                )
+              )
+            } yield res
+
+            result.map { res =>
+              res.getDeletedCount mustBe 1
+              res.getModifiedCount mustBe 1
+              res.getInsertedCount mustBe 1
             }
           }
         }

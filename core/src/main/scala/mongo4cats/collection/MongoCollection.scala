@@ -432,10 +432,10 @@ abstract class MongoCollection[F[_], T] {
     * @param options
     *   the options to apply to the bulk write operation
     */
-  def bulkWrite(commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult]
-  def bulkWrite(commands: Seq[WriteCommand[T]]): F[BulkWriteResult] = bulkWrite(commands, BulkWriteOptions())
-  def bulkWrite(cs: ClientSession[F], commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult]
-  def bulkWrite(cs: ClientSession[F], commands: Seq[WriteCommand[T]]): F[BulkWriteResult] = bulkWrite(cs, commands, BulkWriteOptions())
+  def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult]
+  def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]]): F[BulkWriteResult] = bulkWrite(commands, BulkWriteOptions())
+  def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult]
+  def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]]): F[BulkWriteResult] = bulkWrite(cs, commands, BulkWriteOptions())
 
   /** Counts the number of documents in the collection.
     *
@@ -590,10 +590,10 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def count(cs: ClientSession[F], filter: Filter, options: CountOptions): F[Long] =
     underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].map(_.longValue())
 
-  override def bulkWrite(commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult] =
+  override def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
     underlying.bulkWrite(commands.map(_.writeModel).asJava, options).asyncSingle[F]
 
-  override def bulkWrite(cs: ClientSession[F], commands: Seq[WriteCommand[T]], options: BulkWriteOptions): F[BulkWriteResult] =
+  override def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
     underlying.bulkWrite(cs.underlying, commands.map(_.writeModel).asJava, options).asyncSingle[F]
 }
 

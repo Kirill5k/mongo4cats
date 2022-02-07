@@ -44,10 +44,12 @@ object TestData {
   val USD: Document = Document("symbol" -> "$", "code" -> "USD")
   val GBP: Document = Document("symbol" -> "£", "code" -> "GBP")
   val EUR: Document = Document("symbol" -> "€", "code" -> "EUR")
+  val LVL: Document = Document("symbol" -> "L", "code" -> "LVL")
 
   val usdAccount: Document = Document("_id" -> ObjectId.get, "currency" -> USD, "name" -> "usd-acc")
   val gbpAccount: Document = Document("_id" -> ObjectId.get, "currency" -> GBP, "name" -> "gbp-acc")
   val eurAccount: Document = Document("_id" -> ObjectId.get, "currency" -> EUR, "name" -> "eur-acc")
+  val lvlAccount: Document = Document("_id" -> ObjectId.get, "currency" -> LVL, "name" -> "lvl-acc")
 
   val accounts: Vector[Document]   = Vector(usdAccount, gbpAccount, eurAccount)
   val categories: Vector[Document] = categories(10)
