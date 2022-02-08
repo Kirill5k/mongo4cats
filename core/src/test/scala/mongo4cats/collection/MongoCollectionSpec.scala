@@ -19,7 +19,7 @@ package mongo4cats.collection
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
-import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
@@ -516,6 +516,25 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
               res.getDeletedCount mustBe 1
               res.getModifiedCount mustBe 1
               res.getInsertedCount mustBe 1
+            }
+          }
+        }
+      }
+
+      "renameCollection" should {
+        "change collection name and keep the data" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll  <- db.getCollection("coll")
+              _     <- coll.insertMany(TestData.accounts)
+              _     <- coll.renameCollection(new MongoNamespace("db.coll2"), RenameCollectionOptions(dropTarget = false))
+              coll2 <- db.getCollection("coll2")
+              count <- coll2.count
+            } yield (count, coll2.namespace)
+
+            result.map { case (count, ns) =>
+              ns.getCollectionName mustBe "coll2"
+              count mustBe 3
             }
           }
         }

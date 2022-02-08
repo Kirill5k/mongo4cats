@@ -20,7 +20,6 @@ import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.bulk.BulkWriteResult
-import com.mongodb.client.model.RenameCollectionOptions
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
