@@ -20,6 +20,7 @@ import cats.Monad
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.bulk.BulkWriteResult
+import com.mongodb.client.model.RenameCollectionOptions
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
@@ -425,8 +426,16 @@ abstract class MongoCollection[F[_], T] {
   def count(filter: Filter): F[Long]                            = count(filter, CountOptions())
   def count(session: ClientSession[F], filter: Filter): F[Long] = count(session, filter, CountOptions())
 
+  /** Counts the number of documents in the collection.
+    *
+    * @since 2.4
+    */
+  def count: F[Long]                            = count(Filter.empty, CountOptions())
+  def count(session: ClientSession[F]): F[Long] = count(session, Filter.empty, CountOptions())
+
   /** Executes a mix of inserts, updates, replaces, and deletes.
     *
+    * [[https://docs.mongodb.com/manual/reference/method/db.collection.bulkWrite/]]
     * @param commands
     *   the writes to execute
     * @param options
@@ -435,14 +444,23 @@ abstract class MongoCollection[F[_], T] {
   def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult]
   def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]]): F[BulkWriteResult] = bulkWrite(commands, BulkWriteOptions())
   def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult]
-  def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]]): F[BulkWriteResult] = bulkWrite(cs, commands, BulkWriteOptions())
+  def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]]): F[BulkWriteResult] =
+    bulkWrite(cs, commands, BulkWriteOptions())
 
-  /** Counts the number of documents in the collection.
+  /** Rename the collection with oldCollectionName to the newCollectionName.
     *
-    * @since 2.4
+    * [[https://docs.mongodb.com/manual/reference/method/db.collection.renameCollection/]]
+    * @param target
+    *   the name the collection will be renamed to
+    * @param options
+    *   the options for renaming a collection
     */
-  def count: F[Long]                            = count(Filter.empty, CountOptions())
-  def count(session: ClientSession[F]): F[Long] = count(session, Filter.empty, CountOptions())
+  def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): F[Unit]
+  def renameCollection(target: MongoNamespace): F[Unit] = renameCollection(target, RenameCollectionOptions())
+
+  def renameCollection(session: ClientSession[F], target: MongoNamespace, options: RenameCollectionOptions): F[Unit]
+  def renameCollection(session: ClientSession[F], target: MongoNamespace): F[Unit] =
+    renameCollection(session, target, RenameCollectionOptions())
 
   def underlying: JMongoCollection[T]
 }
@@ -590,16 +608,20 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def count(cs: ClientSession[F], filter: Filter, options: CountOptions): F[Long] =
     underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].map(_.longValue())
 
-  override def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
+  def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
     underlying.bulkWrite(commands.map(_.writeModel).asJava, options).asyncSingle[F]
 
-  override def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
+  def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
     underlying.bulkWrite(cs.underlying, commands.map(_.writeModel).asJava, options).asyncSingle[F]
+
+  def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
+    underlying.renameCollection(target, options).asyncVoid[F]
+
+  def renameCollection(session: ClientSession[F], target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
+    underlying.renameCollection(session.underlying, target, options).asyncVoid[F]
 }
 
 object MongoCollection {
-
   private[mongo4cats] def make[F[_]: Async, T: ClassTag](collection: JMongoCollection[T]): F[MongoCollection[F, T]] =
     Monad[F].pure(new LiveMongoCollection(collection))
-
 }
