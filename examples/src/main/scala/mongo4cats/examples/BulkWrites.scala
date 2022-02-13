@@ -19,7 +19,7 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.WriteCommand
+import mongo4cats.collection.{BulkWriteOptions, WriteCommand}
 import mongo4cats.collection.operations.{Filter, Update}
 
 object BulkWrites extends IOApp.Simple {
@@ -36,7 +36,7 @@ object BulkWrites extends IOApp.Simple {
           WriteCommand.DeleteMany(Filter.gt("index", 10) && Filter.lt("index", 20)),
           WriteCommand.UpdateOne(Filter.eq("index", 50), Update.set("name", "doc-50-updated"))
         )
-        res <- coll.bulkWrite(commands)
+        res <- coll.bulkWrite(commands, BulkWriteOptions(ordered = false))
         _   <- IO.println(res)
       } yield ()
     }
