@@ -1,6 +1,7 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 import microsites.CdnDirectives
+import sbtghactions.JavaSpec
 
 lazy val scala212               = "2.12.15"
 lazy val scala213               = "2.13.8"
@@ -17,7 +18,7 @@ ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
-ThisBuild / githubWorkflowJavaVersions          := List("amazon-corretto@1.17")
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("17"))
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,

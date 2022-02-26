@@ -1,2 +1,2 @@
--J-Xmx2500M
--J-Xss2M
+-J-Xmx4096M
+-J-Xss8M

@@ -1,3 +1,4 @@
 alias fmt = ; scalafmtAll ; scalafmtSbt
 alias fmtcheck = ; scalafmtCheckAll; scalafmtSbtCheck
 alias testseq = ; mongo4cats-core/test ; mongo4cats-circe/test ;
+alias libUpdates = ; dependencyUpdates; reload plugins; dependencyUpdates ; reload return;
