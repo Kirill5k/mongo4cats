@@ -1,34 +1,33 @@
-/*
- * Copyright 2020 Kirill5k
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package mongo4cats.circe
 
-package mongo4cats
-
-import com.mongodb.MongoClientException
+import io.circe.{Decoder, Encoder, Json, JsonObject}
 import io.circe.parser.{decode => circeDecode}
-import io.circe.{Decoder, Encoder, Json}
 import mongo4cats.codecs.MongoCodecProvider
-import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext, StringCodec}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
+import org.bson.codecs._
+import org.bson.types.ObjectId
 import org.bson.{BsonReader, BsonType, BsonWriter, Document}
 
+import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
+import scala.util.Try
 
-object circe extends JsonCodecs {
+trait MongoJsonCodecs {
 
-  final case class MongoJsonParsingException(jsonString: String, message: String) extends MongoClientException(message)
+  implicit val encodeObjectId: Encoder[ObjectId] =
+    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject("$oid" -> Json.fromString(i.toHexString)))
+  implicit val decodeObjectId: Decoder[ObjectId] =
+    Decoder.decodeJsonObject.emapTry(id => Try(new ObjectId(id("$oid").flatMap(_.asString).get)))
+
+  implicit val encodeInstant: Encoder[Instant] =
+    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject("$date" -> Json.fromString(i.toString)))
+  implicit val decodeInstant: Decoder[Instant] =
+    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj("$date").flatMap(_.asString).get)))
+
+  implicit val encodeLocalDate: Encoder[LocalDate] =
+    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject("$date" -> Json.fromString(i.toString)))
+  implicit val decodeLocalDate: Decoder[LocalDate] =
+    Decoder.decodeJsonObject.emapTry(dateObj => Try(LocalDate.parse(dateObj("$date").flatMap(_.asString).map(_.slice(0, 10)).get)))
 
   implicit def circeCodecProvider[T: Encoder: Decoder: ClassTag]: MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
@@ -73,5 +72,4 @@ object circe extends JsonCodecs {
           null // scalastyle:ignore
         }
     }
-
 }
