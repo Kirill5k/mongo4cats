@@ -19,10 +19,10 @@ package mongo4cats.circe
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import io.circe.parser.{decode => circeDecode}
+import mongo4cats.bson.ObjectId
 import mongo4cats.codecs.MongoCodecProvider
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import org.bson.codecs._
-import org.bson.types.ObjectId
+import org.bson.codecs.{Codec, DecoderContext, DocumentCodec, EncoderContext, StringCodec}
 import org.bson.{BsonReader, BsonType, BsonWriter, Document}
 
 import java.time.{Instant, LocalDate}
@@ -36,7 +36,7 @@ trait MongoJsonCodecs {
   implicit val encodeObjectId: Encoder[ObjectId] =
     Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject("$oid" -> Json.fromString(i.toHexString)))
   implicit val decodeObjectId: Decoder[ObjectId] =
-    Decoder.decodeJsonObject.emapTry(id => Try(new ObjectId(id("$oid").flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id("$oid").flatMap(_.asString).get)))
 
   implicit val encodeInstant: Encoder[Instant] =
     Encoder.encodeJsonObject.contramap[Instant](i => JsonObject("$date" -> Json.fromString(i.toString)))
@@ -57,11 +57,10 @@ trait MongoJsonCodecs {
   private def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
     new CodecProvider {
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
-        if (classY == classT || classT.isAssignableFrom(classY)) {
+        if (classY == classT || classT.isAssignableFrom(classY))
           new Codec[Y] {
             private val documentCodec: Codec[Document] = new DocumentCodec(registry).asInstanceOf[Codec[Document]]
             private val stringCodec: Codec[String]     = new StringCodec()
-
             override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit = {
               val json = enc(t.asInstanceOf[T])
               if (json.isObject) {
@@ -71,9 +70,7 @@ trait MongoJsonCodecs {
                 stringCodec.encode(writer, json.noSpaces.replaceAll("\"", ""), encoderContext)
               }
             }
-
             override def getEncoderClass: Class[Y] = classY
-
             override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
               reader.getCurrentBsonType match {
                 case BsonType.DOCUMENT =>
@@ -85,10 +82,7 @@ trait MongoJsonCodecs {
                     .decodeJson(Json.fromString(string))
                     .fold(e => throw MongoJsonParsingException(string, e.getMessage), _.asInstanceOf[Y])
               }
-
           }
-        } else {
-          null // scalastyle:ignore
-        }
+        else null // scalastyle:ignore
     }
 }
