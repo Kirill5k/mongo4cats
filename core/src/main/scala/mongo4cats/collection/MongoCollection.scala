@@ -46,7 +46,7 @@ abstract class MongoCollection[F[_], T] {
   def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T]
 
   def readConcern: ReadConcern
-  def witReadConcern(readConcern: ReadConcern): MongoCollection[F, T]
+  def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T]
 
   def documentClass: Class[T]
   def as[Y: ClassTag]: MongoCollection[F, Y]
@@ -475,7 +475,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withWriteConcern(writeConcert))
   def readConcern: ReadConcern = underlying.getReadConcern
-  def witReadConcern(readConcern: ReadConcern): MongoCollection[F, T] =
+  def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadConcern(readConcern))
 
   private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =

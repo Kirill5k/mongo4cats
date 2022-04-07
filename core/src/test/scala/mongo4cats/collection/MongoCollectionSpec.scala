@@ -54,7 +54,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
         withEmbeddedMongoDatabase { db =>
           val result = for {
             coll <- db.getCollection("coll")
-            updColl = coll.witReadConcern(ReadConcern.MAJORITY)
+            updColl = coll.withReadConcern(ReadConcern.MAJORITY)
             rc      = updColl.readConcern
           } yield rc
 
