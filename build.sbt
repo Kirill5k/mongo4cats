@@ -18,7 +18,7 @@ ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
-ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("17"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("18"))
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,

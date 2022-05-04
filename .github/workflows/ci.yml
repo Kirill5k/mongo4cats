@@ -23,7 +23,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.15, 2.13.8, 3.1.1]
-        java: [temurin@17]
+        java: [temurin@18]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -31,12 +31,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (temurin@17)
-        if: matrix.java == 'temurin@17'
+      - name: Setup Java (temurin@18)
+        if: matrix.java == 'temurin@18'
         uses: actions/setup-java@v2
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 18
 
       - name: Cache sbt
         uses: actions/cache@v2
