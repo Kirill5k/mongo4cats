@@ -24,15 +24,16 @@ import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.operations.{Filter, Sort, Update}
+import mongo4cats.collection.operations.{Filter, Index, Sort, Update}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import fs2.Stream
 import mongo4cats.database.MongoDatabase
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.concurrent.Future
 
-class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
+class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks with Matchers with EmbeddedMongo {
 
   override val mongoPort = 12347
 
@@ -535,6 +536,84 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
             result.map { case (count, ns) =>
               ns.getCollectionName mustBe "coll2"
               count mustBe 3
+            }
+          }
+        }
+      }
+
+      "createIndex" should {
+        "create index and check if it exists" in {
+          val parameters = Table(
+            ("index", "options", "expected"),
+            (
+              Index.ascending("name"),
+              IndexOptions().unique(true),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {name: 1}, unique: true, name: 'name_1'}"
+              )
+            ),
+            (
+              Index.descending("name"),
+              IndexOptions(),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {name: -1}, name: 'name_-1'}"
+              )
+            ),
+            (
+              Index.ascending("name").combinedWith(Index.descending("currency")),
+              IndexOptions(),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {name: 1, currency: -1}, name: 'name_1_currency_-1'}"
+              )
+            ),
+            (
+              Index.geo2dsphere("location"),
+              IndexOptions(),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {location: '2dsphere'}, name: 'location_2dsphere', '2dsphereIndexVersion': 3}"
+              )
+            ),
+            (
+              Index.geo2d("location"),
+              IndexOptions(),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {location: '2d'}, name: 'location_2d'}"
+              )
+            ),
+            (
+              Index.text("name"),
+              IndexOptions(),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {_fts: 'text', _ftsx: 1}, name: 'name_text', weights: {name: 1}, default_language: 'english', language_override: 'language', textIndexVersion: 3}"
+              )
+            ),
+            (
+              Index.hashed("name"),
+              IndexOptions(),
+              List(
+                "{v: 2, key: {_id: 1}, name: '_id_'}",
+                "{v: 2, key: {name: 'hashed'}, name: 'name_hashed'}"
+              )
+            )
+          )
+
+          forAll(parameters) { (index, options, expected) =>
+            withEmbeddedMongoDatabase { db =>
+              val result = for {
+                coll    <- db.getCollection("coll")
+                _       <- coll.createIndex(index, options)
+                indexes <- coll.listIndexes
+              } yield indexes
+
+              result.map { indexes =>
+                indexes must contain only (expected.map(Document.parse): _*)
+              }
             }
           }
         }

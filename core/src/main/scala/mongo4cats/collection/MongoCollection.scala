@@ -23,6 +23,7 @@ import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
@@ -265,6 +266,17 @@ abstract class MongoCollection[F[_], T] {
   def createIndex(key: Bson): F[String]                               = createIndex(key, IndexOptions())
   def createIndex(index: Index): F[String]                            = createIndex(index, IndexOptions())
   def createIndex(session: ClientSession[F], index: Index): F[String] = createIndex(session, index, IndexOptions())
+
+  /** Get all the indexes in this collection.
+    *
+    * [[http://docs.mongodb.org/manual/reference/command/listIndexes]]
+    * @param session
+    *   the client session with which to associate this operation
+    */
+  def listIndexes(session: ClientSession[F]): F[Iterable[Document]]
+  def listIndexes[Y: ClassTag]: F[Iterable[Y]]
+  def listIndexes: F[Iterable[Document]]
+  def listIndexes[Y: ClassTag](cs: ClientSession[F]): F[Iterable[Y]]
 
   /** Update all documents in the collection according to the specified arguments.
     *
@@ -562,6 +574,15 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def createIndex(key: Bson, options: IndexOptions): F[String] = underlying.createIndex(key, options).asyncSingle[F]
   def createIndex(cs: ClientSession[F], index: Index, options: IndexOptions): F[String] =
     underlying.createIndex(cs.underlying, index.toBson, options).asyncSingle[F]
+
+  def listIndexes: F[Iterable[Document]] =
+    underlying.listIndexes().asyncIterable[F]
+  def listIndexes[Y: ClassTag]: F[Iterable[Y]] =
+    underlying.listIndexes(clazz[Y]).asyncIterable[F]
+  def listIndexes(cs: ClientSession[F]): F[Iterable[Document]] =
+    underlying.listIndexes(cs.underlying).asyncIterable[F]
+  def listIndexes[Y: ClassTag](cs: ClientSession[F]): F[Iterable[Y]] =
+    underlying.listIndexes(cs.underlying, clazz[Y]).asyncIterable[F]
 
   def updateMany(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     underlying.updateMany(filter, update, options).asyncSingle[F]
