@@ -612,7 +612,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               } yield indexes
 
               result.map { indexes =>
-                indexes must contain only (expected.map(Document.parse): _*)
+                indexes must contain theSameElementsAs expected.map(Document.parse)
               }
             }
           }
