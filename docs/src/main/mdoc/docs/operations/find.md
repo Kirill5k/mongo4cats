@@ -28,7 +28,7 @@ import mongo4cats.collection.operations.Filter
 val filter1 = Filter.eq("field1", "foo")
 val filter2 = Filter.eq("field2", "bar")
 val filter3 = Filter.exists("field3")
-val data: IO[Option[Document]] = collection.find((filter1 || filter2) && filter2).first
+val data: IO[Option[Document]] = collection.find((filter1 || filter2) && filter3).first
 ```
 As can be noted from the example above, filters are composable and can be chained together using logical operators `||` and `&&`.
 The full list of available filters can be found either by exploring API of the `mongo4cats.collection.operations.Filter` companion object or by vising the official MongoDB [documentation](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/builders/filters/).
