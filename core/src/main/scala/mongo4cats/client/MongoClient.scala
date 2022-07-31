@@ -24,7 +24,7 @@ import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
 import mongo4cats.helpers._
 
-import scala.jdk.CollectionConverters._
+import scala.collection.convert.AsJavaConverters
 
 abstract class MongoClient[F[_]] {
   def clusterDescription: ClusterDescription
@@ -60,7 +60,7 @@ final private class LiveMongoClient[F[_]](
     underlying.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
 }
 
-object MongoClient {
+object MongoClient extends AsJavaConverters {
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
     clientResource[F](MongoClients.create(connectionString))
@@ -69,7 +69,7 @@ object MongoClient {
     create {
       MongoClientSettings.builder
         .applyToClusterSettings { builder =>
-          val _ = builder.hosts(serverAddresses.toList.asJava)
+          val _ = builder.hosts(asJava(serverAddresses.toList))
         }
         .build()
     }

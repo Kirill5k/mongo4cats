@@ -21,7 +21,7 @@ import com.mongodb.client.model.{Filters, TextSearchOptions}
 import org.bson.BsonType
 import org.bson.conversions.Bson
 
-import scala.jdk.CollectionConverters._
+import scala.collection.convert.AsJavaConverters
 import scala.util.matching.Regex
 
 trait Filter {
@@ -77,7 +77,7 @@ trait Filter {
   private[operations] def filter: Bson
 }
 
-object Filter {
+object Filter extends AsJavaConverters {
 
   /** A filter that matches all documents.
     *
@@ -192,7 +192,7 @@ object Filter {
     *   the filter
     */
   def in[A](fieldName: String, values: Seq[A]): Filter =
-    FilterBuilder(Filters.in(fieldName, values.asJava))
+    FilterBuilder(Filters.in(fieldName, asJava(values)))
 
   /** Creates a filter that matches all documents where the value of a field does not equal any of the specified values or does not exist.
     *
@@ -204,7 +204,7 @@ object Filter {
     *   the filter
     */
   def nin[A](fieldName: String, values: Seq[A]): Filter =
-    FilterBuilder(Filters.nin(fieldName, values.asJava))
+    FilterBuilder(Filters.nin(fieldName, asJava(values)))
 
   /** Creates a filter that matches all documents that contain the given field.
     *
@@ -331,7 +331,7 @@ object Filter {
     *   the filter
     */
   def all[A](fieldName: String, values: Seq[A]): Filter =
-    FilterBuilder(Filters.all(fieldName, values.asJava))
+    FilterBuilder(Filters.all(fieldName, asJava(values)))
 
   /** Creates a filter that matches all documents containing a field that is an array where at least one member of the array matches the
     * given filter.
@@ -468,7 +468,7 @@ object Filter {
     * @since 3.1
     */
   def geoWithinPolygon(fieldName: String, points: Seq[Seq[Double]]): Filter =
-    FilterBuilder(Filters.geoWithinPolygon(fieldName, points.map(_.map(Double.box).asJava).asJava))
+    FilterBuilder(Filters.geoWithinPolygon(fieldName, asJava(points.map(p => asJava(p.map(Double.box))))))
 
   /** Creates a filter that matches all documents containing a field with grid coordinates data that exist entirely within the specified
     * circle.

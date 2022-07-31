@@ -22,9 +22,9 @@ import org.scalatest.Assertion
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.jdk.CollectionConverters._
+import scala.collection.convert.AsJavaConverters
 
-class UpdateSpec extends AnyWordSpec with Matchers {
+class UpdateSpec extends AnyWordSpec with Matchers with AsJavaConverters {
 
   "An Update" should {
     "rename" in {
@@ -36,7 +36,7 @@ class UpdateSpec extends AnyWordSpec with Matchers {
     }
 
     "pushEach" in {
-      Update.pushEach("foo", List("foo")) isTheSameAs Updates.pushEach("foo", List("foo").asJava)
+      Update.pushEach("foo", List("foo")) isTheSameAs Updates.pushEach("foo", asJava(List("foo")))
     }
 
     "currentDate" in {
@@ -84,7 +84,7 @@ class UpdateSpec extends AnyWordSpec with Matchers {
     }
 
     "addEachToSet" in {
-      Update.addEachToSet("foo", List(1, 2, 3)) isTheSameAs Updates.addEachToSet("foo", List(1, 2, 3).asJava)
+      Update.addEachToSet("foo", List(1, 2, 3)) isTheSameAs Updates.addEachToSet("foo", asJava(List(1, 2, 3)))
     }
 
     "pull" in {
@@ -92,7 +92,7 @@ class UpdateSpec extends AnyWordSpec with Matchers {
     }
 
     "pullAll" in {
-      Update.pullAll("foo", List(1, 2, 3)) isTheSameAs Updates.pullAll("foo", List(1, 2, 3).asJava)
+      Update.pullAll("foo", List(1, 2, 3)) isTheSameAs Updates.pullAll("foo", asJava(List(1, 2, 3)))
     }
 
     "bitwiseAnd" in {
