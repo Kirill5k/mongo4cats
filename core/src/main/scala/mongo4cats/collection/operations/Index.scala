@@ -17,9 +17,8 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Indexes
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.collection.convert.AsJavaConverters
 
 trait Index {
 
@@ -144,7 +143,7 @@ object Index {
 
 final private case class IndexBuilder(
     override val indexes: List[Bson]
-) extends Index with AsJavaConverters {
+) extends Index with AsJava {
 
   override def ascending(fieldName: String): Index         = IndexBuilder(Indexes.ascending(fieldName) :: indexes)
   override def ascending(fieldNames: Seq[String]): Index   = IndexBuilder(Indexes.ascending(asJava(fieldNames)) :: indexes)

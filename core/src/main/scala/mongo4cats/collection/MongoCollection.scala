@@ -23,6 +23,7 @@ import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
@@ -33,7 +34,6 @@ import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistr
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 
-import scala.collection.convert.AsJavaConverters
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -478,7 +478,7 @@ abstract class MongoCollection[F[_], T] {
 
 final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     val underlying: JMongoCollection[T]
-) extends MongoCollection[F, T] with AsJavaConverters {
+) extends MongoCollection[F, T] with AsJava {
 
   def readPreference: ReadPreference = underlying.getReadPreference
   def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T] =

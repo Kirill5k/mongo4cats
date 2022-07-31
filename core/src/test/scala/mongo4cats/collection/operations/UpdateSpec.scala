@@ -17,14 +17,13 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Updates
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
 import org.scalatest.Assertion
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.convert.AsJavaConverters
-
-class UpdateSpec extends AnyWordSpec with Matchers with AsJavaConverters {
+class UpdateSpec extends AnyWordSpec with Matchers with AsJava {
 
   "An Update" should {
     "rename" in {

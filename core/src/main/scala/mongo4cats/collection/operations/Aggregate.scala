@@ -17,9 +17,8 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{Aggregates, BucketAutoOptions, GraphLookupOptions, MergeOptions, UnwindOptions}
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.collection.convert.AsJavaConverters
 
 trait Aggregate {
 
@@ -322,7 +321,7 @@ object Aggregate {
 
 final private case class AggregateBuilder(
     override val aggregates: List[Bson]
-) extends Aggregate with AsJavaConverters {
+) extends Aggregate with AsJava {
 
   def bucketAuto[TExpression](
       groupBy: TExpression,

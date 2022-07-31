@@ -19,8 +19,7 @@ package mongo4cats.collection.operations
 import cats.syntax.alternative._
 import cats.syntax.functor._
 import com.mongodb.client.model.{Accumulators, BsonField}
-
-import scala.collection.convert.AsJavaConverters
+import mongo4cats.AsJava
 
 trait Accumulator {
 
@@ -162,7 +161,7 @@ trait Accumulator {
   private[collection] def toBson: java.util.List[BsonField]
 }
 
-object Accumulator extends AsJavaConverters {
+object Accumulator extends AsJava {
   private val empty: Accumulator = AccumulatorBuilder(Nil)
 
   /** Creates an \$accumulator pipeline stage
@@ -225,7 +224,7 @@ object Accumulator extends AsJavaConverters {
 
 final private case class AccumulatorBuilder(
     override val accumulators: List[BsonField]
-) extends Accumulator with AsJavaConverters {
+) extends Accumulator with AsJava {
 
   def sum[T](fieldName: String, expression: T): Accumulator =
     AccumulatorBuilder(Accumulators.sum(fieldName, expression) :: accumulators)

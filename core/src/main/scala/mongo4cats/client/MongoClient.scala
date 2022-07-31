@@ -20,11 +20,10 @@ import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
 import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient, MongoClients}
+import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
 import mongo4cats.helpers._
-
-import scala.collection.convert.AsJavaConverters
 
 abstract class MongoClient[F[_]] {
   def clusterDescription: ClusterDescription
@@ -60,7 +59,7 @@ final private class LiveMongoClient[F[_]](
     underlying.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
 }
 
-object MongoClient extends AsJavaConverters {
+object MongoClient extends AsJava {
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
     clientResource[F](MongoClients.create(connectionString))

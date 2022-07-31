@@ -17,9 +17,8 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{PushOptions, Updates}
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.collection.convert.AsJavaConverters
 
 trait Update {
 
@@ -336,7 +335,7 @@ object Update {
 
 final private case class UpdateBuilder(
     override val updates: List[Bson]
-) extends Update with AsJavaConverters {
+) extends Update with AsJava {
 
   def set[A](fieldName: String, value: A): Update =
     UpdateBuilder(Updates.set(fieldName, value) :: updates)

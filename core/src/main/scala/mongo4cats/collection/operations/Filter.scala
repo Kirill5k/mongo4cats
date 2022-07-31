@@ -18,10 +18,10 @@ package mongo4cats.collection.operations
 
 import com.mongodb.client.model.geojson.{Geometry, Point}
 import com.mongodb.client.model.{Filters, TextSearchOptions}
+import mongo4cats.AsJava
 import org.bson.BsonType
 import org.bson.conversions.Bson
 
-import scala.collection.convert.AsJavaConverters
 import scala.util.matching.Regex
 
 trait Filter {
@@ -77,7 +77,7 @@ trait Filter {
   private[operations] def filter: Bson
 }
 
-object Filter extends AsJavaConverters {
+object Filter extends AsJava {
 
   /** A filter that matches all documents.
     *

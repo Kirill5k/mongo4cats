@@ -29,13 +29,12 @@ import java.util.Date
 import java.{util => ju}
 import java.util.{Map => JMap, Set => JSet}
 import java.util.Map.{Entry => JEntry}
-import scala.collection.convert.AsJavaConverters
 
 object bson {
 
   type Document = JDocument
 
-  object Document extends AsJavaConverters {
+  object Document extends AsJava {
     val empty: Document = new JDocument()
 
     def apply[A](entries: Map[String, A]): Document =
