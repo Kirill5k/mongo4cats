@@ -17,7 +17,7 @@
 package mongo4cats.collection
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
+import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
@@ -30,13 +30,10 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-
   override val mongoPort = 12349
 
   "A MongoCollection" when {
-
     "aggregate" should {
-
       "join data from 2 collections" in {
         withEmbeddedMongoDatabase { db =>
           val result = for {
@@ -105,9 +102,30 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
           } yield res
 
           result.map { expl =>
-            println(expl.toJson)
             expl.getDouble("ok").doubleValue() mustBe 1.0
             expl.getList("stages", classOf[Document]).size() mustBe 4
+          }
+        }
+      }
+
+      "processes multiple aggregation pipelines within a single stage on the same set of input documents" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            accs <- db.getCollection("transactions")
+            accumulator = Accumulator
+              .sum("count", 1)
+              .sum("totalAmount", "$amount")
+            res <- accs.aggregate[Document] {
+              Aggregate.facet(
+                Facet("transactionsByCategory", Aggregate.group("$category", accumulator)),
+                Facet("transactionsByAccount", Aggregate.group("$account", accumulator))
+              )
+            }.first
+          } yield res
+
+          result.map(_.get).map { res =>
+            res.getList("transactionsByCategory", classOf[Document]) must have size 10
+            res.getList("transactionsByAccount", classOf[Document]) must have size 1
           }
         }
       }
@@ -127,5 +145,5 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
             res <- test(db)
           } yield res
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 }

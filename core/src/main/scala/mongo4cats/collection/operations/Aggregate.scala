@@ -16,10 +16,14 @@
 
 package mongo4cats.collection.operations
 
-import com.mongodb.client.model.{Aggregates, BucketAutoOptions, GraphLookupOptions, MergeOptions, UnwindOptions}
+import com.mongodb.client.model.{Aggregates, BucketAutoOptions, Facet => JFacet, GraphLookupOptions, MergeOptions, UnwindOptions}
 import org.bson.conversions.Bson
 
 import scala.jdk.CollectionConverters._
+
+final case class Facet(name: String, pipeline: Aggregate) {
+  private[operations] def asNative: JFacet = new JFacet(name, pipeline.toBson)
+}
 
 trait Aggregate {
 
@@ -251,6 +255,18 @@ trait Aggregate {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate
 
+  /** Creates a facet pipeline stage
+    *
+    * @param facets
+    *   the facets to use
+    * @return
+    *   the \$facets pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/facet/]]
+    * @since 3.4
+    */
+  def facet(facets: List[Facet]): Aggregate
+
+  def facet(facets: Facet*): Aggregate = facet(facets.toList)
+
   /** Creates a \$unionWith pipeline stage.
     *
     * @param collection
@@ -317,6 +333,8 @@ object Aggregate {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = empty.graphLookup(from, startWith, connectFromField, connectToField, as, options)
 
+  def facet(facets: List[Facet]): Aggregate                         = empty.facet(facets)
+  def facet(facets: Facet*): Aggregate                              = empty.facet(facets.toList)
   def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
 }
 
@@ -378,6 +396,8 @@ final private case class AggregateBuilder(
       as: String,
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
+
+  def facet(facets: List[Facet]): Aggregate = AggregateBuilder(Aggregates.facet(facets.map(_.asNative).asJava) :: aggregates)
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
