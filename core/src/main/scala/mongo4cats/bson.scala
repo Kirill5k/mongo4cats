@@ -47,7 +47,7 @@ object bson {
                 // Create directly `JEntry` (no `Tuple2` then copied to `JEntry`).
                 // No allocation for `scala.collection.convert.AsJavaExtensions.IterableHasAsJava` (which doesn't `extends AnyVal`).
                 JEntryOnlyForJDocumentCreation(k, asJava(v))
-              case (k, v) => JEntryOnlyForJDocumentCreation(k, v) // Create directly `JEntry`.
+              case (k, v) => JEntryOnlyForJDocumentCreation(k, v.asInstanceOf[Object]) // Create directly `JEntry`.
             }
         )
       )
@@ -107,10 +107,10 @@ object bson {
   }
 }
 
-final private case class JEntryOnlyForJDocumentCreation[A](
+final private case class JEntryOnlyForJDocumentCreation(
     override val getKey: String,
-    override val getValue: A
-) extends JEntry[String, A] {
+    override val getValue: Object
+) extends JEntry[String, Object] {
 
   // Copied from [[scala.collection.convert.JavaCollectionWrappers.MapWrapper.entrySet]].
   // It's important that this implementation conform to the contract
@@ -119,13 +119,13 @@ final private case class JEntryOnlyForJDocumentCreation[A](
   override def hashCode: Int = ??? // Unused for JDocument creation.
   // (if (getKey == null) 0 else getKey.hashCode()) ^ (if (getValue == null) 0 else getValue.hashCode())
 
-  override def setValue(value: A): A = ??? // Unused for JDocument creation.
+  override def setValue(value: Object): Object = ??? // Unused for JDocument creation.
 }
 
-final private case class MapOnlyForJDocumentCreation[A](
+final private case class MapOnlyForJDocumentCreation(
     override val size: Int,
-    entries: Iterable[JEntryOnlyForJDocumentCreation[A]]
-) extends JMap[String, A] {
+    entries: Iterable[JEntryOnlyForJDocumentCreation]
+) extends JMap[String, Object] {
   self =>
 
   /** An Optimized version of [[scala.collection.convert.JavaCollectionWrappers.MapWrapper.entrySet]], implement only what is needed by
@@ -133,30 +133,30 @@ final private case class MapOnlyForJDocumentCreation[A](
     *   - No allocations for `prev` var.
     *   - No allocations when copying `Tuple2` to `JEntry`.
     */
-  override def entrySet: JSet[JEntry[String, A]] =
-    new ju.AbstractSet[JEntry[String, A]] {
+  override def entrySet: JSet[JEntry[String, Object]] =
+    new ju.AbstractSet[JEntry[String, Object]] {
       override val size: Int = self.size
 
-      override def iterator: ju.Iterator[JEntry[String, A]] = {
-        val scalaIterator: Iterator[JEntryOnlyForJDocumentCreation[A]] = entries.iterator
+      override def iterator: ju.Iterator[JEntry[String, Object]] = {
+        val scalaIterator: Iterator[JEntryOnlyForJDocumentCreation] = entries.iterator
 
-        new ju.Iterator[JEntry[String, A]] {
-          def hasNext: Boolean          = scalaIterator.hasNext
-          def next(): JEntry[String, A] = scalaIterator.next()
+        new ju.Iterator[JEntry[String, Object]] {
+          def hasNext: Boolean               = scalaIterator.hasNext
+          def next(): JEntry[String, Object] = scalaIterator.next()
 
           override def remove(): Unit = ??? // Unused for JDocument creation.
         }
       }
     }
 
-  override def isEmpty: Boolean                           = ??? // Unused for JDocument creation.
-  override def containsKey(key: Any): Boolean             = ??? // Unused for JDocument creation.
-  override def containsValue(value: Any): Boolean         = ??? // Unused for JDocument creation.
-  override def get(key: Any): A                           = ??? // Unused for JDocument creation.
-  override def put(key: String, value: A): A              = ??? // Unused for JDocument creation.
-  override def remove(key: Any): A                        = ??? // Unused for JDocument creation.
-  override def putAll(m: JMap[_ <: String, _ <: A]): Unit = ??? // Unused for JDocument creation.
-  override def clear(): Unit                              = ??? // Unused for JDocument creation.
-  override def keySet(): JSet[String]                     = ??? // Unused for JDocument creation.
-  override def values(): java.util.Collection[A]          = ??? // Unused for JDocument creation.
+  override def isEmpty: Boolean                                = ??? // Unused for JDocument creation.
+  override def containsKey(key: Any): Boolean                  = ??? // Unused for JDocument creation.
+  override def containsValue(value: Any): Boolean              = ??? // Unused for JDocument creation.
+  override def get(key: Any): Object                           = ??? // Unused for JDocument creation.
+  override def put(key: String, value: Object): Object         = ??? // Unused for JDocument creation.
+  override def remove(key: Any): Object                        = ??? // Unused for JDocument creation.
+  override def putAll(m: JMap[_ <: String, _ <: Object]): Unit = ??? // Unused for JDocument creation.
+  override def clear(): Unit                                   = ??? // Unused for JDocument creation.
+  override def keySet(): JSet[String]                          = ??? // Unused for JDocument creation.
+  override def values(): java.util.Collection[Object]          = ??? // Unused for JDocument creation.
 }
