@@ -17,9 +17,8 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Indexes
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.jdk.CollectionConverters._
 
 trait Index {
 
@@ -144,14 +143,14 @@ object Index {
 
 final private case class IndexBuilder(
     override val indexes: List[Bson]
-) extends Index {
+) extends Index with AsJava {
 
   override def ascending(fieldName: String): Index         = IndexBuilder(Indexes.ascending(fieldName) :: indexes)
-  override def ascending(fieldNames: Seq[String]): Index   = IndexBuilder(Indexes.ascending(fieldNames.asJava) :: indexes)
+  override def ascending(fieldNames: Seq[String]): Index   = IndexBuilder(Indexes.ascending(asJava(fieldNames)) :: indexes)
   override def descending(fieldName: String): Index        = IndexBuilder(Indexes.descending(fieldName) :: indexes)
-  override def descending(fieldNames: Seq[String]): Index  = IndexBuilder(Indexes.descending(fieldNames.asJava) :: indexes)
+  override def descending(fieldNames: Seq[String]): Index  = IndexBuilder(Indexes.descending(asJava(fieldNames)) :: indexes)
   override def geo2dsphere(fieldName: String): Index       = IndexBuilder(Indexes.geo2dsphere(fieldName) :: indexes)
-  override def geo2dsphere(fieldNames: Seq[String]): Index = IndexBuilder(Indexes.geo2dsphere(fieldNames.asJava) :: indexes)
+  override def geo2dsphere(fieldNames: Seq[String]): Index = IndexBuilder(Indexes.geo2dsphere(asJava(fieldNames)) :: indexes)
   override def geo2d(fieldName: String): Index             = IndexBuilder(Indexes.geo2d(fieldName) :: indexes)
   override def text(fieldName: String): Index              = IndexBuilder(Indexes.text(fieldName) :: indexes)
   override def text: Index                                 = IndexBuilder(Indexes.text() :: indexes)
@@ -159,5 +158,5 @@ final private case class IndexBuilder(
 
   override def combinedWith(anotherIndex: Index): Index = IndexBuilder(anotherIndex.indexes ::: indexes)
 
-  override private[collection] def toBson: Bson = Indexes.compoundIndex(indexes.reverse.asJava)
+  override private[collection] def toBson: Bson = Indexes.compoundIndex(asJava(indexes.reverse))
 }

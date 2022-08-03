@@ -17,15 +17,14 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{Aggregates, BucketAutoOptions, Facet => JFacet, GraphLookupOptions, MergeOptions, UnwindOptions}
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.jdk.CollectionConverters._
 
 final case class Facet(name: String, pipeline: Aggregate) {
   private[operations] def asNative: JFacet = new JFacet(name, pipeline.toBson)
 }
 
-trait Aggregate {
+trait Aggregate extends AsJava {
 
   /** Creates a \$bucketAuto pipeline stage
     *
@@ -340,7 +339,7 @@ object Aggregate {
 
 final private case class AggregateBuilder(
     override val aggregates: List[Bson]
-) extends Aggregate {
+) extends Aggregate with AsJava {
 
   def bucketAuto[TExpression](
       groupBy: TExpression,
@@ -397,12 +396,12 @@ final private case class AggregateBuilder(
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
 
-  def facet(facets: List[Facet]): Aggregate = AggregateBuilder(Aggregates.facet(facets.map(_.asNative).asJava) :: aggregates)
+  def facet(facets: List[Facet]): Aggregate = AggregateBuilder(Aggregates.facet(asJava(facets.map(_.asNative))) :: aggregates)
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
 
   override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
-  override private[collection] def toBson: java.util.List[Bson] = aggregates.reverse.asJava
+  override private[collection] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
 }

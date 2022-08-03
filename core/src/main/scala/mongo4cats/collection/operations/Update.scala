@@ -17,9 +17,8 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.{PushOptions, Updates}
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.jdk.CollectionConverters._
 
 trait Update {
 
@@ -336,7 +335,7 @@ object Update {
 
 final private case class UpdateBuilder(
     override val updates: List[Bson]
-) extends Update {
+) extends Update with AsJava {
 
   def set[A](fieldName: String, value: A): Update =
     UpdateBuilder(Updates.set(fieldName, value) :: updates)
@@ -375,16 +374,16 @@ final private case class UpdateBuilder(
     UpdateBuilder(Updates.addToSet(fieldName, value) :: updates)
 
   def addEachToSet[A](fieldName: String, values: Seq[A]): Update =
-    UpdateBuilder(Updates.addEachToSet(fieldName, values.asJava) :: updates)
+    UpdateBuilder(Updates.addEachToSet(fieldName, asJava(values)) :: updates)
 
   def push[A](fieldName: String, value: A): Update =
     UpdateBuilder(Updates.push(fieldName, value) :: updates)
 
   def pushEach[A](fieldName: String, values: Seq[A]): Update =
-    UpdateBuilder(Updates.pushEach(fieldName, values.asJava) :: updates)
+    UpdateBuilder(Updates.pushEach(fieldName, asJava(values)) :: updates)
 
   def pushEach[A](fieldName: String, values: Seq[A], options: PushOptions): Update =
-    UpdateBuilder(Updates.pushEach(fieldName, values.asJava, options) :: updates)
+    UpdateBuilder(Updates.pushEach(fieldName, asJava(values), options) :: updates)
 
   def pull[A](fieldName: String, value: A): Update =
     UpdateBuilder(Updates.pull(fieldName, value) :: updates)
@@ -393,7 +392,7 @@ final private case class UpdateBuilder(
     UpdateBuilder(Updates.pullByFilter(filter.toBson) :: updates)
 
   def pullAll[A](fieldName: String, values: Seq[A]): Update =
-    UpdateBuilder(Updates.pullAll(fieldName, values.asJava) :: updates)
+    UpdateBuilder(Updates.pullAll(fieldName, asJava(values)) :: updates)
 
   def popFirst(fieldName: String): Update =
     UpdateBuilder(Updates.popFirst(fieldName) :: updates)
@@ -422,6 +421,6 @@ final private case class UpdateBuilder(
   def combinedWith(anotherUpdate: Update): Update =
     UpdateBuilder(anotherUpdate.updates ::: updates)
 
-  override private[collection] def toBson: Bson = Updates.combine(updates.reverse.asJava)
+  override private[collection] def toBson: Bson = Updates.combine(asJava(updates.reverse))
 
 }

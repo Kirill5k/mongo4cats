@@ -17,9 +17,8 @@
 package mongo4cats.collection.operations
 
 import com.mongodb.client.model.Sorts
+import mongo4cats.AsJava
 import org.bson.conversions.Bson
-
-import scala.jdk.CollectionConverters._
 
 trait Sort {
 
@@ -73,7 +72,7 @@ object Sort {
 
 final private case class SortBuilder(
     override val sorts: List[Bson]
-) extends Sort {
+) extends Sort with AsJava {
 
   override def asc(fieldNames: String*): Sort         = SortBuilder(Sorts.ascending(fieldNames: _*) :: sorts)
   override def desc(fieldNames: String*): Sort        = SortBuilder(Sorts.descending(fieldNames: _*) :: sorts)
@@ -83,5 +82,5 @@ final private case class SortBuilder(
     SortBuilder(anotherSort.sorts ::: sorts)
 
   override private[collection] def toBson: Bson =
-    Sorts.orderBy(sorts.reverse.asJava)
+    Sorts.orderBy(asJava(sorts.reverse))
 }

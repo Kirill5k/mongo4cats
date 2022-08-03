@@ -115,12 +115,14 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
             accumulator = Accumulator
               .sum("count", 1)
               .sum("totalAmount", "$amount")
-            res <- accs.aggregate[Document] {
-              Aggregate.facet(
-                Facet("transactionsByCategory", Aggregate.group("$category", accumulator)),
-                Facet("transactionsByAccount", Aggregate.group("$account", accumulator))
-              )
-            }.first
+            res <- accs
+              .aggregate[Document] {
+                Aggregate.facet(
+                  Facet("transactionsByCategory", Aggregate.group("$category", accumulator)),
+                  Facet("transactionsByAccount", Aggregate.group("$account", accumulator))
+                )
+              }
+              .first
           } yield res
 
           result.map(_.get).map { res =>

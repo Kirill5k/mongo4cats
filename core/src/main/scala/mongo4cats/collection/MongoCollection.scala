@@ -23,6 +23,7 @@ import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
@@ -33,7 +34,6 @@ import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistr
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 
-import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -478,7 +478,7 @@ abstract class MongoCollection[F[_], T] {
 
 final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     val underlying: JMongoCollection[T]
-) extends MongoCollection[F, T] {
+) extends MongoCollection[F, T] with AsJava {
 
   def readPreference: ReadPreference = underlying.getReadPreference
   def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T] =
@@ -511,7 +511,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     new LiveMongoCollection[F, Y](withNewDocumentClass(underlying))
 
   def aggregate[Y: ClassTag](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(pipeline.asJava), Nil)
+    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)), Nil)
 
   def aggregate[Y: ClassTag](pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
     AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson), Nil)
@@ -520,7 +520,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson), Nil)
 
   def watch[Y: ClassTag](pipeline: Seq[Bson]): WatchQueryBuilder[F, Y] =
-    WatchQueryBuilder[F, Y](underlying.watch(pipeline.asJava, clazz[Y]), Nil)
+    WatchQueryBuilder[F, Y](underlying.watch(asJava(pipeline), clazz[Y]), Nil)
 
   def watch[Y: ClassTag](pipeline: Aggregate): WatchQueryBuilder[F, Y] =
     WatchQueryBuilder[F, Y](underlying.watch(pipeline.toBson, clazz[Y]), Nil)
@@ -588,7 +588,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     underlying.updateMany(filter, update, options).asyncSingle[F]
 
   def updateMany(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    underlying.updateMany(filter, update.asJava, options).asyncSingle[F]
+    underlying.updateMany(filter, asJava(update), options).asyncSingle[F]
 
   def updateMany(cs: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
     underlying.updateMany(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F]
@@ -597,7 +597,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     underlying.updateOne(filter, update, options).asyncSingle[F]
 
   def updateOne(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    underlying.updateOne(filter, update.asJava, options).asyncSingle[F]
+    underlying.updateOne(filter, asJava(update), options).asyncSingle[F]
 
   def updateOne(cs: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
     underlying.updateOne(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F]
@@ -620,19 +620,20 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def insertOne(cs: ClientSession[F], document: T, options: InsertOneOptions): F[InsertOneResult] =
     underlying.insertOne(cs.underlying, document, options).asyncSingle[F]
 
-  def insertMany(docs: Seq[T], options: InsertManyOptions): F[InsertManyResult] = underlying.insertMany(docs.asJava, options).asyncSingle[F]
+  def insertMany(docs: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
+    underlying.insertMany(asJava(docs), options).asyncSingle[F]
   def insertMany(cs: ClientSession[F], docs: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
-    underlying.insertMany(cs.underlying, docs.asJava, options).asyncSingle[F]
+    underlying.insertMany(cs.underlying, asJava(docs), options).asyncSingle[F]
 
   def count(filter: Bson, options: CountOptions): F[Long] = underlying.countDocuments(filter, options).asyncSingle[F].map(_.longValue())
   def count(cs: ClientSession[F], filter: Filter, options: CountOptions): F[Long] =
     underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].map(_.longValue())
 
   def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
-    underlying.bulkWrite(commands.map(_.writeModel).asJava, options).asyncSingle[F]
+    underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F]
 
   def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
-    underlying.bulkWrite(cs.underlying, commands.map(_.writeModel).asJava, options).asyncSingle[F]
+    underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle[F]
 
   def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
     underlying.renameCollection(target, options).asyncVoid[F]
