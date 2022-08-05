@@ -20,10 +20,6 @@ import com.mongodb.client.model.{Aggregates, BucketAutoOptions, Facet => JFacet,
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
 
-final case class Facet(name: String, pipeline: Aggregate) {
-  private[operations] def asNative: JFacet = new JFacet(name, pipeline.toBson)
-}
-
 trait Aggregate extends AsJava {
 
   /** Creates a \$bucketAuto pipeline stage
@@ -262,9 +258,9 @@ trait Aggregate extends AsJava {
     *   the \$facets pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/facet/]]
     * @since 3.4
     */
-  def facet(facets: List[Facet]): Aggregate
+  def facet(facets: List[Aggregate.Facet]): Aggregate
 
-  def facet(facets: Facet*): Aggregate = facet(facets.toList)
+  def facet(facets: Aggregate.Facet*): Aggregate = facet(facets.toList)
 
   /** Creates a \$unionWith pipeline stage.
     *
@@ -292,7 +288,11 @@ trait Aggregate extends AsJava {
 }
 
 object Aggregate {
-  val empty: Aggregate = AggregateBuilder(Nil)
+  final case class Facet(name: String, pipeline: Aggregate) {
+    private[operations] def asNative: JFacet = new JFacet(name, pipeline.toBson)
+  }
+
+  private[collection] val empty: Aggregate = AggregateBuilder(Nil)
 
   def bucketAuto[TExpression](
       groupBy: TExpression,
@@ -332,8 +332,8 @@ object Aggregate {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = empty.graphLookup(from, startWith, connectFromField, connectToField, as, options)
 
-  def facet(facets: List[Facet]): Aggregate                         = empty.facet(facets)
-  def facet(facets: Facet*): Aggregate                              = empty.facet(facets.toList)
+  def facet(facets: List[Aggregate.Facet]): Aggregate               = empty.facet(facets)
+  def facet(facets: Aggregate.Facet*): Aggregate                    = empty.facet(facets.toList)
   def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
 }
 
@@ -396,7 +396,7 @@ final private case class AggregateBuilder(
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
 
-  def facet(facets: List[Facet]): Aggregate = AggregateBuilder(Aggregates.facet(asJava(facets.map(_.asNative))) :: aggregates)
+  def facet(facets: List[Aggregate.Facet]): Aggregate = AggregateBuilder(Aggregates.facet(asJava(facets.map(_.asNative))) :: aggregates)
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
