@@ -18,4 +18,4 @@ package mongo4cats
 
 import scala.collection.convert.AsJavaConverters
 
-trait AsJava extends AsJavaConverters
+private[mongo4cats] trait AsJava extends AsJavaConverters

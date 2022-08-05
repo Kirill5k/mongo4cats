@@ -20,7 +20,7 @@ import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 import scala.collection.mutable
 
-trait AsJava extends scala.collection.convert.AsJavaConverters {
+private[mongo4cats] trait AsJava extends scala.collection.convert.AsJavaConverters {
 
   def asJava[A](i: Iterator[A]): ju.Iterator[A]                                       = asJavaIterator(i)
   def asJava[A](i: Iterable[A]): jl.Iterable[A]                                       = asJavaIterable(i)
