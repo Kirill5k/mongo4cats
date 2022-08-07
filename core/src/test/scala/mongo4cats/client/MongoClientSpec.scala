@@ -28,6 +28,8 @@ import org.scalatest.wordspec.AsyncWordSpec
 class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort = 12345
+  private val username   = "username"
+  private val password   = "password"
 
   "A MongoClient" should {
     "connect to a db via connection string" in withRunningEmbeddedMongo {
@@ -36,6 +38,26 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         .use { client =>
           val cluster = client.clusterDescription
 
+          IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
+        }
+    }.unsafeToFuture()
+
+    "connect to a db via connection object" in withRunningEmbeddedMongo {
+      val connection = MongoConnection(mongoHost, mongoPort)
+      MongoClient
+        .fromConnection[IO](connection)
+        .use { client =>
+          val cluster = client.clusterDescription
+          IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
+        }
+    }.unsafeToFuture()
+
+    "connect to a db via connection object with authentication" in withRunningEmbeddedMongo(mongoHost, mongoPort, username, password) {
+      val connection = MongoConnection(mongoHost, mongoPort, Some(MongoCredential(username, password)))
+      MongoClient
+        .fromConnection[IO](connection)
+        .use { client =>
+          val cluster = client.clusterDescription
           IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
         }
     }.unsafeToFuture()

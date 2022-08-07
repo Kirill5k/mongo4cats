@@ -57,4 +57,5 @@ package object client {
     def apply(): JTransactionOptions         = builder.build()
     def builder: JTransactionOptions.Builder = JTransactionOptions.builder()
   }
+
 }

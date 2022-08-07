@@ -59,11 +59,27 @@ trait EmbeddedMongo {
   def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
     runMongo(host, port)(test)
 
+  def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int, username: String, password: String)(test: => F[A]): F[A] =
+    runMongo(host, port, username, password)(test)
+
   private def runMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
     EmbeddedMongo
       .start[F] {
         MongodConfig
           .builder()
+          .version(Version.Main.PRODUCTION)
+          .net(new Net(host, port, Network.localhostIsIPv6))
+          .build
+      }
+      .use(_ => test)
+
+  private def runMongo[F[_]: Async, A](host: String, port: Int, username: String, password: String)(test: => F[A]): F[A] =
+    EmbeddedMongo
+      .start[F] {
+        MongodConfig
+          .builder()
+          .userName(username)
+          .password(password)
           .version(Version.Main.PRODUCTION)
           .net(new Net(host, port, Network.localhostIsIPv6))
           .build

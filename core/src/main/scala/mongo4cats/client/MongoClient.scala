@@ -61,6 +61,9 @@ final private class LiveMongoClient[F[_]](
 
 object MongoClient extends AsJava {
 
+  def fromConnection[F[_]: Async](connection: MongoConnection): Resource[F, MongoClient[F]] =
+    fromConnectionString(connection.toString)
+
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
     clientResource[F](MongoClients.create(connectionString))
 
