@@ -17,8 +17,8 @@
 package mongo4cats.collection
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
-import cats.implicits._
+import cats.effect.unsafe.IORuntime
+import cats.syntax.parallel._
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
@@ -662,6 +662,6 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             _ <- IO.println(s">>>> test duration ${duration.toMillis}ms")
           } yield res
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
 }

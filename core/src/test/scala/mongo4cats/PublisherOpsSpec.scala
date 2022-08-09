@@ -18,7 +18,8 @@ package mongo4cats
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import cats.implicits._
+import cats.syntax.applicativeError._
+import cats.syntax.either._
 import mongo4cats.helpers._
 import org.reactivestreams.{Publisher, Subscriber}
 import org.scalatest.matchers.must.Matchers

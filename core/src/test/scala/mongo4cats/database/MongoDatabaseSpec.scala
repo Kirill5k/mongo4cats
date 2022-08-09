@@ -17,7 +17,7 @@
 package mongo4cats.database
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
+import cats.effect.unsafe.IORuntime
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
@@ -29,7 +29,7 @@ import scala.concurrent.Future
 
 class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort: Int = 12346
+  override val mongoPort: Int = 12348
 
   "A MongoDatabase" when {
 
@@ -134,5 +134,5 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use(test)
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 }
