@@ -3,6 +3,7 @@ package mongo4cats.codecs
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
+import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Update}
 import mongo4cats.database.MongoDatabase
@@ -18,7 +19,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   "A CodecRegistry" should {
 
-    "be able to handle option fields" in {
+    "be able to handle scala option" in {
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
@@ -30,6 +31,23 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         result.map { doc =>
           doc.map(_.getString("currency")).flatMap(Option(_)) mustBe None
           doc.map(_.getString("name")).flatMap(Option(_)) mustBe Some("updated-acc")
+        }
+      }
+    }
+
+    "be able to handle scala map" in {
+      withEmbeddedMongoDatabase { db =>
+        val result = for {
+          coll <- db.getCollection("coll")
+          _    <- coll.insertOne(TestData.gbpAccount)
+          _    <- coll.updateMany(Filter.empty, Update.set("props", Map("a" -> 42, "b" -> "foo")))
+          doc  <- coll.find.first
+        } yield doc
+
+        result.map { doc =>
+          val props = doc.map(_.get[Document]("props", classOf[Document]))
+          props.map(_.getInteger("a")) mustBe Some(42)
+          props.map(_.getString("b")) mustBe Some("foo")
         }
       }
     }

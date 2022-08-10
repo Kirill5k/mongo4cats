@@ -42,7 +42,7 @@ final private class OptionCodec(
     }
 
   override def getEncoderClass: Class[Option[Any]] =
-    implicitly[ClassTag[Any]].runtimeClass.asInstanceOf[Class[Option[Any]]]
+    implicitly[ClassTag[Option[Any]]].runtimeClass.asInstanceOf[Class[Option[Any]]]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Option[Any] =
     Option(ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer))
@@ -51,14 +51,12 @@ final private class OptionCodec(
 object OptionCodecProvider extends CodecProvider {
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[Option[_]].isAssignableFrom(clazz)) {
+    if (classOf[Option[Any]].isAssignableFrom(clazz))
       new OptionCodec(
         registry,
         new DocumentToDBRefTransformer,
         new BsonTypeClassMap(),
         UuidRepresentation.UNSPECIFIED
       ).asInstanceOf[Codec[T]]
-    } else {
-      null
-    }
+    else null
 }
