@@ -23,7 +23,6 @@ import org.bson.codecs.{
   BsonTypeCodecMap,
   Codec,
   DecoderContext,
-  Encoder,
   EncoderContext,
   OverridableUuidRepresentationCodec
 }
@@ -48,10 +47,7 @@ final private class MapCodec(
     writer.writeStartDocument()
     map.foreach { case (key, value) =>
       writer.writeName(key)
-      Option(value) match {
-        case None    => writer.writeNull()
-        case Some(v) => encoderContext.encodeWithChildContext(registry.get(v.getClass).asInstanceOf[Encoder[Any]], writer, value);
-      }
+      ContainerValueReader.write(writer, encoderContext, Option(value), registry)
     }
     writer.writeEndDocument()
   }

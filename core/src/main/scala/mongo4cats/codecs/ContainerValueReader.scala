@@ -16,16 +16,27 @@
 
 package mongo4cats.codecs
 
-import org.bson.{BsonReader, BsonType, Transformer, UuidRepresentation}
-import org.bson.codecs.{BsonTypeCodecMap, DecoderContext}
+import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
+import org.bson.codecs.{BsonTypeCodecMap, DecoderContext, Encoder, EncoderContext}
 
 import java.util.UUID
 
 private[codecs] object ContainerValueReader {
 
+  private[codecs] def write(
+      writer: BsonWriter,
+      context: EncoderContext,
+      maybeValue: Option[Any],
+      registry: CodecRegistry
+  ): Unit =
+    maybeValue match {
+      case Some(value) => context.encodeWithChildContext(registry.get(value.getClass).asInstanceOf[Encoder[Any]], writer, value)
+      case None        => writer.writeNull()
+    }
+
   private[codecs] def read(
       reader: BsonReader,
-      decoderContext: DecoderContext,
+      context: DecoderContext,
       bsonTypeCodecMap: BsonTypeCodecMap,
       uuidRepresentation: UuidRepresentation,
       registry: CodecRegistry,
@@ -43,7 +54,7 @@ private[codecs] object ContainerValueReader {
           registry.get(classOf[UUID])
         case _ => bsonTypeCodecMap.get(bsonType)
       }
-      valueTransformer.transform(codec.decode(reader, decoderContext))
+      valueTransformer.transform(codec.decode(reader, context))
     }
   }
 

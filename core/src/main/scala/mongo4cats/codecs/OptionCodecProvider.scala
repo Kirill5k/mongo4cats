@@ -36,10 +36,7 @@ final private class OptionCodec(
     new OptionCodec(registry, valueTransformer, bsonTypeClassMap, newUuidRepresentation)
 
   override def encode(writer: BsonWriter, maybeValue: Option[Any], encoderContext: EncoderContext): Unit =
-    maybeValue match {
-      case None        => writer.writeNull()
-      case Some(value) => encoderContext.encodeWithChildContext(registry.get(value.getClass).asInstanceOf[Encoder[Any]], writer, value)
-    }
+    ContainerValueReader.write(writer, encoderContext, maybeValue, registry)
 
   override def getEncoderClass: Class[Option[Any]] =
     implicitly[ClassTag[Option[Any]]].runtimeClass.asInstanceOf[Class[Option[Any]]]
