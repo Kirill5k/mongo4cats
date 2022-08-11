@@ -51,6 +51,22 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         }
       }
     }
+
+    "be able to handle scala iterables" in {
+      withEmbeddedMongoDatabase { db =>
+        val result = for {
+          coll <- db.getCollection("coll")
+          _ <- coll.insertOne(TestData.gbpAccount)
+          _ <- coll.updateMany(Filter.empty, Update.set("tags", List("foo", "bar", 42)))
+          doc <- coll.find.first
+        } yield doc
+
+        result.map { doc =>
+          val tags = doc.map(_.getList("tags", classOf[AnyRef]))
+          tags.map(_.toArray).get must contain theSameElementsInOrderAs Array("foo", "bar", 42)
+        }
+      }
+    }
   }
 
   def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =
