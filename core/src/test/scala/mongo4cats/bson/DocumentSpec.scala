@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.bson
 
-import mongo4cats.bson.Document
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

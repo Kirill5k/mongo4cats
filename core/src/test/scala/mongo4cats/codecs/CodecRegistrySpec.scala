@@ -56,9 +56,9 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
-          _ <- coll.insertOne(TestData.gbpAccount)
-          _ <- coll.updateMany(Filter.empty, Update.set("tags", List("foo", "bar", 42)))
-          doc <- coll.find.first
+          _    <- coll.insertOne(TestData.gbpAccount)
+          _    <- coll.updateMany(Filter.empty, Update.set("tags", List("foo", "bar", 42)))
+          doc  <- coll.find.first
         } yield doc
 
         result.map { doc =>
