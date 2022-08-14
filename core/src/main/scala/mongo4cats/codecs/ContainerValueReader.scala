@@ -46,20 +46,25 @@ private[codecs] object ContainerValueReader {
     if (bsonType == BsonType.NULL) {
       reader.readNull()
       null
+    } else if (bsonType == BsonType.BINARY && isUuid(reader, uuidRepresentation)) {
+      valueTransformer.transform(registry.get(classOf[UUID]).decode(reader, context))
     } else {
-      val codec = reader.peekBinarySubType match {
-        case 3 if bsonType == BsonType.BINARY && reader.peekBinarySize == 16 && isLegacyUuid(uuidRepresentation) =>
-          registry.get(classOf[UUID])
-        case 4 if bsonType == BsonType.BINARY && reader.peekBinarySize == 16 && uuidRepresentation == UuidRepresentation.STANDARD =>
-          registry.get(classOf[UUID])
-        case _ => bsonTypeCodecMap.get(bsonType)
-      }
-      valueTransformer.transform(codec.decode(reader, context))
+      bsonTypeCodecMap.get(bsonType)
     }
   }
 
-  private def isLegacyUuid(uuidRepresentation: UuidRepresentation): Boolean =
-    uuidRepresentation == UuidRepresentation.JAVA_LEGACY ||
-      uuidRepresentation == UuidRepresentation.C_SHARP_LEGACY ||
-      uuidRepresentation == UuidRepresentation.PYTHON_LEGACY
+  private def isUuid(reader: BsonReader, uuidRepresentation: UuidRepresentation): Boolean =
+    isLegacyUuid(reader, uuidRepresentation) || isStandardUuid(reader, uuidRepresentation)
+
+  private def isLegacyUuid(reader: BsonReader, uuidRepresentation: UuidRepresentation): Boolean =
+    reader.peekBinarySubType == 3 &&
+      reader.peekBinarySize() == 16 &&
+      (uuidRepresentation == UuidRepresentation.JAVA_LEGACY ||
+        uuidRepresentation == UuidRepresentation.C_SHARP_LEGACY ||
+        uuidRepresentation == UuidRepresentation.PYTHON_LEGACY)
+
+  private def isStandardUuid(reader: BsonReader, uuidRepresentation: UuidRepresentation): Boolean =
+    reader.peekBinarySubType == 4 &&
+      reader.peekBinarySize() == 16 &&
+      uuidRepresentation == UuidRepresentation.STANDARD
 }
