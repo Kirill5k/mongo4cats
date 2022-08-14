@@ -49,7 +49,7 @@ private[codecs] object ContainerValueReader {
     } else if (bsonType == BsonType.BINARY && isUuid(reader, uuidRepresentation)) {
       valueTransformer.transform(registry.get(classOf[UUID]).decode(reader, context))
     } else {
-      bsonTypeCodecMap.get(bsonType)
+      valueTransformer.transform(bsonTypeCodecMap.get(bsonType).decode(reader, context))
     }
   }
 
