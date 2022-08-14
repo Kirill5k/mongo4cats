@@ -32,6 +32,7 @@ import org.bson.codecs.{
 }
 import org.bson.{BsonDocument, BsonDocumentWriter, BsonReader, BsonType, BsonValue, BsonWriter, Transformer, UuidRepresentation}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistries}
+import org.bson.codecs.jsr310.Jsr310CodecProvider
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -116,8 +117,10 @@ object MyDocumentCodecProvider extends CodecProvider {
     CodecRegistries.fromProviders(
       new ValueCodecProvider,
       new BsonValueCodecProvider,
+      new Jsr310CodecProvider,
       MyDocumentCodecProvider,
       IterableCodecProvider,
+      OptionCodecProvider,
       MapCodecProvider
     ),
     valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],

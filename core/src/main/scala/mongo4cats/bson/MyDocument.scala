@@ -31,10 +31,14 @@ final class MyDocument private (
 
   def merge(other: MyDocument): MyDocument = new MyDocument(fields ++ other.fields)
 
+  def isEmpty: Boolean               = fields.isEmpty
+  def contains(key: String): Boolean = fields.contains(key)
+  def keys: Set[String]              = fields.keySet
+
   def add[A](keyValuePair: (String, A)): MyDocument = new MyDocument(fields + keyValuePair)
   def add[A](key: String, value: A): MyDocument     = add(key -> value)
-  def get[A](key: String): Option[A]                = fields.get(key).map(_.asInstanceOf[A])
-  def contains(key: String): Boolean                = fields.contains(key)
+
+  def get[A](key: String): Option[A] = fields.get(key).flatMap(Option(_)).map(_.asInstanceOf[A])
 
   def getString(key: String): Option[String]       = get[String](key)
   def getLong(key: String): Option[Long]           = get[Long](key)
@@ -56,7 +60,8 @@ final class MyDocument private (
   override def toBsonDocument[TDocument](documentClass: Class[TDocument], codecRegistry: CodecRegistry): BsonDocument =
     new BsonDocumentWrapper[MyDocument](this, codecRegistry.get(classOf[MyDocument]))
 
-  override def hashCode(): Int = fields.hashCode()
+  override def toString: String = fields.toString().replaceAll("Map", "Document")
+  override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(doc: MyDocument) => doc.fields.equals(fields)
