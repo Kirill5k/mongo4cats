@@ -25,6 +25,7 @@ import org.bson.json.{JsonMode, JsonReader, JsonWriter, JsonWriterSettings}
 
 import java.io.StringWriter
 import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
 
 final class Document private (
     private[mongo4cats] val fields: Map[String, Any]
@@ -75,7 +76,7 @@ final class Document private (
   override def toBsonDocument[TDocument](documentClass: Class[TDocument], codecRegistry: CodecRegistry): BsonDocument =
     new BsonDocumentWrapper[Document](this, codecRegistry.get(classOf[Document]))
 
-  override def toString: String = fields.toString().replaceAll("Map", "Document")
+  override def toString: String = fields.toString().replaceAll("ListMap", "Document")
   override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
@@ -87,9 +88,9 @@ final class Document private (
 object Document {
   val empty: Document = apply()
 
-  def apply(): Document                                                  = new Document(Map.empty)
-  def apply[A](keyValue: (String, A), keyValues: (String, A)*): Document = new Document(Map(keyValue) ++ keyValues.toMap)
-  def apply[A](fields: Map[String, A]): Document                         = new Document(fields)
+  def apply(): Document                                                  = new Document(ListMap.empty)
+  def apply[A](keyValue: (String, A), keyValues: (String, A)*): Document = new Document(ListMap(keyValue) ++ keyValues.toMap)
+  def apply[A](fields: Map[String, A]): Document                         = new Document(ListMap.from(fields))
 
   def parse(json: String): Document = MyDocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
