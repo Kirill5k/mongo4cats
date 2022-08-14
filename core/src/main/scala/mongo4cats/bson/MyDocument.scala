@@ -24,6 +24,7 @@ import org.bson.conversions.Bson
 import org.bson.json.{JsonMode, JsonReader, JsonWriter, JsonWriterSettings}
 
 import java.io.StringWriter
+import scala.annotation.tailrec
 
 final class MyDocument private (
     val fields: Map[String, Any]
@@ -31,10 +32,10 @@ final class MyDocument private (
 
   def merge(other: MyDocument): MyDocument = new MyDocument(fields ++ other.fields)
 
-  def isEmpty: Boolean               = fields.isEmpty
-  def contains(key: String): Boolean = fields.contains(key)
-  def keys: Set[String]              = fields.keySet
-
+  def isEmpty: Boolean                              = fields.isEmpty
+  def contains(key: String): Boolean                = fields.contains(key)
+  def keys: Set[String]                             = fields.keySet
+  def remove(key: String): MyDocument               = new MyDocument(fields - key)
   def add[A](keyValuePair: (String, A)): MyDocument = new MyDocument(fields + keyValuePair)
   def add[A](key: String, value: A): MyDocument     = add(key -> value)
 
@@ -48,7 +49,19 @@ final class MyDocument private (
   def getDocument(key: String): Option[MyDocument] = get[MyDocument](key)
   def getList[A](key: String): Option[List[A]]     = get[List[A]](key)
 
-  def remove(key: String): MyDocument = new MyDocument(fields - key)
+  def getNested[A](jsonPath: String): Option[A] = {
+    @tailrec
+    def go(currentPath: String, remainingPaths: Array[String], nestedDoc: MyDocument): Option[A] =
+      if (remainingPaths.isEmpty) nestedDoc.get[A](currentPath)
+      else
+        nestedDoc.get[Any](currentPath) match {
+          case Some(anotherDoc: MyDocument) => go(remainingPaths.head, remainingPaths.tail, anotherDoc)
+          case _                            => None
+        }
+
+    val paths = jsonPath.split("\\.")
+    go(paths.head, paths.tail, this)
+  }
 
   def toJson: String = {
     val writerSettings = JsonWriterSettings.builder.outputMode(JsonMode.RELAXED).build

@@ -69,6 +69,18 @@ class MyDocumentSpec extends AnyWordSpec with Matchers {
 
         doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
       }
+
+      "retrieve nested fields" in {
+        val firstName = testDocument.getNested[String]("name.first")
+
+        firstName mustBe Some("John")
+      }
+
+      "return empty option when nested field does not exist" in {
+        val result = testDocument.getNested[String]("foo.bar")
+
+        result mustBe None
+      }
     }
   }
 }
