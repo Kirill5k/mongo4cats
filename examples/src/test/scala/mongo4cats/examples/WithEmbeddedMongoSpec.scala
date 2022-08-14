@@ -37,7 +37,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
           testDoc = Document("Hello" -> "World!")
           _        <- coll.insertOne(testDoc)
           foundDoc <- coll.find.first
-        } yield foundDoc mustBe Some(testDoc)
+        } yield foundDoc.map(_.remove("_id")) mustBe Some(testDoc)
       }
     }.unsafeToFuture()
 
@@ -49,7 +49,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
           testDoc = Document("Hello" -> "World!")
           _        <- coll.insertOne(testDoc)
           foundDoc <- coll.find.first
-        } yield foundDoc mustBe Some(testDoc)
+        } yield foundDoc.map(_.remove("_id")) mustBe Some(testDoc)
       }
     }.unsafeToFuture()
   }
