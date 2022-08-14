@@ -20,6 +20,7 @@ import mongo4cats.bson.MyDocument
 import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
 import org.bson.codecs.{BsonTypeCodecMap, DecoderContext, Encoder, EncoderContext}
 
+import java.time.Instant
 import java.util.UUID
 
 private[codecs] object ContainerValueReader {
@@ -42,16 +43,13 @@ private[codecs] object ContainerValueReader {
       uuidRepresentation: UuidRepresentation,
       registry: CodecRegistry,
       valueTransformer: Transformer
-  ): AnyRef = {
-    val bsonType = reader.getCurrentBsonType
-    if (bsonType == BsonType.ARRAY) {
-      valueTransformer.transform(registry.get(classOf[Iterable[Any]]).decode(reader, context))
-    } else if (bsonType == BsonType.DOCUMENT) {
-      valueTransformer.transform(registry.get(classOf[MyDocument]).decode(reader, context))
-    } else {
-      read(reader, context, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+  ): AnyRef =
+    reader.getCurrentBsonType match {
+      case BsonType.ARRAY => valueTransformer.transform(registry.get(classOf[Iterable[Any]]).decode(reader, context))
+      case BsonType.DOCUMENT => valueTransformer.transform(registry.get(classOf[MyDocument]).decode(reader, context))
+      case BsonType.DATE_TIME => valueTransformer.transform(registry.get(classOf[Instant]).decode(reader, context))
+      case _ => read(reader, context, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
     }
-  }
 
   private[codecs] def read(
       reader: BsonReader,

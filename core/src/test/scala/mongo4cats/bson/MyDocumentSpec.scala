@@ -19,6 +19,8 @@ package mongo4cats.bson
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.Instant
+
 class MyDocumentSpec extends AnyWordSpec with Matchers {
 
   "A MyDocument" when {
@@ -60,6 +62,12 @@ class MyDocumentSpec extends AnyWordSpec with Matchers {
 
         doc.getString("propA") mustBe None
         doc.getString("propB") mustBe None
+      }
+
+      "handle time" in {
+        val doc = MyDocument.parse("""{"time":{"$date":1640995200000}}""")
+
+        doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
       }
     }
   }
