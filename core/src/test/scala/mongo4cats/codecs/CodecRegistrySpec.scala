@@ -3,7 +3,7 @@ package mongo4cats.codecs
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
-import mongo4cats.bson.{Document, MyDocument}
+import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Update}
 import mongo4cats.database.MongoDatabase
@@ -29,8 +29,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         } yield doc
 
         result.map { doc =>
-          doc.map(_.getString("currency")).flatMap(Option(_)) mustBe None
-          doc.map(_.getString("name")).flatMap(Option(_)) mustBe Some("updated-acc")
+          doc.flatMap(_.getString("currency")) mustBe None
+          doc.flatMap(_.getString("name")) mustBe Some("updated-acc")
         }
       }
     }
@@ -45,9 +45,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         } yield doc
 
         result.map { doc =>
-          val props = doc.map(_.get[Document]("props", classOf[Document]))
-          props.map(_.getInteger("a")) mustBe Some(42)
-          props.map(_.getString("b")) mustBe Some("foo")
+          doc.flatMap(_.getDocument("props")) mustBe Some(Document("a" -> 42, "b" -> "foo"))
         }
       }
     }
@@ -62,8 +60,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         } yield doc
 
         result.map { doc =>
-          val tags = doc.map(_.getList("tags", classOf[AnyRef]))
-          tags.map(_.toArray).get must contain theSameElementsInOrderAs Array("foo", "bar", 42)
+          val tags = doc.flatMap(_.getList("tags"))
+          tags mustBe Some(List("foo", "bar", 42))
         }
       }
     }
@@ -71,8 +69,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
     "be able to handle my document" in {
       withEmbeddedMongoDatabase { db =>
         val result = for {
-          coll <- db.getCollectionWithCodec[MyDocument]("coll")
-          _    <- coll.insertOne(MyDocument("foo" -> "bar", "tags" -> List("my", "doc")))
+          coll <- db.getCollectionWithCodec[Document]("coll")
+          _    <- coll.insertOne(Document("foo" -> "bar", "tags" -> List("my", "doc")))
           doc  <- coll.find.first
         } yield doc.get
 

@@ -59,7 +59,7 @@ object TestData {
       "_id"      -> ObjectId.get,
       "date"     -> Instant.now().minusSeconds(random.nextInt(1000).toLong),
       "category" -> categories.pickRand,
-      "account"  -> account.getObjectId("_id"),
+      "account"  -> account.getObjectId("_id").get,
       "amount"   -> random.nextInt(10000)
     )
 

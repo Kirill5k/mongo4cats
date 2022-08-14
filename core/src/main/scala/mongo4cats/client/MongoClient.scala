@@ -18,6 +18,7 @@ package mongo4cats.client
 
 import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
+import cats.syntax.functor._
 import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient, MongoClients}
 import mongo4cats.AsJava
@@ -50,10 +51,10 @@ final private class LiveMongoClient[F[_]](
     underlying.listDatabaseNames().asyncIterable[F]
 
   def listDatabases: F[Iterable[Document]] =
-    underlying.listDatabases().asyncIterable[F]
+    underlying.listDatabases().asyncIterable[F].map(_.map(Document.fromNative))
 
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listDatabases(cs.underlying).asyncIterable[F]
+    underlying.listDatabases(cs.underlying).asyncIterable[F].map(_.map(Document.fromNative))
 
   def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
     underlying.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])

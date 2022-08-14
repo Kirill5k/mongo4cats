@@ -17,49 +17,11 @@
 package mongo4cats
 
 import org.bson.types.{ObjectId => JObjectId}
-import org.bson.{Document => JDocument}
-import mongo4cats.codecs.MongoCodecProvider
-import org.bson.codecs.DocumentCodecProvider
-import org.bson.codecs.configuration.CodecProvider
 
 import java.time.Instant
 import java.util.Date
 
 package object bson {
-
-  type Document = JDocument
-  object Document extends AsJava {
-    val empty: Document = new JDocument()
-
-    def apply[A](entries: Map[String, A]): Document =
-      new JDocument(
-        MapOnlyForJDocumentCreation(
-          entries.size,
-          entries
-            .map {
-              case (k, v: Iterable[_]) =>
-                // Create directly `JEntry` (no `Tuple2` then copied to `JEntry`).
-                // No allocation for `scala.collection.convert.AsJavaExtensions.IterableHasAsJava` (which doesn't `extends AnyVal`).
-                JEntryOnlyForJDocumentCreation(k, asJava(v))
-              case (k, v) => JEntryOnlyForJDocumentCreation(k, v.asInstanceOf[Object]) // Create directly `JEntry`.
-            }
-        )
-      )
-
-    def apply[A](entries: (String, A)*): Document = apply[A](entries.toMap[String, A])
-
-    def apply[A](key: String, value: A): Document = apply(key -> value)
-
-    def parse(json: String): Document = JDocument.parse(json)
-
-    def from(json: String): Document = parse(json)
-
-    def from(doc: Document): Document = parse(doc.toJson)
-
-    implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
-      override def get: CodecProvider = new DocumentCodecProvider()
-    }
-  }
 
   type ObjectId = JObjectId
   object ObjectId {

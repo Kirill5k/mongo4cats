@@ -34,77 +34,76 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
 
   "A MongoCollection" when {
     "aggregate" should {
-      "join data from 2 collections" in {
-        withEmbeddedMongoDatabase { db =>
-          val result = for {
-            accs <- db.getCollection("accounts")
-            res <- accs
-              .aggregate[Document] {
-                Aggregate
-                  .matchBy(Filter.eq("currency", TestData.USD))
-                  .lookup("transactions", "_id", "account", "transactions")
-                  .project(
-                    Projection
-                      .include(List("transactions", "name", "currency"))
-                      .computed("totalAmount", Document("$sum" -> "$transactions.amount"))
-                  )
-              }
-              .first
-          } yield res
+      "join data from 2 collections" in withEmbeddedMongoDatabase { db =>
+        val result = for {
+          txs     <- db.getCollection("transactions").flatMap(_.find.all)
+          _       <- IO.println(txs)
+          accs    <- db.getCollection("accounts")
+          allAccs <- accs.find.all
+          _       <- IO.println(allAccs)
+          res <- accs
+            .aggregate[Document] {
+              Aggregate
+                .matchBy(Filter.eq("currency", TestData.USD))
+                .lookup("transactions", "_id", "account", "transactions")
+                .project(
+                  Projection
+                    .include(List("transactions", "name", "currency"))
+                    .computed("totalAmount", Document("$sum" -> "$transactions.amount"))
+                )
+            }
+            .first
+        } yield res
 
-          result.map { acc =>
-            acc.get.getList("transactions", classOf[Document]) must have size 250
-            acc.get.getInteger("totalAmount").intValue() must be > 0
-          }
+        result.map { acc =>
+          acc.get.getList("transactions").get must have size 250
+          acc.get.getInt("totalAmount").get must be > 0
         }
       }
 
-      "group by field" in {
-        withEmbeddedMongoDatabase { db =>
-          val result = for {
-            transactions <- db.getCollection("transactions")
-            accumulator = Accumulator
-              .sum("count", 1)
-              .sum("totalAmount", "$amount")
-              .first("categoryId", "$category._id")
-            res <- transactions
-              .aggregate[Document] {
-                Aggregate
-                  .group("$category", accumulator)
-                  .lookup("categories", "categoryId", "_id", "category")
-                  .sort(Sort.desc("count"))
-              }
-              .all
-          } yield res
+      "group by field" in withEmbeddedMongoDatabase { db =>
+        val result = for {
+          transactions <- db.getCollection("transactions")
+          accumulator = Accumulator
+            .sum("count", 1)
+            .sum("totalAmount", "$amount")
+            .first("categoryId", "$category._id")
+          res <- transactions
+            .aggregate[Document] {
+              Aggregate
+                .group("$category", accumulator)
+                .lookup("categories", "categoryId", "_id", "category")
+                .sort(Sort.desc("count"))
+            }
+            .all
+        } yield res
 
-          result.map { cats =>
-            cats must have size 10
-            val counts = cats.map(_.getInteger("count").intValue()).toList
-            counts.reverse mustBe sorted
-            counts.sum mustBe 250
-          }
+        result.map { cats =>
+          cats must have size 10
+          val counts = cats.flatMap(_.getInt("count")).toList
+          counts.reverse mustBe sorted
+          counts.sum mustBe 250
         }
       }
 
-      "explain the pipeline in a form of a document" in {
-        withEmbeddedMongoDatabase { db =>
-          val result = for {
-            accs <- db.getCollection("accounts")
-            res <- accs
-              .aggregate[Document] {
-                Aggregate
-                  .matchBy(Filter.eq("currency", TestData.USD))
-                  .lookup("transactions", "_id", "account", "transactions")
-                  .sort(Sort.asc("name"))
-                  .project(Projection.excludeId)
-              }
-              .explain
-          } yield res
+      "explain the pipeline in a form of a document" in withEmbeddedMongoDatabase { db =>
+        val result = for {
+          accs <- db.getCollection("accounts")
+          res <- accs
+            .aggregate[Document] {
+              Aggregate
+                .matchBy(Filter.eq("currency", TestData.USD))
+                .lookup("transactions", "_id", "account", "transactions")
+                .sort(Sort.asc("name"))
+                .project(Projection.excludeId)
+            }
+            .explain
+        } yield res
 
-          result.map { expl =>
-            expl.getDouble("ok").doubleValue() mustBe 1.0
-            expl.getList("stages", classOf[Document]).size() mustBe 4
-          }
+        result.map { expl =>
+          expl.getDouble("ok") mustBe Some(1.0)
+          expl.getNested[Int]("serverInfo.port") mustBe Some(mongoPort)
+          expl.getList("stages").get must have size 4
         }
       }
 
@@ -126,8 +125,8 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
           } yield res
 
           result.map(_.get).map { res =>
-            res.getList("transactionsByCategory", classOf[Document]) must have size 10
-            res.getList("transactionsByAccount", classOf[Document]) must have size 1
+            res.getList[Document]("transactionsByCategory").get must have size 10
+            res.getList[Document]("transactionsByAccount").get must have size 1
           }
         }
       }

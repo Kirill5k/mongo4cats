@@ -25,11 +25,11 @@ package object codecs {
   type CodecRegistry = JCodecRegistry
   object CodecRegistry {
     val Default: CodecRegistry = merge(
+      from(MyDocumentCodecProvider),
       MongoClientSettings.getDefaultCodecRegistry,
       from(OptionCodecProvider),
       from(MapCodecProvider),
-      from(IterableCodecProvider),
-      from(MyDocumentCodecProvider)
+      from(IterableCodecProvider)
     )
 
     def from(provides: CodecProvider*): CodecRegistry = fromProviders(provides: _*)

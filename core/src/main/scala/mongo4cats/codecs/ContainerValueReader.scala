@@ -16,7 +16,7 @@
 
 package mongo4cats.codecs
 
-import mongo4cats.bson.MyDocument
+import mongo4cats.bson.Document
 import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
 import org.bson.codecs.{BsonTypeCodecMap, DecoderContext, Encoder, EncoderContext}
 
@@ -36,7 +36,7 @@ private[codecs] object ContainerValueReader {
       case None        => writer.writeNull()
     }
 
-  private[codecs] def readDocumentField(
+  private[codecs] def read(
       reader: BsonReader,
       context: DecoderContext,
       bsonTypeCodecMap: BsonTypeCodecMap,
@@ -45,33 +45,19 @@ private[codecs] object ContainerValueReader {
       valueTransformer: Transformer
   ): AnyRef =
     reader.getCurrentBsonType match {
-      case BsonType.ARRAY => valueTransformer.transform(registry.get(classOf[Iterable[Any]]).decode(reader, context))
-      case BsonType.DOCUMENT => valueTransformer.transform(registry.get(classOf[MyDocument]).decode(reader, context))
+      case BsonType.ARRAY     => valueTransformer.transform(registry.get(classOf[Iterable[Any]]).decode(reader, context))
+      case BsonType.DOCUMENT  => valueTransformer.transform(registry.get(classOf[Document]).decode(reader, context))
       case BsonType.DATE_TIME => valueTransformer.transform(registry.get(classOf[Instant]).decode(reader, context))
-      case _ => read(reader, context, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+      case BsonType.BINARY if isUuid(reader, uuidRepresentation) =>
+        valueTransformer.transform(registry.get(classOf[UUID]).decode(reader, context))
+      case BsonType.NULL =>
+        reader.readNull()
+        null
+      case BsonType.UNDEFINED =>
+        reader.readUndefined()
+        null
+      case bsonType => valueTransformer.transform(bsonTypeCodecMap.get(bsonType).decode(reader, context))
     }
-
-  private[codecs] def read(
-      reader: BsonReader,
-      context: DecoderContext,
-      bsonTypeCodecMap: BsonTypeCodecMap,
-      uuidRepresentation: UuidRepresentation,
-      registry: CodecRegistry,
-      valueTransformer: Transformer
-  ): AnyRef = {
-    val bsonType = reader.getCurrentBsonType
-    if (bsonType == BsonType.NULL) {
-      reader.readNull()
-      null
-    } else if (bsonType == BsonType.UNDEFINED) {
-      reader.readUndefined()
-      null
-    } else if (bsonType == BsonType.BINARY && isUuid(reader, uuidRepresentation)) {
-      valueTransformer.transform(registry.get(classOf[UUID]).decode(reader, context))
-    } else {
-      valueTransformer.transform(bsonTypeCodecMap.get(bsonType).decode(reader, context))
-    }
-  }
 
   private def isUuid(reader: BsonReader, uuidRepresentation: UuidRepresentation): Boolean =
     isLegacyUuid(reader, uuidRepresentation) || isStandardUuid(reader, uuidRepresentation)

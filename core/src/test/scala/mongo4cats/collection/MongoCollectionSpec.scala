@@ -202,7 +202,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (updateRes, docs) =>
               docs must have size 1
-              docs.head.get("currency", classOf[Document]) mustBe TestData.EUR
+              docs.head.getDocument("currency") mustBe Some(TestData.EUR)
               updateRes.getMatchedCount mustBe 1
               updateRes.getModifiedCount mustBe 1
             }
@@ -221,7 +221,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             } yield (updateResult, docs)
 
             result.map { case (updateRes, docs) =>
-              docs.map(_.getString("name")) mustBe Some("eur-account")
+              docs.flatMap(_.getString("name")) mustBe Some("eur-account")
               updateRes.getMatchedCount mustBe 1
               updateRes.getModifiedCount mustBe 1
             }
@@ -240,7 +240,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (updateRes, docs) =>
               docs must have size 2
-              docs.map(_.getString("status")).toSet mustBe Set("updated")
+              docs.flatMap(_.getString("status")).toSet mustBe Set("updated")
               updateRes.getMatchedCount mustBe 2
               updateRes.getModifiedCount mustBe 2
             }
@@ -259,10 +259,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (updateRes, docs) =>
               docs must have size 3
-              docs.map(_.getString("status")).toSet mustBe Set("updated")
-              docs.forall(_.containsKey("curr")) mustBe true
-              docs.forall(!_.containsKey("currency")) mustBe true
-              docs.forall(_.containsKey("updatedAt")) mustBe true
+              docs.flatMap(_.getString("status")).toSet mustBe Set("updated")
+              docs.forall(_.contains("curr")) mustBe true
+              docs.forall(!_.contains("currency")) mustBe true
+              docs.forall(_.contains("updatedAt")) mustBe true
               updateRes.getMatchedCount mustBe 3
               updateRes.getModifiedCount mustBe 3
             }
@@ -284,10 +284,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (updateRes, docs) =>
               docs must have size 3
-              docs.map(_.getString("status")).toSet mustBe Set("updated")
-              docs.forall(_.containsKey("money")) mustBe true
-              docs.forall(!_.containsKey("currency")) mustBe true
-              docs.forall(!_.containsKey("currency")) mustBe true
+              docs.flatMap(_.getString("status")).toSet mustBe Set("updated")
+              docs.forall(_.contains("money")) mustBe true
+              docs.forall(!_.contains("currency")) mustBe true
+              docs.forall(!_.contains("currency")) mustBe true
               updateRes.getMatchedCount mustBe 3
               updateRes.getModifiedCount mustBe 3
             }
@@ -340,7 +340,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             } yield (old, docs)
 
             result.map { case (old, docs) =>
-              docs.map(_.get("currency", classOf[Document])) mustBe List(TestData.GBP)
+              docs.flatMap(_.getDocument("currency")) mustBe List(TestData.GBP)
               old mustBe Some(TestData.eurAccount)
             }
           }
@@ -359,7 +359,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (old, docs) =>
               old mustBe Some(TestData.eurAccount)
-              docs mustBe List(Document.from(TestData.eurAccount).append("status", "updated"))
+              docs mustBe List(TestData.eurAccount.add("status", "updated"))
             }
           }
         }
@@ -377,8 +377,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (old, docs) =>
               docs must have size 2
-              docs.map(_.getString("name")).toSet mustBe Set("gbp-acc", "usd-acc")
-              old.map(_.getString("name")) mustBe Some("eur-acc")
+              docs.flatMap(_.getString("name")).toSet mustBe Set("gbp-acc", "usd-acc")
+              old.flatMap(_.getString("name")) mustBe Some("eur-acc")
             }
           }
         }
@@ -408,7 +408,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             } yield res
 
             result.map { found =>
-              found.map(_.getString("name")) mustBe List("cat-7", "cat-6", "cat-5")
+              found.flatMap(_.getString("name")) mustBe List("cat-7", "cat-6", "cat-5")
             }
           }
         }
@@ -421,7 +421,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               res  <- coll.find.sort(Sort.desc("name")).skip(3).limit(2).first
             } yield res
 
-            result.map(_.map(_.getString("name")) mustBe Some("cat-6"))
+            result.map(_.flatMap(_.getString("name")) mustBe Some("cat-6"))
           }
         }
 
@@ -634,13 +634,13 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             val result = for {
               coll    <- db.getCollection("coll")
-              _       <- coll.insertOne(Document.from(json))
+              _       <- coll.insertOne(Document.parse(json))
               old     <- coll.findOneAndUpdate(Filter.eq("lastName", "Bloggs"), Update.set("dob", "2020-01-01"))
               updated <- coll.find.first
             } yield (old, updated)
 
             result.map { case (old, updated) =>
-              updated mustBe old.map(_.append("dob", "2020-01-01"))
+              updated mustBe old.map(_.add("dob", "2020-01-01"))
             }
           }
         }

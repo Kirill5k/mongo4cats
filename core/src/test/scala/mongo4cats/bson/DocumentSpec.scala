@@ -19,14 +19,74 @@ package mongo4cats.bson
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.Instant
+
 class DocumentSpec extends AnyWordSpec with Matchers {
 
-  "A Document" should {
+  "A MyDocument" when {
+    val jsonString = """{"name": {"first": "John", "last": "Smith", "aliases": ["foo", "bar"]}, "tags": [42, "test"]}"""
 
-    "work with Scala collections" in {
-      val doc = Document("foo" -> List(1, "2"), "bar" -> Document("propA" -> "a", "propB" -> List("b", "c")))
+    val nameDoc = Document("first" -> "John", "last" -> "Smith", "aliases" -> List("foo", "bar"))
+    val tags    = List(42, "test")
 
-      doc.toJson mustBe """{"foo": [1, "2"], "bar": {"propA": "a", "propB": ["b", "c"]}}"""
+    val testDocument = Document("name" -> nameDoc, "tags" -> tags)
+
+    "dealing with json" should {
+      "create itself from json string" in {
+        val result = Document.parse(jsonString)
+
+        result mustBe testDocument
+        result.getList("tags") mustBe Some(tags)
+        result.getDocument("name") mustBe Some(nameDoc)
+        result.getObjectId("_id") mustBe None
+      }
+
+      "convert itself to json" in {
+        val result = testDocument.toJson
+
+        result mustBe jsonString
+      }
+
+      "handle arrays with json" in {
+        val result = Document.parse(s"""{"people": [$jsonString]}""")
+
+        result.getList[Document]("people") mustBe Some(List(testDocument))
+      }
+    }
+
+    "calling toString" should {
+      "produce string representation" in {
+        val result = testDocument.toString
+
+        result mustBe "Document(name -> Document(first -> John, last -> Smith, aliases -> List(foo, bar)), tags -> List(42, test))"
+      }
+    }
+
+    "getting a value by key" should {
+      "handle null and undefined" in {
+        val doc = Document.parse("""{"propA":null,"propB":undefined}""")
+
+        doc.getString("propA") mustBe None
+        doc.getString("propB") mustBe None
+      }
+
+      "handle time" in {
+        val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
+
+        doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
+      }
+
+      "retrieve nested fields" in {
+        val firstName = testDocument.getNested[String]("name.first")
+
+        firstName mustBe Some("John")
+      }
+
+      "return empty option when nested field does not exist" in {
+        val result = testDocument.getNested[String]("foo.bar")
+
+        result mustBe None
+      }
     }
   }
 }

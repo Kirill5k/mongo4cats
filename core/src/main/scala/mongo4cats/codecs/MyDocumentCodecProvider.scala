@@ -16,7 +16,7 @@
 
 package mongo4cats.codecs
 
-import mongo4cats.bson.MyDocument
+import mongo4cats.bson.Document
 import org.bson.codecs.{
   BsonTypeClassMap,
   BsonTypeCodecMap,
@@ -43,19 +43,19 @@ final private class MyDocumentCodec(
     private val bsonTypeClassMap: BsonTypeClassMap,
     private val uuidRepresentation: UuidRepresentation,
     private val idGenerator: IdGenerator
-) extends CollectibleCodec[MyDocument] with OverridableUuidRepresentationCodec[MyDocument] {
+) extends CollectibleCodec[Document] with OverridableUuidRepresentationCodec[Document] {
 
   private val idFieldName = "_id"
 
   private val bsonTypeCodecMap: BsonTypeCodecMap = new BsonTypeCodecMap(bsonTypeClassMap, registry)
 
-  override def getEncoderClass: Class[MyDocument] =
-    implicitly[ClassTag[MyDocument]].runtimeClass.asInstanceOf[Class[MyDocument]]
+  override def getEncoderClass: Class[Document] =
+    implicitly[ClassTag[Document]].runtimeClass.asInstanceOf[Class[Document]]
 
-  override def withUuidRepresentation(newUuidRepresentation: UuidRepresentation): Codec[MyDocument] =
+  override def withUuidRepresentation(newUuidRepresentation: UuidRepresentation): Codec[Document] =
     new MyDocumentCodec(registry, valueTransformer, bsonTypeClassMap, newUuidRepresentation, idGenerator)
 
-  override def encode(writer: BsonWriter, document: MyDocument, encoderContext: EncoderContext): Unit = {
+  override def encode(writer: BsonWriter, document: Document, encoderContext: EncoderContext): Unit = {
     writer.writeStartDocument()
 
     if (encoderContext.isEncodingCollectibleDocument && document.contains(idFieldName)) {
@@ -73,16 +73,16 @@ final private class MyDocumentCodec(
     writer.writeEndDocument()
   }
 
-  override def decode(reader: BsonReader, decoderContext: DecoderContext): MyDocument = {
+  override def decode(reader: BsonReader, decoderContext: DecoderContext): Document = {
     @tailrec
-    def go(fields: Map[String, Any]): MyDocument =
+    def go(fields: Map[String, Any]): Document =
       if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
         val key = reader.readName
         val value =
-          ContainerValueReader.readDocumentField(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+          ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
         go(fields + (key -> value))
       } else {
-        MyDocument(fields)
+        Document(fields)
       }
 
     reader.readStartDocument()
@@ -91,13 +91,13 @@ final private class MyDocumentCodec(
     result
   }
 
-  override def generateIdIfAbsentFromDocument(document: MyDocument): MyDocument =
-    document.add(idFieldName, idGenerator.generate())
+  override def generateIdIfAbsentFromDocument(document: Document): Document =
+    if (documentHasId(document)) document else document.add(idFieldName, idGenerator.generate())
 
-  override def documentHasId(document: MyDocument): Boolean =
+  override def documentHasId(document: Document): Boolean =
     document.contains(idFieldName)
 
-  override def getDocumentId(document: MyDocument): BsonValue =
+  override def getDocumentId(document: Document): BsonValue =
     document.get[Any](idFieldName) match {
       case None                => throw new IllegalStateException(s"The document does not contain an $idFieldName")
       case Some(id: BsonValue) => id
@@ -113,15 +113,15 @@ final private class MyDocumentCodec(
 }
 
 object MyDocumentCodecProvider extends CodecProvider {
-  private[mongo4cats] val DefaultCodec: Codec[MyDocument] = new MyDocumentCodec(
+  private[mongo4cats] val DefaultCodec: Codec[Document] = new MyDocumentCodec(
     CodecRegistries.fromProviders(
-      new ValueCodecProvider,
-      new BsonValueCodecProvider,
-      new Jsr310CodecProvider,
       MyDocumentCodecProvider,
       IterableCodecProvider,
       OptionCodecProvider,
-      MapCodecProvider
+      MapCodecProvider,
+      new ValueCodecProvider,
+      new BsonValueCodecProvider,
+      new Jsr310CodecProvider
     ),
     valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],
     bsonTypeClassMap = new BsonTypeClassMap(),
@@ -130,7 +130,7 @@ object MyDocumentCodecProvider extends CodecProvider {
   )
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[MyDocument].isAssignableFrom(clazz))
+    if (classOf[Document].isAssignableFrom(clazz))
       new MyDocumentCodec(
         registry,
         valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],

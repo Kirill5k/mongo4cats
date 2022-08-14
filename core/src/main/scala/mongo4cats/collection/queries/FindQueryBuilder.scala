@@ -248,7 +248,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 4.2
     */
   def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F]
+    applyCommands().explain().asyncSingle[F].map(Document.fromNative)
 
   /** Explain the execution plan for this operation with the given verbosity level
     *
@@ -259,7 +259,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @since 4.2
     */
   def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F]
+    applyCommands().explain(verbosity).asyncSingle[F].map(Document.fromNative)
 
   override protected def applyCommands(): FindPublisher[T] =
     commands.reverse.foldLeft(observable) { case (obs, command) =>

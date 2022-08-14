@@ -88,10 +88,10 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           } yield dbs
         }
         .map { dbs =>
-          dbs.map(_.getString("name")) must contain allOf ("admin", "db1")
+          dbs.flatMap(_.getString("name")) must contain allOf ("admin", "db1")
           val adminDb = dbs.head
-          adminDb.getString("name") mustBe "admin"
-          adminDb.getBoolean("empty") mustBe false
+          adminDb.getString("name") must contain("admin")
+          adminDb.getBoolean("empty") must contain(false)
         }
     }.unsafeToFuture()
 
