@@ -28,7 +28,8 @@ package object codecs {
       MongoClientSettings.getDefaultCodecRegistry,
       from(OptionCodecProvider),
       from(MapCodecProvider),
-      from(IterableCodecProvider)
+      from(IterableCodecProvider),
+      from(MyDocumentCodecProvider)
     )
 
     def from(provides: CodecProvider*): CodecRegistry = fromProviders(provides: _*)

@@ -16,6 +16,7 @@
 
 package mongo4cats.codecs
 
+import mongo4cats.bson.MyDocument
 import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
 import org.bson.codecs.{BsonTypeCodecMap, DecoderContext, Encoder, EncoderContext}
 
@@ -33,6 +34,24 @@ private[codecs] object ContainerValueReader {
       case Some(value) => context.encodeWithChildContext(registry.get(value.getClass).asInstanceOf[Encoder[Any]], writer, value)
       case None        => writer.writeNull()
     }
+
+  private[codecs] def readDocumentField(
+      reader: BsonReader,
+      context: DecoderContext,
+      bsonTypeCodecMap: BsonTypeCodecMap,
+      uuidRepresentation: UuidRepresentation,
+      registry: CodecRegistry,
+      valueTransformer: Transformer
+  ): AnyRef = {
+    val bsonType = reader.getCurrentBsonType
+    if (bsonType == BsonType.ARRAY) {
+      valueTransformer.transform(registry.get(classOf[Iterable[Any]]).decode(reader, context))
+    } else if (bsonType == BsonType.DOCUMENT) {
+      valueTransformer.transform(registry.get(classOf[MyDocument]).decode(reader, context))
+    } else {
+      read(reader, context, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+    }
+  }
 
   private[codecs] def read(
       reader: BsonReader,
