@@ -28,7 +28,7 @@ One of the use-cases for such scenarios would be unit testing where you would ju
         <span class="k">for</span> <span class="o">{</span>
           <span class="n">db</span> <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
           <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">db</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)</span>
-          <span class="n">testDoc</span> <span class="k">=</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"World!"</span><span class="o">)</span>
+          <span class="n">testDoc</span> <span class="k">=</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"Hello"</span> <span class="o">-&gt;</span> <span class="s">"World!"</span><span class="o">)</span>
           <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertOne</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
           <span class="n">foundDoc</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span><span class="o">.</span><span class="py">first</span>
         <span class="o">}</span> <span class="k">yield</span> <span class="n">foundDoc</span> <span class="n">mustBe</span> <span class="nc">Some</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
@@ -41,7 +41,7 @@ One of the use-cases for such scenarios would be unit testing where you would ju
         <span class="k">for</span> <span class="o">{</span>
           <span class="n">db</span> <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
           <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">db</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)</span>
-          <span class="n">testDoc</span> <span class="k">=</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"World!"</span><span class="o">)</span>
+          <span class="n">testDoc</span> <span class="k">=</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"Hello"</span> <span class="o">-&gt;</span> <span class="s">"World!"</span><span class="o">)</span>
           <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertOne</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
           <span class="n">foundDoc</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span><span class="o">.</span><span class="py">first</span>
         <span class="o">}</span> <span class="k">yield</span> <span class="n">foundDoc</span> <span class="n">mustBe</span> <span class="nc">Some</span><span class="o">(</span><span class="n">testDoc</span><span class="o">)</span>
