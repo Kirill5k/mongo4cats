@@ -17,7 +17,19 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.Document
-import org.bson.codecs.{BsonTypeClassMap, BsonTypeCodecMap, BsonValueCodecProvider, Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator, OverridableUuidRepresentationCodec, ValueCodecProvider}
+import org.bson.codecs.{
+  BsonTypeClassMap,
+  BsonTypeCodecMap,
+  BsonValueCodecProvider,
+  Codec,
+  CollectibleCodec,
+  DecoderContext,
+  EncoderContext,
+  IdGenerator,
+  ObjectIdGenerator,
+  OverridableUuidRepresentationCodec,
+  ValueCodecProvider
+}
 import org.bson.{BsonDocument, BsonDocumentWriter, BsonReader, BsonType, BsonValue, BsonWriter, Transformer, UuidRepresentation}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistries}
 import org.bson.codecs.jsr310.Jsr310CodecProvider

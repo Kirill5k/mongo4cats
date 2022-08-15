@@ -18,7 +18,7 @@ package mongo4cats.bson
 
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider, MyDocumentCodecProvider}
 import org.bson.codecs.{DecoderContext, EncoderContext}
-import org.bson.{BsonDocument, BsonDocumentWrapper, Document => JDocument}
+import org.bson.{BsonDocument => JBsonDocument, BsonDocumentWrapper, Document => JDocument}
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.conversions.Bson
 import org.bson.json.{JsonMode, JsonReader, JsonWriter, JsonWriterSettings}
@@ -72,8 +72,8 @@ final class Document private (
     writer.getWriter.toString
   }
 
-  override def toBsonDocument: BsonDocument = toBsonDocument(classOf[Document], CodecRegistry.Default)
-  override def toBsonDocument[TDocument](documentClass: Class[TDocument], codecRegistry: CodecRegistry): BsonDocument =
+  override def toBsonDocument: JBsonDocument = toBsonDocument(classOf[Document], CodecRegistry.Default)
+  override def toBsonDocument[TDocument](documentClass: Class[TDocument], codecRegistry: CodecRegistry): JBsonDocument =
     new BsonDocumentWrapper[Document](this, codecRegistry.get(classOf[Document]))
 
   override def toString: String = fields.toString().replaceAll("ListMap", "Document")
@@ -89,8 +89,8 @@ object Document {
   val empty: Document = apply()
 
   def apply(): Document                                                  = new Document(ListMap.empty)
-  def apply[A](keyValue: (String, A), keyValues: (String, A)*): Document = new Document(ListMap(keyValue) ++ keyValues.toMap)
-  def apply[A](fields: Map[String, A]): Document                         = new Document(ListMap.from(fields))
+  def apply[A](keyValue: (String, A), keyValues: (String, A)*): Document = new Document(ListMap(keyValue) ++ keyValues.toList)
+  def apply[A](fields: Map[String, A]): Document                         = new Document(ListMap(fields.toList: _*))
 
   def parse(json: String): Document = MyDocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
