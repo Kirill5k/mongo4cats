@@ -19,7 +19,8 @@ package mongo4cats.collection
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
-import mongo4cats.bson.Document
+import mongo4cats.bson.{BsonValue, Document}
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations._
 import mongo4cats.database.MongoDatabase
@@ -36,11 +37,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
     "aggregate" should {
       "join data from 2 collections" in withEmbeddedMongoDatabase { db =>
         val result = for {
-          txs     <- db.getCollection("transactions").flatMap(_.find.all)
-          _       <- IO.println(txs)
-          accs    <- db.getCollection("accounts")
-          allAccs <- accs.find.all
-          _       <- IO.println(allAccs)
+          accs <- db.getCollection("accounts")
           res <- accs
             .aggregate[Document] {
               Aggregate
@@ -49,7 +46,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
                 .project(
                   Projection
                     .include(List("transactions", "name", "currency"))
-                    .computed("totalAmount", Document("$sum" -> "$transactions.amount"))
+                    .computed("totalAmount", Document("$sum" := "$transactions.amount"))
                 )
             }
             .first
@@ -102,7 +99,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
 
         result.map { expl =>
           expl.getDouble("ok") mustBe Some(1.0)
-          expl.getNested[Int]("serverInfo.port") mustBe Some(mongoPort)
+          expl.getNested("serverInfo.port") mustBe Some(BsonValue.int(mongoPort))
           expl.getList("stages").get must have size 4
         }
       }
@@ -125,8 +122,8 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
           } yield res
 
           result.map(_.get).map { res =>
-            res.getList[Document]("transactionsByCategory").get must have size 10
-            res.getList[Document]("transactionsByAccount").get must have size 1
+            res.getList("transactionsByCategory").get must have size 10
+            res.getList("transactionsByAccount").get must have size 1
           }
         }
       }

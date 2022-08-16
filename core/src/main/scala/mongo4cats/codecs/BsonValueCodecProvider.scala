@@ -16,18 +16,14 @@
 
 package mongo4cats.codecs
 
-import com.mongodb.DocumentToDBRefTransformer
 import mongo4cats.bson.BsonValue
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext, OverridableUuidRepresentationCodec}
 import org.bson.codecs.configuration.CodecProvider
-import org.bson.{BsonReader, BsonWriter, Transformer, UuidRepresentation}
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonReader, BsonWriter}
 
 import scala.reflect.ClassTag
 
-final private class BsonValueCodec(
-    private val registry: CodecRegistry,
-    private val valueTransformer: Transformer
-) extends Codec[BsonValue] {
+private object BsonValueCodec extends Codec[BsonValue] {
 
   override def encode(writer: BsonWriter, bsonValue: BsonValue, encoderContext: EncoderContext): Unit =
     ContainerValueWriter.writeBsonValue(bsonValue, writer)
@@ -35,21 +31,13 @@ final private class BsonValueCodec(
   override def getEncoderClass: Class[BsonValue] =
     implicitly[ClassTag[BsonValue]].runtimeClass.asInstanceOf[Class[BsonValue]]
 
-  override def decode(reader: BsonReader, decoderContext: DecoderContext): BsonValue = {
-    //TODO: unsafe
+  override def decode(reader: BsonReader, decoderContext: DecoderContext): BsonValue =
+    // TODO: unsafe
     ContainerValueReader.readBsonValue(reader).orNull
-  }
 }
 
 object BsonValueCodecProvider extends CodecProvider {
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    Option
-      .when(classOf[BsonValue].isAssignableFrom(clazz)) {
-        new BsonValueCodec(
-          registry,
-          new DocumentToDBRefTransformer
-        ).asInstanceOf[Codec[T]]
-      }
-      .orNull
+    if (classOf[BsonValue].isAssignableFrom(clazz)) BsonValueCodec.asInstanceOf[Codec[T]] else null
 }

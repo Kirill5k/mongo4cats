@@ -94,7 +94,7 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           colls must have size 1
           val c1 = colls.head
           c1.getString("name") mustBe Some("c1")
-          c1.get("type") mustBe Some("collection")
+          c1.getString("type") mustBe Some("collection")
         }
       }
 

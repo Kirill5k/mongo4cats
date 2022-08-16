@@ -1,9 +1,26 @@
+/*
+ * Copyright 2020 Kirill5k
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mongo4cats.codecs
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
 import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Update}
 import mongo4cats.database.MongoDatabase
@@ -26,11 +43,11 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           _    <- coll.insertOne(TestData.gbpAccount)
           _    <- coll.updateMany(Filter.empty, Update.set("currency", None).set("name", Some("updated-acc")))
           doc  <- coll.find.first
-        } yield doc
+        } yield doc.get
 
         result.map { doc =>
-          doc.flatMap(_.getString("currency")) mustBe None
-          doc.flatMap(_.getString("name")) mustBe Some("updated-acc")
+          doc.getString("currency") mustBe None
+          doc.getString("name") mustBe Some("updated-acc")
         }
       }
     }
@@ -42,10 +59,10 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           _    <- coll.insertOne(TestData.gbpAccount)
           _    <- coll.updateMany(Filter.empty, Update.set("props", Map("a" -> 42, "b" -> "foo")))
           doc  <- coll.find.first
-        } yield doc
+        } yield doc.get
 
         result.map { doc =>
-          doc.flatMap(_.getDocument("props")) mustBe Some(Document("a" -> 42, "b" -> "foo"))
+          doc.getDocument("props") mustBe Some(Document("a" := 42, "b" := "foo"))
         }
       }
     }
@@ -57,11 +74,10 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           _    <- coll.insertOne(TestData.gbpAccount)
           _    <- coll.updateMany(Filter.empty, Update.set("tags", List("foo", "bar", 42)))
           doc  <- coll.find.first
-        } yield doc
+        } yield doc.get
 
         result.map { doc =>
-          val tags = doc.flatMap(_.getList("tags"))
-          tags mustBe Some(List("foo", "bar", 42))
+          doc.getList("tags") mustBe Some(List("foo".toBson, "bar".toBson, 42.toBson))
         }
       }
     }
@@ -70,13 +86,13 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollectionWithCodec[Document]("coll")
-          _    <- coll.insertOne(Document("foo" -> "bar", "tags" -> List("my", "doc")))
+          _    <- coll.insertOne(Document("foo" := "bar", "tags" := List("my", "doc")))
           doc  <- coll.find.first
         } yield doc.get
 
         result.map { doc =>
           doc.getString("foo") mustBe Some("bar")
-          doc.get[Iterable[Any]]("tags") mustBe Some(List("my", "doc"))
+          doc.get("tags") mustBe Some(List("my", "doc").toBson)
           doc.getObjectId("_id") mustBe defined
         }
       }
@@ -88,10 +104,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use { client =>
-          for {
-            db  <- client.getDatabase("db")
-            res <- test(db)
-          } yield res
+          client.getDatabase("db").flatMap(test)
         }
     }.unsafeToFuture()(IORuntime.global)
 }

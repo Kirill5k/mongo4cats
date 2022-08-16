@@ -18,6 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.{BulkWriteOptions, WriteCommand}
 import mongo4cats.collection.operations.{Filter, Update}
@@ -29,10 +30,10 @@ object BulkWrites extends IOApp.Simple {
       for {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollection("docs")
-        _    <- coll.insertMany((0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i)))
+        _    <- coll.insertMany((0 to 100).map(i => Document("name" := s"doc-$i", "index" := i)))
         commands = List(
           WriteCommand.DeleteOne(Filter.eq("name", "doc-1")),
-          WriteCommand.InsertOne(Document("name" -> "doc-101", "index" -> 101)),
+          WriteCommand.InsertOne(Document("name" := "doc-101", "index" := 101)),
           WriteCommand.DeleteMany(Filter.gt("index", 10) && Filter.lt("index", 20)),
           WriteCommand.UpdateOne(Filter.eq("index", 50), Update.set("name", "doc-50-updated"))
         )

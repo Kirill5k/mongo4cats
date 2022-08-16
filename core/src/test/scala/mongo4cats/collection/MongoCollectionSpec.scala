@@ -23,6 +23,7 @@ import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.{Filter, Index, Sort, Update}
 import org.scalatest.matchers.must.Matchers
@@ -195,7 +196,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertOne(TestData.gbpAccount)
-              replacement = Document("currency" -> TestData.EUR)
+              replacement = Document("currency" := TestData.EUR)
               updateResult <- coll.replaceOne(Filter.eq("currency", TestData.GBP), replacement)
               docs         <- coll.find.all
             } yield (updateResult, docs)
@@ -335,7 +336,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertOne(TestData.eurAccount)
-              old  <- coll.findOneAndReplace(Filter.eq("currency", TestData.EUR), Document("currency" -> TestData.GBP))
+              old  <- coll.findOneAndReplace(Filter.eq("currency", TestData.EUR), Document("currency" := TestData.GBP))
               docs <- coll.find.all
             } yield (old, docs)
 

@@ -17,12 +17,11 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.{BsonValue, Document}
-import org.bson.{BsonBinary, BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
-import org.bson.codecs.{BsonTypeCodecMap, DecoderContext, Encoder, EncoderContext}
+import org.bson.codecs.{DecoderContext, Encoder, EncoderContext}
 import org.bson.types.Decimal128
+import org.bson._
 
 import java.time.Instant
-import java.util.UUID
 
 private[codecs] object ContainerValueWriter {
 

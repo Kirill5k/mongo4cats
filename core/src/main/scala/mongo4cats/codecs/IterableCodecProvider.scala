@@ -63,14 +63,12 @@ final private class IterableCodec(
 
 object IterableCodecProvider extends CodecProvider {
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    Option
-      .when(classOf[Iterable[Any]].isAssignableFrom(clazz)) {
-        new IterableCodec(
-          registry,
-          new DocumentToDBRefTransformer,
-          new BsonTypeClassMap(),
-          UuidRepresentation.UNSPECIFIED
-        ).asInstanceOf[Codec[T]]
-      }
-      .orNull
+    if (classOf[Iterable[Any]].isAssignableFrom(clazz)) {
+      new IterableCodec(
+        registry,
+        new DocumentToDBRefTransformer,
+        new BsonTypeClassMap(),
+        UuidRepresentation.UNSPECIFIED
+      ).asInstanceOf[Codec[T]]
+    } else null
 }

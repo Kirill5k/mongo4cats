@@ -51,14 +51,12 @@ final private class OptionCodec(
 object OptionCodecProvider extends CodecProvider {
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    Option
-      .when(classOf[Option[Any]].isAssignableFrom(clazz)) {
-        new OptionCodec(
-          registry,
-          new DocumentToDBRefTransformer,
-          new BsonTypeClassMap(),
-          UuidRepresentation.UNSPECIFIED
-        ).asInstanceOf[Codec[T]]
-      }
-      .orNull
+    if (classOf[Option[Any]].isAssignableFrom(clazz)) {
+      new OptionCodec(
+        registry,
+        new DocumentToDBRefTransformer,
+        new BsonTypeClassMap(),
+        UuidRepresentation.UNSPECIFIED
+      ).asInstanceOf[Codec[T]]
+    } else null
 }

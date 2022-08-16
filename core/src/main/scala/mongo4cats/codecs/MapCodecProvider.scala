@@ -67,14 +67,12 @@ final private class MapCodec(
 
 object MapCodecProvider extends CodecProvider {
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    Option
-      .when(classOf[Map[String, Any]].isAssignableFrom(clazz)) {
-        new MapCodec(
-          registry,
-          new DocumentToDBRefTransformer,
-          new BsonTypeClassMap(),
-          UuidRepresentation.UNSPECIFIED
-        ).asInstanceOf[Codec[T]]
-      }
-      .orNull
+    if (classOf[Map[String, Any]].isAssignableFrom(clazz)) {
+      new MapCodec(
+        registry,
+        new DocumentToDBRefTransformer,
+        new BsonTypeClassMap(),
+        UuidRepresentation.UNSPECIFIED
+      ).asInstanceOf[Codec[T]]
+    } else null
 }

@@ -17,9 +17,9 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.{Document, ObjectId}
-import org.bson.codecs.{Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator, OverridableUuidRepresentationCodec, ValueCodecProvider}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistries}
-import org.bson.{BsonObjectId, BsonReader, BsonWriter, Transformer, UuidRepresentation, BsonValue => JBsonValue}
+import org.bson.codecs._
+import org.bson.{BsonObjectId, BsonReader, BsonValue => JBsonValue, BsonWriter, Transformer, UuidRepresentation}
 
 import scala.reflect.ClassTag
 
@@ -66,14 +66,12 @@ object DocumentCodecProvider extends CodecProvider {
   )
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    Option
-      .when(classOf[Document].isAssignableFrom(clazz)) {
-        new DocumentCodec(
-          registry,
-          valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],
-          uuidRepresentation = UuidRepresentation.UNSPECIFIED,
-          idGenerator = new ObjectIdGenerator
-        ).asInstanceOf[Codec[T]]
-      }
-      .orNull
+    if (classOf[Document].isAssignableFrom(clazz)) {
+      new DocumentCodec(
+        registry,
+        valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],
+        uuidRepresentation = UuidRepresentation.UNSPECIFIED,
+        idGenerator = new ObjectIdGenerator
+      ).asInstanceOf[Codec[T]]
+    } else null
 }

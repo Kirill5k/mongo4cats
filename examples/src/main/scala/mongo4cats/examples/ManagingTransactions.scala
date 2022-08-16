@@ -19,6 +19,7 @@ package mongo4cats.examples
 import cats.effect.{IO, IOApp}
 import cats.syntax.foldable._
 import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 
 object ManagingTransactions extends IOApp.Simple {
@@ -30,12 +31,12 @@ object ManagingTransactions extends IOApp.Simple {
         coll    <- db.getCollection("docs")
         session <- client.startSession
         _       <- session.startTransaction
-        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
+        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" := s"doc-$i")))
         _       <- session.abortTransaction
         count1  <- coll.count
         _       <- IO.println(s"should be 0 since transaction was aborted: $count1")
         _       <- session.startTransaction
-        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" -> s"doc-$i")))
+        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" := s"doc-$i")))
         _       <- session.commitTransaction
         count2  <- coll.count
         _       <- IO.println(s"should be 100 since transaction was committed: $count2")

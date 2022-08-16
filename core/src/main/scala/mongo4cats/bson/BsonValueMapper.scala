@@ -23,16 +23,17 @@ trait BsonValueMapper[A] {
 }
 
 object BsonValueMapper {
-  implicit val objectIdMapper: BsonValueMapper[ObjectId] = value => BsonValue.objectId(value)
-  implicit val intMapper: BsonValueMapper[Int]           = value => BsonValue.int(value)
-  implicit val longMapper: BsonValueMapper[Long]         = value => BsonValue.long(value)
-  implicit val stringMapper: BsonValueMapper[String]     = value => BsonValue.string(value)
-  implicit val dateTimeMapper: BsonValueMapper[Instant]  = value => BsonValue.dateTime(value)
-  implicit val doubleMapper: BsonValueMapper[Double]     = value => BsonValue.double(value)
-  implicit val booleanMapper: BsonValueMapper[Boolean]   = value => BsonValue.boolean(value)
-  implicit val documentMapper: BsonValueMapper[Document] = value => BsonValue.document(value)
+  implicit val bsonValueMapper: BsonValueMapper[BsonValue] = identity(_)
+  implicit val objectIdMapper: BsonValueMapper[ObjectId]   = value => BsonValue.objectId(value)
+  implicit val intMapper: BsonValueMapper[Int]             = value => BsonValue.int(value)
+  implicit val longMapper: BsonValueMapper[Long]           = value => BsonValue.long(value)
+  implicit val stringMapper: BsonValueMapper[String]       = value => BsonValue.string(value)
+  implicit val dateTimeMapper: BsonValueMapper[Instant]    = value => BsonValue.dateTime(value)
+  implicit val doubleMapper: BsonValueMapper[Double]       = value => BsonValue.double(value)
+  implicit val booleanMapper: BsonValueMapper[Boolean]     = value => BsonValue.boolean(value)
+  implicit val documentMapper: BsonValueMapper[Document]   = value => BsonValue.document(value)
 
-  implicit def arrayMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[Iterable[A]] =
+  implicit def arrayListMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[List[A]] =
     value => BsonValue.array(value.map(elMapper.toBsonValue))
 
   implicit def optionMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[Option[A]] = {

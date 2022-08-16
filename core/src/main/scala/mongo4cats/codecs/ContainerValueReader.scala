@@ -17,40 +17,38 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.{BsonValue, Document}
-import org.bson.{BsonBinary, BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
-import org.bson.codecs.{BsonTypeCodecMap, DecoderContext, Encoder, EncoderContext}
-import org.bson.types.Decimal128
+import org.bson.codecs.{BsonTypeCodecMap, DecoderContext}
+import org.bson.{BsonReader, BsonType, Transformer, UuidRepresentation}
 
 import java.time.Instant
 import java.util.UUID
 import scala.annotation.tailrec
-import scala.collection.immutable.ListMap
 
 private[codecs] object ContainerValueReader {
 
   def readBsonDocument(reader: BsonReader): Document = {
     @tailrec
-    def go(fields: Map[String, BsonValue]): Document =
+    def go(fields: Vector[Option[(String, BsonValue)]]): Document =
       if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
         val key = reader.readName
-        go(fields + ContainerValueReader.readBsonValue(reader).map(key -> _))
+        go(fields :+ ContainerValueReader.readBsonValue(reader).map(key -> _))
       } else {
-        Document(fields)
+        Document(fields.flatten.toMap)
       }
 
     reader.readStartDocument()
-    val result = go(ListMap.empty)
+    val result = go(Vector.empty)
     reader.readEndDocument()
     result
   }
 
   def readBsonArray(reader: BsonReader): Iterable[BsonValue] = {
     @tailrec
-    def go(result: Vector[BsonValue]): Vector[BsonValue] =
+    def go(result: Vector[Option[BsonValue]]): Vector[BsonValue] =
       if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-        go(result :++ ContainerValueReader.readBsonValue(reader))
+        go(result :+ ContainerValueReader.readBsonValue(reader))
       } else {
-        result
+        result.flatten
       }
 
     reader.readStartArray()

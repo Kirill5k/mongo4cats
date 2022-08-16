@@ -16,6 +16,7 @@
 
 package mongo4cats.bson
 
+import mongo4cats.bson.syntax._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -26,10 +27,10 @@ class DocumentSpec extends AnyWordSpec with Matchers {
   "A MyDocument" when {
     val jsonString = """{"name": {"first": "John", "last": "Smith", "aliases": ["foo", "bar"]}, "tags": [42, "test"]}"""
 
-    val nameDoc = Document("first" -> "John", "last" -> "Smith", "aliases" -> List("foo", "bar"))
-    val tags    = List(42, "test")
+    val nameDoc = Document("first" := "John", "last" := "Smith", "aliases" := List("foo", "bar"))
+    val tags    = List(BsonValue.int(42), BsonValue.string("test"))
 
-    val testDocument = Document("name" -> nameDoc, "tags" -> tags)
+    val testDocument = Document("name" := nameDoc, "tags" -> tags.toBson)
 
     "dealing with json" should {
       "create itself from json string" in {
@@ -42,23 +43,19 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       }
 
       "convert itself to json" in {
-        val result = testDocument.toJson
-
-        result mustBe jsonString
+        testDocument.toJson mustBe jsonString
       }
 
       "handle arrays with json" in {
         val result = Document.parse(s"""{"people": [$jsonString]}""")
 
-        result.getList[Document]("people") mustBe Some(List(testDocument))
+        result.getList("people") mustBe Some(List(testDocument.toBson))
       }
     }
 
     "calling toString" should {
       "produce string representation" in {
-        val result = testDocument.toString
-
-        result mustBe "Document(name -> Document(first -> John, last -> Smith, aliases -> List(foo, bar)), tags -> List(42, test))"
+        testDocument.toString mustBe jsonString
       }
     }
 
@@ -66,6 +63,8 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "handle null and undefined" in {
         val doc = Document.parse("""{"propA":null,"propB":undefined}""")
 
+        doc.get("propA") mustBe Some(BsonValue.Null)
+        doc.get("propB") mustBe Some(BsonValue.Undefined)
         doc.getString("propA") mustBe None
         doc.getString("propB") mustBe None
       }
@@ -73,19 +72,15 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "handle time" in {
         val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
 
-        doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
+        doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00").toBson)
       }
 
       "retrieve nested fields" in {
-        val firstName = testDocument.getNested[String]("name.first")
-
-        firstName mustBe Some("John")
+        testDocument.getNested("name.first") mustBe Some("John".toBson)
       }
 
       "return empty option when nested field does not exist" in {
-        val result = testDocument.getNested[String]("foo.bar")
-
-        result mustBe None
+        testDocument.getNested("foo.bar") mustBe None
       }
     }
   }

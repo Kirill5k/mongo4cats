@@ -42,15 +42,18 @@ object BsonValue {
   val MaxKey: BsonValue    = BMaxKey
   val MinKey: BsonValue    = BMinKey
 
-  def array(value: Iterable[BsonValue]): BsonValue = BArray(value)
-  def int(value: Int): BsonValue                   = BInt32(value)
-  def long(value: Long): BsonValue                 = BInt64(value)
-  def objectId(value: ObjectId): BsonValue         = BObjectId(value)
-  def document(value: Document): BsonValue         = BDocument(value)
-  def string(value: String): BsonValue             = BString(value)
-  def bigDecimal(value: BigDecimal): BsonValue     = BDecimal(value)
-  def boolean(value: Boolean): BsonValue           = BBoolean(value)
-  def double(value: Double): BsonValue             = BDouble(value)
-  def binary(value: Array[Byte]): BsonValue        = BBinary(value)
-  def dateTime(value: Instant): BsonValue          = BDateTime(value)
+  def array(values: BsonValue*): BsonValue                                              = BArray(values.toList)
+  def array(value: Iterable[BsonValue]): BsonValue                                      = BArray(value)
+  def array[A](value: Iterable[A])(implicit valueMapper: BsonValueMapper[A]): BsonValue = BArray(value.map(valueMapper.toBsonValue))
+
+  def int(value: Int): BsonValue               = BInt32(value)
+  def long(value: Long): BsonValue             = BInt64(value)
+  def objectId(value: ObjectId): BsonValue     = BObjectId(value)
+  def document(value: Document): BsonValue     = BDocument(value)
+  def string(value: String): BsonValue         = BString(value)
+  def bigDecimal(value: BigDecimal): BsonValue = BDecimal(value)
+  def boolean(value: Boolean): BsonValue       = BBoolean(value)
+  def double(value: Double): BsonValue         = BDouble(value)
+  def binary(value: Array[Byte]): BsonValue    = BBinary(value)
+  def dateTime(value: Instant): BsonValue      = BDateTime(value)
 }

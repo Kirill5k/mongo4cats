@@ -16,7 +16,7 @@
 
 package mongo4cats.bson
 
-import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider, DocumentCodecProvider}
+import mongo4cats.codecs.{CodecRegistry, DocumentCodecProvider, MongoCodecProvider}
 import org.bson.codecs.{DecoderContext, EncoderContext}
 import org.bson.{BsonDocument => JBsonDocument, BsonDocumentWrapper, Document => JDocument}
 import org.bson.codecs.configuration.CodecProvider
@@ -78,7 +78,7 @@ final class Document private (
   override def toBsonDocument[TDocument](documentClass: Class[TDocument], codecRegistry: CodecRegistry): JBsonDocument =
     new BsonDocumentWrapper[Document](this, codecRegistry.get(classOf[Document]))
 
-  override def toString: String = fields.toString().replaceAll("ListMap", "Document")
+  override def toString: String = toJson
   override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
@@ -92,7 +92,7 @@ object Document {
 
   def apply(): Document                                                               = new Document(ListMap.empty)
   def apply(keyValue: (String, BsonValue), keyValues: (String, BsonValue)*): Document = new Document(ListMap(keyValue) ++ keyValues.toMap)
-  def apply(fields: Map[String, BsonValue]): Document                                 = new Document(ListMap.from(fields))
+  def apply(fields: Map[String, BsonValue]): Document                                 = new Document(fields)
 
   def parse(json: String): Document = DocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
