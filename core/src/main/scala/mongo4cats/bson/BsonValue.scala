@@ -19,20 +19,38 @@ package mongo4cats.bson
 import java.time.Instant
 
 sealed trait BsonValue
-case object BsonNull                                   extends BsonValue
-case object BsonUndefined                              extends BsonValue
-case object BsonMaxKey                                 extends BsonValue
-case object BsonMinKey                                 extends BsonValue
-final case class BsonInt32(value: Int)                 extends BsonValue
-final case class BsonInt64(value: Long)                extends BsonValue
-final case class BsonDouble(value: Double)             extends BsonValue
-final case class BsonDateTime(value: Instant)          extends BsonValue
-final case class BsonBinary(value: Array[Byte])        extends BsonValue
-final case class BsonBoolean(value: Boolean)           extends BsonValue
-final case class BsonDecimal(value: BigDecimal)        extends BsonValue
-final case class BsonString(value: String)             extends BsonValue
-final case class BsonObjectId(value: ObjectId)         extends BsonValue
-final case class BsonDocument(value: Document)         extends BsonValue
-final case class BsonArray(value: Iterable[BsonValue]) extends BsonValue
 
-object BsonValue {}
+object BsonValue {
+  case object BNull                                   extends BsonValue
+  case object BUndefined                              extends BsonValue
+  case object BMaxKey                                 extends BsonValue
+  case object BMinKey                                 extends BsonValue
+  final case class BInt32(value: Int)                 extends BsonValue
+  final case class BInt64(value: Long)                extends BsonValue
+  final case class BDouble(value: Double)             extends BsonValue
+  final case class BDateTime(value: Instant)          extends BsonValue
+  final case class BBinary(value: Array[Byte])        extends BsonValue
+  final case class BBoolean(value: Boolean)           extends BsonValue
+  final case class BDecimal(value: BigDecimal)        extends BsonValue
+  final case class BString(value: String)             extends BsonValue
+  final case class BObjectId(value: ObjectId)         extends BsonValue
+  final case class BDocument(value: Document)         extends BsonValue
+  final case class BArray(value: Iterable[BsonValue]) extends BsonValue
+
+  val Null: BsonValue      = BNull
+  val Undefined: BsonValue = BUndefined
+  val MaxKey: BsonValue    = BMaxKey
+  val MinKey: BsonValue    = BMinKey
+
+  def array(value: Iterable[BsonValue]): BsonValue = BArray(value)
+  def int(value: Int): BsonValue                   = BInt32(value)
+  def long(value: Long): BsonValue                 = BInt64(value)
+  def objectId(value: ObjectId): BsonValue         = BObjectId(value)
+  def document(value: Document): BsonValue         = BDocument(value)
+  def string(value: String): BsonValue             = BString(value)
+  def bigDecimal(value: BigDecimal): BsonValue     = BDecimal(value)
+  def boolean(value: Boolean): BsonValue           = BBoolean(value)
+  def double(value: Double): BsonValue             = BDouble(value)
+  def binary(value: Array[Byte]): BsonValue        = BBinary(value)
+  def dateTime(value: Instant): BsonValue          = BDateTime(value)
+}

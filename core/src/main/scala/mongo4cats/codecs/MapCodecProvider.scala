@@ -40,7 +40,7 @@ final private class MapCodec(
     writer.writeStartDocument()
     map.foreach { case (key, value) =>
       writer.writeName(key)
-      ContainerValueReader.write(writer, encoderContext, Option(value), registry)
+      ContainerValueWriter.write(value, writer, encoderContext, registry)
     }
     writer.writeEndDocument()
   }
@@ -66,14 +66,15 @@ final private class MapCodec(
 }
 
 object MapCodecProvider extends CodecProvider {
-
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[Map[String, Any]].isAssignableFrom(clazz))
-      new MapCodec(
-        registry,
-        new DocumentToDBRefTransformer,
-        new BsonTypeClassMap(),
-        UuidRepresentation.UNSPECIFIED
-      ).asInstanceOf[Codec[T]]
-    else null
+    Option
+      .when(classOf[Map[String, Any]].isAssignableFrom(clazz)) {
+        new MapCodec(
+          registry,
+          new DocumentToDBRefTransformer,
+          new BsonTypeClassMap(),
+          UuidRepresentation.UNSPECIFIED
+        ).asInstanceOf[Codec[T]]
+      }
+      .orNull
 }

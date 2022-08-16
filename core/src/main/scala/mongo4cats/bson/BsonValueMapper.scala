@@ -23,13 +23,20 @@ trait BsonValueMapper[A] {
 }
 
 object BsonValueMapper {
-  implicit val objectIdMapper: BsonValueMapper[ObjectId]         = value => BsonObjectId(value)
-  implicit val intMapper: BsonValueMapper[Int]                   = value => BsonInt32(value)
-  implicit val longMapper: BsonValueMapper[Long]                 = value => BsonInt64(value)
-  implicit val stringMapper: BsonValueMapper[String]             = value => BsonString(value)
-  implicit val dateTimeMapper: BsonValueMapper[Instant]          = value => BsonDateTime(value)
-  implicit val arrayMapper: BsonValueMapper[Iterable[BsonValue]] = value => BsonArray(value)
-  implicit val doubleMapper: BsonValueMapper[Double]             = value => BsonDouble(value)
-  implicit val booleanMapper: BsonValueMapper[Boolean]           = value => BsonBoolean(value)
-  implicit val documentMapper: BsonValueMapper[Document]         = value => BsonDocument(value)
+  implicit val objectIdMapper: BsonValueMapper[ObjectId] = value => BsonValue.objectId(value)
+  implicit val intMapper: BsonValueMapper[Int]           = value => BsonValue.int(value)
+  implicit val longMapper: BsonValueMapper[Long]         = value => BsonValue.long(value)
+  implicit val stringMapper: BsonValueMapper[String]     = value => BsonValue.string(value)
+  implicit val dateTimeMapper: BsonValueMapper[Instant]  = value => BsonValue.dateTime(value)
+  implicit val doubleMapper: BsonValueMapper[Double]     = value => BsonValue.double(value)
+  implicit val booleanMapper: BsonValueMapper[Boolean]   = value => BsonValue.boolean(value)
+  implicit val documentMapper: BsonValueMapper[Document] = value => BsonValue.document(value)
+
+  implicit def arrayMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[Iterable[A]] =
+    value => BsonValue.array(value.map(elMapper.toBsonValue))
+
+  implicit def optionMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[Option[A]] = {
+    case Some(value) => elMapper.toBsonValue(value)
+    case None        => BsonValue.Null
+  }
 }

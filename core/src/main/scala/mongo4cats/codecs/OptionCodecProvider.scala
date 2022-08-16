@@ -17,8 +17,8 @@
 package mongo4cats.codecs
 
 import com.mongodb.DocumentToDBRefTransformer
+import org.bson.codecs.{BsonTypeClassMap, BsonTypeCodecMap, Codec, DecoderContext, EncoderContext, OverridableUuidRepresentationCodec}
 import org.bson.codecs.configuration.CodecProvider
-import org.bson.codecs._
 import org.bson.{BsonReader, BsonWriter, Transformer, UuidRepresentation}
 
 import scala.reflect.ClassTag
@@ -36,7 +36,10 @@ final private class OptionCodec(
     new OptionCodec(registry, valueTransformer, bsonTypeClassMap, newUuidRepresentation)
 
   override def encode(writer: BsonWriter, maybeValue: Option[Any], encoderContext: EncoderContext): Unit =
-    ContainerValueReader.write(writer, encoderContext, maybeValue, registry)
+    maybeValue match {
+      case Some(value) => ContainerValueWriter.write(value, writer, encoderContext, registry)
+      case None        => writer.writeNull()
+    }
 
   override def getEncoderClass: Class[Option[Any]] =
     implicitly[ClassTag[Option[Any]]].runtimeClass.asInstanceOf[Class[Option[Any]]]
@@ -48,12 +51,14 @@ final private class OptionCodec(
 object OptionCodecProvider extends CodecProvider {
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[Option[Any]].isAssignableFrom(clazz))
-      new OptionCodec(
-        registry,
-        new DocumentToDBRefTransformer,
-        new BsonTypeClassMap(),
-        UuidRepresentation.UNSPECIFIED
-      ).asInstanceOf[Codec[T]]
-    else null
+    Option
+      .when(classOf[Option[Any]].isAssignableFrom(clazz)) {
+        new OptionCodec(
+          registry,
+          new DocumentToDBRefTransformer,
+          new BsonTypeClassMap(),
+          UuidRepresentation.UNSPECIFIED
+        ).asInstanceOf[Codec[T]]
+      }
+      .orNull
 }

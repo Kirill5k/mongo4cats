@@ -38,7 +38,7 @@ final private class IterableCodec(
 
   override def encode(writer: BsonWriter, iterable: Iterable[Any], encoderContext: EncoderContext): Unit = {
     writer.writeStartArray()
-    iterable.foreach(value => ContainerValueReader.write(writer, encoderContext, Option(value), registry))
+    iterable.foreach(value => ContainerValueWriter.write(value, writer, encoderContext, registry))
     writer.writeEndArray()
   }
 
@@ -62,14 +62,15 @@ final private class IterableCodec(
 }
 
 object IterableCodecProvider extends CodecProvider {
-
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[Iterable[Any]].isAssignableFrom(clazz))
-      new IterableCodec(
-        registry,
-        new DocumentToDBRefTransformer,
-        new BsonTypeClassMap(),
-        UuidRepresentation.UNSPECIFIED
-      ).asInstanceOf[Codec[T]]
-    else null
+    Option
+      .when(classOf[Iterable[Any]].isAssignableFrom(clazz)) {
+        new IterableCodec(
+          registry,
+          new DocumentToDBRefTransformer,
+          new BsonTypeClassMap(),
+          UuidRepresentation.UNSPECIFIED
+        ).asInstanceOf[Codec[T]]
+      }
+      .orNull
 }

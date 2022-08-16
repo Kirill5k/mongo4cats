@@ -16,7 +16,7 @@
 
 package mongo4cats.bson
 
-import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider, MyDocumentCodecProvider}
+import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider, DocumentCodecProvider}
 import org.bson.codecs.{DecoderContext, EncoderContext}
 import org.bson.{BsonDocument => JBsonDocument, BsonDocumentWrapper, Document => JDocument}
 import org.bson.codecs.configuration.CodecProvider
@@ -28,35 +28,37 @@ import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 
 final class Document private (
-    private[mongo4cats] val fields: Map[String, Any]
+    private[mongo4cats] val fields: Map[String, BsonValue]
 ) extends Bson {
 
-  def merge(other: Document): Document = new Document(fields ++ other.fields)
+  def merge(other: Document): Document         = new Document(fields ++ other.fields)
+  def filterKeys(predicate: String => Boolean) = new Document(fields.filter(kv => predicate(kv._1)))
 
-  def isEmpty: Boolean                            = fields.isEmpty
-  def contains(key: String): Boolean              = fields.contains(key)
-  def keys: Set[String]                           = fields.keySet
-  def remove(key: String): Document               = new Document(fields - key)
-  def add[A](keyValuePair: (String, A)): Document = new Document(fields + keyValuePair)
-  def add[A](key: String, value: A): Document     = add(key -> value)
+  def isEmpty: Boolean               = fields.isEmpty
+  def contains(key: String): Boolean = fields.contains(key)
+  def keys: Set[String]              = fields.keySet
+  def remove(key: String): Document  = new Document(fields - key)
 
-  def get[A](key: String): Option[A] = fields.get(key).flatMap(Option(_)).map(_.asInstanceOf[A])
+  def add(keyValuePair: (String, BsonValue)): Document                             = new Document(fields + keyValuePair)
+  def add(key: String, value: BsonValue): Document                                 = add(key -> value)
+  def add[A](key: String, value: A)(implicit mapper: BsonValueMapper[A]): Document = add(key -> mapper.toBsonValue(value))
 
-  def getString(key: String): Option[String]     = get[String](key)
-  def getInt(key: String): Option[Int]           = get[Int](key)
-  def getLong(key: String): Option[Long]         = get[Long](key)
-  def getDouble(key: String): Option[Double]     = get[Double](key)
-  def getBoolean(key: String): Option[Boolean]   = get[Boolean](key)
-  def getObjectId(key: String): Option[ObjectId] = get[ObjectId](key)
-  def getDocument(key: String): Option[Document] = get[Document](key)
-  def getList[A](key: String): Option[List[A]]   = get[List[A]](key)
+  def get(key: String): Option[BsonValue]           = fields.get(key)
+  def getList(key: String): Option[List[BsonValue]] = get(key).collect { case BsonValue.BArray(value) => value.toList }
+  def getObjectId(key: String): Option[ObjectId]    = get(key).collect { case BsonValue.BObjectId(value) => value }
+  def getDocument(key: String): Option[Document]    = get(key).collect { case BsonValue.BDocument(value) => value }
+  def getBoolean(key: String): Option[Boolean]      = get(key).collect { case BsonValue.BBoolean(value) => value }
+  def getString(key: String): Option[String]        = get(key).collect { case BsonValue.BString(value) => value }
+  def getDouble(key: String): Option[Double]        = get(key).collect { case BsonValue.BDouble(value) => value }
+  def getLong(key: String): Option[Long]            = get(key).collect { case BsonValue.BInt64(value) => value }
+  def getInt(key: String): Option[Int]              = get(key).collect { case BsonValue.BInt32(value) => value }
 
-  def getNested[A](jsonPath: String): Option[A] = {
+  def getNested(jsonPath: String): Option[BsonValue] = {
     @tailrec
-    def go(currentPath: String, remainingPaths: Array[String], nestedDoc: Document): Option[A] =
-      if (remainingPaths.isEmpty) nestedDoc.get[A](currentPath)
+    def go(currentPath: String, remainingPaths: Array[String], nestedDoc: Document): Option[BsonValue] =
+      if (remainingPaths.isEmpty) nestedDoc.get(currentPath)
       else
-        nestedDoc.get[Any](currentPath) match {
+        nestedDoc.getDocument(currentPath) match {
           case Some(anotherDoc: Document) => go(remainingPaths.head, remainingPaths.tail, anotherDoc)
           case _                          => None
         }
@@ -68,7 +70,7 @@ final class Document private (
   def toJson: String = {
     val writerSettings = JsonWriterSettings.builder.outputMode(JsonMode.RELAXED).build
     val writer         = new JsonWriter(new StringWriter(), writerSettings)
-    MyDocumentCodecProvider.DefaultCodec.encode(writer, this, EncoderContext.builder.build)
+    DocumentCodecProvider.DefaultCodec.encode(writer, this, EncoderContext.builder.build)
     writer.getWriter.toString
   }
 
@@ -88,15 +90,15 @@ final class Document private (
 object Document {
   val empty: Document = apply()
 
-  def apply(): Document                                                  = new Document(ListMap.empty)
-  def apply[A](keyValue: (String, A), keyValues: (String, A)*): Document = new Document(ListMap(keyValue) ++ keyValues.toList)
-  def apply[A](fields: Map[String, A]): Document                         = new Document(ListMap(fields.toList: _*))
+  def apply(): Document                                                               = new Document(ListMap.empty)
+  def apply(keyValue: (String, BsonValue), keyValues: (String, BsonValue)*): Document = new Document(ListMap(keyValue) ++ keyValues.toMap)
+  def apply(fields: Map[String, BsonValue]): Document                                 = new Document(ListMap.from(fields))
 
-  def parse(json: String): Document = MyDocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
+  def parse(json: String): Document = DocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
   def fromNative(document: JDocument): Document = parse(document.toJson)
 
   implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
-    override def get: CodecProvider = MyDocumentCodecProvider
+    override def get: CodecProvider = DocumentCodecProvider
   }
 }
