@@ -17,11 +17,9 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.{BsonValue, Document}
-import org.bson.codecs.{DecoderContext, Encoder, EncoderContext}
-import org.bson.types.Decimal128
 import org.bson._
-
-import java.time.Instant
+import org.bson.codecs.{Encoder, EncoderContext}
+import org.bson.types.Decimal128
 
 private[codecs] object ContainerValueWriter {
 
@@ -76,6 +74,7 @@ private[codecs] object ContainerValueWriter {
       case BsonValue.BObjectId(value) => writer.writeObjectId(value)
       case BsonValue.BDocument(value) => writeBsonDocument(value, writer, None)
       case BsonValue.BArray(value)    => writeBsonArray(value, writer)
+      case BsonValue.BRegex(value)    => writer.writeRegularExpression(new BsonRegularExpression(value.pattern.pattern()))
     }
 
   def write(
@@ -87,52 +86,5 @@ private[codecs] object ContainerValueWriter {
     value match {
       case v: BsonValue => writeBsonValue(v, writer)
       case v            => context.encodeWithChildContext(registry.get(v.getClass).asInstanceOf[Encoder[Any]], writer, v)
-    }
-
-  def readBsonValue(
-      reader: BsonReader,
-      context: DecoderContext,
-      registry: CodecRegistry,
-      valueTransformer: Transformer
-  ): Option[BsonValue] =
-    reader.getCurrentBsonType match {
-      case BsonType.MIN_KEY =>
-        reader.readMinKey()
-        Some(BsonValue.MinKey)
-      case BsonType.MAX_KEY =>
-        reader.readMinKey()
-        Some(BsonValue.MaxKey)
-      case BsonType.NULL =>
-        reader.readNull()
-        Some(BsonValue.Null)
-      case BsonType.UNDEFINED =>
-        reader.readUndefined()
-        Some(BsonValue.Undefined)
-      case BsonType.DOCUMENT =>
-        val document = valueTransformer.transform(registry.get(classOf[Document]).decode(reader, context))
-        Some(BsonValue.document(document.asInstanceOf[Document]))
-      case BsonType.ARRAY =>
-        val iterable = valueTransformer.transform(registry.get(classOf[Iterable[BsonValue]]).decode(reader, context))
-        Some(BsonValue.array(iterable.asInstanceOf[Iterable[BsonValue]]))
-      case BsonType.DOUBLE     => Some(BsonValue.double(reader.readDouble()))
-      case BsonType.STRING     => Some(BsonValue.string(reader.readString()))
-      case BsonType.INT32      => Some(BsonValue.int(reader.readInt32()))
-      case BsonType.INT64      => Some(BsonValue.long(reader.readInt64()))
-      case BsonType.DECIMAL128 => Some(BsonValue.bigDecimal(reader.readDecimal128().bigDecimalValue()))
-      case BsonType.BINARY     => Some(BsonValue.binary(reader.readBinaryData().getData))
-      case BsonType.OBJECT_ID  => Some(BsonValue.objectId(reader.readObjectId()))
-      case BsonType.BOOLEAN    => Some(BsonValue.boolean(reader.readBoolean()))
-      case BsonType.DATE_TIME  => Some(BsonValue.dateTime(Instant.ofEpochMilli(reader.readDateTime())))
-      case _                   => None
-
-      /* REMAINING TYPES:
-      case BsonType.JAVASCRIPT_WITH_SCOPE => ???
-      case BsonType.TIMESTAMP             => ???
-      case BsonType.REGULAR_EXPRESSION    => ???
-      case BsonType.DB_POINTER            => ???
-      case BsonType.JAVASCRIPT            => ???
-      case BsonType.SYMBOL                => ???
-      case BsonType.END_OF_DOCUMENT       => ???
-       */
     }
 }

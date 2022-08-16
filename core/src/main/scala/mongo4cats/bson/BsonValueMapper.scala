@@ -33,6 +33,9 @@ object BsonValueMapper {
   implicit val booleanMapper: BsonValueMapper[Boolean]     = value => BsonValue.boolean(value)
   implicit val documentMapper: BsonValueMapper[Document]   = value => BsonValue.document(value)
 
+  implicit def arrayVectorMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[Vector[A]] =
+    value => BsonValue.array(value.map(elMapper.toBsonValue))
+
   implicit def arrayListMapper[A](implicit elMapper: BsonValueMapper[A]): BsonValueMapper[List[A]] =
     value => BsonValue.array(value.map(elMapper.toBsonValue))
 

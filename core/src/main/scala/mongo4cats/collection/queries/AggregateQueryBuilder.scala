@@ -175,7 +175,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 4.2
     */
   def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F].map(Document.fromNative)
+    applyCommands().explain().asyncSingle[F].map(Document.fromJava)
 
   /** Explain the execution plan for this operation with the given verbosity level
     *
@@ -186,7 +186,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @since 4.2
     */
   def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F].map(Document.fromNative)
+    applyCommands().explain(verbosity).asyncSingle[F].map(Document.fromJava)
 
   override protected def applyCommands(): AggregatePublisher[T] =
     commands.reverse.foldLeft(observable) { case (obs, command) =>

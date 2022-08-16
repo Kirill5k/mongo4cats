@@ -71,26 +71,26 @@ private[codecs] object ContainerValueReader {
       case BsonType.UNDEFINED =>
         reader.readUndefined()
         Some(BsonValue.Undefined)
-      case BsonType.DOCUMENT   => Some(BsonValue.document(readBsonDocument(reader)))
-      case BsonType.ARRAY      => Some(BsonValue.array(readBsonArray(reader)))
-      case BsonType.DOUBLE     => Some(BsonValue.double(reader.readDouble()))
-      case BsonType.STRING     => Some(BsonValue.string(reader.readString()))
-      case BsonType.INT32      => Some(BsonValue.int(reader.readInt32()))
-      case BsonType.INT64      => Some(BsonValue.long(reader.readInt64()))
-      case BsonType.DECIMAL128 => Some(BsonValue.bigDecimal(reader.readDecimal128().bigDecimalValue()))
-      case BsonType.BINARY     => Some(BsonValue.binary(reader.readBinaryData().getData))
-      case BsonType.OBJECT_ID  => Some(BsonValue.objectId(reader.readObjectId()))
-      case BsonType.BOOLEAN    => Some(BsonValue.boolean(reader.readBoolean()))
-      case BsonType.DATE_TIME  => Some(BsonValue.dateTime(Instant.ofEpochMilli(reader.readDateTime())))
-      case _                   => None
+      case BsonType.DOCUMENT           => Some(BsonValue.document(readBsonDocument(reader)))
+      case BsonType.ARRAY              => Some(BsonValue.array(readBsonArray(reader)))
+      case BsonType.DOUBLE             => Some(BsonValue.double(reader.readDouble()))
+      case BsonType.STRING             => Some(BsonValue.string(reader.readString()))
+      case BsonType.INT32              => Some(BsonValue.int(reader.readInt32()))
+      case BsonType.INT64              => Some(BsonValue.long(reader.readInt64()))
+      case BsonType.DECIMAL128         => Some(BsonValue.bigDecimal(reader.readDecimal128().bigDecimalValue()))
+      case BsonType.BINARY             => Some(BsonValue.binary(reader.readBinaryData().getData))
+      case BsonType.OBJECT_ID          => Some(BsonValue.objectId(reader.readObjectId()))
+      case BsonType.BOOLEAN            => Some(BsonValue.boolean(reader.readBoolean()))
+      case BsonType.DATE_TIME          => Some(BsonValue.dateTime(Instant.ofEpochMilli(reader.readDateTime())))
+      case BsonType.REGULAR_EXPRESSION => Some(BsonValue.regex(reader.readRegularExpression().asRegularExpression().getPattern.r))
+      case _                           => None
 
       /* REMAINING TYPES:
-      case BsonType.JAVASCRIPT_WITH_SCOPE => ???
+      case BsonType.JAVASCRIPT_WITH_SCOPE => ??? // deprecated
+      case BsonType.DB_POINTER            => ??? // deprecated
+      case BsonType.SYMBOL                => ??? // deprecated
       case BsonType.TIMESTAMP             => ???
-      case BsonType.REGULAR_EXPRESSION    => ???
-      case BsonType.DB_POINTER            => ???
       case BsonType.JAVASCRIPT            => ???
-      case BsonType.SYMBOL                => ???
       case BsonType.END_OF_DOCUMENT       => ???
        */
     }

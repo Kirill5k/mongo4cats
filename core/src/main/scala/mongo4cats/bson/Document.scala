@@ -115,7 +115,7 @@ object Document {
 
   def parse(json: String): Document = DocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
-  def fromNative(document: JDocument): Document = parse(document.toJson)
+  def fromJava(document: JDocument): Document = parse(document.toJson)
 
   implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
     override def get: CodecProvider = DocumentCodecProvider

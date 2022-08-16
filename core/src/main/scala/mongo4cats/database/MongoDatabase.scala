@@ -118,9 +118,9 @@ final private class LiveMongoDatabase[F[_]](
   def listCollectionNames: F[Iterable[String]]                       = underlying.listCollectionNames().asyncIterable[F]
   def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = underlying.listCollectionNames(cs.underlying).asyncIterable[F]
 
-  def listCollections: F[Iterable[Document]] = underlying.listCollections.asyncIterable[F].map(_.map(Document.fromNative))
+  def listCollections: F[Iterable[Document]] = underlying.listCollections.asyncIterable[F].map(_.map(Document.fromJava))
   def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listCollections(cs.underlying).asyncIterable[F].map(_.map(Document.fromNative))
+    underlying.listCollections(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {
@@ -134,10 +134,10 @@ final private class LiveMongoDatabase[F[_]](
     underlying.createCollection(name, options).asyncVoid[F]
 
   def runCommand(cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[Document] =
-    underlying.runCommand(cs.underlying, command, readPreference).asyncSingle[F].map(Document.fromNative)
+    underlying.runCommand(cs.underlying, command, readPreference).asyncSingle[F].map(Document.fromJava)
 
   def runCommand(command: Bson, readPreference: ReadPreference): F[Document] =
-    underlying.runCommand(command, readPreference).asyncSingle[F].map(Document.fromNative)
+    underlying.runCommand(command, readPreference).asyncSingle[F].map(Document.fromJava)
 
   def drop: F[Unit]                       = underlying.drop().asyncVoid[F]
   def drop(cs: ClientSession[F]): F[Unit] = underlying.drop(cs.underlying).asyncVoid[F]

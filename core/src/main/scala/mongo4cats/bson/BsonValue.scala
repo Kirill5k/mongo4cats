@@ -17,6 +17,7 @@
 package mongo4cats.bson
 
 import java.time.Instant
+import scala.util.matching.Regex
 
 sealed trait BsonValue
 
@@ -36,6 +37,7 @@ object BsonValue {
   final case class BObjectId(value: ObjectId)         extends BsonValue
   final case class BDocument(value: Document)         extends BsonValue
   final case class BArray(value: Iterable[BsonValue]) extends BsonValue
+  final case class BRegex(regex: Regex)               extends BsonValue
 
   val Null: BsonValue      = BNull
   val Undefined: BsonValue = BUndefined
@@ -58,4 +60,5 @@ object BsonValue {
   def double(value: Double): BsonValue         = BDouble(value)
   def binary(value: Array[Byte]): BsonValue    = BBinary(value)
   def dateTime(value: Instant): BsonValue      = BDateTime(value)
+  def regex(value: Regex): BsonValue           = BRegex(value)
 }
