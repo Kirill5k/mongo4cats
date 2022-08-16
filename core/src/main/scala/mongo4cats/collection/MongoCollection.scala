@@ -86,17 +86,17 @@ abstract class MongoCollection[F[_], T] {
     * @note
     *   Requires MongoDB 3.6 or greater
     */
-  def watch[Y: ClassTag](pipeline: Seq[Bson]): WatchQueryBuilder[F, Y]
-  def watch[Y: ClassTag](pipeline: Aggregate): WatchQueryBuilder[F, Y]
-  def watch[Y: ClassTag](session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Y]
+  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document]
+  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document]
+  def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document]
 
   /** Creates a change stream for this collection.
     * @since 2.2
     * @note
     *   Requires MongoDB 3.6 or greater
     */
-  def watch[Y: ClassTag]: WatchQueryBuilder[F, Y]                            = watch[Y](Aggregate.empty)
-  def watch[Y: ClassTag](session: ClientSession[F]): WatchQueryBuilder[F, Y] = watch[Y](session, Aggregate.empty)
+  def watch: WatchQueryBuilder[F, Document]                            = watch(Aggregate.empty)
+  def watch(session: ClientSession[F]): WatchQueryBuilder[F, Document] = watch(session, Aggregate.empty)
 
   /** Gets the distinct values of the specified field name.
     *
@@ -519,14 +519,14 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
     AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson), Nil)
 
-  def watch[Y: ClassTag](pipeline: Seq[Bson]): WatchQueryBuilder[F, Y] =
-    WatchQueryBuilder[F, Y](underlying.watch(asJava(pipeline), clazz[Y]), Nil)
+  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document] =
+    WatchQueryBuilder[F, Document](underlying.watch(asJava(pipeline), clazz[Document]), Nil)
 
-  def watch[Y: ClassTag](pipeline: Aggregate): WatchQueryBuilder[F, Y] =
-    WatchQueryBuilder[F, Y](underlying.watch(pipeline.toBson, clazz[Y]), Nil)
+  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document] =
+    WatchQueryBuilder[F, Document](underlying.watch(pipeline.toBson, clazz[Document]), Nil)
 
-  def watch[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Y] =
-    WatchQueryBuilder[F, Y](underlying.watch(cs.underlying, pipeline.toBson, clazz[Y]), Nil)
+  def watch(cs: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document] =
+    WatchQueryBuilder[F, Document](underlying.watch(cs.underlying, pipeline.toBson, clazz[Document]), Nil)
 
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y] =
     DistinctQueryBuilder[F, Y](underlying.distinct(fieldName, filter, clazz[Y]), Nil)

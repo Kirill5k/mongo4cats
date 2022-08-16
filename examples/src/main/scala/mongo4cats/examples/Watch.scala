@@ -29,10 +29,10 @@ object Watch extends IOApp.Simple {
       for {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollection("docs")
-        watchStream  = coll.watch[Document].stream
+        watchStream  = coll.watch.stream
         insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" := s"doc-$i")))
         updates <- watchStream.concurrently(insertStream).take(10).compile.toList
-        _       <- IO.println(updates)
+        _       <- IO.println(updates.mkString("{", "\n", "}"))
       } yield ()
     }
 }
