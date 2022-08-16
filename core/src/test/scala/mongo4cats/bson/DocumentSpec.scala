@@ -83,5 +83,13 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         testDocument.getNested("foo.bar") mustBe None
       }
     }
+
+    "when adding new elements" should {
+      "preserve order of the inserted elements" in {
+        val result = Document.empty += "a" -> 1 += "b" -> 2 += "c" -> 3 += "d" -> 4
+
+        result.toJson mustBe """{"a": 1, "b": 2, "c": 3, "d": 4}"""
+      }
+    }
   }
 }

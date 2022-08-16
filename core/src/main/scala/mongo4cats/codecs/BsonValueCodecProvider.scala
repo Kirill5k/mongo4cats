@@ -32,12 +32,10 @@ private object BsonValueCodec extends Codec[BsonValue] {
     implicitly[ClassTag[BsonValue]].runtimeClass.asInstanceOf[Class[BsonValue]]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): BsonValue =
-    // TODO: unsafe
     ContainerValueReader.readBsonValue(reader).orNull
 }
 
 object BsonValueCodecProvider extends CodecProvider {
-
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
     if (classOf[BsonValue].isAssignableFrom(clazz)) BsonValueCodec.asInstanceOf[Codec[T]] else null
 }

@@ -17,26 +17,20 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.{Document, ObjectId}
-import org.bson.codecs.configuration.{CodecProvider, CodecRegistries}
-import org.bson.codecs._
-import org.bson.{BsonObjectId, BsonReader, BsonValue => JBsonValue, BsonWriter, Transformer, UuidRepresentation}
+import org.bson.codecs.{Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator}
+import org.bson.codecs.configuration.CodecProvider
+import org.bson.{BsonObjectId, BsonReader, BsonValue => JBsonValue, BsonWriter}
 
 import scala.reflect.ClassTag
 
 final private class DocumentCodec(
-    private val registry: CodecRegistry,
-    private val valueTransformer: Transformer,
-    private val uuidRepresentation: UuidRepresentation,
     private val idGenerator: IdGenerator
-) extends CollectibleCodec[Document] with OverridableUuidRepresentationCodec[Document] {
+) extends CollectibleCodec[Document] {
 
   private val idFieldName = "_id"
 
   override def getEncoderClass: Class[Document] =
     implicitly[ClassTag[Document]].runtimeClass.asInstanceOf[Class[Document]]
-
-  override def withUuidRepresentation(newUuidRepresentation: UuidRepresentation): Codec[Document] =
-    new DocumentCodec(registry, valueTransformer, newUuidRepresentation, idGenerator)
 
   override def encode(writer: BsonWriter, document: Document, encoderContext: EncoderContext): Unit =
     ContainerValueWriter.writeBsonDocument(document, writer, Some(idFieldName))
@@ -58,20 +52,8 @@ final private class DocumentCodec(
 }
 
 object DocumentCodecProvider extends CodecProvider {
-  private[mongo4cats] val DefaultCodec: Codec[Document] = new DocumentCodec(
-    CodecRegistries.fromProviders(DocumentCodecProvider),
-    valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],
-    uuidRepresentation = UuidRepresentation.STANDARD,
-    idGenerator = new ObjectIdGenerator
-  )
+  private[mongo4cats] val DefaultCodec: Codec[Document] = new DocumentCodec(new ObjectIdGenerator)
 
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[Document].isAssignableFrom(clazz)) {
-      new DocumentCodec(
-        registry,
-        valueTransformer = (objectToTransform: Any) => objectToTransform.asInstanceOf[AnyRef],
-        uuidRepresentation = UuidRepresentation.UNSPECIFIED,
-        idGenerator = new ObjectIdGenerator
-      ).asInstanceOf[Codec[T]]
-    } else null
+    if (classOf[Document].isAssignableFrom(clazz)) DefaultCodec.asInstanceOf[Codec[T]] else null
 }

@@ -35,9 +35,10 @@ sealed abstract class Document extends Bson {
   def remove(key: String): Document
   def filterKeys(predicate: String => Boolean): Document
 
-  def add(keyValuePair: (String, BsonValue)): Document
-  def add(key: String, value: BsonValue): Document                                 = add(key -> value)
-  def add[A](key: String, value: A)(implicit mapper: BsonValueMapper[A]): Document = add(key -> mapper.toBsonValue(value))
+  def add[A](keyValuePair: (String, A))(implicit mapper: BsonValueMapper[A]): Document
+
+  def +=[A](keyValuePair: (String, A))(implicit mapper: BsonValueMapper[A]): Document = add(keyValuePair)
+  def add[A](key: String, value: A)(implicit mapper: BsonValueMapper[A]): Document    = add(key -> value)
 
   def merge(other: Document): Document
 
@@ -84,14 +85,16 @@ final private class ListMapDocument(
     private val fields: ListMap[String, BsonValue]
 ) extends Document {
 
-  def keys: Set[String]                                = fields.keySet
-  def isEmpty: Boolean                                 = fields.isEmpty
-  def contains(key: String): Boolean                   = fields.contains(key)
-  def filterKeys(predicate: String => Boolean)         = new ListMapDocument(fields.filter(kv => predicate(kv._1)))
-  def remove(key: String): Document                    = new ListMapDocument(fields - key)
-  def add(keyValuePair: (String, BsonValue)): Document = new ListMapDocument(fields + keyValuePair)
-  def merge(other: Document): Document                 = new ListMapDocument(fields ++ other.toMap)
-  def get(key: String): Option[BsonValue]              = fields.get(key)
+  def keys: Set[String]                        = fields.keySet
+  def isEmpty: Boolean                         = fields.isEmpty
+  def contains(key: String): Boolean           = fields.contains(key)
+  def filterKeys(predicate: String => Boolean) = new ListMapDocument(fields.filter(kv => predicate(kv._1)))
+  def remove(key: String): Document            = new ListMapDocument(fields - key)
+  def merge(other: Document): Document         = new ListMapDocument(fields ++ other.toMap)
+  def get(key: String): Option[BsonValue]      = fields.get(key)
+
+  def add[A](keyValuePair: (String, A))(implicit mapper: BsonValueMapper[A]): Document =
+    new ListMapDocument(fields + (keyValuePair._1 -> mapper.toBsonValue(keyValuePair._2)))
 
   def toList: List[(String, BsonValue)] = fields.toList
   def toMap: Map[String, BsonValue]     = fields
