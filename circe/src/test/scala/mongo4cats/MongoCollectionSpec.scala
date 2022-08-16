@@ -17,7 +17,7 @@
 package mongo4cats
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
+import cats.effect.unsafe.IORuntime
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
 import mongo4cats.circe._
@@ -211,5 +211,5 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       MongoClient
         .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use(test)
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 }

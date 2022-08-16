@@ -29,11 +29,11 @@ import scala.collection.immutable.ListMap
 
 sealed abstract class Document extends Bson {
   def keys: Set[String]
-  def filterKeys(predicate: String => Boolean): Document
 
   def isEmpty: Boolean
   def contains(key: String): Boolean
   def remove(key: String): Document
+  def filterKeys(predicate: String => Boolean): Document
 
   def add(keyValuePair: (String, BsonValue)): Document
   def add(key: String, value: BsonValue): Document                                 = add(key -> value)
@@ -81,13 +81,13 @@ sealed abstract class Document extends Bson {
 }
 
 final private class ListMapDocument(
-    private[mongo4cats] val fields: ListMap[String, BsonValue]
+    private val fields: ListMap[String, BsonValue]
 ) extends Document {
 
   def keys: Set[String]                                = fields.keySet
-  def filterKeys(predicate: String => Boolean)         = new ListMapDocument(fields.filter(kv => predicate(kv._1)))
   def isEmpty: Boolean                                 = fields.isEmpty
   def contains(key: String): Boolean                   = fields.contains(key)
+  def filterKeys(predicate: String => Boolean)         = new ListMapDocument(fields.filter(kv => predicate(kv._1)))
   def remove(key: String): Document                    = new ListMapDocument(fields - key)
   def add(keyValuePair: (String, BsonValue)): Document = new ListMapDocument(fields + keyValuePair)
   def merge(other: Document): Document                 = new ListMapDocument(fields ++ other.toMap)
