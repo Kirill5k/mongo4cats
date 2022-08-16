@@ -37,7 +37,7 @@ private[codecs] object ContainerValueWriter {
       writer.writeObjectId(idValue)
     }
 
-    value.fields
+    value.toMap
       .filterNot { case (key, _) => idFieldName.contains(key) }
       .foreach { case (key, value) =>
         writer.writeName(key)

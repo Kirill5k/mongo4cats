@@ -33,7 +33,7 @@ private[codecs] object ContainerValueReader {
         val key = reader.readName
         go(fields :+ ContainerValueReader.readBsonValue(reader).map(key -> _))
       } else {
-        Document(fields.flatten.toMap)
+        Document(fields.flatten)
       }
 
     reader.readStartDocument()

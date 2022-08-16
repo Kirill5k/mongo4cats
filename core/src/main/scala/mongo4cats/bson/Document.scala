@@ -27,23 +27,21 @@ import java.io.StringWriter
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 
-final class Document private (
-    private[mongo4cats] val fields: Map[String, BsonValue]
-) extends Bson {
+sealed abstract class Document extends Bson {
+  def keys: Set[String]
+  def filterKeys(predicate: String => Boolean): Document
 
-  def merge(other: Document): Document         = new Document(fields ++ other.fields)
-  def filterKeys(predicate: String => Boolean) = new Document(fields.filter(kv => predicate(kv._1)))
+  def isEmpty: Boolean
+  def contains(key: String): Boolean
+  def remove(key: String): Document
 
-  def isEmpty: Boolean               = fields.isEmpty
-  def contains(key: String): Boolean = fields.contains(key)
-  def keys: Set[String]              = fields.keySet
-  def remove(key: String): Document  = new Document(fields - key)
-
-  def add(keyValuePair: (String, BsonValue)): Document                             = new Document(fields + keyValuePair)
+  def add(keyValuePair: (String, BsonValue)): Document
   def add(key: String, value: BsonValue): Document                                 = add(key -> value)
   def add[A](key: String, value: A)(implicit mapper: BsonValueMapper[A]): Document = add(key -> mapper.toBsonValue(value))
 
-  def get(key: String): Option[BsonValue]           = fields.get(key)
+  def merge(other: Document): Document
+
+  def get(key: String): Option[BsonValue]
   def getList(key: String): Option[List[BsonValue]] = get(key).collect { case BsonValue.BArray(value) => value.toList }
   def getObjectId(key: String): Option[ObjectId]    = get(key).collect { case BsonValue.BObjectId(value) => value }
   def getDocument(key: String): Option[Document]    = get(key).collect { case BsonValue.BDocument(value) => value }
@@ -67,6 +65,9 @@ final class Document private (
     go(paths.head, paths.tail, this)
   }
 
+  def toList: List[(String, BsonValue)]
+  def toMap: Map[String, BsonValue]
+
   def toJson: String = {
     val writerSettings = JsonWriterSettings.builder.outputMode(JsonMode.RELAXED).build
     val writer         = new JsonWriter(new StringWriter(), writerSettings)
@@ -77,12 +78,29 @@ final class Document private (
   override def toBsonDocument: JBsonDocument = toBsonDocument(classOf[Document], CodecRegistry.Default)
   override def toBsonDocument[TDocument](documentClass: Class[TDocument], codecRegistry: CodecRegistry): JBsonDocument =
     new BsonDocumentWrapper[Document](this, codecRegistry.get(classOf[Document]))
+}
+
+final private class ListMapDocument(
+    private[mongo4cats] val fields: ListMap[String, BsonValue]
+) extends Document {
+
+  def keys: Set[String]                                = fields.keySet
+  def filterKeys(predicate: String => Boolean)         = new ListMapDocument(fields.filter(kv => predicate(kv._1)))
+  def isEmpty: Boolean                                 = fields.isEmpty
+  def contains(key: String): Boolean                   = fields.contains(key)
+  def remove(key: String): Document                    = new ListMapDocument(fields - key)
+  def add(keyValuePair: (String, BsonValue)): Document = new ListMapDocument(fields + keyValuePair)
+  def merge(other: Document): Document                 = new ListMapDocument(fields ++ other.toMap)
+  def get(key: String): Option[BsonValue]              = fields.get(key)
+
+  def toList: List[(String, BsonValue)] = fields.toList
+  def toMap: Map[String, BsonValue]     = fields
 
   override def toString: String = toJson
   override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
-      case Some(doc: Document) => doc.fields.equals(fields)
+      case Some(doc: Document) => doc.toMap.equals(fields)
       case _                   => false
     }
 }
@@ -90,9 +108,10 @@ final class Document private (
 object Document {
   val empty: Document = apply()
 
-  def apply(): Document                                                               = new Document(ListMap.empty)
-  def apply(keyValue: (String, BsonValue), keyValues: (String, BsonValue)*): Document = new Document(ListMap(keyValue) ++ keyValues.toMap)
-  def apply(fields: Map[String, BsonValue]): Document                                 = new Document(fields)
+  def apply(): Document                                         = new ListMapDocument(ListMap.empty)
+  def apply(keyValues: Iterable[(String, BsonValue)]): Document = new ListMapDocument(makeListMap(keyValues.toList))
+  def apply(keyValues: (String, BsonValue)*): Document          = apply(keyValues.toList)
+  def apply(fields: Map[String, BsonValue]): Document           = apply(fields.toList)
 
   def parse(json: String): Document = DocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
@@ -101,4 +120,7 @@ object Document {
   implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
     override def get: CodecProvider = DocumentCodecProvider
   }
+
+  private def makeListMap(keyValues: Iterable[(String, BsonValue)]): ListMap[String, BsonValue] =
+    keyValues.foldLeft(ListMap.newBuilder[String, BsonValue]) { case (b, (k, v)) => b += (k -> v) }.result()
 }

@@ -41,6 +41,8 @@ object BsonValue {
   val Undefined: BsonValue = BUndefined
   val MaxKey: BsonValue    = BMaxKey
   val MinKey: BsonValue    = BMinKey
+  val True: BsonValue      = BBoolean(true)
+  val False: BsonValue     = BBoolean(false)
 
   def array(values: BsonValue*): BsonValue                                              = BArray(values.toList)
   def array(value: Iterable[BsonValue]): BsonValue                                      = BArray(value)
