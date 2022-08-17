@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.derivation.bson.derivation.encoder
 
-import scala.collection.convert.AsJavaConverters
+import mongo4cats.derivation.bson.{BsonEncoder, MagnoliaBsonEncoder}
+import mongo4cats.derivation.bson.configured.Configuration
+import magnolia1.*
 
-trait AsJava extends AsJavaConverters
+object auto extends AutoDerivation[BsonEncoder] {
+
+  def join[T](caseClass: CaseClass[Typeclass, T]): Typeclass[T] =
+    MagnoliaBsonEncoder.join(caseClass)(Configuration.default)
+
+  def split[T](sealedTrait: SealedTrait[Typeclass, T]): Typeclass[T] =
+    MagnoliaBsonEncoder.split(sealedTrait)(Configuration.default)
+
+}

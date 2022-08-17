@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.derivation.bson
 
-import scala.collection.convert.AsJavaConverters
+import mongo4cats.derivation.bson.BsonEncoder.instance
+import org.bson.{BsonArray, BsonValue}
 
-trait AsJava extends AsJavaConverters
+trait ScalaVersionDependentBsonEncoders {
+
+  implicit final def encodeIterable[L[_] <: Iterable[_], A](implicit encA: BsonEncoder[A]): BsonEncoder[L[A]] =
+    instance {
+      case asIt: Iterable[A] @unchecked =>
+        val arrayList = new java.util.ArrayList[BsonValue](Math.max(0, asIt.knownSize))
+        asIt.foreach(a => arrayList.add(encA(a)))
+        new BsonArray(arrayList)
+      case _ => throw new Throwable("Not an Iterable")
+    }
+}

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.derivation.bson
 
-import scala.collection.convert.AsJavaConverters
-
-trait AsJava extends AsJavaConverters
+class BsonDerivationError(message: String) extends Exception(message)

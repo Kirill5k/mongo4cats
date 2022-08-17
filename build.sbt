@@ -97,6 +97,34 @@ val `mongo4cats-circe` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+val `mongo4cats-bson-derivation` = project
+  .in(file("bson-derivation"))
+  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-bson-derivation",
+    libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
+    libraryDependencies ++=
+      Dependencies.scalacheckCats ++
+        (CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, _)) =>
+            Dependencies.circeGenericExtras ++
+              Dependencies.scalacheckShapeless ++
+              Dependencies.magnolia1_2 ++
+              Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)
+          case _ => Dependencies.magnolia1_3
+        }),
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1"),
+    scalacOptions ++=
+      (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) => Seq("-Yretain-trees") // For Magnolia: https://github.com/softwaremill/magnolia#limitations
+        case _            => Nil
+      })
+  )
+  .dependsOn(`mongo4cats-circe`)
+  .enablePlugins(AutomateHeaderPlugin)
+
 val `mongo4cats-examples` = project
   .in(file("examples"))
   .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
@@ -144,5 +172,6 @@ val root = project
     `mongo4cats-core`,
     `mongo4cats-circe`,
     `mongo4cats-examples`,
-    `mongo4cats-embedded`
+    `mongo4cats-embedded`,
+    `mongo4cats-bson-derivation`
   )

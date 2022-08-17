@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.derivation.bson
 
-import scala.collection.convert.AsJavaConverters
+import org.bson.BsonValue
 
-trait AsJava extends AsJavaConverters
+/** A type class that provides a way to produce a value of type `A` from a [[org.bson.BsonValue]] value. */
+trait BsonDecoder[A] {
+
+  /** Decode the given [[org.bson.BsonValue]]. */
+  def apply(bson: BsonValue): BsonDecoder.Result[A]
+}
+
+object BsonDecoder {
+
+  type Result[A] = Either[Throwable, A]
+
+  def apply[A](implicit ev: BsonDecoder[A]): BsonDecoder[A] = ev
+
+  def instance[A](f: BsonValue => Either[Throwable, A]): BsonDecoder[A] = f(_)
+}

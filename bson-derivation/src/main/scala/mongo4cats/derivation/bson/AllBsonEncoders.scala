@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.derivation.bson
 
-import scala.collection.convert.AsJavaConverters
+import mongo4cats.AsJava
 
-trait AsJava extends AsJavaConverters
+trait AllBsonEncoders extends ScalaVersionDependentBsonEncoders with MidBsonEncoder with AsJava
+
+object AllBsonEncoders extends AllBsonEncoders

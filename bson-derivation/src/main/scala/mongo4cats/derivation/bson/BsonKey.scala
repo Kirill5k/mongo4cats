@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.derivation.bson
 
-import scala.collection.convert.AsJavaConverters
+import scala.annotation.StaticAnnotation
 
-trait AsJava extends AsJavaConverters
+final case class BsonKey(value: String) extends StaticAnnotation
