@@ -63,8 +63,8 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "handle null and undefined" in {
         val doc = Document.parse("""{"propA":null,"propB":undefined}""")
 
-        doc.get("propA") mustBe Some(BsonValue.Null)
-        doc.get("propB") mustBe Some(BsonValue.Undefined)
+        doc("propA") mustBe Some(BsonValue.Null)
+        doc("propB") mustBe Some(BsonValue.Undefined)
         doc.getString("propA") mustBe None
         doc.getString("propB") mustBe None
       }
@@ -72,7 +72,7 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "handle time" in {
         val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
 
-        doc.get("time").flatMap(_.asInstant) mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
+        doc.get[Instant]("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
       }
 
       "retrieve nested fields" in {

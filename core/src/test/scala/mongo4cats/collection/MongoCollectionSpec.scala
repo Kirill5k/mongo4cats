@@ -360,7 +360,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map { case (old, docs) =>
               old mustBe Some(TestData.eurAccount)
-              docs mustBe List(TestData.eurAccount.add("status", "updated"))
+              docs mustBe List(TestData.eurAccount += ("status" -> "updated"))
             }
           }
         }
@@ -641,7 +641,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             } yield (old, updated)
 
             result.map { case (old, updated) =>
-              updated mustBe old.map(_.add("dob", "2020-01-01"))
+              updated mustBe old.map(_ += "dob" -> "2020-01-01")
             }
           }
         }
