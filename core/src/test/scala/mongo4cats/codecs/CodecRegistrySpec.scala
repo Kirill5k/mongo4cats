@@ -92,7 +92,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
         result.map { doc =>
           doc.getString("foo") mustBe Some("bar")
-          doc.getList("tags") mustBe Some(List("my", "doc").toBson)
+          doc.get[List[String]]("tags") mustBe Some(List("my", "doc"))
           doc.getObjectId("_id") mustBe defined
         }
       }
