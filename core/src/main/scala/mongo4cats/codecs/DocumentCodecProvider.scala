@@ -39,7 +39,7 @@ final private class DocumentCodec(
     ContainerValueReader.readBsonDocument(reader)
 
   override def generateIdIfAbsentFromDocument(document: Document): Document =
-    if (documentHasId(document)) document else document.add(idFieldName, idGenerator.generate().asInstanceOf[ObjectId])
+    if (documentHasId(document)) document else document.add(idFieldName -> idGenerator.generate().asInstanceOf[ObjectId])
 
   override def documentHasId(document: Document): Boolean =
     document.contains(idFieldName)

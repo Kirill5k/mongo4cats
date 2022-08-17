@@ -19,11 +19,10 @@ package mongo4cats.bson
 object syntax {
 
   implicit final class KeySyntax(private val key: String) extends AnyVal {
-    def :=[A](value: A)(implicit valueMapper: BsonValueMapper[A]): (String, BsonValue) =
-      key -> valueMapper.toBsonValue(value)
+    def :=[A](value: A)(implicit e: BsonValueEncoder[A]): (String, BsonValue) = key -> e.encode(value)
   }
 
   implicit final class ValueSyntax[A](private val value: A) extends AnyVal {
-    def toBson(implicit valueMapper: BsonValueMapper[A]): BsonValue = valueMapper.toBsonValue(value)
+    def toBson(implicit e: BsonValueEncoder[A]): BsonValue = e.encode(value)
   }
 }

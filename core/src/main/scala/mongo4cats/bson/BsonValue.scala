@@ -250,9 +250,9 @@ object BsonValue {
   val True: BsonValue      = BBoolean(true)
   val False: BsonValue     = BBoolean(false)
 
-  def array(values: BsonValue*): BsonValue                                              = BArray(values.toList)
-  def array(value: Iterable[BsonValue]): BsonValue                                      = BArray(value)
-  def array[A](value: Iterable[A])(implicit valueMapper: BsonValueMapper[A]): BsonValue = BArray(value.map(valueMapper.toBsonValue))
+  def array(values: BsonValue*): BsonValue                                     = BArray(values.toList)
+  def array(value: Iterable[BsonValue]): BsonValue                             = BArray(value)
+  def array[A](value: Iterable[A])(implicit e: BsonValueEncoder[A]): BsonValue = BArray(value.map(e.encode))
 
   def int(value: Int): BsonValue               = BInt32(value)
   def long(value: Long): BsonValue             = BInt64(value)
