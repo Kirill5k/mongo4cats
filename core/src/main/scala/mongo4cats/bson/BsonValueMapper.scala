@@ -28,7 +28,7 @@ object BsonValueMapper {
   implicit val intMapper: BsonValueMapper[Int]             = value => BsonValue.int(value)
   implicit val longMapper: BsonValueMapper[Long]           = value => BsonValue.long(value)
   implicit val stringMapper: BsonValueMapper[String]       = value => BsonValue.string(value)
-  implicit val dateTimeMapper: BsonValueMapper[Instant]    = value => BsonValue.dateTime(value)
+  implicit val dateTimeMapper: BsonValueMapper[Instant]    = value => BsonValue.instant(value)
   implicit val doubleMapper: BsonValueMapper[Double]       = value => BsonValue.double(value)
   implicit val booleanMapper: BsonValueMapper[Boolean]     = value => BsonValue.boolean(value)
   implicit val documentMapper: BsonValueMapper[Document]   = value => BsonValue.document(value)

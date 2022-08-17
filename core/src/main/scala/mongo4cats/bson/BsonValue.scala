@@ -19,25 +19,229 @@ package mongo4cats.bson
 import java.time.Instant
 import scala.util.matching.Regex
 
-sealed trait BsonValue
+sealed abstract class BsonValue {
+  def isNull: Boolean
+  def asInt: Option[Int]
+  def asLong: Option[Long]
+  def asDouble: Option[Double]
+  def asBigDecimal: Option[BigDecimal]
+  def asBoolean: Option[Boolean]
+  def asString: Option[String]
+  def asDocument: Option[Document]
+  def asObjectId: Option[ObjectId]
+  def asList: Option[List[BsonValue]]
+  def asInstant: Option[Instant]
+}
 
 object BsonValue {
-  case object BNull                                   extends BsonValue
-  case object BUndefined                              extends BsonValue
-  case object BMaxKey                                 extends BsonValue
-  case object BMinKey                                 extends BsonValue
-  final case class BInt32(value: Int)                 extends BsonValue
-  final case class BInt64(value: Long)                extends BsonValue
-  final case class BDouble(value: Double)             extends BsonValue
-  final case class BDateTime(value: Instant)          extends BsonValue
-  final case class BBinary(value: Array[Byte])        extends BsonValue
-  final case class BBoolean(value: Boolean)           extends BsonValue
-  final case class BDecimal(value: BigDecimal)        extends BsonValue
-  final case class BString(value: String)             extends BsonValue
-  final case class BObjectId(value: ObjectId)         extends BsonValue
-  final case class BDocument(value: Document)         extends BsonValue
-  final case class BArray(value: Iterable[BsonValue]) extends BsonValue
-  final case class BRegex(regex: Regex)               extends BsonValue
+  case object BNull extends BsonValue {
+    override def isNull: Boolean                  = true
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  case object BUndefined extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  case object BMaxKey extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  case object BMinKey extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BInt32(value: Int) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = Some(value)
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BInt64(value: Long) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = Some(value)
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BDouble(value: Double) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = Some(value)
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BDateTime(value: Instant) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = Some(value)
+    override def asString: Option[String]         = None
+  }
+  final case class BBinary(value: Array[Byte]) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BBoolean(value: Boolean) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = Some(value)
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BDecimal(value: BigDecimal) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = Some(value)
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BString(value: String) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = Some(value)
+  }
+  final case class BObjectId(value: ObjectId) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = Some(value)
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BDocument(value: Document) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = Some(value)
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BArray(value: Iterable[BsonValue]) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = Some(value.toList)
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
+  final case class BRegex(regex: Regex) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+  }
 
   val Null: BsonValue      = BNull
   val Undefined: BsonValue = BUndefined
@@ -59,6 +263,6 @@ object BsonValue {
   def boolean(value: Boolean): BsonValue       = BBoolean(value)
   def double(value: Double): BsonValue         = BDouble(value)
   def binary(value: Array[Byte]): BsonValue    = BBinary(value)
-  def dateTime(value: Instant): BsonValue      = BDateTime(value)
+  def instant(value: Instant): BsonValue       = BDateTime(value)
   def regex(value: Regex): BsonValue           = BRegex(value)
 }

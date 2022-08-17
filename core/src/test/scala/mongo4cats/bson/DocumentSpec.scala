@@ -72,11 +72,11 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "handle time" in {
         val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
 
-        doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00").toBson)
+        doc.get("time").flatMap(_.asInstant) mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
       }
 
       "retrieve nested fields" in {
-        testDocument.getNested("name.first") mustBe Some("John".toBson)
+        testDocument.getNested("name.first").flatMap(_.asString) mustBe Some("John")
       }
 
       "return empty option when nested field does not exist" in {

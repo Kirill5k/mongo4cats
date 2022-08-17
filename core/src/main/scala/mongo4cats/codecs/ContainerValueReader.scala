@@ -81,7 +81,7 @@ private[codecs] object ContainerValueReader {
       case BsonType.BINARY             => Some(BsonValue.binary(reader.readBinaryData().getData))
       case BsonType.OBJECT_ID          => Some(BsonValue.objectId(reader.readObjectId()))
       case BsonType.BOOLEAN            => Some(BsonValue.boolean(reader.readBoolean()))
-      case BsonType.DATE_TIME          => Some(BsonValue.dateTime(Instant.ofEpochMilli(reader.readDateTime())))
+      case BsonType.DATE_TIME          => Some(BsonValue.instant(Instant.ofEpochMilli(reader.readDateTime())))
       case BsonType.REGULAR_EXPRESSION => Some(BsonValue.regex(reader.readRegularExpression().asRegularExpression().getPattern.r))
       case _                           => None
 

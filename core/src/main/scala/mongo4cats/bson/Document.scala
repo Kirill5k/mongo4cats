@@ -43,14 +43,14 @@ sealed abstract class Document extends Bson {
   def merge(other: Document): Document
 
   def get(key: String): Option[BsonValue]
-  def getList(key: String): Option[List[BsonValue]] = get(key).collect { case BsonValue.BArray(value) => value.toList }
-  def getObjectId(key: String): Option[ObjectId]    = get(key).collect { case BsonValue.BObjectId(value) => value }
-  def getDocument(key: String): Option[Document]    = get(key).collect { case BsonValue.BDocument(value) => value }
-  def getBoolean(key: String): Option[Boolean]      = get(key).collect { case BsonValue.BBoolean(value) => value }
-  def getString(key: String): Option[String]        = get(key).collect { case BsonValue.BString(value) => value }
-  def getDouble(key: String): Option[Double]        = get(key).collect { case BsonValue.BDouble(value) => value }
-  def getLong(key: String): Option[Long]            = get(key).collect { case BsonValue.BInt64(value) => value }
-  def getInt(key: String): Option[Int]              = get(key).collect { case BsonValue.BInt32(value) => value }
+  def getList(key: String): Option[List[BsonValue]] = get(key).flatMap(_.asList)
+  def getObjectId(key: String): Option[ObjectId]    = get(key).flatMap(_.asObjectId)
+  def getDocument(key: String): Option[Document]    = get(key).flatMap(_.asDocument)
+  def getBoolean(key: String): Option[Boolean]      = get(key).flatMap(_.asBoolean)
+  def getString(key: String): Option[String]        = get(key).flatMap(_.asString)
+  def getDouble(key: String): Option[Double]        = get(key).flatMap(_.asDouble)
+  def getLong(key: String): Option[Long]            = get(key).flatMap(_.asLong)
+  def getInt(key: String): Option[Int]              = get(key).flatMap(_.asInt)
 
   def getNested(jsonPath: String): Option[BsonValue] = {
     @tailrec
