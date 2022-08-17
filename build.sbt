@@ -59,7 +59,13 @@ val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
-  scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil)
+  scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil),
+  tpolecatCiModeOptions ~= { opts =>
+    opts.filterNot(
+      ScalacOptions.privateWarnUnusedOptions ++
+        ScalacOptions.warnUnusedOptions
+    )
+  }
 )
 
 val `mongo4cats-embedded` = project
