@@ -82,6 +82,18 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "return empty option when nested field does not exist" in {
         testDocument.getNested("foo.bar") mustBe None
       }
+
+      "return List[A] when when it can be decoded" in {
+        val doc = Document.parse("""{"array":["a", "b", "c"]}""")
+
+        doc.get[List[String]]("array") mustBe Some(List("a", "b", "c"))
+      }
+
+      "return empty option when structure of the list is different" in {
+        val doc = Document.parse("""{"array":["a", "b", 1]}""")
+
+        doc.get[List[String]]("array") mustBe None
+      }
     }
 
     "when adding new elements" should {

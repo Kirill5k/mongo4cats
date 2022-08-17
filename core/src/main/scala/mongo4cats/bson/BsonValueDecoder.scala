@@ -16,6 +16,8 @@
 
 package mongo4cats.bson
 
+import cats.syntax.traverse._
+
 import java.time.Instant
 
 trait BsonValueDecoder[A] {
@@ -31,4 +33,7 @@ object BsonValueDecoder {
   implicit val doubleDecoder: BsonValueDecoder[Double]     = _.asDouble
   implicit val booleanDecoder: BsonValueDecoder[Boolean]   = _.asBoolean
   implicit val documentDecoder: BsonValueDecoder[Document] = _.asDocument
+
+  implicit def arrayListDecoder[A](implicit d: BsonValueDecoder[A]): BsonValueDecoder[List[A]] =
+    _.asList.flatMap(_.traverse(d.decode))
 }
