@@ -47,7 +47,7 @@ class CirceMapperSpec extends AnyWordSpec with Matchers {
           "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
         )
 
-        CirceMapper.toBson(jsonObject) mustBe bsonDocument
+        CirceMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
       }
 
       "accurately convert bson to json" in {
