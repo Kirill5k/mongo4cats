@@ -102,7 +102,7 @@ final private class ListMapDocument(
   override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
-      case Some(doc: Document) => doc.toMap.equals(fields)
+      case Some(doc: Document) => doc.toJson == toJson
       case _                   => false
     }
 }
