@@ -16,11 +16,80 @@
 
 package mongo4cats.derivation
 
-import org.bson.{BsonArray, BsonDocument, BsonElement, BsonValue}
+import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
+import mongo4cats.derivation.bson.tag.@@
+import org.bson.codecs.{BsonValueCodec, Codec, DecoderContext, EncoderContext}
+import org.bson.codecs.configuration.CodecProvider
+import org.bson.{BsonArray, BsonDocument, BsonElement, BsonReader, BsonValue, BsonWriter}
 
 import java.util
+import scala.reflect.ClassTag
 
 package object bson {
+
+  type Fast[A] = A @@ BsonValue
+
+  // Copied From `shapeless.tag`.
+  object tag {
+    def apply[U] = Tagger.asInstanceOf[Tagger[U]]
+
+    trait Tagged[U] extends Any
+
+    type @@[+T, U] = T with Tagged[U]
+
+    class Tagger[U] {
+      def apply[T](t: T): T @@ U = t.asInstanceOf[T @@ U]
+    }
+
+    private object Tagger extends Tagger[Nothing]
+  }
+
+  implicit def toFast[A](a: A): Fast[A] =
+    tag[BsonValue].apply[A](a)
+
+  implicit def bsonClassTag[A](implicit ctA: ClassTag[A]): ClassTag[Fast[A]] = {
+    val clazzSingleton: Class[_] = ctA.runtimeClass
+
+    new ClassTag[Fast[A]] {
+      override def runtimeClass: Class[_] = clazzSingleton
+    }
+  }
+
+  private val bsonValueCodecSingleton: Codec[BsonValue] = new BsonValueCodec()
+
+  implicit def bsonMongoCodecProvider[A](implicit
+      ctA: ClassTag[A],
+      encA: BsonEncoder[A],
+      decA: BsonDecoder[A]
+  ): MongoCodecProvider[Fast[A]] = {
+    val classA: Class[A] =
+      ctA.runtimeClass.asInstanceOf[Class[A]]
+
+    val javaCodecSingleton: Codec[A] =
+      new Codec[A] {
+        override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+          bsonValueCodecSingleton.encode(writer, encA(a), encoderContext)
+
+        override def getEncoderClass: Class[A] = classA
+
+        override def decode(reader: BsonReader, decoderContext: DecoderContext): A =
+          decA(bsonValueCodecSingleton.decode(reader, decoderContext)) match {
+            case Right(a) => a
+            case Left(ex) => throw ex
+          }
+      }
+
+    val javaCodecProviderSingleton: CodecProvider =
+      new CodecProvider {
+        override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
+          if (classT == classA || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]]
+          else null
+      }
+
+    new MongoCodecProvider[Fast[A]] {
+      override def get: CodecProvider = javaCodecProviderSingleton
+    }
+  }
 
   implicit class BsonValueOps(val bsonValue: BsonValue) extends AnyVal {
 

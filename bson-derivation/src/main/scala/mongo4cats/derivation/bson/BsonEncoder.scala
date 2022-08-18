@@ -20,19 +20,19 @@ import mongo4cats.AsJava
 import org.bson.BsonValue
 
 /** A type class that provides a conversion from a value of type `A` to a [[BsonValue]] value. */
-trait BsonEncoder[A] extends Serializable with AsJava { self =>
+trait BsonEncoder[A] extends Serializable with AsJava {
 
   /** Convert a value to BsonValue. */
   def apply(a: A): BsonValue
 
   /** Create a new [[BsonEncoder]] by applying a function to a value of type `B` before encoding as an `A`. */
   final def contramap[B](f: B => A): BsonEncoder[B] =
-    (a: B) => self(f(a))
+    (a: B) => apply(f(a))
 
   /** Create a new [[BsonEncoder]] by applying a function to the output of this one.
     */
   final def mapBsonValue(f: BsonValue => BsonValue): BsonEncoder[A] =
-    (a: A) => f(self(a))
+    (a: A) => f(apply(a))
 }
 
 object BsonEncoder {
