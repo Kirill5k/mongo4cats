@@ -16,12 +16,11 @@
 
 package mongo4cats.codecs
 
+import mongo4cats.helpers._
 import com.mongodb.DocumentToDBRefTransformer
 import org.bson.codecs.{BsonTypeClassMap, BsonTypeCodecMap, Codec, DecoderContext, EncoderContext, OverridableUuidRepresentationCodec}
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.{BsonReader, BsonWriter, Transformer, UuidRepresentation}
-
-import scala.reflect.ClassTag
 
 final private class OptionCodec(
     private val registry: CodecRegistry,
@@ -41,8 +40,7 @@ final private class OptionCodec(
       case None        => writer.writeNull()
     }
 
-  override def getEncoderClass: Class[Option[Any]] =
-    implicitly[ClassTag[Option[Any]]].runtimeClass.asInstanceOf[Class[Option[Any]]]
+  override def getEncoderClass: Class[Option[Any]] = clazz[Option[Any]]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Option[Any] =
     Option(ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer))

@@ -50,6 +50,7 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         val result = Document.parse(s"""{"people": [$jsonString]}""")
 
         result.getList("people") mustBe Some(List(testDocument.toBson))
+        result.getAs[List[Document]]("people") mustBe Some(List(testDocument))
       }
 
       "convert dates to json accurately" in {
@@ -78,7 +79,8 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "handle date-time" in {
         val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
 
-        doc.get[Instant]("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
+        doc.get("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00").toBson)
+        doc.getAs[Instant]("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
       }
 
       "handle date" in {
@@ -89,22 +91,25 @@ class DocumentSpec extends AnyWordSpec with Matchers {
 
       "retrieve nested fields" in {
         testDocument.getNested("name.first").flatMap(_.asString) mustBe Some("John")
+        testDocument.getNestedAs[String]("name.first") mustBe Some("John")
       }
 
       "return empty option when nested field does not exist" in {
         testDocument.getNested("foo.bar") mustBe None
+        testDocument.getNestedAs[String]("foo.bar") mustBe None
       }
 
       "return List[A] when when it can be decoded" in {
         val doc = Document.parse("""{"array":["a", "b", "c"]}""")
 
-        doc.get[List[String]]("array") mustBe Some(List("a", "b", "c"))
+        doc.getAs[List[String]]("array") mustBe Some(List("a", "b", "c"))
+        doc.getAs[List[Int]]("array") mustBe None
       }
 
       "return empty option when structure of the list is different" in {
         val doc = Document.parse("""{"array":["a", "b", 1]}""")
 
-        doc.get[List[String]]("array") mustBe None
+        doc.getAs[List[String]]("array") mustBe None
       }
     }
 

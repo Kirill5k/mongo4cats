@@ -21,6 +21,7 @@ import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.bson.ObjectId
 import mongo4cats.circe.syntax._
 import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
+import mongo4cats.helpers.clazz
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
@@ -34,25 +35,25 @@ final case class MongoJsonParsingException(message: String, json: Option[String]
 trait MongoJsonCodecs {
 
   implicit val encodeObjectId: Encoder[ObjectId] =
-    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(CirceMapper.idTag -> Json.fromString(i.toHexString)))
+    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(JsonMapper.idTag -> Json.fromString(i.toHexString)))
   implicit val decodeObjectId: Decoder[ObjectId] =
-    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id(CirceMapper.idTag).flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id(JsonMapper.idTag).flatMap(_.asString).get)))
 
   implicit val encodeInstant: Encoder[Instant] =
-    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(CirceMapper.dateTag -> Json.fromString(i.toString)))
+    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
   implicit val decodeInstant: Decoder[Instant] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj(CirceMapper.dateTag).flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).get)))
 
   implicit val encodeLocalDate: Encoder[LocalDate] =
-    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(CirceMapper.dateTag -> Json.fromString(i.toString)))
+    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
   implicit val decodeLocalDate: Decoder[LocalDate] =
     Decoder.decodeJsonObject.emapTry(dateObj =>
-      Try(LocalDate.parse(dateObj(CirceMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
+      Try(LocalDate.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
     )
 
   implicit def deriveCirceCodecProvider[T: Encoder: Decoder: ClassTag]: MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
-      implicit val classT: Class[T]   = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+      implicit val classT: Class[T]   = clazz[T]
       override def get: CodecProvider = circeBasedCodecProvider[T]
     }
 
@@ -70,7 +71,7 @@ trait MongoJsonCodecs {
                 bson <- ContainerValueReader
                   .readBsonValue(reader)
                   .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
-                json   <- CirceMapper.fromBson(bson)
+                json   <- JsonMapper.fromBson(bson)
                 result <- dec.decodeJson(json).left.map(e => MongoJsonParsingException(e.getMessage, Some(json.noSpaces)))
               } yield result).fold(e => throw e, c => c.asInstanceOf[Y])
           }

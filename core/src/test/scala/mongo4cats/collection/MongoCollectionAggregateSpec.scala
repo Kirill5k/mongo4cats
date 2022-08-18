@@ -19,7 +19,7 @@ package mongo4cats.collection
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
-import mongo4cats.bson.{BsonValue, Document}
+import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations._
@@ -99,7 +99,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
 
         result.map { expl =>
           expl.getDouble("ok") mustBe Some(1.0)
-          expl.getNested("serverInfo.port") mustBe Some(BsonValue.int(mongoPort))
+          expl.getNestedAs[Int]("serverInfo.port") mustBe Some(mongoPort)
           expl.getList("stages").get must have size 4
         }
       }

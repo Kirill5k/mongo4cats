@@ -17,11 +17,10 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.{Document, ObjectId}
+import mongo4cats.helpers.clazz
 import org.bson.codecs.{Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator}
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.{BsonObjectId, BsonReader, BsonValue => JBsonValue, BsonWriter}
-
-import scala.reflect.ClassTag
 
 final private class DocumentCodec(
     private val idGenerator: IdGenerator
@@ -29,8 +28,7 @@ final private class DocumentCodec(
 
   private val idFieldName = "_id"
 
-  override def getEncoderClass: Class[Document] =
-    implicitly[ClassTag[Document]].runtimeClass.asInstanceOf[Class[Document]]
+  override def getEncoderClass: Class[Document] = clazz[Document]
 
   override def encode(writer: BsonWriter, document: Document, encoderContext: EncoderContext): Unit =
     ContainerValueWriter.writeBsonDocument(document, writer, Some(idFieldName))

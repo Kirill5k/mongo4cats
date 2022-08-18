@@ -22,6 +22,6 @@ import mongo4cats.bson.BsonValue
 object syntax {
 
   implicit final class EncoderSyntax[A](private val value: A) extends AnyVal {
-    def toBsonValue(implicit e: Encoder[A]): BsonValue = CirceMapper.toBson(e(value))
+    def toBsonValue(implicit e: Encoder[A]): BsonValue = JsonMapper.toBson(e(value))
   }
 }

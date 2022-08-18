@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Kirill5k
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mongo4cats.circe
 
 import io.circe.Json
@@ -7,7 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
 
-class CirceMapperSpec extends AnyWordSpec with Matchers {
+class JsonMapperSpec extends AnyWordSpec with Matchers {
 
   val ts = Instant.now()
   val id = ObjectId.get
@@ -47,11 +63,11 @@ class CirceMapperSpec extends AnyWordSpec with Matchers {
           "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
         )
 
-        CirceMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
+        JsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
       }
 
       "accurately convert bson to json" in {
-        CirceMapper.fromBson(bsonDocument) mustBe Right(
+        JsonMapper.fromBson(bsonDocument) mustBe Right(
           Json.obj(
             "string"        -> Json.fromString("string"),
             "null"          -> Json.Null,

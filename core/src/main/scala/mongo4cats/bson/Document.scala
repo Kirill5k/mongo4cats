@@ -43,15 +43,16 @@ sealed abstract class Document extends Bson {
   def merge(other: Document): Document
 
   def apply(key: String): Option[BsonValue]
-  def get[A](key: String)(implicit d: BsonValueDecoder[A]): Option[A] = apply(key).flatMap(d.decode)
-  def getList(key: String): Option[List[BsonValue]]                   = apply(key).flatMap(_.asList)
-  def getObjectId(key: String): Option[ObjectId]                      = apply(key).flatMap(_.asObjectId)
-  def getDocument(key: String): Option[Document]                      = apply(key).flatMap(_.asDocument)
-  def getBoolean(key: String): Option[Boolean]                        = apply(key).flatMap(_.asBoolean)
-  def getString(key: String): Option[String]                          = apply(key).flatMap(_.asString)
-  def getDouble(key: String): Option[Double]                          = apply(key).flatMap(_.asDouble)
-  def getLong(key: String): Option[Long]                              = apply(key).flatMap(_.asLong)
-  def getInt(key: String): Option[Int]                                = apply(key).flatMap(_.asInt)
+  def get(key: String): Option[BsonValue]                               = apply(key)
+  def getList(key: String): Option[List[BsonValue]]                     = apply(key).flatMap(_.asList)
+  def getObjectId(key: String): Option[ObjectId]                        = apply(key).flatMap(_.asObjectId)
+  def getDocument(key: String): Option[Document]                        = apply(key).flatMap(_.asDocument)
+  def getBoolean(key: String): Option[Boolean]                          = apply(key).flatMap(_.asBoolean)
+  def getString(key: String): Option[String]                            = apply(key).flatMap(_.asString)
+  def getDouble(key: String): Option[Double]                            = apply(key).flatMap(_.asDouble)
+  def getLong(key: String): Option[Long]                                = apply(key).flatMap(_.asLong)
+  def getInt(key: String): Option[Int]                                  = apply(key).flatMap(_.asInt)
+  def getAs[A](key: String)(implicit d: BsonValueDecoder[A]): Option[A] = apply(key).flatMap(d.decode)
 
   def getNested(jsonPath: String): Option[BsonValue] = {
     @tailrec
@@ -66,6 +67,8 @@ sealed abstract class Document extends Bson {
     val paths = jsonPath.split("\\.")
     go(paths.head, paths.tail, this)
   }
+
+  def getNestedAs[A](jsonPath: String)(implicit d: BsonValueDecoder[A]): Option[A] = getNested(jsonPath).flatMap(d.decode)
 
   def toList: List[(String, BsonValue)]
   def toMap: Map[String, BsonValue]

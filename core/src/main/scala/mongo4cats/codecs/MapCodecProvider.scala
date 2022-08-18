@@ -16,13 +16,13 @@
 
 package mongo4cats.codecs
 
+import mongo4cats.helpers._
 import com.mongodb.DocumentToDBRefTransformer
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{BsonTypeClassMap, BsonTypeCodecMap, Codec, DecoderContext, EncoderContext, OverridableUuidRepresentationCodec}
 import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
 
 import scala.annotation.tailrec
-import scala.reflect.ClassTag
 
 final private class MapCodec(
     private val registry: CodecRegistry,
@@ -45,8 +45,7 @@ final private class MapCodec(
     writer.writeEndDocument()
   }
 
-  override def getEncoderClass: Class[Map[String, Any]] =
-    implicitly[ClassTag[Map[String, Any]]].runtimeClass.asInstanceOf[Class[Map[String, Any]]]
+  override def getEncoderClass: Class[Map[String, Any]] = clazz[Map[String, Any]]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Map[String, Any] = {
     @tailrec

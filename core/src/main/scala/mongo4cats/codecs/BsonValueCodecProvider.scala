@@ -17,19 +17,17 @@
 package mongo4cats.codecs
 
 import mongo4cats.bson.BsonValue
+import mongo4cats.helpers.clazz
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
-
-import scala.reflect.ClassTag
 
 private object BsonValueCodec extends Codec[BsonValue] {
 
   override def encode(writer: BsonWriter, bsonValue: BsonValue, encoderContext: EncoderContext): Unit =
     ContainerValueWriter.writeBsonValue(bsonValue, writer)
 
-  override def getEncoderClass: Class[BsonValue] =
-    implicitly[ClassTag[BsonValue]].runtimeClass.asInstanceOf[Class[BsonValue]]
+  override def getEncoderClass: Class[BsonValue] = clazz[BsonValue]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): BsonValue =
     ContainerValueReader.readBsonValue(reader).orNull

@@ -22,7 +22,7 @@ import mongo4cats.bson.{BsonValue, Document, ObjectId}
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 
-private[circe] object CirceMapper {
+private[circe] object JsonMapper {
   val idTag   = "$oid"
   val dateTag = "$date"
 
@@ -33,7 +33,7 @@ private[circe] object CirceMapper {
       case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
       case j if j.isString      => BsonValue.string(j.asString.get)
       case j if j.isNumber      => j.asNumber.get.toBsonValue
-      case j if j.isId          => BsonValue.objectId(ObjectId(j.asObject.get(idTag).flatMap(_.asString).get))
+      case j if j.isId          => BsonValue.objectId(j.asObjectId)
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
@@ -49,6 +49,7 @@ private[circe] object CirceMapper {
 
     def asEpochMillis: Long     = json.asObject.flatMap(_(dateTag)).flatMap(_.asNumber).flatMap(_.toLong).get
     def asIsoDateString: String = json.asObject.flatMap(_(dateTag)).flatMap(_.asString).get
+    def asObjectId: ObjectId    = json.asObject.get(idTag).flatMap(_.asString).map(ObjectId(_)).get
   }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
