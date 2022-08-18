@@ -34,19 +34,21 @@ final case class MongoJsonParsingException(message: String, json: Option[String]
 trait MongoJsonCodecs {
 
   implicit val encodeObjectId: Encoder[ObjectId] =
-    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject("$oid" -> Json.fromString(i.toHexString)))
+    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(CirceMapper.idTag -> Json.fromString(i.toHexString)))
   implicit val decodeObjectId: Decoder[ObjectId] =
-    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id("$oid").flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id(CirceMapper.idTag).flatMap(_.asString).get)))
 
   implicit val encodeInstant: Encoder[Instant] =
-    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject("$date" -> Json.fromString(i.toString)))
+    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(CirceMapper.dateTag -> Json.fromString(i.toString)))
   implicit val decodeInstant: Decoder[Instant] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj("$date").flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj(CirceMapper.dateTag).flatMap(_.asString).get)))
 
   implicit val encodeLocalDate: Encoder[LocalDate] =
-    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject("$date" -> Json.fromString(i.toString)))
+    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(CirceMapper.dateTag -> Json.fromString(i.toString)))
   implicit val decodeLocalDate: Decoder[LocalDate] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(LocalDate.parse(dateObj("$date").flatMap(_.asString).map(_.slice(0, 10)).get)))
+    Decoder.decodeJsonObject.emapTry(dateObj =>
+      Try(LocalDate.parse(dateObj(CirceMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
+    )
 
   implicit def deriveCirceCodecProvider[T: Encoder: Decoder: ClassTag]: MongoCodecProvider[T] =
     new MongoCodecProvider[T] {

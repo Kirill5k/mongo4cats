@@ -23,8 +23,8 @@ import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import java.time.{Instant, LocalDate, ZoneOffset}
 
 private[circe] object CirceMapper {
-  private val idMarker   = "$oid"
-  private val dateMarker = "$date"
+  val idTag   = "$oid"
+  val dateTag = "$date"
 
   def toBson(json: Json): BsonValue =
     json match {
@@ -33,7 +33,7 @@ private[circe] object CirceMapper {
       case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
       case j if j.isString      => BsonValue.string(j.asString.get)
       case j if j.isNumber      => j.asNumber.get.toBsonValue
-      case j if j.isId          => BsonValue.objectId(ObjectId(j.asObject.get(idMarker).flatMap(_.asString).get))
+      case j if j.isId          => BsonValue.objectId(ObjectId(j.asObject.get(idTag).flatMap(_.asString).get))
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
@@ -41,14 +41,14 @@ private[circe] object CirceMapper {
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
-    def isId: Boolean          = json.isObject && json.asObject.exists(_.contains(idMarker))
-    def isDate: Boolean        = json.isObject && json.asObject.exists(_.contains(dateMarker))
-    def isEpochMillis: Boolean = isDate && json.asObject.exists(_(dateMarker).exists(_.isNumber))
+    def isId: Boolean          = json.isObject && json.asObject.exists(_.contains(idTag))
+    def isDate: Boolean        = json.isObject && json.asObject.exists(_.contains(dateTag))
+    def isEpochMillis: Boolean = isDate && json.asObject.exists(_(dateTag).exists(_.isNumber))
     def isLocalDate: Boolean =
-      isDate && json.asObject.exists(o => o(dateMarker).exists(_.isString) && o(dateMarker).exists(_.asString.get.length == 10))
+      isDate && json.asObject.exists(o => o(dateTag).exists(_.isString) && o(dateTag).exists(_.asString.get.length == 10))
 
-    def asEpochMillis: Long     = json.asObject.flatMap(_(dateMarker)).flatMap(_.asNumber).flatMap(_.toLong).get
-    def asIsoDateString: String = json.asObject.flatMap(_(dateMarker)).flatMap(_.asString).get
+    def asEpochMillis: Long     = json.asObject.flatMap(_(dateTag)).flatMap(_.asNumber).flatMap(_.toLong).get
+    def asIsoDateString: String = json.asObject.flatMap(_(dateTag)).flatMap(_.asString).get
   }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
@@ -62,8 +62,8 @@ private[circe] object CirceMapper {
   def fromBson(bson: BsonValue): Either[MongoJsonParsingException, Json] =
     bson match {
       case BsonValue.BNull            => Right(Json.Null)
-      case BsonValue.BObjectId(value) => Right(Json.obj(idMarker -> Json.fromString(value.toHexString)))
-      case BsonValue.BDateTime(value) => Right(Json.obj(dateMarker -> Json.fromString(value.toString)))
+      case BsonValue.BObjectId(value) => Right(Json.obj(idTag -> Json.fromString(value.toHexString)))
+      case BsonValue.BDateTime(value) => Right(Json.obj(dateTag -> Json.fromString(value.toString)))
       case BsonValue.BInt32(value)    => Right(Json.fromInt(value))
       case BsonValue.BInt64(value)    => Right(Json.fromLong(value))
       case BsonValue.BBoolean(value)  => Right(Json.fromBoolean(value))

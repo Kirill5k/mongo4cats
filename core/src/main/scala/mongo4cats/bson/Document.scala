@@ -69,6 +69,7 @@ sealed abstract class Document extends Bson {
 
   def toList: List[(String, BsonValue)]
   def toMap: Map[String, BsonValue]
+  def toSet: Set[(String, BsonValue)]
 
   def toJson: String = {
     val writerSettings = JsonWriterSettings.builder.outputMode(JsonMode.RELAXED).build
@@ -96,13 +97,14 @@ final private class ListMapDocument(
   def add(key: String, value: BsonValue): Document = new ListMapDocument(fields + (key -> value))
 
   def toList: List[(String, BsonValue)] = fields.toList
+  def toSet: Set[(String, BsonValue)]   = fields.toSet
   def toMap: Map[String, BsonValue]     = fields
 
   override def toString: String = toJson
   override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
-      case Some(doc: Document) => doc.toJson == toJson
+      case Some(doc: Document) => doc.toSet == fields.toSet
       case _                   => false
     }
 }
