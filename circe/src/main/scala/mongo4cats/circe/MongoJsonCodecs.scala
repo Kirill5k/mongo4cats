@@ -65,7 +65,7 @@ trait MongoJsonCodecs {
               if (json.isObject) {
                 DocumentCodecProvider.DefaultCodec.encode(writer, Document.parse(json.noSpaces), encoderContext)
               } else {
-                stringCodec.encode(writer, json.noSpaces.replaceAll("\"", ""), encoderContext)
+                stringCodec.encode(writer, json.noSpaces.drop(1).dropRight(1), encoderContext)
               }
             }
             override def getEncoderClass: Class[Y] = classY
