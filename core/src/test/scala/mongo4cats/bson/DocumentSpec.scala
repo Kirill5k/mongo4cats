@@ -51,6 +51,12 @@ class DocumentSpec extends AnyWordSpec with Matchers {
 
         result.getList("people") mustBe Some(List(testDocument.toBson))
       }
+
+      "convert dates to json accurately" in {
+        val document = Document("time" := Instant.parse("2022-01-01T00:00:00Z"))
+
+        document.toJson mustBe """{"time": {"$date": "2022-01-01T00:00:00Z"}}"""
+      }
     }
 
     "calling toString" should {
@@ -69,10 +75,16 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         doc.getString("propB") mustBe None
       }
 
-      "handle time" in {
+      "handle date-time" in {
         val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
 
         doc.get[Instant]("time") mustBe Some(Instant.parse("2022-01-01T00:00:00.0+00:00"))
+      }
+
+      "handle date" in {
+        val doc = Document.parse("""{"time":{"$date":"2020-01-01"}}""")
+
+        doc.toJson mustBe """{"time": {"$date": "2020-01-01T00:00:00Z"}}"""
       }
 
       "retrieve nested fields" in {
