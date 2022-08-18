@@ -24,7 +24,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.annotation.tailrec
 
-private[codecs] object ContainerValueReader {
+private[mongo4cats] object ContainerValueReader {
 
   def readBsonDocument(reader: BsonReader): Document = {
     @tailrec

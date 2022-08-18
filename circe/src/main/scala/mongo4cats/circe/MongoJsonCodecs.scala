@@ -18,18 +18,18 @@ package mongo4cats.circe
 
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import io.circe.parser.{decode => circeDecode}
-import mongo4cats.bson.{Document, ObjectId}
-import mongo4cats.codecs.{DocumentCodecProvider, MongoCodecProvider}
+import mongo4cats.bson.ObjectId
+import mongo4cats.circe.syntax._
+import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext, StringCodec}
-import org.bson.{BsonReader, BsonType, BsonWriter}
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonReader, BsonWriter}
 
 import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
 import scala.util.Try
 
-final case class MongoJsonParsingException(jsonString: String, message: String) extends MongoClientException(message)
+final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
 trait MongoJsonCodecs {
 
@@ -59,27 +59,18 @@ trait MongoJsonCodecs {
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
         if (classY == classT || classT.isAssignableFrom(classY))
           new Codec[Y] {
-            private val stringCodec: Codec[String] = new StringCodec()
-            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit = {
-              val json = enc(t.asInstanceOf[T])
-              if (json.isObject) {
-                DocumentCodecProvider.DefaultCodec.encode(writer, Document.parse(json.noSpaces), encoderContext)
-              } else {
-                stringCodec.encode(writer, json.noSpaces.drop(1).dropRight(1), encoderContext)
-              }
-            }
             override def getEncoderClass: Class[Y] = classY
+            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
+              ContainerValueWriter.writeBsonValue(t.asInstanceOf[T].toBsonValue, writer)
+
             override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
-              reader.getCurrentBsonType match {
-                case BsonType.DOCUMENT =>
-                  val json = DocumentCodecProvider.DefaultCodec.decode(reader, decoderContext).toJson
-                  circeDecode[T](json).fold(e => throw MongoJsonParsingException(json, e.getMessage), _.asInstanceOf[Y])
-                case _ =>
-                  val string = stringCodec.decode(reader, decoderContext)
-                  dec
-                    .decodeJson(Json.fromString(string))
-                    .fold(e => throw MongoJsonParsingException(string, e.getMessage), _.asInstanceOf[Y])
-              }
+              (for {
+                bson <- ContainerValueReader
+                  .readBsonValue(reader)
+                  .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
+                json   <- CirceMapper.fromBson(bson)
+                result <- dec.decodeJson(json).left.map(e => MongoJsonParsingException(e.getMessage, Some(json.noSpaces)))
+              } yield result).fold(e => throw e, c => c.asInstanceOf[Y])
           }
         else null // scalastyle:ignore
     }

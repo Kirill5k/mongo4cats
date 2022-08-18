@@ -21,7 +21,7 @@ import org.bson._
 import org.bson.codecs.{Encoder, EncoderContext}
 import org.bson.types.Decimal128
 
-private[codecs] object ContainerValueWriter {
+private[mongo4cats] object ContainerValueWriter {
 
   def writeBsonDocument(
       value: Document,

@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.circe
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
-import mongo4cats.circe._
+import io.circe.{Decoder, Encoder}
+import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
-import mongo4cats.bson.ObjectId
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
-import java.time.{Instant, LocalDate}
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
+import java.time.{Instant, LocalDate}
 import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
