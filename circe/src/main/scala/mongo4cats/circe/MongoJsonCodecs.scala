@@ -18,8 +18,8 @@ package mongo4cats.circe
 
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import mongo4cats.bson.ObjectId
-import mongo4cats.circe.syntax._
+import mongo4cats.bson.{BsonValueDecoder, BsonValueEncoder, ObjectId}
+import mongo4cats.bson.syntax._
 import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
 import mongo4cats.helpers.clazz
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
@@ -33,6 +33,12 @@ import scala.util.Try
 final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
 trait MongoJsonCodecs {
+
+  implicit def jsonDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
+    bson => JsonMapper.fromBson(bson).flatMap(d.decodeJson).toOption
+
+  implicit def jsonEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
+    value => JsonMapper.toBson(e(value))
 
   implicit val encodeObjectId: Encoder[ObjectId] =
     Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(JsonMapper.idTag -> Json.fromString(i.toHexString)))
@@ -64,7 +70,7 @@ trait MongoJsonCodecs {
           new Codec[Y] {
             override def getEncoderClass: Class[Y] = classY
             override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
-              ContainerValueWriter.writeBsonValue(t.asInstanceOf[T].toBsonValue, writer)
+              ContainerValueWriter.writeBsonValue(t.asInstanceOf[T].toBson, writer)
 
             override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
               (for {
