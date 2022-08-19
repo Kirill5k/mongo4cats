@@ -34,6 +34,8 @@ import mongo4cats.derivation.bson.configured.TestSealedTrait.CC1
 import mongo4cats.derivation.bson.configured.TestSealedTrait.CC2
 import mongo4cats.derivation.bson.configured.TestSealedTrait.CC3
 import org.bson.BsonDocument
+import org.bson.BsonDocumentWriter
+import org.bson.codecs.EncoderContext
 import _root_.org.scalacheck._
 import _root_.org.scalacheck.Gen._
 import _root_.org.scalacheck.Arbitrary._
@@ -147,10 +149,12 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
 
     forAll(rootTestDataGen, Gen.oneOf(false, true)) { case (testData, dropNulls) =>
       // --- Encode ---
-      val circeJson: Json       = testData.asJson
-      val circeJsonStr: String  = circeJson.noSpaces
-      val bsonDoc: BsonDocument = BsonEncoder[RootTestData].apply(testData).asInstanceOf[BsonDocument]
-      val bsonStr: String       = bsonDoc.toJson().replace("\": ", "\":").replace(", ", ",")
+      val circeJson: Json      = testData.asJson
+      val circeJsonStr: String = circeJson.noSpaces
+      val bsonDoc              = new BsonDocument()
+      val bsonWriter           = new BsonDocumentWriter(bsonDoc)
+      BsonEncoder[RootTestData].useJavaEncoderFirst(bsonWriter, testData, EncoderContext.builder().build())
+      val bsonStr: String = bsonDoc.toJson().replace("\": ", "\":").replace(", ", ",")
       assert(
         bsonStr == circeJsonStr,
         s"""|, 1) Json String from Bson != Json String from Circe

@@ -17,8 +17,11 @@
 package mongo4cats.derivation.bson
 
 import magnolia1._
+import mongo4cats.derivation.bson.BsonEncoder.{instanceWithBsonValue, pipeValue}
 import mongo4cats.derivation.bson.configured.Configuration
-import org.bson.{BsonDocument, BsonValue}
+import org.bson.BsonType._
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonArray, BsonDocument, BsonDocumentWriter, BsonJavaScriptWithScope, BsonReader, BsonType, BsonValue, BsonWriter}
 
 private[bson] object MagnoliaBsonEncoder {
 
@@ -39,21 +42,21 @@ private[bson] object MagnoliaBsonEncoder {
       )
     }
 
-    new BsonEncoder[T] {
-      def apply(a: T): BsonValue = {
-        val bsonDoc = new BsonDocument(caseClass.parameters.size)
-
-        caseClass.parameters
-          .map { p =>
-            val label = paramJsonKeyLookup.getOrElse(
-              p.label,
-              throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
-            )
-            label -> p.typeclass(p.dereference(a))
-          }
-          .foreach { case (k, v) => bsonDoc.append(k, v) }
-
-        bsonDoc
+    BsonEncoder.instanceFromJavaEncoder[T] {
+      new JavaEncoder[T] {
+        override def encode(writer: BsonWriter, value: T, encoderContext: EncoderContext): Unit = {
+          writer.writeStartDocument()
+          caseClass.parameters
+            .foreach { p =>
+              val label = paramJsonKeyLookup.getOrElse(
+                p.label,
+                throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
+              )
+              writer.writeName(label)
+              p.typeclass.useJavaEncoderFirst(writer, p.dereference(value), encoderContext)
+            }
+          writer.writeEndDocument()
+        }
       }
     }
   }
@@ -72,24 +75,23 @@ private[bson] object MagnoliaBsonEncoder {
       }
     }
 
-    new BsonEncoder[T] {
-      def apply(a: T): BsonValue =
-        sealedTrait.split(a) { subtype =>
-          val baseJson = subtype.typeclass(subtype.cast(a))
-          val constructorName = config
-            .transformConstructorNames(subtype.typeName.short)
-          config.discriminator match {
-            case Some(discriminator) =>
-              // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
-              // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
-              // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
-              baseJson match {
-                case bsonDoc: BsonDocument => bsonDoc.clone().append(discriminator, org.bson.Document.parse(constructorName).toBsonDocument)
-                case _                     => new BsonDocument(constructorName, baseJson)
-              }
-            case None => new BsonDocument(constructorName, baseJson)
-          }
+    instanceWithBsonValue[T] { a =>
+      sealedTrait.split(a) { subtype =>
+        val baseJson        = subtype.typeclass.toBsonValue(subtype.cast(a))
+        val constructorName = config.transformConstructorNames(subtype.typeName.short)
+        config.discriminator match {
+          case Some(discriminator) =>
+            // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
+            // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
+            // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
+            baseJson match {
+              case bsonDoc: BsonDocument => bsonDoc.clone().append(discriminator, org.bson.Document.parse(constructorName).toBsonDocument)
+              case _                     => new BsonDocument(constructorName, baseJson)
+            }
+          case None => new BsonDocument(constructorName, baseJson)
         }
+      }
     }
   }
+
 }

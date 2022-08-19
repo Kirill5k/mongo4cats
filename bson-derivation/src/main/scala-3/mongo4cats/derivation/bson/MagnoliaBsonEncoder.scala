@@ -17,8 +17,11 @@
 package mongo4cats.derivation.bson
 
 import magnolia1._
+import mongo4cats.derivation.bson.BsonEncoder.pipeValue
 import mongo4cats.derivation.bson.configured.Configuration
-import org.bson.{BsonDocument, BsonValue}
+import org.bson.BsonType._
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonArray, BsonDocument, BsonDocumentWriter, BsonJavaScriptWithScope, BsonReader, BsonType, BsonValue, BsonWriter}
 
 private[bson] object MagnoliaBsonEncoder {
 
@@ -39,21 +42,24 @@ private[bson] object MagnoliaBsonEncoder {
       )
     }
 
-    new BsonEncoder[T] {
-      def apply(a: T): BsonValue = {
-        val bsonDoc = new BsonDocument(caseClass.params.size)
+    BsonEncoder.instanceFromJavaEncoder[T] {
+      new JavaEncoder[T] {
+        override def encode(writer: BsonWriter, value: T, encoderContext: EncoderContext): Unit = {
+          writer.writeStartDocument()
+          caseClass.params
+            .foreach { p =>
+              val label = paramJsonKeyLookup.getOrElse(
+                p.label,
+                throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
+              )
+              writer.writeName(label)
+              val javaEncoder = p.typeclass.fromJavaEncoder
 
-        caseClass.params
-          .map { p =>
-            val label = paramJsonKeyLookup.getOrElse(
-              p.label,
-              throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
-            )
-            label -> p.typeclass(p.deref(a))
-          }
-          .foreach { case (k, v) => bsonDoc.append(k, v) }
-
-        bsonDoc
+              if (javaEncoder == null) pipeValue(writer, p.typeclass.toBsonValue(p.deref(value)))
+              else javaEncoder.encode(writer, p.deref(value), encoderContext)
+            }
+          writer.writeEndDocument()
+        }
       }
     }
   }
@@ -72,24 +78,23 @@ private[bson] object MagnoliaBsonEncoder {
       }
     }
 
-    new BsonEncoder[T] {
-      def apply(a: T): BsonValue =
-        sealedTrait.choose(a) { subtype =>
-          val baseJson = subtype.typeclass(subtype.cast(a))
-          val constructorName = config
-            .transformConstructorNames(subtype.typeInfo.short)
-          config.discriminator match {
-            case Some(discriminator) =>
-              // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
-              // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
-              // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
-              baseJson match {
-                case bsonDoc: BsonDocument => bsonDoc.clone().append(discriminator, org.bson.Document.parse(constructorName).toBsonDocument)
-                case _                     => new BsonDocument(constructorName, baseJson)
-              }
-            case None => new BsonDocument(constructorName, baseJson)
-          }
+    BsonEncoder.instanceWithBsonValue[T] { a =>
+      sealedTrait.choose(a) { subtype =>
+        val baseJson = subtype.typeclass.toBsonValue(subtype.cast(a))
+        val constructorName = config
+          .transformConstructorNames(subtype.typeInfo.short)
+        config.discriminator match {
+          case Some(discriminator) =>
+            // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
+            // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
+            // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
+            baseJson match {
+              case bsonDoc: BsonDocument => bsonDoc.clone().append(discriminator, org.bson.Document.parse(constructorName).toBsonDocument)
+              case _                     => new BsonDocument(constructorName, baseJson)
+            }
+          case None => new BsonDocument(constructorName, baseJson)
         }
+      }
     }
   }
 }

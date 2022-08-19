@@ -18,7 +18,7 @@ package mongo4cats.derivation.bson.configured
 
 import cats.syntax.all._
 import io.circe.generic.extras.auto._
-import io.circe.{Decoder, Json, ParsingFailure}
+import io.circe.{Decoder, Encoder, Json, ParsingFailure}
 import io.circe.syntax._
 import mongo4cats.circe._
 import mongo4cats.derivation.bson.AllBsonEncoders._
@@ -26,7 +26,8 @@ import mongo4cats.derivation.bson.AllBsonDecoders._
 import mongo4cats.derivation.bson.configured.decoder.auto._
 import mongo4cats.derivation.bson.configured.encoder.auto._
 import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, BsonValueOps}
-import org.bson.BsonDocument
+import org.bson.{BsonDocument, BsonDocumentWriter}
+import org.bson.codecs.EncoderContext
 import org.scalacheck.ScalacheckShapeless._
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
@@ -131,10 +132,12 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           )
 
         // --- Encode ---
-        val circeJson: Json       = testData.asJson
-        val circeJsonStr: String  = circeJson.noSpaces
-        val bsonDoc: BsonDocument = BsonEncoder[RootTestData].apply(testData).asInstanceOf[BsonDocument]
-        val bsonStr: String       = bsonDoc.toJson().replace("\": ", "\":").replace(", ", ",")
+        val circeJson: Json      = testData.asJson
+        val circeJsonStr: String = circeJson.noSpaces
+        val bsonDoc              = new BsonDocument()
+        val bsonWriter           = new BsonDocumentWriter(bsonDoc)
+        BsonEncoder[RootTestData].useJavaEncoderFirst(bsonWriter, testData, EncoderContext.builder().build())
+        val bsonStr: String = bsonDoc.toJson().replace("\": ", "\":").replace(", ", ",")
         assert(
           bsonStr == circeJsonStr,
           s"""|, 1) Json String from Bson != Json String from Circe

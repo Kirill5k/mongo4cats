@@ -47,15 +47,12 @@ package object bson {
   implicit def toFast[A](a: A): Fast[A] =
     tag[BsonValue].apply[A](a)
 
-  implicit def bsonClassTag[A](implicit ctA: ClassTag[A]): ClassTag[Fast[A]] = {
-    val clazzSingleton: Class[_] = ctA.runtimeClass
-
+  implicit def bsonClassTag[A](implicit ctA: ClassTag[A]): ClassTag[Fast[A]] =
     new ClassTag[Fast[A]] {
-      override def runtimeClass: Class[_] = clazzSingleton
+      override val runtimeClass: Class[_] = ctA.runtimeClass
     }
-  }
 
-  private val bsonValueCodecSingleton: Codec[BsonValue] = new BsonValueCodec()
+  private[bson] val bsonValueCodecSingleton: Codec[BsonValue] = new BsonValueCodec()
 
   implicit def bsonMongoCodecProvider[A](implicit
       ctA: ClassTag[A],
@@ -68,7 +65,7 @@ package object bson {
     val javaCodecSingleton: Codec[A] =
       new Codec[A] {
         override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-          bsonValueCodecSingleton.encode(writer, encA(a), encoderContext)
+          encA.useJavaEncoderFirst(writer, a, encoderContext)
 
         override def getEncoderClass: Class[A] = classA
 
@@ -79,15 +76,13 @@ package object bson {
           }
       }
 
-    val javaCodecProviderSingleton: CodecProvider =
-      new CodecProvider {
-        override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
-          if (classT == classA || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]]
-          else null
-      }
-
     new MongoCodecProvider[Fast[A]] {
-      override def get: CodecProvider = javaCodecProviderSingleton
+      override val get: CodecProvider =
+        new CodecProvider {
+          override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
+            if (classT == classA || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]]
+            else null
+        }
     }
   }
 

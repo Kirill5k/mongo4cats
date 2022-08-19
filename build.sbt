@@ -2,6 +2,7 @@ import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 import microsites.CdnDirectives
 import sbtghactions.JavaSpec
+import pl.project13.scala.sbt.JmhPlugin
 
 val scala212               = "2.12.16"
 val scala213               = "2.13.8"
@@ -131,6 +132,24 @@ val `mongo4cats-bson-derivation` = project
   .dependsOn(`mongo4cats-circe`)
   .enablePlugins(AutomateHeaderPlugin)
 
+lazy val `mongo4cats-bench` = (project in file("bench"))
+  .enablePlugins(JmhPlugin)
+  .settings(commonSettings)
+  .dependsOn(
+    `mongo4cats-core`,
+    `mongo4cats-circe`,
+    `mongo4cats-examples`,
+    `mongo4cats-embedded`,
+    `mongo4cats-bson-derivation`
+  )
+  .aggregate(
+    `mongo4cats-core`,
+    `mongo4cats-circe`,
+    `mongo4cats-examples`,
+    `mongo4cats-embedded`,
+    `mongo4cats-bson-derivation`
+  )
+
 val `mongo4cats-examples` = project
   .in(file("examples"))
   .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
@@ -179,5 +198,6 @@ val root = project
     `mongo4cats-circe`,
     `mongo4cats-examples`,
     `mongo4cats-embedded`,
-    `mongo4cats-bson-derivation`
+    `mongo4cats-bson-derivation`,
+    `mongo4cats-bench`
   )
