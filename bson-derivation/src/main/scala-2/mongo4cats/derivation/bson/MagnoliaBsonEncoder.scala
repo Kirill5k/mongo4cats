@@ -17,11 +17,10 @@
 package mongo4cats.derivation.bson
 
 import magnolia1._
-import mongo4cats.derivation.bson.BsonEncoder.{instanceWithBsonValue, pipeValue}
+import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaEncoder
 import mongo4cats.derivation.bson.configured.Configuration
-import org.bson.BsonType._
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
-import org.bson.{BsonArray, BsonDocument, BsonDocumentWriter, BsonJavaScriptWithScope, BsonReader, BsonType, BsonValue, BsonWriter}
+import org.bson.codecs.EncoderContext
+import org.bson.{BsonDocument, BsonString, BsonValue, BsonWriter}
 
 private[bson] object MagnoliaBsonEncoder {
 
@@ -75,23 +74,34 @@ private[bson] object MagnoliaBsonEncoder {
       }
     }
 
-    instanceWithBsonValue[T] { a =>
-      sealedTrait.split(a) { subtype =>
-        val baseJson        = subtype.typeclass.toBsonValue(subtype.cast(a))
-        val constructorName = config.transformConstructorNames(subtype.typeName.short)
-        config.discriminator match {
-          case Some(discriminator) =>
-            // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
-            // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
-            // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
-            baseJson match {
-              case bsonDoc: BsonDocument => bsonDoc.clone().append(discriminator, org.bson.Document.parse(constructorName).toBsonDocument)
-              case _                     => new BsonDocument(constructorName, baseJson)
-            }
-          case None => new BsonDocument(constructorName, baseJson)
-        }
-      }
-    }
-  }
+    instanceFromJavaEncoder(new JavaEncoder[T] {
+      override def encode(writer: BsonWriter, a: T, encoderContext: EncoderContext): Unit =
+        sealedTrait.split(a) { subtype =>
+          val constructorName: String = config.transformConstructorNames(subtype.typeName.short)
 
+          config.discriminator match {
+            case Some(discriminator) =>
+              val baseJson: BsonValue = subtype.typeclass.toBsonValue(subtype.cast(a))
+              // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
+              // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
+              // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
+              baseJson match {
+                case bsonDoc: BsonDocument =>
+                  bsonValueCodecSingleton.encode(writer, bsonDoc.append(discriminator, new BsonString(constructorName)), encoderContext)
+                case _ =>
+                  writer.writeStartDocument()
+                  writer.writeName(constructorName)
+                  subtype.typeclass.useJavaEncoderFirst(writer, subtype.cast(a), encoderContext)
+                  writer.writeEndDocument()
+              }
+
+            case _ =>
+              writer.writeStartDocument()
+              writer.writeName(constructorName)
+              subtype.typeclass.useJavaEncoderFirst(writer, subtype.cast(a), encoderContext)
+              writer.writeEndDocument()
+          }
+        }
+    })
+  }
 }

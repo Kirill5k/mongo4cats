@@ -27,19 +27,17 @@ private[bson] object MagnoliaBsonDecoder {
   private[bson] def join[T](
       caseClass: CaseClass[BsonDecoder, T]
   )(implicit configuration: Configuration): BsonDecoder[T] = {
-    val paramJsonKeyLookup: Map[String, String] =
+    val paramBsonKeyLookup: Map[String, String] =
       caseClass.parameters.map { p =>
-        val jsonKeyAnnotation = p.annotations.collectFirst { case ann: BsonKey => ann }
+        val bsonKeyAnnotation = p.annotations.collectFirst { case ann: BsonKey => ann }
 
-        jsonKeyAnnotation match {
+        bsonKeyAnnotation match {
           case Some(ann) => p.label -> ann.value
           case None      => p.label -> configuration.transformMemberNames(p.label)
         }
       }.toMap
 
-    // println(paramJsonKeyLookup)
-
-    if (paramJsonKeyLookup.values.toList.distinct.length != caseClass.parameters.length) {
+    if (paramBsonKeyLookup.values.toList.distinct.length != caseClass.parameters.length) {
       throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
     }
 
@@ -48,7 +46,7 @@ private[bson] object MagnoliaBsonDecoder {
         override def apply(bson: BsonValue): Result[T] =
           caseClass
             .constructEither { p =>
-              val key: String = paramJsonKeyLookup.getOrElse(
+              val key: String = paramBsonKeyLookup.getOrElse(
                 p.label,
                 throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
               )
@@ -83,7 +81,7 @@ private[bson] object MagnoliaBsonDecoder {
                     .apply(
                       doc
                         .get(
-                          paramJsonKeyLookup.getOrElse(
+                          paramBsonKeyLookup.getOrElse(
                             p.label,
                             throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
                           )
@@ -91,8 +89,8 @@ private[bson] object MagnoliaBsonDecoder {
                     )
                 )
                 .leftMap(_.head)
-            case other => throw new IllegalStateException(s"""|Not BsonDocument: $other
-                 |Type: ${caseClass.typeName.full}""".stripMargin)
+            case other => new IllegalStateException(s"""|Not BsonDocument: $other
+                 |Type: ${caseClass.typeName.full}""".stripMargin).asLeft
           }
       }
     }
@@ -116,7 +114,7 @@ private[bson] object MagnoliaBsonDecoder {
 
   private[bson] class NonDiscriminatedDecoder[T](constructorLookup: Map[String, Subtype[BsonDecoder, T]]) extends BsonDecoder[T] {
 
-    private val knownSubTypes: String = constructorLookup.keys.toSeq.sorted.mkString(",")
+    private lazy val knownSubTypes: String = constructorLookup.keys.toSeq.sorted.mkString(",")
 
     override def apply(bson: BsonValue): Result[T] =
       bson match {
@@ -128,7 +126,7 @@ private[bson] object MagnoliaBsonDecoder {
               constructorLookup.get(key),
               new Throwable(
                 s"""|Can't decode coproduct type: couldn't find matching subtype.
-                      |JSON: ${bson},
+                      |BSON: ${bson},
                       |Key: $key
                       |
                       |Known subtypes: $knownSubTypes\n""".stripMargin
@@ -139,41 +137,40 @@ private[bson] object MagnoliaBsonDecoder {
           } yield result
 
         case _ =>
-          Left(
-            new Throwable(
-              s"""|Can't decode coproduct type: zero or several keys were found, while coproduct type requires exactly one.
-                    |JSON: ${bson},
+          new Throwable(s"""|Can't decode coproduct type: zero or several keys were found, while coproduct type requires exactly one.
+                    |BSON: ${bson},
                     |Keys: $${c.keys.map(_.mkString(","))}
-                    |Known subtypes: $knownSubTypes\n""".stripMargin
-            )
-          )
+                    |Known subtypes: $knownSubTypes\n""".stripMargin).asLeft
       }
   }
 
   private[bson] class DiscriminatedDecoder[T](discriminator: String, constructorLookup: Map[String, Subtype[BsonDecoder, T]])
       extends BsonDecoder[T] {
 
-    val knownSubTypes: String = constructorLookup.keys.toSeq.sorted.mkString(",")
+    lazy val knownSubTypes: String = constructorLookup.keys.toSeq.sorted.mkString(",")
 
     override def apply(bson: BsonValue): Result[T] =
       bson match {
         case doc: BsonDocument =>
           Either.catchNonFatal(doc.getString(discriminator)) match {
-            case Left(_) =>
-              Left(new Throwable(s"""|Can't decode coproduct type: couldn't find discriminator or is not of type String.
-                      |discriminator key: discriminator""".stripMargin))
+            case Right(constructorNameBsonString) =>
+              val constructorName = constructorNameBsonString.getValue
 
-            case Right(ctorName) =>
-              constructorLookup.get(ctorName.toString) match {
+              constructorLookup.get(constructorName) match {
                 case Some(subType) => subType.typeclass.apply(doc)
-                case None =>
-                  Left(new Throwable(s"""|Can't decode coproduct type: constructor name not found in known constructor names
+                case _ =>
+                  new Throwable(s"""|Can't decode coproduct type: constructor name "$constructorName" not found in known constructor names
                           |BSON: ${doc}
-                          |Allowed discriminators: $knownSubTypes""".stripMargin))
+                          |Allowed discriminators: $knownSubTypes""".stripMargin).asLeft
               }
+
+            case Left(_) =>
+              new Throwable(s"""|Can't decode coproduct type: couldn't find discriminator or is not of type String.
+                                     |discriminator key: $discriminator
+                                     |BSON: $bson""".stripMargin).asLeft
           }
 
-        case _ => Left(new Throwable("Not a BsonDocument"))
+        case _ => new Throwable("Not a BsonDocument").asLeft
       }
   }
 }

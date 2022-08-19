@@ -103,25 +103,27 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
 
   "Derived direct Encode/Decode ADT to org.bson.BsonValue with same result as using mongo4cats.circe with io.circe.generic.extras.auto" in {
 
-    val transformationGen: Gen[String => String] = Gen.oneOf(
-      Seq(
-        identity[String](_),
-        mongo4cats.derivation.bson.configured.Configuration.kebabCaseTransformation,
-        mongo4cats.derivation.bson.configured.Configuration.snakeCaseTransformation
+    val transformationGen: Gen[String => String] =
+      Gen.oneOf(
+        Seq(
+          identity[String](_),
+          mongo4cats.derivation.bson.configured.Configuration.kebabCaseTransformation,
+          mongo4cats.derivation.bson.configured.Configuration.snakeCaseTransformation
+        )
       )
-    )
 
     val bsonConfigurationGen: Gen[mongo4cats.derivation.bson.configured.Configuration] =
       (
         transformationGen,
         transformationGen,
-        Gen.oneOf(false, true)
-        // Gen.option(Gen.stringOfN(5, Gen.alphaLowerChar)) // TODO Fix discriminator.
-      ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, none))
+        Gen.oneOf(false, true),
+        Gen.option(Gen.stringOfN(5, Gen.alphaUpperChar))
+      ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _))
 
     forAll(Arbitrary.arbitrary[RootTestData], bsonConfigurationGen, Gen.oneOf(false, true)) {
       case (testData, bsonConfiguration, dropNulls) =>
-        implicit val bsonConf: mongo4cats.derivation.bson.configured.Configuration = bsonConfiguration
+        implicit val bsonConf: mongo4cats.derivation.bson.configured.Configuration =
+          bsonConfiguration
 
         implicit val circeConf: io.circe.generic.extras.Configuration =
           io.circe.generic.extras.Configuration(
