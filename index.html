@@ -23,6 +23,7 @@ Available for Scala 2.12, 2.13 and 3.0.</p>
 <span class="k">import</span> <span class="nn">mongo4cats.client.MongoClient</span>
 <span class="k">import</span> <span class="nn">mongo4cats.collection.operations.Filter</span>
 <span class="k">import</span> <span class="nn">mongo4cats.bson.Document</span>
+<span class="k">import</span> <span class="nn">mongo4cats.bson.syntax._</span>
 
 <span class="k">object</span> <span class="nc">Quickstart</span> <span class="k">extends</span> <span class="nv">IOApp</span><span class="o">.</span><span class="py">Simple</span> <span class="o">{</span>
 
@@ -31,13 +32,13 @@ Available for Scala 2.12, 2.13 and 3.0.</p>
       <span class="k">for</span> <span class="o">{</span>
         <span class="n">db</span>   <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
         <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">db</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)</span>
-        <span class="k">_</span>    <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertMany</span><span class="o">((</span><span class="mi">0</span> <span class="n">to</span> <span class="mi">100</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"name"</span> <span class="o">-&gt;</span> <span class="n">s</span><span class="s">"doc-$i"</span><span class="o">,</span> <span class="s">"index"</span> <span class="o">-&gt;</span> <span class="n">i</span><span class="o">)))</span>
+        <span class="k">_</span>    <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertMany</span><span class="o">((</span><span class="mi">0</span> <span class="n">to</span> <span class="mi">100</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"name"</span> <span class="o">:=</span> <span class="n">s</span><span class="s">"doc-$i"</span><span class="o">,</span> <span class="s">"index"</span> <span class="o">:=</span> <span class="n">i</span><span class="o">)))</span>
         <span class="n">docs</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span>
           <span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="nv">Filter</span><span class="o">.</span><span class="py">gte</span><span class="o">(</span><span class="s">"index"</span><span class="o">,</span> <span class="mi">10</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="nv">Filter</span><span class="o">.</span><span class="py">regex</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"doc-[1-9]0"</span><span class="o">))</span>
           <span class="o">.</span><span class="py">sortByDesc</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span>
           <span class="o">.</span><span class="py">limit</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
           <span class="o">.</span><span class="py">all</span>
-        <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">IO</span><span class="o">.</span><span class="py">println</span><span class="o">(</span><span class="n">docs</span><span class="o">)</span>
+        <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">IO</span><span class="o">.</span><span class="py">println</span><span class="o">(</span><span class="nv">docs</span><span class="o">.</span><span class="py">mkString</span><span class="o">(</span><span class="s">"[\n"</span><span class="o">,</span> <span class="s">",\n"</span><span class="o">,</span> <span class="s">"]"</span><span class="o">))</span>
       <span class="o">}</span> <span class="nf">yield</span> <span class="o">()</span>
     <span class="o">}</span>
 <span class="o">}</span>
