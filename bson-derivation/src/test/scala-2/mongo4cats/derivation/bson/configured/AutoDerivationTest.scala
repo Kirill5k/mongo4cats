@@ -25,7 +25,7 @@ import mongo4cats.derivation.bson.AllBsonEncoders._
 import mongo4cats.derivation.bson.AllBsonDecoders._
 import mongo4cats.derivation.bson.configured.decoder.auto._
 import mongo4cats.derivation.bson.configured.encoder.auto._
-import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, BsonValueOps}
+import mongo4cats.derivation.bson.{bsonEncoderContextSingleton, BsonDecoder, BsonEncoder, BsonValueOps}
 import org.bson.{BsonDocument, BsonDocumentWriter}
 import org.bson.codecs.EncoderContext
 import org.scalacheck.ScalacheckShapeless._
@@ -138,7 +138,7 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
         val circeJsonStr: String = circeJson.noSpaces
         val bsonDoc              = new BsonDocument()
         val bsonWriter           = new BsonDocumentWriter(bsonDoc)
-        BsonEncoder[RootTestData].useJavaEncoderFirst(bsonWriter, testData, EncoderContext.builder().build())
+        BsonEncoder[RootTestData].encode(bsonWriter, testData, bsonEncoderContextSingleton)
         val bsonStr: String = bsonDoc.toJson().replace("\": ", "\":").replace(", ", ",")
         assert(
           bsonStr == circeJsonStr,
@@ -155,7 +155,7 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
         val expected: Decoder.Result[RootTestData] =
           (if (circeConf.useDefaults || dropNulls) circeJson.deepDropNullValues else circeJson).as[RootTestData]
         val decodedFromBson: BsonDecoder.Result[RootTestData] =
-          BsonDecoder[RootTestData].apply(if (dropNulls) bsonDoc.deepDropNullValues else bsonDoc)
+          BsonDecoder[RootTestData].fromBsonValue(if (dropNulls) bsonDoc.deepDropNullValues else bsonDoc)
         assert(decodedFromBson == expected, ", 4) Bson Decoder != Circe Decoder")
     }
   }

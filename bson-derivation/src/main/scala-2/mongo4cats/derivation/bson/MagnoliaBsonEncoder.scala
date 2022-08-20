@@ -17,14 +17,14 @@
 package mongo4cats.derivation.bson
 
 import magnolia1._
-import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaEncoder
+import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaCodec
 import mongo4cats.derivation.bson.configured.Configuration
-import org.bson.codecs.EncoderContext
-import org.bson.{BsonDocument, BsonString, BsonValue, BsonWriter}
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonDocument, BsonReader, BsonString, BsonValue, BsonWriter}
 
 private[bson] object MagnoliaBsonEncoder {
 
-  private[bson] def join[T](caseClass: CaseClass[BsonEncoder, T])(implicit config: Configuration): BsonEncoder[T] = {
+  private[bson] def join[A](caseClass: CaseClass[BsonEncoder, A])(implicit config: Configuration): BsonEncoder[A] = {
     val paramJsonKeyLookup =
       caseClass.parameters.map { p =>
         val jsonKeyAnnotation = p.annotations.collectFirst { case ann: BsonKey => ann }
@@ -41,9 +41,9 @@ private[bson] object MagnoliaBsonEncoder {
       )
     }
 
-    BsonEncoder.instanceFromJavaEncoder[T] {
-      new JavaEncoder[T] {
-        override def encode(writer: BsonWriter, value: T, encoderContext: EncoderContext): Unit = {
+    BsonEncoder.instanceFromJavaCodec[A] {
+      new JavaEncoder[A] {
+        override def encode(writer: BsonWriter, value: A, encoderContext: EncoderContext): Unit = {
           writer.writeStartDocument()
           caseClass.parameters
             .foreach { p =>
@@ -52,7 +52,7 @@ private[bson] object MagnoliaBsonEncoder {
                 throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
               )
               writer.writeName(label)
-              p.typeclass.useJavaEncoderFirst(writer, p.dereference(value), encoderContext)
+              p.typeclass.encode(writer, p.dereference(value), encoderContext)
             }
           writer.writeEndDocument()
         }
@@ -60,9 +60,9 @@ private[bson] object MagnoliaBsonEncoder {
     }
   }
 
-  private[bson] def split[T](
-      sealedTrait: SealedTrait[BsonEncoder, T]
-  )(implicit config: Configuration): BsonEncoder[T] = {
+  private[bson] def split[A](
+      sealedTrait: SealedTrait[BsonEncoder, A]
+  )(implicit config: Configuration): BsonEncoder[A] = {
     {
       val origTypeNames = sealedTrait.subtypes.map(_.typeName.short)
       val transformed   = origTypeNames.map(config.transformConstructorNames).distinct
@@ -74,8 +74,8 @@ private[bson] object MagnoliaBsonEncoder {
       }
     }
 
-    instanceFromJavaEncoder(new JavaEncoder[T] {
-      override def encode(writer: BsonWriter, a: T, encoderContext: EncoderContext): Unit =
+    instanceFromJavaCodec(new JavaEncoder[A] {
+      override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
         sealedTrait.split(a) { subtype =>
           val constructorName: String = config.transformConstructorNames(subtype.typeName.short)
 
@@ -91,14 +91,14 @@ private[bson] object MagnoliaBsonEncoder {
                 case _ =>
                   writer.writeStartDocument()
                   writer.writeName(constructorName)
-                  subtype.typeclass.useJavaEncoderFirst(writer, subtype.cast(a), encoderContext)
+                  subtype.typeclass.encode(writer, subtype.cast(a), encoderContext)
                   writer.writeEndDocument()
               }
 
             case _ =>
               writer.writeStartDocument()
               writer.writeName(constructorName)
-              subtype.typeclass.useJavaEncoderFirst(writer, subtype.cast(a), encoderContext)
+              subtype.typeclass.encode(writer, subtype.cast(a), encoderContext)
               writer.writeEndDocument()
           }
         }

@@ -17,88 +17,60 @@
 package mongo4cats.derivation.bson
 
 import cats.syntax.all._
-import mongo4cats.derivation.bson.BsonDecoder.instance
+import mongo4cats.derivation.bson.BsonDecoder.{instanceFromBsonValue, instanceFromJavaDecoder, JavaDecoder}
 import org.bson._
+import org.bson.codecs.jsr310.InstantCodec
+import org.bson.codecs.{ByteCodec, DecoderContext, IntegerCodec, LongCodec, ObjectIdCodec, ShortCodec, StringCodec}
 
 import java.time.Instant
 import java.util.UUID
 
 trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
 
-  implicit val byteBsonDecoder: BsonDecoder[Byte] =
-    instance {
-      case i: BsonInt32 => i.intValue().toByte.asRight
-      case other        => new Throwable(s"Not a Byte: ${other}").asLeft
-    }
-
-  implicit val shortBsonDecoder: BsonDecoder[Short] =
-    instance {
-      case i: BsonInt32 => i.intValue().toShort.asRight
-      case other        => new Throwable(s"Not a Short: ${other}").asLeft
-    }
-
-  implicit val intBsonDecoder: BsonDecoder[Int] =
-    instance {
-      case i: BsonInt32 => i.intValue().asRight
-      case other        => new Throwable(s"Not an Int: ${other}").asLeft
-    }
-
-  implicit val longBsonDecoder: BsonDecoder[Long] =
-    instance {
-      case i: BsonInt64 => i.longValue().asRight
-      case other        => new Throwable(s"Not a Long: ${other}").asLeft
-    }
-
-  implicit val stringBsonDecoder: BsonDecoder[String] =
-    instance {
-      case s: BsonString => s.getValue.asRight
-      case other         => new Throwable(s"Not a String: ${other}").asLeft
-    }
+  implicit val byteBsonDecoder: BsonDecoder[Byte]     = instanceFromJavaDecoder(new ByteCodec()).map(_.toByte)
+  implicit val shortBsonDecoder: BsonDecoder[Short]   = instanceFromJavaDecoder(new ShortCodec()).map(_.toShort)
+  implicit val intBsonDecoder: BsonDecoder[Int]       = instanceFromJavaDecoder(new IntegerCodec()).map(_.toInt)
+  implicit val longBsonDecoder: BsonDecoder[Long]     = instanceFromJavaDecoder(new LongCodec()).map(_.toLong)
+  implicit val stringBsonDecoder: BsonDecoder[String] = instanceFromJavaDecoder(new StringCodec())
 
   implicit val instantBsonDecoder: BsonDecoder[Instant] =
-    instance {
-      case s: BsonDocument =>
-        s.get("$date") match {
-          case s: BsonString => Instant.parse(s.getValue).asRight
-          case other         => new Throwable(s"Not a Instant: ${other}").asLeft
-        }
-      case other => new Throwable(s"Not a Instant: ${other}").asLeft
-    }
+    instanceFromJavaDecoder(new JavaDecoder[Instant] {
+      override def decode(reader: BsonReader, decoderContext: DecoderContext): Instant = {
+        reader.readStartDocument()
+        reader.readName() // For "$date".
+        val r = Instant.parse(reader.readString())
+        reader.readEndDocument()
+        r
+      }
+    })
 
-  implicit val decodeBsonObjectId: BsonDecoder[org.bson.types.ObjectId] =
-    instance {
-      case v: BsonObjectId => v.getValue.asRight
-      case other           => new Throwable(s"Not a ObjectId: ${other}").asLeft
-    }
+  implicit val decodeBsonObjectId: BsonDecoder[org.bson.types.ObjectId] = instanceFromJavaDecoder(new ObjectIdCodec())
 
   implicit def optionBsonDecoder[A](implicit decA: BsonDecoder[A]): BsonDecoder[Option[A]] =
-    instance(a =>
+    instanceFromBsonValue(a =>
       if (a == null || a.isNull) none.asRight
-      else decA(a).map(_.some)
+      else decA.fromBsonValue(a).map(_.some)
     )
 
   implicit def tuple2BsonDecoder[A, B](implicit decA: BsonDecoder[A], decB: BsonDecoder[B]): BsonDecoder[(A, B)] =
-    BsonDecoder.instance {
-      case arr: BsonArray if arr.size() == 2 => (decA(arr.get(0)), decB(arr.get(1))).tupled
+    BsonDecoder.instanceFromBsonValue {
+      case arr: BsonArray if arr.size() == 2 => (decA.fromBsonValue(arr.get(0)), decB.fromBsonValue(arr.get(1))).tupled
       case arr: BsonArray                    => new Throwable(s"Not an array of size 2: ${arr}").asLeft
       case other                             => new Throwable(s"Not an array: ${other}").asLeft
     }
 
   implicit val uuidBsonDecoder: BsonDecoder[UUID] =
-    instance {
-      case s: BsonString => Either.catchNonFatal(UUID.fromString(s.getValue))
-      case other         => new Throwable(s"Not an UUID: ${other}").asLeft
-    }
+    stringBsonDecoder.emap(s => Either.catchNonFatal(UUID.fromString(s)))
 
   implicit def mapBsonDecoder[K, V](implicit decK: KeyBsonDecoder[K], decV: BsonDecoder[V]): BsonDecoder[Map[K, V]] =
-    instance {
+    instanceFromBsonValue {
       case doc: BsonDocument =>
         val mapBuilder = scala.collection.mutable.LinkedHashMap[K, V]()
 
         doc
           .entrySet()
           .forEach { entry =>
-            mapBuilder += (decK(entry.getKey).get -> decV(entry.getValue).toOption.get)
+            mapBuilder += (decK(entry.getKey).get -> decV.fromBsonValue(entry.getValue).toOption.get)
             ()
           }
         mapBuilder.toMap.asRight

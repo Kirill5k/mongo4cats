@@ -17,7 +17,7 @@
 package mongo4cats.derivation.bson
 
 import cats.syntax.all._
-import mongo4cats.derivation.bson.BsonDecoder.instance
+import mongo4cats.derivation.bson.BsonDecoder.instanceFromBsonValue
 import org.bson.BsonArray
 
 import scala.jdk.CollectionConverters._
@@ -26,8 +26,8 @@ import scala.collection.generic.CanBuildFrom
 trait ScalaVersionDependentBsonDecoders {
 
   implicit def iterableBsonDecoder[L[_], A](implicit decA: BsonDecoder[A], cbf: CanBuildFrom[Nothing, A, L[A]]): BsonDecoder[L[A]] =
-    instance {
-      case vs: BsonArray => vs.getValues.asScala.toList.traverse(decA(_)).map(_.to[L])
+    instanceFromBsonValue {
+      case vs: BsonArray => vs.getValues.asScala.toList.traverse(decA.fromBsonValue(_)).map(_.to[L])
       case other         => new Throwable(s"Not a Iterable: ${other}").asLeft
     }
 

@@ -16,19 +16,21 @@
 
 package mongo4cats.derivation.bson
 
-import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaEncoder
+import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaCodec
 import org.bson._
 import org.bson.codecs.EncoderContext
+import org.bson.codecs.DecoderContext
+import org.bson.codecs.Codec
 
 import scala.collection.Iterable
 
 trait ScalaVersionDependentBsonEncoders {
 
   implicit final def encodeIterable[L[_] <: Iterable[_], A](implicit encA: BsonEncoder[A]): BsonEncoder[L[A]] =
-    instanceFromJavaEncoder(new JavaEncoder[L[A]] {
+    instanceFromJavaCodec(new JavaEncoder[L[A]] {
       override def encode(writer: BsonWriter, value: L[A], encoderContext: EncoderContext): Unit = {
         writer.writeStartArray()
-        value.iterator.foreach(a => encA.useJavaEncoderFirst(writer, a.asInstanceOf[A], encoderContext))
+        value.iterator.foreach(a => encA.encode(writer, a.asInstanceOf[A], encoderContext))
         writer.writeEndArray()
       }
     })

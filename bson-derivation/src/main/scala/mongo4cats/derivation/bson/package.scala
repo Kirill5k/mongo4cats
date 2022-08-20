@@ -52,7 +52,9 @@ package object bson {
       override val runtimeClass: Class[_] = ctA.runtimeClass
     }
 
-  private[bson] val bsonValueCodecSingleton: Codec[BsonValue] = new BsonValueCodec()
+  private[bson] val bsonValueCodecSingleton: Codec[BsonValue]   = new BsonValueCodec()
+  private[bson] val bsonEncoderContextSingleton: EncoderContext = EncoderContext.builder().build()
+  private[bson] val bsonDecoderContextSingleton: DecoderContext = DecoderContext.builder().build()
 
   implicit def bsonMongoCodecProvider[A](implicit
       ctA: ClassTag[A],
@@ -65,12 +67,12 @@ package object bson {
     val javaCodecSingleton: Codec[A] =
       new Codec[A] {
         override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-          encA.useJavaEncoderFirst(writer, a, encoderContext)
+          encA.encode(writer, a, encoderContext)
 
         override def getEncoderClass: Class[A] = classA
 
         override def decode(reader: BsonReader, decoderContext: DecoderContext): A =
-          decA(bsonValueCodecSingleton.decode(reader, decoderContext)) match {
+          decA.fromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext)) match {
             case Right(a) => a
             case Left(ex) => throw ex
           }

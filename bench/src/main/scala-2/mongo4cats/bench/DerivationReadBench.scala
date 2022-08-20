@@ -16,8 +16,8 @@ import mongo4cats.derivation.bson.AllBsonDecoders._
 import mongo4cats.derivation.bson.derivation.decoder.auto._
 import mongo4cats.derivation.bson.derivation.encoder.auto._
 import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, BsonValueOps}
-import org.bson.BsonBinaryWriter
-import org.bson.codecs.EncoderContext
+import org.bson.{BsonBinaryWriter, BsonDocument, BsonDocumentReader}
+import org.bson.codecs.{DecoderContext, EncoderContext}
 import org.bson.io.BasicOutputBuffer
 
 import java.time.Instant
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
-object WriteBenchDatas {
+object ReadBenchDatas {
   final case class Person(
       firstName: String,
       name: String,
@@ -44,25 +44,31 @@ object WriteBenchDatas {
 @Measurement(iterations = 3)
 @Warmup(iterations = 2)
 @Timeout(time = 15)
-class DerivationWriteBench {
-  import WriteBenchDatas._
+class DerivationReadBench {
 
-  val encoderContext = EncoderContext.builder().build()
-  val bsonEncoder    = BsonEncoder[Person]
-  val circeCodec     = deriveCirceCodecProvider[Person].get.get(classOf[Person], null)
-  val output         = new BasicOutputBuffer(1000)
-  val writer         = new BsonBinaryWriter(output)
+  import ReadBenchDatas._
+
+  val decoderContext = DecoderContext.builder().build()
+  val bsonDecoder    = BsonDecoder[Person]
+  val codec          = deriveCirceCodecProvider[Person].get.get(classOf[Person], null)
   val person         = Person("first name", "name", 10, Address("city", "country"), Instant.now())
+  val doc            = new BsonDocument("d", BsonEncoder[Person].toBsonValue(person).asDocument())
 
   @Benchmark
-  def writeViaDerivation(): Unit = {
-    output.truncateToPosition(0)
-    bsonEncoder.encode(writer, person, encoderContext)
+  def readViaDerivation(): Unit = {
+    val docReader = new BsonDocumentReader(doc)
+    docReader.readStartDocument()
+    docReader.readName()
+    bsonDecoder.decode(docReader, decoderContext)
+    ()
   }
 
   @Benchmark
-  def writeViaCirce(): Unit = {
-    output.truncateToPosition(0)
-    circeCodec.encode(writer, person, encoderContext)
+  def readViaCirce(): Unit = {
+    val docReader = new BsonDocumentReader(doc)
+    docReader.readStartDocument()
+    docReader.readName()
+    codec.decode(docReader, decoderContext)
+    ()
   }
 }
