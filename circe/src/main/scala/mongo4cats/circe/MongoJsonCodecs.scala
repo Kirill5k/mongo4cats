@@ -34,10 +34,10 @@ final case class MongoJsonParsingException(message: String, json: Option[String]
 
 trait MongoJsonCodecs {
 
-  implicit def jsonDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
+  implicit def deriveJsonBsonValueDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
     bson => JsonMapper.fromBson(bson).flatMap(d.decodeJson).toOption
 
-  implicit def jsonEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
+  implicit def deriveJsonBsonValueEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
     value => JsonMapper.toBson(e(value))
 
   implicit val encodeObjectId: Encoder[ObjectId] =

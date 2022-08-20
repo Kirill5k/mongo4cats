@@ -27,7 +27,7 @@ package object bson {
   object ObjectId {
     def apply(): ObjectId = new JObjectId()
 
-    def get: ObjectId = apply()
+    def gen: ObjectId = apply()
 
     def isValid(hex: String): Boolean = JObjectId.isValid(hex)
 

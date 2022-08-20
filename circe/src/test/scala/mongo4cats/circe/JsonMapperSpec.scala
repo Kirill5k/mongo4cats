@@ -26,7 +26,7 @@ import java.time.Instant
 class JsonMapperSpec extends AnyWordSpec with Matchers {
 
   val ts = Instant.now()
-  val id = ObjectId.get
+  val id = ObjectId.gen
 
   val bsonDocument = BsonValue.document(
     Document(
