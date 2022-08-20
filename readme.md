@@ -26,6 +26,7 @@ import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.operations.Filter
 import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
 
 object Quickstart extends IOApp.Simple {
 
@@ -34,13 +35,13 @@ object Quickstart extends IOApp.Simple {
       for {
         db   <- client.getDatabase("testdb")
         coll <- db.getCollection("docs")
-        _    <- coll.insertMany((0 to 100).map(i => Document("name" -> s"doc-$i", "index" -> i)))
+        _    <- coll.insertMany((0 to 100).map(i => Document("name" := s"doc-$i", "index" := i)))
         docs <- coll.find
           .filter(Filter.gte("index", 10) && Filter.regex("name", "doc-[1-9]0"))
           .sortByDesc("name")
           .limit(5)
           .all
-        _ <- IO.println(docs)
+        _ <- IO.println(docs.mkString("[\n", ",\n", "]"))
       } yield ()
     }
 }
