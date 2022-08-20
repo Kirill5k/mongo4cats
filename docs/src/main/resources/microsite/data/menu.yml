@@ -12,6 +12,10 @@ options:
         url: docs/gettingstarted/collection.html
         menu_section: getting-started
 
+      - title: Working with documents
+        url: docs/gettingstarted/documents.html
+        menu_section: getting-started
+
   - title: Operations
     url: docs/operations.html
     menu_section: operations

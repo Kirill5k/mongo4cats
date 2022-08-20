@@ -39,23 +39,10 @@ object Documents extends App {
     "nestedDocument" -> BsonValue.document(Document("field" -> BsonValue.string("nested")))
   )
 
-  val stringField1: Option[BsonValue] = doc1.get("string")
-  val stringField2: Option[String]    = doc1.getString("string")
-  val stringField3: Option[String]    = doc1.getAs[String]("string")
-
-  val arrayField1: Option[BsonValue]       = doc1.get("array")
-  val arrayField2: Option[List[BsonValue]] = doc1.getList("array")
-  val arrayField3: Option[List[String]]    = doc1.getAs[List[String]]("array")
-
-  val nestedField1: Option[BsonValue] = doc1.getNested("nestedDocument.field")
-  val nestedField2: Option[String]    = doc1.getNestedAs[String]("nestedDocument.field")
-
-  val json: String = doc1.toJson
-
   import mongo4cats.bson.syntax._
   val doc2: Document = Document(
     "_id"            := id,
-    "null"           -> BsonValue.Null,
+    "null"           := BsonValue.Null,
     "string"         := "str",
     "int"            := 1,
     "boolean"        := true,
@@ -66,6 +53,24 @@ object Documents extends App {
     "array"          := List("item1", "item2", "item3"),
     "nestedDocument" := Document("field" := "nested")
   )
+
+  val updatedDoc1 = doc1.add("newField" -> BsonValue.string("string"))
+  val updatedDoc2 = doc1.add("newField" -> "string")
+  val updatedDoc3 = doc1 += ("anotherNewField" -> BsonValue.instant(ts))
+  val updatedDoc4 = doc1 += ("anotherNewField" := 1)
+
+  val json: String = doc1.toJson
+
+  val stringField1: Option[BsonValue] = doc1.get("string")
+  val stringField2: Option[String]    = doc1.getString("string")
+  val stringField3: Option[String]    = doc1.getAs[String]("string")
+
+  val arrayField1: Option[BsonValue]       = doc1.get("array")
+  val arrayField2: Option[List[BsonValue]] = doc1.getList("array")
+  val arrayField3: Option[List[String]]    = doc1.getAs[List[String]]("array")
+
+  val nestedField1: Option[BsonValue] = doc1.getNested("nestedDocument.field")
+  val nestedField2: Option[String]    = doc1.getNestedAs[String]("nestedDocument.field")
 
   println(doc1 == doc2)
   println(doc1.toJson)

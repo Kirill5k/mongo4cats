@@ -29,7 +29,7 @@ import scala.collection.immutable.ListMap
 
 sealed abstract class Document extends Bson {
   def keys: Set[String]
-
+  def size: Int
   def isEmpty: Boolean
   def contains(key: String): Boolean
   def remove(key: String): Document
@@ -89,9 +89,9 @@ sealed abstract class Document extends Bson {
 final private class ListMapDocument(
     private val fields: ListMap[String, BsonValue]
 ) extends Document {
-
   def apply(key: String): Option[BsonValue]        = fields.get(key)
   def keys: Set[String]                            = fields.keySet
+  def size: Int                                    = fields.size
   def isEmpty: Boolean                             = fields.isEmpty
   def contains(key: String): Boolean               = fields.contains(key)
   def filterKeys(predicate: String => Boolean)     = new ListMapDocument(fields.filter(kv => predicate(kv._1)))
