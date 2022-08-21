@@ -16,25 +16,18 @@
 
 package mongo4cats.collection.queries
 
-import cats.effect.Async
-import cats.syntax.functor._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.FindPublisher
 import mongo4cats.bson.Document
-import mongo4cats.helpers._
 import mongo4cats.collection.operations
 import mongo4cats.collection.operations.{Projection, Sort}
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
-final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    private val observable: FindPublisher[T],
-    private val commands: List[QueryCommand]
-) extends QueryBuilder[FindPublisher, T] {
+private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher, T, QB] {
 
   /** Sets the maximum execution time on the server for this operation.
     *
@@ -43,8 +36,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   FindQueryBuilder
     */
-  def maxTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.MaxTime(duration) :: commands)
+  def maxTime(duration: Duration): QB = withQuery(QueryCommand.MaxTime(duration))
 
   /** The maximum amount of time for the server to wait on new documents to satisfy a tailable cursor query. This only applies to a
     * TAILABLE_AWAIT cursor. When the cursor is not a TAILABLE_AWAIT cursor, this option is ignored.
@@ -61,8 +53,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   the maximum await execution time in the given time unit
     */
-  def maxAwaitTime(duration: Duration): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.MaxAwaitTime(duration) :: commands)
+  def maxAwaitTime(duration: Duration): QB = withQuery(QueryCommand.MaxAwaitTime(duration))
 
   /** Sets the collation options
     *
@@ -74,8 +65,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     * @since 1.3
     */
-  def collation(collation: model.Collation): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Collation(collation) :: commands)
+  def collation(collation: model.Collation): QB = withQuery(QueryCommand.Collation(collation))
 
   /** Get partial results from a sharded cluster if one or more shards are unreachable (instead of throwing an error).
     *
@@ -84,8 +74,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   FindQueryBuilder
     */
-  def partial(partial: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Partial(partial) :: commands)
+  def partial(partial: Boolean): QB = withQuery(QueryCommand.Partial(partial))
 
   /** Sets the comment to the query. A null value means no comment is set.
     *
@@ -95,8 +84,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     * @since 1.6
     */
-  def comment(comment: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Comment(comment) :: commands)
+  def comment(comment: String): QB = withQuery(QueryCommand.Comment(comment))
 
   /** Sets the returnKey. If true the find operation will return only the index keys in the resulting documents.
     *
@@ -106,8 +94,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     * @since 1.6
     */
-  def returnKey(returnKey: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.ReturnKey(returnKey) :: commands)
+  def returnKey(returnKey: Boolean): QB = withQuery(QueryCommand.ReturnKey(returnKey))
 
   /** Sets the showRecordId. Set to true to add a field \$recordId to the returned documents.
     *
@@ -117,8 +104,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     * @since 1.6
     */
-  def showRecordId(showRecordId: Boolean): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.ShowRecordId(showRecordId) :: commands)
+  def showRecordId(showRecordId: Boolean): QB = withQuery(QueryCommand.ShowRecordId(showRecordId))
 
   /** Sets the hint for which index to use. A null value means no hint is set.
     *
@@ -128,8 +114,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     * @since 1.13
     */
-  def hint(index: String): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.HintString(index) :: commands)
+  def hint(index: String): QB = withQuery(QueryCommand.HintString(index))
 
   /** Sets the hint for which index to use. A null value means no hint is set.
     *
@@ -139,8 +124,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   FindQueryBuilder
     * @since 1.6
     */
-  def hint(hint: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Hint(hint) :: commands)
+  def hint(hint: Bson): QB = withQuery(QueryCommand.Hint(hint))
 
   /** Sets the exclusive upper bound for a specific index. A null value means no max is set.
     *
@@ -150,8 +134,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   this
     * @since 1.6
     */
-  def max(max: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Max(max) :: commands)
+  def max(max: Bson): QB = withQuery(QueryCommand.Max(max))
 
   /** Sets the minimum inclusive lower bound for a specific index. A null value means no max is set.
     *
@@ -161,8 +144,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   this
     * @since 1.6
     */
-  def min(min: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Min(min) :: commands)
+  def min(min: Bson): QB = withQuery(QueryCommand.Min(min))
 
   /** Sets the sort criteria to apply to the query.
     *
@@ -171,30 +153,10 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   FindQueryBuilder
     */
-  def sort(sort: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Sort(sort) :: commands)
-
-  def sort(sorts: Sort): FindQueryBuilder[F, T] =
-    sort(sorts.toBson)
-
-  def sortBy(fieldNames: String*): FindQueryBuilder[F, T] =
-    sort(Sort.asc(fieldNames: _*))
-
-  def sortByDesc(fieldNames: String*): FindQueryBuilder[F, T] =
-    sort(Sort.desc(fieldNames: _*))
-
-  /** Sets the query filter to apply to the query.
-    *
-    * @param filter
-    *   the filter
-    * @return
-    *   FindQueryBuilder
-    */
-  def filter(filter: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Filter(filter) :: commands)
-
-  def filter(filters: operations.Filter): FindQueryBuilder[F, T] =
-    filter(filters.toBson)
+  def sort(sort: Bson): QB                = withQuery(QueryCommand.Sort(sort))
+  def sort(sorts: Sort): QB               = sort(sorts.toBson)
+  def sortBy(fieldNames: String*): QB     = sort(Sort.asc(fieldNames: _*))
+  def sortByDesc(fieldNames: String*): QB = sort(Sort.desc(fieldNames: _*))
 
   /** Sets a document describing the fields to return for all matching documents.
     *
@@ -203,11 +165,8 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   FindQueryBuilder
     */
-  def projection(projection: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Projection(projection) :: commands)
-
-  def projection(projection: Projection): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Projection(projection.toBson) :: commands)
+  def projection(projection: Bson): QB       = withQuery(QueryCommand.Projection(projection))
+  def projection(projection: Projection): QB = withQuery(QueryCommand.Projection(projection.toBson))
 
   /** Sets the number of documents to skip.
     *
@@ -216,8 +175,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   FindQueryBuilder
     */
-  def skip(skip: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Skip(skip) :: commands)
+  def skip(skip: Int): QB = withQuery(QueryCommand.Skip(skip))
 
   /** Sets the limit to apply.
     *
@@ -226,43 +184,20 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     * @return
     *   FindQueryBuilder
     */
-  def limit(limit: Int): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, QueryCommand.Limit(limit) :: commands)
+  def limit(limit: Int): QB = withQuery(QueryCommand.Limit(limit))
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncSingle[F].map(Option.apply)
-
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
-
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
-
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
-
-  /** Explain the execution plan for this operation with the server's default verbosity level
+  /** Sets the query filter to apply to the query.
     *
+    * @param filter
+    *   the filter
     * @return
-    *   the execution plan
-    * @since 4.2
+    *   FindQueryBuilder
     */
-  def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F].map(Document.fromJava)
+  def filter(filter: Bson): QB               = withQuery(QueryCommand.Filter(filter))
+  def filter(filters: operations.Filter): QB = filter(filters.toBson)
 
-  /** Explain the execution plan for this operation with the given verbosity level
-    *
-    * @param verbosity
-    *   the verbosity of the explanation
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F].map(Document.fromJava)
-
-  override protected def applyCommands(): FindPublisher[T] =
-    commands.reverse.foldLeft(observable) { case (obs, command) =>
+  override protected def applyQueries(): FindPublisher[T] =
+    queries.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
         case QueryCommand.ShowRecordId(showRecordId) => obs.showRecordId(showRecordId)
         case QueryCommand.ReturnKey(returnKey)       => obs.returnKey(returnKey)
@@ -285,4 +220,29 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
         case _                                       => obs
       }
     }
+}
+
+abstract class FindQueryBuilder[F[_], T, S] extends FindQueries[T, FindQueryBuilder[F, T, S]] {
+  def first: F[Option[T]]
+  def all: F[Iterable[T]]
+  def stream: S
+  def boundedStream(capacity: Int): S
+
+  /** Explain the execution plan for this operation with the server's default verbosity level
+    *
+    * @return
+    *   the execution plan
+    * @since 4.2
+    */
+  def explain: F[Document]
+
+  /** Explain the execution plan for this operation with the given verbosity level
+    *
+    * @param verbosity
+    *   the verbosity of the explanation
+    * @return
+    *   the execution plan
+    * @since 4.2
+    */
+  def explain(verbosity: ExplainVerbosity): F[Document]
 }

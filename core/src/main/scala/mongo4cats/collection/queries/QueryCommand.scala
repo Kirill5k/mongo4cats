@@ -23,31 +23,31 @@ import org.bson.{BsonDocument, BsonTimestamp}
 
 import scala.concurrent.duration.Duration
 
-sealed private[queries] trait QueryCommand
+sealed private[mongo4cats] trait QueryCommand
 
-private[queries] object QueryCommand {
-  final private[queries] case class ShowRecordId(showRecordId: Boolean)                         extends QueryCommand
-  final private[queries] case class ReturnKey(returnKey: Boolean)                               extends QueryCommand
-  final private[queries] case class Comment(comment: String)                                    extends QueryCommand
-  final private[queries] case class Collation(collation: model.Collation)                       extends QueryCommand
-  final private[queries] case class Partial(partial: Boolean)                                   extends QueryCommand
-  final private[queries] case class MaxTime(duration: Duration)                                 extends QueryCommand
-  final private[queries] case class MaxAwaitTime(duration: Duration)                            extends QueryCommand
-  final private[queries] case class HintString(hint: String)                                    extends QueryCommand
-  final private[queries] case class Hint(hint: Bson)                                            extends QueryCommand
-  final private[queries] case class Max(index: Bson)                                            extends QueryCommand
-  final private[queries] case class Min(index: Bson)                                            extends QueryCommand
-  final private[queries] case class Skip(n: Int)                                                extends QueryCommand
-  final private[queries] case class Limit(n: Int)                                               extends QueryCommand
-  final private[queries] case class Sort(order: Bson)                                           extends QueryCommand
-  final private[queries] case class Filter(filter: Bson)                                        extends QueryCommand
-  final private[queries] case class Projection(projection: Bson)                                extends QueryCommand
-  final private[queries] case class BatchSize(size: Int)                                        extends QueryCommand
-  final private[queries] case class FullDocument(fullDocument: changestream.FullDocument)       extends QueryCommand
-  final private[queries] case class ResumeAfter(after: BsonDocument)                            extends QueryCommand
-  final private[queries] case class StartAfter(after: BsonDocument)                             extends QueryCommand
-  final private[queries] case class StartAtOperationTime(operationTime: BsonTimestamp)          extends QueryCommand
-  final private[queries] case class AllowDiskUse(allowDiskUse: Boolean)                         extends QueryCommand
-  final private[queries] case class BypassDocumentValidation(bypassDocumentValidation: Boolean) extends QueryCommand
-  final private[queries] case class Let(variables: Bson)                                        extends QueryCommand
+private[mongo4cats] object QueryCommand {
+  final case class ShowRecordId(showRecordId: Boolean)                         extends QueryCommand
+  final case class ReturnKey(returnKey: Boolean)                               extends QueryCommand
+  final case class Comment(comment: String)                                    extends QueryCommand
+  final case class Collation(collation: model.Collation)                       extends QueryCommand
+  final case class Partial(partial: Boolean)                                   extends QueryCommand
+  final case class MaxTime(duration: Duration)                                 extends QueryCommand
+  final case class MaxAwaitTime(duration: Duration)                            extends QueryCommand
+  final case class HintString(hint: String)                                    extends QueryCommand
+  final case class Hint(hint: Bson)                                            extends QueryCommand
+  final case class Max(index: Bson)                                            extends QueryCommand
+  final case class Min(index: Bson)                                            extends QueryCommand
+  final case class Skip(n: Int)                                                extends QueryCommand
+  final case class Limit(n: Int)                                               extends QueryCommand
+  final case class Sort(order: Bson)                                           extends QueryCommand
+  final case class Filter(filter: Bson)                                        extends QueryCommand
+  final case class Projection(projection: Bson)                                extends QueryCommand
+  final case class BatchSize(size: Int)                                        extends QueryCommand
+  final case class FullDocument(fullDocument: changestream.FullDocument)       extends QueryCommand
+  final case class ResumeAfter(after: BsonDocument)                            extends QueryCommand
+  final case class StartAfter(after: BsonDocument)                             extends QueryCommand
+  final case class StartAtOperationTime(operationTime: BsonTimestamp)          extends QueryCommand
+  final case class AllowDiskUse(allowDiskUse: Boolean)                         extends QueryCommand
+  final case class BypassDocumentValidation(bypassDocumentValidation: Boolean) extends QueryCommand
+  final case class Let(variables: Bson)                                        extends QueryCommand
 }

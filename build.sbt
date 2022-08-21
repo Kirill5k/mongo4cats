@@ -69,7 +69,7 @@ val `mongo4cats-embedded` = project
     name := "mongo4cats-embedded",
     libraryDependencies ++= Dependencies.embedded,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -93,7 +93,7 @@ val `mongo4cats-zio` = project
     name := "mongo4cats-zio",
     libraryDependencies ++= Dependencies.zio,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -105,7 +105,7 @@ val `mongo4cats-circe` = project
     name := "mongo4cats-circe",
     libraryDependencies ++= Dependencies.circe,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 

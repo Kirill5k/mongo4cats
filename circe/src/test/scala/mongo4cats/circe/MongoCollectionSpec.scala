@@ -155,7 +155,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           _       <- db.createCollection("people")
           coll    <- db.getCollectionWithCodec[Person]("people")
           _       <- coll.insertMany(List(person("John", "Doe"), person("Jane", "Doe", Gender.Female)))
-          females <- coll.withAddedCodec[Gender].find(Filter.eq("gender", Gender.Female)).all
+          females <- coll.withAddedCodec[Gender].find.filter(Filter.eq("gender", Gender.Female)).all
         } yield females
 
         result.map { res =>

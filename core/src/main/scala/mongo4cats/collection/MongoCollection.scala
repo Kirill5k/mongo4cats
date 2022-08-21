@@ -28,7 +28,7 @@ import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
-import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
+import mongo4cats.collection.queries.QueryBuilder
 import mongo4cats.helpers._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
@@ -68,14 +68,14 @@ abstract class MongoCollection[F[_], T] {
     * @param pipeline
     *   the aggregate pipeline
     */
-  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y]
-  def aggregate[Y: ClassTag](pipeline: Aggregate): AggregateQueryBuilder[F, Y]
-  def aggregate[Y: ClassTag](session: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y]
-  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y] =
+  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): QueryBuilder.Aggregate[F, Y]
+  def aggregate[Y: ClassTag](pipeline: Aggregate): QueryBuilder.Aggregate[F, Y]
+  def aggregate[Y: ClassTag](session: ClientSession[F], pipeline: Aggregate): QueryBuilder.Aggregate[F, Y]
+  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Seq[Bson]): QueryBuilder.Aggregate[F, Y] =
     withAddedCodec[Y].aggregate[Y](pipeline)
-  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
+  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Aggregate): QueryBuilder.Aggregate[F, Y] =
     withAddedCodec[Y].aggregate[Y](pipeline)
-  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](session: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
+  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](session: ClientSession[F], pipeline: Aggregate): QueryBuilder.Aggregate[F, Y] =
     withAddedCodec[Y].aggregate[Y](session, pipeline)
 
   /** Creates a change stream for this collection.
@@ -86,17 +86,17 @@ abstract class MongoCollection[F[_], T] {
     * @note
     *   Requires MongoDB 3.6 or greater
     */
-  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document]
-  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document]
-  def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document]
+  def watch(pipeline: Seq[Bson]): QueryBuilder.Watch[F, Document]
+  def watch(pipeline: Aggregate): QueryBuilder.Watch[F, Document]
+  def watch(session: ClientSession[F], pipeline: Aggregate): QueryBuilder.Watch[F, Document]
 
   /** Creates a change stream for this collection.
     * @since 2.2
     * @note
     *   Requires MongoDB 3.6 or greater
     */
-  def watch: WatchQueryBuilder[F, Document]                            = watch(Aggregate.empty)
-  def watch(session: ClientSession[F]): WatchQueryBuilder[F, Document] = watch(session, Aggregate.empty)
+  def watch: QueryBuilder.Watch[F, Document]                            = watch(Aggregate.empty)
+  def watch(session: ClientSession[F]): QueryBuilder.Watch[F, Document] = watch(session, Aggregate.empty)
 
   /** Gets the distinct values of the specified field name.
     *
@@ -106,21 +106,21 @@ abstract class MongoCollection[F[_], T] {
     * @param filter
     *   the query filter
     */
-  def distinct[Y: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y]
-  def distinct[Y: ClassTag](fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y] = distinct(fieldName, filter.toBson)
-  def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y]
+  def distinct[Y: ClassTag](fieldName: String, filter: Bson): QueryBuilder.Distinct[F, Y]
+  def distinct[Y: ClassTag](fieldName: String, filter: Filter): QueryBuilder.Distinct[F, Y] = distinct(fieldName, filter.toBson)
+  def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String, filter: Filter): QueryBuilder.Distinct[F, Y]
 
-  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y] =
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Bson): QueryBuilder.Distinct[F, Y] =
     withAddedCodec[Y].distinct[Y](fieldName, filter)
 
-  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y] =
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Filter): QueryBuilder.Distinct[F, Y] =
     distinctWithCodec(fieldName, filter.toBson)
 
   def distinctWithCodec[Y: MongoCodecProvider: ClassTag](
       session: ClientSession[F],
       fieldName: String,
       filter: Filter
-  ): DistinctQueryBuilder[F, Y] =
+  ): QueryBuilder.Distinct[F, Y] =
     withAddedCodec[Y].distinct[Y](session, fieldName, filter)
 
   /** Gets the distinct values of the specified field name.
@@ -129,12 +129,12 @@ abstract class MongoCollection[F[_], T] {
     * @param fieldName
     *   the field name
     */
-  def distinct[Y: ClassTag](fieldName: String): DistinctQueryBuilder[F, Y] = distinct(fieldName, Filter.empty)
-  def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String): DistinctQueryBuilder[F, Y] =
+  def distinct[Y: ClassTag](fieldName: String): QueryBuilder.Distinct[F, Y] = distinct(fieldName, Filter.empty)
+  def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String): QueryBuilder.Distinct[F, Y] =
     distinct(session, fieldName, Filter.empty)
-  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String): DistinctQueryBuilder[F, Y] =
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String): QueryBuilder.Distinct[F, Y] =
     withAddedCodec[Y].distinct[Y](fieldName)
-  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](session: ClientSession[F], fieldName: String): DistinctQueryBuilder[F, Y] =
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](session: ClientSession[F], fieldName: String): QueryBuilder.Distinct[F, Y] =
     withAddedCodec[Y].distinct[Y](session, fieldName)
 
   /** Finds matching documents in the collection.
@@ -143,16 +143,16 @@ abstract class MongoCollection[F[_], T] {
     * @param filter
     *   the query filter
     */
-  def find(filter: Bson): FindQueryBuilder[F, T]
-  def find(filter: Filter): FindQueryBuilder[F, T] = find(filter.toBson)
-  def find(session: ClientSession[F], filter: Filter): FindQueryBuilder[F, T]
+  def find(filter: Bson): QueryBuilder.Find[F, T]
+  def find(filter: Filter): QueryBuilder.Find[F, T] = find(filter.toBson)
+  def find(session: ClientSession[F], filter: Filter): QueryBuilder.Find[F, T]
 
   /** Finds all documents in the collection.
     *
     * [[http://docs.mongodb.org/manual/tutorial/query-documents/]]
     */
-  def find: FindQueryBuilder[F, T]                            = find(Filter.empty)
-  def find(session: ClientSession[F]): FindQueryBuilder[F, T] = find(session, Filter.empty)
+  def find: QueryBuilder.Find[F, T]                            = find(Filter.empty)
+  def find(session: ClientSession[F]): QueryBuilder.Find[F, T] = find(session, Filter.empty)
 
   /** Atomically find a document and remove it.
     *
@@ -498,35 +498,35 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def as[Y: ClassTag]: MongoCollection[F, Y] =
     new LiveMongoCollection[F, Y](withNewDocumentClass(underlying))
 
-  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)), Nil)
+  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): QueryBuilder.Aggregate[F, Y] =
+    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)))
 
-  def aggregate[Y: ClassTag](pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson), Nil)
+  def aggregate[Y: ClassTag](pipeline: Aggregate): QueryBuilder.Aggregate[F, Y] =
+    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson))
 
-  def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson), Nil)
+  def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): QueryBuilder.Aggregate[F, Y] =
+    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
 
-  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document] =
-    WatchQueryBuilder[F, Document](underlying.watch(asJava(pipeline), clazz[Document]), Nil)
+  def watch(pipeline: Seq[Bson]): QueryBuilder.Watch[F, Document] =
+    QueryBuilder.watch(underlying.watch(asJava(pipeline), clazz[Document]))
 
-  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document] =
-    WatchQueryBuilder[F, Document](underlying.watch(pipeline.toBson, clazz[Document]), Nil)
+  def watch(pipeline: Aggregate): QueryBuilder.Watch[F, Document] =
+    QueryBuilder.watch(underlying.watch(pipeline.toBson, clazz[Document]))
 
-  def watch(cs: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document] =
-    WatchQueryBuilder[F, Document](underlying.watch(cs.underlying, pipeline.toBson, clazz[Document]), Nil)
+  def watch(cs: ClientSession[F], pipeline: Aggregate): QueryBuilder.Watch[F, Document] =
+    QueryBuilder.watch(underlying.watch(cs.underlying, pipeline.toBson, clazz[Document]))
 
-  def distinct[Y: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y] =
-    DistinctQueryBuilder[F, Y](underlying.distinct(fieldName, filter, clazz[Y]), Nil)
+  def distinct[Y: ClassTag](fieldName: String, filter: Bson): QueryBuilder.Distinct[F, Y] =
+    QueryBuilder.distinct(underlying.distinct(fieldName, filter, clazz[Y]))
 
-  def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y] =
-    DistinctQueryBuilder[F, Y](underlying.distinct(cs.underlying, fieldName, filter.toBson, clazz[Y]), Nil)
+  def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): QueryBuilder.Distinct[F, Y] =
+    QueryBuilder.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, clazz[Y]))
 
-  def find(filter: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](underlying.find(filter), Nil)
+  def find(filter: Bson): QueryBuilder.Find[F, T] =
+    QueryBuilder.find(underlying.find(filter))
 
-  def find(cs: ClientSession[F], filter: Filter): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](underlying.find(cs.underlying, filter.toBson), Nil)
+  def find(cs: ClientSession[F], filter: Filter): QueryBuilder.Find[F, T] =
+    QueryBuilder.find(underlying.find(cs.underlying, filter.toBson))
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
     underlying.findOneAndDelete(filter, options).asyncSingle[F].map(Option.apply[T])

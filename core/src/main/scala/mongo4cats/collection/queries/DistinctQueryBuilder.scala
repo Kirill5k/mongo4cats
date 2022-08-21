@@ -16,22 +16,15 @@
 
 package mongo4cats.collection.queries
 
-import cats.effect.Async
-import cats.syntax.functor._
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.DistinctPublisher
-import mongo4cats.helpers._
 import mongo4cats.collection.operations
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
-final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    private val observable: DistinctPublisher[T],
-    private val commands: List[QueryCommand]
-) extends QueryBuilder[DistinctPublisher, T] {
+private[mongo4cats] trait DistinctQueries[T, QB] extends QueryBuilder[DistinctPublisher, T, QB] {
 
   /** Sets the maximum execution time on the server for this operation.
     *
@@ -40,8 +33,7 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     * @return
     *   DistinctQueryBuilder
     */
-  def maxTime(duration: Duration): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, QueryCommand.MaxTime(duration) :: commands)
+  def maxTime(duration: Duration): QB = withQuery(QueryCommand.MaxTime(duration))
 
   /** Sets the query filter to apply to the query.
     *
@@ -50,11 +42,8 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     * @return
     *   DistinctQueryBuilder
     */
-  def filter(filter: Bson): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, QueryCommand.Filter(filter) :: commands)
-
-  def filter(filters: operations.Filter): DistinctQueryBuilder[F, T] =
-    filter(filters.toBson)
+  def filter(filter: Bson): QB               = withQuery(QueryCommand.Filter(filter))
+  def filter(filters: operations.Filter): QB = filter(filters.toBson)
 
   /** Sets the number of documents to return per batch.
     *
@@ -67,8 +56,7 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     *   DistinctQueryBuilder
     * @since 1.8
     */
-  def batchSize(size: Int): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, QueryCommand.BatchSize(size) :: commands)
+  def batchSize(size: Int): QB = withQuery(QueryCommand.BatchSize(size))
 
   /** Sets the collation options
     *
@@ -78,23 +66,10 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
     *   DistinctQueryBuilder
     * @since 1.3
     */
-  def collation(collation: model.Collation): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder[F, T](observable, QueryCommand.Collation(collation) :: commands)
+  def collation(collation: model.Collation): QB = withQuery(QueryCommand.Collation(collation))
 
-  def first: F[Option[T]] =
-    applyCommands().first().asyncSingle[F].map(Option.apply)
-
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
-
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
-
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
-
-  override protected def applyCommands(): DistinctPublisher[T] =
-    commands.reverse.foldLeft(observable) { case (obs, command) =>
+  override protected def applyQueries(): DistinctPublisher[T] =
+    queries.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
         case QueryCommand.Collation(collation) => obs.collation(collation)
         case QueryCommand.MaxTime(duration)    => obs.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
@@ -103,4 +78,11 @@ final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collecti
         case _                                 => obs
       }
     }
+}
+
+abstract class DistinctQueryBuilder[F[_], T, S] extends DistinctQueries[T, DistinctQueryBuilder[F, T, S]] {
+  def first: F[Option[T]]
+  def all: F[Iterable[T]]
+  def stream: S
+  def boundedStream(capacity: Int): S
 }
