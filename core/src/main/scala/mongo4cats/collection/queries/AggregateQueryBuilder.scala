@@ -16,19 +16,15 @@
 
 package mongo4cats.collection.queries
 
-import cats.effect.Async
-import cats.syntax.functor._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.AggregatePublisher
 import mongo4cats.bson.Document
-import mongo4cats.helpers._
 import mongo4cats.collection.operations.Index
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
 private[mongo4cats] trait AggregateQueries[T, QB] extends QueryBuilder[AggregatePublisher, T, QB] {
 
@@ -119,7 +115,7 @@ private[mongo4cats] trait AggregateQueries[T, QB] extends QueryBuilder[Aggregate
     *   AggregateQueryBuilder
     * @since 1.7
     */
-  def hint(hint: Bson): QB = withQuery(QueryCommand.Hint(hint))
+  def hint(hint: Bson): QB   = withQuery(QueryCommand.Hint(hint))
   def hint(index: Index): QB = hint(index.toBson)
 
   /** Sets the number of documents to return per batch.
@@ -153,22 +149,18 @@ private[mongo4cats] trait AggregateQueries[T, QB] extends QueryBuilder[Aggregate
     }
 }
 
-final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: AggregatePublisher[T],
-    protected val queries: List[QueryCommand]
-) extends AggregateQueries[T, AggregateQueryBuilder[F, T]] {
+abstract class AggregateQueryBuilder[F[_], T] extends AggregateQueries[T, AggregateQueryBuilder[F, T]] {
+  def first: F[Option[T]]
+  def all: F[Iterable[T]]
+  def stream: fs2.Stream[F, T]
+  def boundedStream(capacity: Int): fs2.Stream[F, T]
 
   /** Aggregates documents according to the specified aggregation pipeline, which must end with a \$out stage.
     *
     * @return
     *   a unit, that indicates when the operation has completed
     */
-  def toCollection: F[Unit] = applyQueries().toCollection.asyncVoid[F]
-
-  def first: F[Option[T]]                            = applyQueries().first().asyncSingle[F].map(Option.apply)
-  def all: F[Iterable[T]]                            = applyQueries().asyncIterable[F]
-  def stream: fs2.Stream[F, T]                       = applyQueries().stream[F]
-  def boundedStream(capacity: Int): fs2.Stream[F, T] = applyQueries().boundedStream[F](capacity)
+  def toCollection: F[Unit]
 
   /** Explain the execution plan for this operation with the server's default verbosity level
     *
@@ -176,7 +168,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   the execution plan
     * @since 4.2
     */
-  def explain: F[Document] = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
+  def explain: F[Document]
 
   /** Explain the execution plan for this operation with the given verbosity level
     *
@@ -186,8 +178,5 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   the execution plan
     * @since 4.2
     */
-  def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
-
-  override protected def withQuery(command: QueryCommand): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, command :: queries)
+  def explain(verbosity: ExplainVerbosity): F[Document]
 }

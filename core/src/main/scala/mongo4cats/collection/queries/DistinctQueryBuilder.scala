@@ -16,17 +16,13 @@
 
 package mongo4cats.collection.queries
 
-import cats.effect.Async
-import cats.syntax.functor._
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.DistinctPublisher
-import mongo4cats.helpers._
 import mongo4cats.collection.operations
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
 private[mongo4cats] trait DistinctQueries[T, QB] extends QueryBuilder[DistinctPublisher, T, QB] {
 
@@ -46,7 +42,7 @@ private[mongo4cats] trait DistinctQueries[T, QB] extends QueryBuilder[DistinctPu
     * @return
     *   DistinctQueryBuilder
     */
-  def filter(filter: Bson): QB = withQuery(QueryCommand.Filter(filter))
+  def filter(filter: Bson): QB               = withQuery(QueryCommand.Filter(filter))
   def filter(filters: operations.Filter): QB = filter(filters.toBson)
 
   /** Sets the number of documents to return per batch.
@@ -84,16 +80,9 @@ private[mongo4cats] trait DistinctQueries[T, QB] extends QueryBuilder[DistinctPu
     }
 }
 
-final case class DistinctQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: DistinctPublisher[T],
-    protected val queries: List[QueryCommand]
-) extends DistinctQueries[T, DistinctQueryBuilder[F, T]] {
-
-  def first: F[Option[T]]                            = applyQueries().first().asyncSingle[F].map(Option.apply)
-  def all: F[Iterable[T]]                            = applyQueries().asyncIterable[F]
-  def stream: fs2.Stream[F, T]                       = applyQueries().stream[F]
-  def boundedStream(capacity: Int): fs2.Stream[F, T] = applyQueries().boundedStream[F](capacity)
-
-  override protected def withQuery(command: QueryCommand): DistinctQueryBuilder[F, T] =
-    DistinctQueryBuilder(observable, command :: queries)
+abstract class DistinctQueryBuilder[F[_], T] extends DistinctQueries[T, DistinctQueryBuilder[F, T]] {
+  def first: F[Option[T]]
+  def all: F[Iterable[T]]
+  def stream: fs2.Stream[F, T]
+  def boundedStream(capacity: Int): fs2.Stream[F, T]
 }

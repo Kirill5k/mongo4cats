@@ -16,20 +16,16 @@
 
 package mongo4cats.collection.queries
 
-import cats.effect.Async
-import cats.syntax.functor._
 import com.mongodb.ExplainVerbosity
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.FindPublisher
 import mongo4cats.bson.Document
-import mongo4cats.helpers._
 import mongo4cats.collection.operations
 import mongo4cats.collection.operations.{Projection, Sort}
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
 private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher, T, QB] {
 
@@ -226,15 +222,11 @@ private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher,
     }
 }
 
-final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: FindPublisher[T],
-    protected val queries: List[QueryCommand]
-) extends FindQueries[T, FindQueryBuilder[F, T]] {
-
-  def first: F[Option[T]]                            = applyQueries().first().asyncSingle[F].map(Option.apply)
-  def all: F[Iterable[T]]                            = applyQueries().asyncIterable[F]
-  def stream: fs2.Stream[F, T]                       = applyQueries().stream[F]
-  def boundedStream(capacity: Int): fs2.Stream[F, T] = applyQueries().boundedStream[F](capacity)
+abstract class FindQueryBuilder[F[_], T] extends FindQueries[T, FindQueryBuilder[F, T]] {
+  def first: F[Option[T]]
+  def all: F[Iterable[T]]
+  def stream: fs2.Stream[F, T]
+  def boundedStream(capacity: Int): fs2.Stream[F, T]
 
   /** Explain the execution plan for this operation with the server's default verbosity level
     *
@@ -242,7 +234,7 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   the execution plan
     * @since 4.2
     */
-  def explain: F[Document] = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
+  def explain: F[Document]
 
   /** Explain the execution plan for this operation with the given verbosity level
     *
@@ -252,8 +244,5 @@ final case class FindQueryBuilder[F[_]: Async, T: ClassTag] private[collection] 
     *   the execution plan
     * @since 4.2
     */
-  def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
-
-  override protected def withQuery(command: QueryCommand): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](observable, command :: queries)
+  def explain(verbosity: ExplainVerbosity): F[Document]
 }

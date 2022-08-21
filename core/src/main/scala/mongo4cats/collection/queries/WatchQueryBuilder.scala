@@ -16,16 +16,13 @@
 
 package mongo4cats.collection.queries
 
-import cats.effect.Async
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher
-import mongo4cats.helpers._
 import org.bson.{BsonDocument, BsonTimestamp}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
 private[queries] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamPublisher, T, QB] {
 
@@ -121,13 +118,7 @@ private[queries] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamPubl
     }
 }
 
-final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: ChangeStreamPublisher[T],
-    protected val queries: List[QueryCommand]
-) extends WatchQueries[T, WatchQueryBuilder[F, T]] {
-
-  def stream: fs2.Stream[F, ChangeStreamDocument[T]]                       = applyQueries().stream[F]
-  def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] = applyQueries().boundedStream[F](capacity)
-
-  override protected def withQuery(command: QueryCommand): WatchQueryBuilder[F, T] = WatchQueryBuilder(observable, command :: queries)
+abstract class WatchQueryBuilder[F[_], T] extends WatchQueries[T, WatchQueryBuilder[F, T]] {
+  def stream: fs2.Stream[F, ChangeStreamDocument[T]]
+  def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]]
 }

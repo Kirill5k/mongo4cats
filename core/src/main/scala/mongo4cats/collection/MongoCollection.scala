@@ -28,7 +28,7 @@ import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
-import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
+import mongo4cats.collection.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, QueryBuilder, WatchQueryBuilder}
 import mongo4cats.helpers._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
@@ -499,34 +499,34 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     new LiveMongoCollection[F, Y](withNewDocumentClass(underlying))
 
   def aggregate[Y: ClassTag](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)), Nil)
+    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)))
 
   def aggregate[Y: ClassTag](pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson), Nil)
+    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson))
 
   def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y] =
-    AggregateQueryBuilder(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson), Nil)
+    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
 
   def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document] =
-    WatchQueryBuilder[F, Document](underlying.watch(asJava(pipeline), clazz[Document]), Nil)
+    QueryBuilder.watch(underlying.watch(asJava(pipeline), clazz[Document]))
 
   def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document] =
-    WatchQueryBuilder[F, Document](underlying.watch(pipeline.toBson, clazz[Document]), Nil)
+    QueryBuilder.watch(underlying.watch(pipeline.toBson, clazz[Document]))
 
   def watch(cs: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document] =
-    WatchQueryBuilder[F, Document](underlying.watch(cs.underlying, pipeline.toBson, clazz[Document]), Nil)
+    QueryBuilder.watch(underlying.watch(cs.underlying, pipeline.toBson, clazz[Document]))
 
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y] =
-    DistinctQueryBuilder[F, Y](underlying.distinct(fieldName, filter, clazz[Y]), Nil)
+    QueryBuilder.distinct(underlying.distinct(fieldName, filter, clazz[Y]))
 
   def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y] =
-    DistinctQueryBuilder[F, Y](underlying.distinct(cs.underlying, fieldName, filter.toBson, clazz[Y]), Nil)
+    QueryBuilder.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, clazz[Y]))
 
   def find(filter: Bson): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](underlying.find(filter), Nil)
+    QueryBuilder.find(underlying.find(filter))
 
   def find(cs: ClientSession[F], filter: Filter): FindQueryBuilder[F, T] =
-    FindQueryBuilder[F, T](underlying.find(cs.underlying, filter.toBson), Nil)
+    QueryBuilder.find(underlying.find(cs.underlying, filter.toBson))
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
     underlying.findOneAndDelete(filter, options).asyncSingle[F].map(Option.apply[T])
