@@ -41,12 +41,19 @@ object Dependencies {
     val commonsCompress = "org.apache.commons"  % "commons-compress"          % Versions.commonsCompress
   }
 
+  val kernel = Seq(
+    Libraries.mongodbBson,
+    Libraries.mongodbDriverCore,
+    Libraries.mongodbDriverStreams,
+    Libraries.scalaCompat,
+    Libraries.scalaTest % Test
+  )
+
   val core = Seq(
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
-    Libraries.scalaCompat,
     Libraries.logback   % Test,
     Libraries.scalaTest % Test
   )

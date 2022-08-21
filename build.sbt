@@ -62,7 +62,18 @@ val commonSettings = Seq(
   scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil)
 )
 
-val `mongo4cats-embedded` = project
+val kernel = project
+  .in(file("kernel"))
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-kernel",
+    libraryDependencies ++= Dependencies.kernel,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+val embedded = project
   .in(file("embedded"))
   .settings(commonSettings)
   .settings(
@@ -73,21 +84,21 @@ val `mongo4cats-embedded` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-core` = project
+val core = project
   .in(file("core"))
-  .dependsOn(`mongo4cats-embedded` % "test->compile")
+  .dependsOn(kernel, embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-zio` = project
+val zio = project
   .in(file("zio"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
+  .dependsOn(kernel, embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio",
@@ -97,9 +108,9 @@ val `mongo4cats-zio` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-circe` = project
+val circe = project
   .in(file("circe"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
+  .dependsOn(kernel, core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
@@ -109,9 +120,9 @@ val `mongo4cats-circe` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-examples` = project
+val examples = project
   .in(file("examples"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, circe, embedded)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
@@ -122,7 +133,7 @@ val `mongo4cats-examples` = project
 
 val docs = project
   .in(file("docs"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, circe, embedded)
   .enablePlugins(MicrositesPlugin)
   .settings(noPublish)
   .settings(commonSettings)
@@ -153,9 +164,10 @@ val root = project
     crossScalaVersions := Nil
   )
   .aggregate(
-    `mongo4cats-core`,
-    `mongo4cats-zio`,
-    `mongo4cats-circe`,
-    `mongo4cats-examples`,
-    `mongo4cats-embedded`
+    kernel,
+    core,
+    zio,
+    circe,
+    examples,
+    embedded
   )
