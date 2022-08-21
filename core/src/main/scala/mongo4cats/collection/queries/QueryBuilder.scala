@@ -18,6 +18,9 @@ package mongo4cats.collection.queries
 
 import org.reactivestreams.Publisher
 
-private[queries] trait QueryBuilder[O[_] <: Publisher[_], T] {
-  protected def applyCommands(): O[T]
+private[mongo4cats] trait QueryBuilder[O[_] <: Publisher[_], T, QB] {
+  protected def observable: O[T]
+  protected def queries: List[QueryCommand]
+  protected def withQuery(command: QueryCommand): QB
+  protected def applyQueries(): O[T]
 }

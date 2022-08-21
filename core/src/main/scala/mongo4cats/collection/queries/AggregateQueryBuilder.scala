@@ -30,10 +30,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    protected val observable: AggregatePublisher[T],
-    protected val commands: List[QueryCommand]
-) extends QueryBuilder[AggregatePublisher, T] {
+private[mongo4cats] trait AggregateQueries[T, QB] extends QueryBuilder[AggregatePublisher, T, QB] {
 
   /** Enables writing to temporary files. A null value indicates that it's unspecified.
     *
@@ -42,8 +39,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @return
     *   AggregateQueryBuilder
     */
-  def allowDiskUse(allowDiskUse: Boolean): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.AllowDiskUse(allowDiskUse) :: commands)
+  def allowDiskUse(allowDiskUse: Boolean): QB = withQuery(QueryCommand.AllowDiskUse(allowDiskUse))
 
   /** Sets the maximum execution time on the server for this operation.
     *
@@ -52,8 +48,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     * @return
     *   AggregateQueryBuilder
     */
-  def maxTime(duration: Duration): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.MaxTime(duration) :: commands)
+  def maxTime(duration: Duration): QB = withQuery(QueryCommand.MaxTime(duration))
 
   /** The maximum amount of time for the server to wait on new documents to satisfy a \$changeStream aggregation.
     *
@@ -65,8 +60,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   the maximum await execution time in the given time unit
     * @since 1.6
     */
-  def maxAwaitTime(duration: Duration): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.MaxAwaitTime(duration) :: commands)
+  def maxAwaitTime(duration: Duration): QB = withQuery(QueryCommand.MaxAwaitTime(duration))
 
   /** Sets the bypass document level validation flag.
     *
@@ -78,8 +72,8 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     * @since 1.2
     */
-  def bypassDocumentValidation(bypassDocumentValidation: Boolean): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.BypassDocumentValidation(bypassDocumentValidation) :: commands)
+  def bypassDocumentValidation(bypassDocumentValidation: Boolean): QB =
+    withQuery(QueryCommand.BypassDocumentValidation(bypassDocumentValidation))
 
   /** Sets the collation options
     *
@@ -91,8 +85,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     * @since 1.3
     */
-  def collation(collation: model.Collation): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.Collation(collation) :: commands)
+  def collation(collation: model.Collation): QB = withQuery(QueryCommand.Collation(collation))
 
   /** Sets the comment to the aggregation.
     *
@@ -102,8 +95,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     * @since 1.7
     */
-  def comment(comment: String): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.Comment(comment) :: commands)
+  def comment(comment: String): QB = withQuery(QueryCommand.Comment(comment))
 
   /** Add top-level variables to the aggregation. <p> For MongoDB 5.0+, the aggregate command accepts a {@code let} option. This option is a
     * document consisting of zero or more fields representing variables that are accessible to the aggregation pipeline. The key is the name
@@ -117,8 +109,7 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     * @since 4.3
     */
-  def let(variables: Bson): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.Let(variables) :: commands)
+  def let(variables: Bson): QB = withQuery(QueryCommand.Let(variables))
 
   /** Sets the hint for which index to use.
     *
@@ -128,11 +119,8 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     * @since 1.7
     */
-  def hint(hint: Bson): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.Hint(hint) :: commands)
-
-  def hint(index: Index): AggregateQueryBuilder[F, T] =
-    hint(index.toBson)
+  def hint(hint: Bson): QB = withQuery(QueryCommand.Hint(hint))
+  def hint(index: Index): QB = hint(index.toBson)
 
   /** Sets the number of documents to return per batch.
     *
@@ -145,51 +133,10 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
     *   AggregateQueryBuilder
     * @since 1.8
     */
-  def batchSize(batchSize: Int): AggregateQueryBuilder[F, T] =
-    AggregateQueryBuilder(observable, QueryCommand.BatchSize(batchSize) :: commands)
+  def batchSize(batchSize: Int): QB = withQuery(QueryCommand.BatchSize(batchSize))
 
-  /** Aggregates documents according to the specified aggregation pipeline, which must end with a \$out stage.
-    *
-    * @return
-    *   a unit, that indicates when the operation has completed
-    */
-  def toCollection: F[Unit] =
-    applyCommands().toCollection.asyncVoid[F]
-
-  def first: F[Option[T]] =
-    applyCommands().first().asyncSingle[F].map(Option.apply)
-
-  def all: F[Iterable[T]] =
-    applyCommands().asyncIterable[F]
-
-  def stream: fs2.Stream[F, T] =
-    applyCommands().stream[F]
-
-  def boundedStream(capacity: Int): fs2.Stream[F, T] =
-    applyCommands().boundedStream[F](capacity)
-
-  /** Explain the execution plan for this operation with the server's default verbosity level
-    *
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain: F[Document] =
-    applyCommands().explain().asyncSingle[F].map(Document.fromJava)
-
-  /** Explain the execution plan for this operation with the given verbosity level
-    *
-    * @param verbosity
-    *   the verbosity of the explanation
-    * @return
-    *   the execution plan
-    * @since 4.2
-    */
-  def explain(verbosity: ExplainVerbosity): F[Document] =
-    applyCommands().explain(verbosity).asyncSingle[F].map(Document.fromJava)
-
-  override protected def applyCommands(): AggregatePublisher[T] =
-    commands.reverse.foldLeft(observable) { case (obs, command) =>
+  override protected def applyQueries(): AggregatePublisher[T] =
+    queries.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
         case QueryCommand.Comment(comment)                                   => obs.comment(comment)
         case QueryCommand.Collation(collation)                               => obs.collation(collation)
@@ -204,4 +151,43 @@ final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collect
         case _                                                               => obs
       }
     }
+}
+
+final case class AggregateQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
+    protected val observable: AggregatePublisher[T],
+    protected val queries: List[QueryCommand]
+) extends AggregateQueries[T, AggregateQueryBuilder[F, T]] {
+
+  /** Aggregates documents according to the specified aggregation pipeline, which must end with a \$out stage.
+    *
+    * @return
+    *   a unit, that indicates when the operation has completed
+    */
+  def toCollection: F[Unit] = applyQueries().toCollection.asyncVoid[F]
+
+  def first: F[Option[T]]                            = applyQueries().first().asyncSingle[F].map(Option.apply)
+  def all: F[Iterable[T]]                            = applyQueries().asyncIterable[F]
+  def stream: fs2.Stream[F, T]                       = applyQueries().stream[F]
+  def boundedStream(capacity: Int): fs2.Stream[F, T] = applyQueries().boundedStream[F](capacity)
+
+  /** Explain the execution plan for this operation with the server's default verbosity level
+    *
+    * @return
+    *   the execution plan
+    * @since 4.2
+    */
+  def explain: F[Document] = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
+
+  /** Explain the execution plan for this operation with the given verbosity level
+    *
+    * @param verbosity
+    *   the verbosity of the explanation
+    * @return
+    *   the execution plan
+    * @since 4.2
+    */
+  def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
+
+  override protected def withQuery(command: QueryCommand): AggregateQueryBuilder[F, T] =
+    AggregateQueryBuilder(observable, command :: queries)
 }

@@ -27,10 +27,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
-final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
-    private val observable: ChangeStreamPublisher[T],
-    private val commands: List[QueryCommand]
-) extends QueryBuilder[ChangeStreamPublisher, T] {
+private[queries] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamPublisher, T, QB] {
 
   /** Sets the number of documents to return per batch.
     *
@@ -43,8 +40,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     *   WatchQueryBuilder
     * @since 1.8
     */
-  def batchSize(size: Int): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.BatchSize(size) :: commands)
+  def batchSize(size: Int): QB = withQuery(QueryCommand.BatchSize(size))
 
   /** Sets the collation options
     *
@@ -53,8 +49,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @return
     *   WatchQueryBuilder
     */
-  def collation(collation: model.Collation): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.Collation(collation) :: commands)
+  def collation(collation: model.Collation): QB = withQuery(QueryCommand.Collation(collation))
 
   /** Sets the fullDocument value.
     *
@@ -63,8 +58,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @return
     *   WatchQueryBuilder
     */
-  def fullDocument(fullDocument: FullDocument): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.FullDocument(fullDocument) :: commands)
+  def fullDocument(fullDocument: FullDocument): QB = withQuery(QueryCommand.FullDocument(fullDocument))
 
   /** Sets the maximum await execution time on the server for this operation.
     *
@@ -73,8 +67,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @return
     *   WatchQueryBuilder
     */
-  def maxAwaitTime(maxAwaitTime: Duration): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.MaxAwaitTime(maxAwaitTime) :: commands)
+  def maxAwaitTime(maxAwaitTime: Duration): QB = withQuery(QueryCommand.MaxAwaitTime(maxAwaitTime))
 
   /** Sets the logical starting point for the new change stream.
     *
@@ -83,8 +76,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @return
     *   WatchQueryBuilder
     */
-  def resumeAfter(resumeToken: BsonDocument): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.ResumeAfter(resumeToken) :: commands)
+  def resumeAfter(resumeToken: BsonDocument): QB = withQuery(QueryCommand.ResumeAfter(resumeToken))
 
   /** Similar to {@code resumeAfter}, this option takes a resume token and starts a new change stream returning the first notification after
     * the token.
@@ -99,8 +91,7 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @return
     *   WatchQueryBuilder
     */
-  def startAfter(startAfter: BsonDocument): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.StartAfter(startAfter) :: commands)
+  def startAfter(startAfter: BsonDocument): QB = withQuery(QueryCommand.StartAfter(startAfter))
 
   /** The change stream will only provide changes that occurred after the specified timestamp.
     *
@@ -113,17 +104,10 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
     * @return
     *   WatchQueryBuilder
     */
-  def startAtOperationTime(startAtOperationTime: BsonTimestamp): WatchQueryBuilder[F, T] =
-    WatchQueryBuilder(observable, QueryCommand.StartAtOperationTime(startAtOperationTime) :: commands)
+  def startAtOperationTime(startAtOperationTime: BsonTimestamp): QB = withQuery(QueryCommand.StartAtOperationTime(startAtOperationTime))
 
-  def stream: fs2.Stream[F, ChangeStreamDocument[T]] =
-    applyCommands().stream[F]
-
-  def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] =
-    applyCommands().boundedStream[F](capacity)
-
-  override protected def applyCommands(): ChangeStreamPublisher[T] =
-    commands.reverse.foldLeft(observable) { case (obs, command) =>
+  override protected def applyQueries(): ChangeStreamPublisher[T] =
+    queries.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
         case QueryCommand.FullDocument(fullDocument)          => obs.fullDocument(fullDocument)
         case QueryCommand.Collation(collation)                => obs.collation(collation)
@@ -135,4 +119,15 @@ final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection]
         case _                                                => obs
       }
     }
+}
+
+final case class WatchQueryBuilder[F[_]: Async, T: ClassTag] private[collection] (
+    protected val observable: ChangeStreamPublisher[T],
+    protected val queries: List[QueryCommand]
+) extends WatchQueries[T, WatchQueryBuilder[F, T]] {
+
+  def stream: fs2.Stream[F, ChangeStreamDocument[T]]                       = applyQueries().stream[F]
+  def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] = applyQueries().boundedStream[F](capacity)
+
+  override protected def withQuery(command: QueryCommand): WatchQueryBuilder[F, T] = WatchQueryBuilder(observable, command :: queries)
 }
