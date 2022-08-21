@@ -6,6 +6,7 @@ object Dependencies {
     val fs2         = "3.2.11"
     val scalaCompat = "2.8.1"
     val circe       = "0.14.2"
+    val zio         = "2.0.1"
 
     val logback   = "1.2.11"
     val scalaTest = "3.2.13"
@@ -27,6 +28,11 @@ object Dependencies {
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
     val circeGeneric = "io.circe" %% "circe-generic" % Versions.circe
 
+    val zio        = "dev.zio" %% "zio"          % Versions.zio
+    val zioStreams = "dev.zio" %% "zio-streams"  % Versions.zio
+    val zioTest    = "dev.zio" %% "zio-test"     % Versions.zio
+    val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Versions.zio
+
     val scalaTest = "org.scalatest" %% "scalatest"       % Versions.scalaTest
     val logback   = "ch.qos.logback" % "logback-classic" % Versions.logback
 
@@ -41,7 +47,7 @@ object Dependencies {
     Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
     Libraries.scalaCompat,
-    Libraries.logback % Test,
+    Libraries.logback   % Test,
     Libraries.scalaTest % Test
   )
 
@@ -54,12 +60,15 @@ object Dependencies {
     Libraries.circeCore,
     Libraries.circeGeneric,
     Libraries.circeParser,
-    Libraries.logback % Test,
+    Libraries.logback   % Test,
     Libraries.scalaTest % Test
   )
 
   val zio = Seq(
-
+    Libraries.zio,
+    Libraries.zioStreams,
+    Libraries.zioTest    % Test,
+    Libraries.zioTestSbt % Test
   )
 
   val embedded = Seq(
