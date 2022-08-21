@@ -17,14 +17,14 @@
 package mongo4cats.collection.queries
 
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
+import com.mongodb.client.model.changestream.FullDocument
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher
 import org.bson.{BsonDocument, BsonTimestamp}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
-private[queries] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamPublisher, T, QB] {
+private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamPublisher, T, QB] {
 
   /** Sets the number of documents to return per batch.
     *
@@ -118,7 +118,7 @@ private[queries] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamPubl
     }
 }
 
-abstract class WatchQueryBuilder[F[_], T] extends WatchQueries[T, WatchQueryBuilder[F, T]] {
-  def stream: fs2.Stream[F, ChangeStreamDocument[T]]
-  def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]]
+abstract class WatchQueryBuilder[F[_], T, S] extends WatchQueries[T, WatchQueryBuilder[F, T, S]] {
+  def stream: S
+  def boundedStream(capacity: Int): S
 }

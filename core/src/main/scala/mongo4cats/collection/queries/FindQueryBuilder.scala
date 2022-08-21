@@ -222,11 +222,11 @@ private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher,
     }
 }
 
-abstract class FindQueryBuilder[F[_], T] extends FindQueries[T, FindQueryBuilder[F, T]] {
+abstract class FindQueryBuilder[F[_], T, S] extends FindQueries[T, FindQueryBuilder[F, T, S]] {
   def first: F[Option[T]]
   def all: F[Iterable[T]]
-  def stream: fs2.Stream[F, T]
-  def boundedStream(capacity: Int): fs2.Stream[F, T]
+  def stream: S
+  def boundedStream(capacity: Int): S
 
   /** Explain the execution plan for this operation with the server's default verbosity level
     *
