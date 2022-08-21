@@ -35,30 +35,34 @@ object Dependencies {
     val commonsCompress = "org.apache.commons"  % "commons-compress"          % Versions.commonsCompress
   }
 
-  lazy val core = Seq(
+  val core = Seq(
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
-    Libraries.scalaCompat
-  )
-
-  lazy val test = Seq(
-    Libraries.logback   % Test,
+    Libraries.scalaCompat,
+    Libraries.logback % Test,
     Libraries.scalaTest % Test
   )
 
-  lazy val examples = Seq(
-    Libraries.logback
+  val examples = Seq(
+    Libraries.logback,
+    Libraries.scalaTest % Test
   )
 
-  lazy val circe = Seq(
+  val circe = Seq(
     Libraries.circeCore,
     Libraries.circeGeneric,
-    Libraries.circeParser
+    Libraries.circeParser,
+    Libraries.logback % Test,
+    Libraries.scalaTest % Test
   )
 
-  lazy val embedded = Seq(
+  val zio = Seq(
+
+  )
+
+  val embedded = Seq(
     Libraries.fs2Core,
     Libraries.embeddedMongo,
     Libraries.immutableValue,

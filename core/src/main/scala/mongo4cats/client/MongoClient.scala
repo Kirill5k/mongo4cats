@@ -34,7 +34,6 @@ abstract class MongoClient[F[_]] {
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
   def startSession(options: ClientSessionOptions): F[ClientSession[F]]
   def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
-  def underlying: JMongoClient
 }
 
 final private class LiveMongoClient[F[_]](

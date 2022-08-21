@@ -79,7 +79,19 @@ val `mongo4cats-core` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
-    libraryDependencies ++= Dependencies.core ++ Dependencies.test,
+    libraryDependencies ++= Dependencies.core,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+val `mongo4cats-zio` = project
+  .in(file("zio"))
+  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-zio",
+    libraryDependencies ++= Dependencies.zio,
     test / parallelExecution := false,
     mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
   )
@@ -91,7 +103,7 @@ val `mongo4cats-circe` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
-    libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
+    libraryDependencies ++= Dependencies.circe,
     test / parallelExecution := false,
     mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1")
   )
@@ -104,7 +116,7 @@ val `mongo4cats-examples` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-examples",
-    libraryDependencies ++= Dependencies.examples ++ Dependencies.test
+    libraryDependencies ++= Dependencies.examples
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -142,6 +154,7 @@ val root = project
   )
   .aggregate(
     `mongo4cats-core`,
+    `mongo4cats-zio`,
     `mongo4cats-circe`,
     `mongo4cats-examples`,
     `mongo4cats-embedded`
