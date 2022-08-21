@@ -33,18 +33,17 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 abstract class MongoDatabase[F[_]] {
-  def name: String
+  def underlying: JMongoDatabase
 
-  def readPreference: ReadPreference
+  def name: String                   = underlying.getName
+  def readPreference: ReadPreference = underlying.getReadPreference
+  def writeConcern: WriteConcern     = underlying.getWriteConcern
+  def readConcern: ReadConcern       = underlying.getReadConcern
+  def codecs: CodecRegistry          = underlying.getCodecRegistry
+
   def withReadPreference(readPreference: ReadPreference): MongoDatabase[F]
-
-  def writeConcern: WriteConcern
   def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F]
-
-  def readConcern: ReadConcern
   def witReadConcern(readConcern: ReadConcern): MongoDatabase[F]
-
-  def codecs: CodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F]
   def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): MongoDatabase[F] =
     Try(codecs.get(clazz[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)
@@ -87,8 +86,6 @@ abstract class MongoDatabase[F[_]] {
     * @since 1.7
     */
   def drop(clientSession: ClientSession[F]): F[Unit]
-
-  def underlying: JMongoDatabase
 }
 
 final private class LiveMongoDatabase[F[_]](
@@ -96,22 +93,15 @@ final private class LiveMongoDatabase[F[_]](
 )(implicit
     val F: Async[F]
 ) extends MongoDatabase[F] {
-
-  def name: String = underlying.getName
-
-  def readPreference: ReadPreference = underlying.getReadPreference
   def withReadPreference(readPreference: ReadPreference): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withReadPreference(readPreference))
 
-  def writeConcern: WriteConcern = underlying.getWriteConcern
   def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withWriteConcern(writeConcert))
 
-  def readConcern: ReadConcern = underlying.getReadConcern
   def witReadConcern(readConcern: ReadConcern): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withReadConcern(readConcern))
 
-  def codecs: CodecRegistry = underlying.getCodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 

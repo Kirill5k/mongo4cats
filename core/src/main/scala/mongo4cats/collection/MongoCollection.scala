@@ -38,21 +38,21 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 abstract class MongoCollection[F[_], T] {
-  def namespace: MongoNamespace
+  def underlying: JMongoCollection[T]
 
-  def readPreference: ReadPreference
+  def namespace: MongoNamespace      = underlying.getNamespace
+  def documentClass: Class[T]        = underlying.getDocumentClass
+  def readPreference: ReadPreference = underlying.getReadPreference
+  def readConcern: ReadConcern       = underlying.getReadConcern
+  def codecs: CodecRegistry          = underlying.getCodecRegistry
+  def writeConcern: WriteConcern     = underlying.getWriteConcern
+
   def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T]
-
-  def writeConcern: WriteConcern
   def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T]
-
-  def readConcern: ReadConcern
   def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T]
 
-  def documentClass: Class[T]
   def as[Y: ClassTag]: MongoCollection[F, Y]
 
-  def codecs: CodecRegistry
   def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T]
   def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollection[F, T] =
     Try(codecs.get(clazz[Y])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
@@ -472,35 +472,23 @@ abstract class MongoCollection[F[_], T] {
   def renameCollection(session: ClientSession[F], target: MongoNamespace, options: RenameCollectionOptions): F[Unit]
   def renameCollection(session: ClientSession[F], target: MongoNamespace): F[Unit] =
     renameCollection(session, target, RenameCollectionOptions())
-
-  def underlying: JMongoCollection[T]
 }
 
 final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     val underlying: JMongoCollection[T]
 ) extends MongoCollection[F, T] with AsJava {
 
-  def readPreference: ReadPreference = underlying.getReadPreference
   def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadPreference(readPreference))
-  def writeConcern: WriteConcern = underlying.getWriteConcern
+
   def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withWriteConcern(writeConcert))
-  def readConcern: ReadConcern = underlying.getReadConcern
+
   def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadConcern(readConcern))
 
   private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
     coll.withDocumentClass[Y](clazz[Y])
-
-  def codecs: CodecRegistry =
-    underlying.getCodecRegistry
-
-  def namespace: MongoNamespace =
-    underlying.getNamespace
-
-  def documentClass: Class[T] =
-    underlying.getDocumentClass
 
   def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T] = {
     val newCodecs = fromRegistries(codecs, codecRegistry)
