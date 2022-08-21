@@ -27,7 +27,8 @@ import mongo4cats.database.MongoDatabase
 import mongo4cats.helpers._
 
 abstract class MongoClient[F[_]] {
-  def clusterDescription: ClusterDescription
+  def underlying: JMongoClient
+  def clusterDescription: ClusterDescription = underlying.getClusterDescription
   def getDatabase(name: String): F[MongoDatabase[F]]
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
@@ -41,8 +42,6 @@ final private class LiveMongoClient[F[_]](
 )(implicit
     val F: Async[F]
 ) extends MongoClient[F] {
-  def clusterDescription: ClusterDescription = underlying.getClusterDescription
-
   def getDatabase(name: String): F[MongoDatabase[F]] =
     F.delay(underlying.getDatabase(name)).flatMap(MongoDatabase.make[F])
 
