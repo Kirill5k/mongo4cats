@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
-package mongo4cats.zio
+package mongo4cats
 
-package object collection {}
+import scala.reflect.ClassTag
+
+private[mongo4cats] object Clazz {
+  def tag[Y: ClassTag]: Class[Y] =
+    implicitly[ClassTag[Y]].runtimeClass.asInstanceOf[Class[Y]]
+}

@@ -62,23 +62,23 @@ val commonSettings = Seq(
   scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil)
 )
 
-val kernel = project
-  .in(file("kernel"))
-  .settings(commonSettings)
-  .settings(
-    name := "mongo4cats-kernel",
-    libraryDependencies ++= Dependencies.kernel,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
-  )
-  .enablePlugins(AutomateHeaderPlugin)
-
 val embedded = project
   .in(file("embedded"))
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-embedded",
     libraryDependencies ++= Dependencies.embedded,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+val kernel = project
+  .in(file("kernel"))
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-kernel",
+    libraryDependencies ++= Dependencies.kernel,
     test / parallelExecution := false,
     mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
   )
@@ -122,7 +122,7 @@ val circe = project
 
 val examples = project
   .in(file("examples"))
-  .dependsOn(core, circe, embedded)
+  .dependsOn(core, circe, zio, embedded)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(

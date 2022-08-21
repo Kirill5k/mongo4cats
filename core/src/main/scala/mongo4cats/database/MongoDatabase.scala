@@ -22,6 +22,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
+import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
@@ -46,7 +47,7 @@ abstract class MongoDatabase[F[_]] {
   def witReadConcern(readConcern: ReadConcern): MongoDatabase[F]
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F]
   def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): MongoDatabase[F] =
-    Try(codecs.get(clazz[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)
+    Try(codecs.get(Clazz.tag[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)
 
   def listCollectionNames: F[Iterable[String]]
   def listCollectionNames(session: ClientSession[F]): F[Iterable[String]]
@@ -115,9 +116,9 @@ final private class LiveMongoDatabase[F[_]](
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {
       underlying
-        .getCollection[T](name, clazz[T])
+        .getCollection[T](name, Clazz.tag[T])
         .withCodecRegistry(codecRegistry)
-        .withDocumentClass[T](clazz[T])
+        .withDocumentClass[T](Clazz.tag[T])
     }.flatMap(MongoCollection.make[F, T])
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =

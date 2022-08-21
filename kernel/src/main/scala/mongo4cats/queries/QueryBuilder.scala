@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
-package mongo4cats.zio
+package mongo4cats.queries
 
-package object collection {}
+import org.reactivestreams.Publisher
+
+private[mongo4cats] trait QueryBuilder[O[_] <: Publisher[_], T, QB] {
+  protected def observable: O[T]
+  protected def queries: List[QueryCommand]
+  protected def withQuery(command: QueryCommand): QB
+  protected def applyQueries(): O[T]
+}

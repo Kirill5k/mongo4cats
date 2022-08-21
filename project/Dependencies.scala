@@ -2,6 +2,7 @@ import sbt._
 
 object Dependencies {
   private object Versions {
+    val cats        = "2.8.0"
     val mongodb     = "4.7.1"
     val fs2         = "3.2.11"
     val scalaCompat = "2.8.1"
@@ -21,6 +22,7 @@ object Dependencies {
     val mongodbDriverCore    = "org.mongodb" % "mongodb-driver-core"            % Versions.mongodb
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
 
+    val cats        = "org.typelevel"          %% "cats-core"               % Versions.cats
     val fs2Core     = "co.fs2"                 %% "fs2-core"                % Versions.fs2
     val scalaCompat = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.scalaCompat
 
@@ -46,13 +48,11 @@ object Dependencies {
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
     Libraries.scalaCompat,
+    Libraries.cats,
     Libraries.scalaTest % Test
   )
 
   val core = Seq(
-    Libraries.mongodbBson,
-    Libraries.mongodbDriverCore,
-    Libraries.mongodbDriverStreams,
     Libraries.fs2Core,
     Libraries.logback   % Test,
     Libraries.scalaTest % Test

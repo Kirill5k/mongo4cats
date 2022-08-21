@@ -23,12 +23,11 @@ import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
-import mongo4cats.AsJava
+import mongo4cats.{AsJava, Clazz}
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
-import mongo4cats.collection.operations.{Aggregate, Filter, Index, Update}
-import mongo4cats.collection.queries.QueryBuilder
+import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.helpers._
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
@@ -55,7 +54,7 @@ abstract class MongoCollection[F[_], T] {
 
   def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T]
   def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollection[F, T] =
-    Try(codecs.get(clazz[Y])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
+    Try(codecs.get(Clazz.tag[Y])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
 
   /** Drops this collection from the Database.
     *
@@ -488,7 +487,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     new LiveMongoCollection[F, T](underlying.withReadConcern(readConcern))
 
   private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
-    coll.withDocumentClass[Y](clazz[Y])
+    coll.withDocumentClass[Y](Clazz.tag[Y])
 
   def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T] = {
     val newCodecs = fromRegistries(codecs, codecRegistry)
@@ -508,19 +507,19 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
 
   def watch(pipeline: Seq[Bson]): QueryBuilder.Watch[F, Document] =
-    QueryBuilder.watch(underlying.watch(asJava(pipeline), clazz[Document]))
+    QueryBuilder.watch(underlying.watch(asJava(pipeline), Clazz.tag[Document]))
 
   def watch(pipeline: Aggregate): QueryBuilder.Watch[F, Document] =
-    QueryBuilder.watch(underlying.watch(pipeline.toBson, clazz[Document]))
+    QueryBuilder.watch(underlying.watch(pipeline.toBson, Clazz.tag[Document]))
 
   def watch(cs: ClientSession[F], pipeline: Aggregate): QueryBuilder.Watch[F, Document] =
-    QueryBuilder.watch(underlying.watch(cs.underlying, pipeline.toBson, clazz[Document]))
+    QueryBuilder.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[Document]))
 
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): QueryBuilder.Distinct[F, Y] =
-    QueryBuilder.distinct(underlying.distinct(fieldName, filter, clazz[Y]))
+    QueryBuilder.distinct(underlying.distinct(fieldName, filter, Clazz.tag[Y]))
 
   def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): QueryBuilder.Distinct[F, Y] =
-    QueryBuilder.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, clazz[Y]))
+    QueryBuilder.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, Clazz.tag[Y]))
 
   def find(filter: Bson): QueryBuilder.Find[F, T] =
     QueryBuilder.find(underlying.find(filter))
@@ -566,11 +565,11 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def listIndexes: F[Iterable[Document]] =
     underlying.listIndexes().asyncIterable[F].map(_.map(Document.fromJava))
   def listIndexes[Y: ClassTag]: F[Iterable[Y]] =
-    underlying.listIndexes(clazz[Y]).asyncIterable[F]
+    underlying.listIndexes(Clazz.tag[Y]).asyncIterable[F]
   def listIndexes(cs: ClientSession[F]): F[Iterable[Document]] =
     underlying.listIndexes(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
   def listIndexes[Y: ClassTag](cs: ClientSession[F]): F[Iterable[Y]] =
-    underlying.listIndexes(cs.underlying, clazz[Y]).asyncIterable[F]
+    underlying.listIndexes(cs.underlying, Clazz.tag[Y]).asyncIterable[F]
 
   def updateMany(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     underlying.updateMany(filter, update, options).asyncSingle[F]

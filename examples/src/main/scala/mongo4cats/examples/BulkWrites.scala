@@ -21,7 +21,7 @@ import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.{BulkWriteOptions, WriteCommand}
-import mongo4cats.collection.operations.{Filter, Update}
+import mongo4cats.operations.{Filter, Update}
 
 object BulkWrites extends IOApp.Simple {
 
