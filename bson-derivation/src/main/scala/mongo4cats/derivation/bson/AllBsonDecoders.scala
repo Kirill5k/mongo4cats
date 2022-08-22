@@ -27,36 +27,28 @@ import java.util.UUID
 
 trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
 
-  implicit val byteBsonDecoder: BsonDecoder[Byte]     = instanceFromJavaDecoder(new ByteCodec()).map(_.toByte)
-  implicit val shortBsonDecoder: BsonDecoder[Short]   = instanceFromJavaDecoder(new ShortCodec()).map(_.toShort)
-  implicit val intBsonDecoder: BsonDecoder[Int]       = instanceFromJavaDecoder(new IntegerCodec()).map(_.toInt)
-  implicit val longBsonDecoder: BsonDecoder[Long]     = instanceFromJavaDecoder(new LongCodec()).map(_.toLong)
-  implicit val stringBsonDecoder: BsonDecoder[String] = instanceFromJavaDecoder(new StringCodec())
-
-  implicit val instantBsonDecoder: BsonDecoder[Instant] =
-    instanceFromJavaDecoder(new JavaDecoder[Instant] {
-      override def decode(reader: BsonReader, decoderContext: DecoderContext): Instant = {
-        reader.readStartDocument()
-        reader.readName() // For "$date".
-        val r = Instant.parse(reader.readString())
-        reader.readEndDocument()
-        r
-      }
-    })
-
+  implicit val byteBsonDecoder: BsonDecoder[Byte]                       = instanceFromJavaDecoder(new ByteCodec()).map(_.toByte)
+  implicit val shortBsonDecoder: BsonDecoder[Short]                     = instanceFromJavaDecoder(new ShortCodec()).map(_.toShort)
+  implicit val intBsonDecoder: BsonDecoder[Int]                         = instanceFromJavaDecoder(new IntegerCodec()).map(_.toInt)
+  implicit val longBsonDecoder: BsonDecoder[Long]                       = instanceFromJavaDecoder(new LongCodec()).map(_.toLong)
+  implicit val stringBsonDecoder: BsonDecoder[String]                   = instanceFromJavaDecoder(new StringCodec())
   implicit val decodeBsonObjectId: BsonDecoder[org.bson.types.ObjectId] = instanceFromJavaDecoder(new ObjectIdCodec())
+  implicit val instantBsonDecoder: BsonDecoder[Instant]                 = instanceFromJavaDecoder(new InstantCodec())
 
   implicit def optionBsonDecoder[A](implicit decA: BsonDecoder[A]): BsonDecoder[Option[A]] =
-    instanceFromBsonValue(a =>
-      if (a == null || a.isNull) none.asRight
-      else decA.fromBsonValue(a).map(_.some)
-    )
+    instanceFromJavaDecoder(new JavaDecoder[Option[A]] {
+      override def decode(reader: BsonReader, decoderContext: DecoderContext): Option[A] =
+        if (reader.getCurrentBsonType() == BsonType.NULL) {
+          reader.readNull()
+          none
+        } else decA.unsafeDecode(reader, decoderContext).some
+    })
 
   implicit def tuple2BsonDecoder[A, B](implicit decA: BsonDecoder[A], decB: BsonDecoder[B]): BsonDecoder[(A, B)] =
     BsonDecoder.instanceFromBsonValue {
-      case arr: BsonArray if arr.size() == 2 => (decA.fromBsonValue(arr.get(0)), decB.fromBsonValue(arr.get(1))).tupled
-      case arr: BsonArray                    => new Throwable(s"Not an array of size 2: ${arr}").asLeft
-      case other                             => new Throwable(s"Not an array: ${other}").asLeft
+      case arr: BsonArray if arr.size() == 2 => (decA.unsafeFromBsonValue(arr.get(0)), decB.unsafeFromBsonValue(arr.get(1)))
+      case arr: BsonArray                    => throw new Throwable(s"Not an array of size 2: ${arr}")
+      case other                             => throw new Throwable(s"Not an array: ${other}")
     }
 
   implicit val uuidBsonDecoder: BsonDecoder[UUID] =
@@ -70,12 +62,12 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
         doc
           .entrySet()
           .forEach { entry =>
-            mapBuilder += (decK(entry.getKey).get -> decV.fromBsonValue(entry.getValue).toOption.get)
+            mapBuilder += (decK(entry.getKey).get -> decV.unsafeFromBsonValue(entry.getValue))
             ()
           }
-        mapBuilder.toMap.asRight
+        mapBuilder.toMap
 
-      case other => new Throwable(s"Not a Document: ${other}").asLeft
+      case other => throw new Throwable(s"Not a Document: ${other}")
     }
 }
 

@@ -26,25 +26,25 @@ import org.bson.{BsonDocument, BsonDocumentReader, BsonReader, BsonValue}
 trait BsonDecoder[A] { self =>
 
   /** Decode the given [[org.bson.BsonValue]]. */
-  def fromBsonValue(bson: BsonValue): Result[A]
+  def unsafeFromBsonValue(bson: BsonValue): A
 
-  def decode(reader: BsonReader, decoderContext: DecoderContext): Result[A]
+  def unsafeDecode(reader: BsonReader, decoderContext: DecoderContext): A
 
   final def map[B](f: A => B): BsonDecoder[B] =
     new BsonDecoder[B] {
-      override def fromBsonValue(bson: BsonValue): Result[B] =
-        self.fromBsonValue(bson).map(f)
+      override def unsafeFromBsonValue(bson: BsonValue): B =
+        f(self.unsafeFromBsonValue(bson))
 
-      override def decode(reader: BsonReader, decoderContext: DecoderContext): Result[B] =
-        self.decode(reader, decoderContext).map(f)
+      override def unsafeDecode(reader: BsonReader, decoderContext: DecoderContext): B =
+        f(self.unsafeDecode(reader, decoderContext))
     }
 
   final def emap[B](f: A => Result[B]): BsonDecoder[B] = new BsonDecoder[B] {
-    override def fromBsonValue(bson: BsonValue): Result[B] =
-      self.fromBsonValue(bson) >>= f
+    override def unsafeFromBsonValue(bson: BsonValue): B =
+      f(self.unsafeFromBsonValue(bson)).getOrElse(throw new Throwable(s"Can't decode via `emap()`"))
 
-    override def decode(reader: BsonReader, decoderContext: DecoderContext): Result[B] =
-      self.decode(reader, decoderContext) >>= f
+    override def unsafeDecode(reader: BsonReader, decoderContext: DecoderContext): B =
+      f(self.unsafeDecode(reader, decoderContext)).getOrElse(throw new Throwable(s"Can't decode via `emap()`"))
   }
 }
 
@@ -55,30 +55,56 @@ object BsonDecoder {
 
   def apply[A](implicit ev: BsonDecoder[A]): BsonDecoder[A] = ev
 
-  def instanceFromBsonValue[A](f: BsonValue => Either[Throwable, A]): BsonDecoder[A] = new BsonDecoder[A] {
-    override def fromBsonValue(bson: BsonValue): Result[A] = f(bson)
+  def safeDecode[A](bsonValue: BsonValue)(implicit decA: BsonDecoder[A]): Result[A] =
+    Either.catchNonFatal(decA.unsafeFromBsonValue(bsonValue))
 
-    override def decode(reader: BsonReader, decoderContext: DecoderContext): Result[A] =
-      fromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext))
+  def safeDecode[A](bsonReader: BsonReader)(implicit decA: BsonDecoder[A]): Result[A] =
+    Either.catchNonFatal(unsafeDecode(bsonReader))
+
+  def unsafeDecode[A](bsonReader: BsonReader)(implicit decA: BsonDecoder[A]): A =
+    decA.unsafeFromBsonValue(bsonValueCodecSingleton.decode(bsonReader, bsonDecoderContextSingleton))
+
+  def instanceFromBsonValue[A](f: BsonValue => A): BsonDecoder[A] = new BsonDecoder[A] {
+    override def unsafeFromBsonValue(bson: BsonValue): A =
+      f(bson)
+    override def unsafeDecode(reader: BsonReader, decoderContext: DecoderContext): A =
+      unsafeFromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext))
   }
 
   def instanceFromJavaDecoder[A](javaDecoder: JavaDecoder[A]): BsonDecoder[A] =
     new BsonDecoder[A] {
-      override def fromBsonValue(bson: BsonValue): Result[A] = {
+
+      override def unsafeFromBsonValue(bson: BsonValue): A = {
         val docReader = new BsonDocumentReader(new BsonDocument("d", bson))
         docReader.readStartDocument()
         docReader.readName()
-        decode(docReader, bsonDecoderContextSingleton)
+        unsafeDecode(docReader, bsonDecoderContextSingleton)
       }
 
-      override def decode(reader: BsonReader, decoderContext: DecoderContext): Result[A] = {
+      override def unsafeDecode(reader: BsonReader, decoderContext: DecoderContext): A = {
         val mark = reader.getMark
-        Either.catchNonFatal(javaDecoder.decode(reader, decoderContext)).leftMap { ex => mark.reset(); ex }
+        try javaDecoder.decode(reader, decoderContext)
+        catch {
+          case ex: Throwable =>
+            mark.reset()
+            throw ex
+        }
       }
     }
+
+  def instanceFromJavaDecoder[A](f: BsonReader => A): BsonDecoder[A] =
+    instanceFromJavaDecoder(new JavaDecoder[A] {
+      override def decode(reader: BsonReader, decoderContext: DecoderContext): A = f(reader)
+    })
 
   implicit val bsonDecoderInstances: Functor[BsonDecoder] = new Functor[BsonDecoder] {
     override def map[A, B](fa: BsonDecoder[A])(f: A => B): BsonDecoder[B] = fa.map(f)
   }
 
+  def debug(reader: BsonReader, prefix: String = "Debug BsonValue"): Unit = {
+    val mark      = reader.getMark
+    val bsonValue = bsonValueCodecSingleton.decode(reader, bsonDecoderContextSingleton)
+    println(s"$prefix: ${bsonValue}")
+    mark.reset()
+  }
 }

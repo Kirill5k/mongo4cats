@@ -57,7 +57,7 @@ class DerivationWriteBench {
   @Benchmark
   def writeViaDerivation(): Unit = {
     output.truncateToPosition(0)
-    bsonEncoder.encode(writer, person, encoderContext)
+    bsonEncoder.bsonEncode(writer, person, encoderContext)
   }
 
   @Benchmark

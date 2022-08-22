@@ -27,7 +27,7 @@ trait BsonEncoder[A] extends Serializable with AsJava { self =>
   /** Convert a value to BsonValue. */
   def toBsonValue(a: A): BsonValue
 
-  def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit
+  def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit
 
   /** Create a new [[BsonEncoder]] by applying a function to a value of type `B` before encoding as an `A`. */
   final def contramap[B](f: B => A): BsonEncoder[B] =
@@ -35,8 +35,8 @@ trait BsonEncoder[A] extends Serializable with AsJava { self =>
       override def toBsonValue(b: B): BsonValue =
         self.toBsonValue(f(b))
 
-      override def encode(writer: BsonWriter, b: B, encoderContext: EncoderContext): Unit =
-        self.encode(writer, f(b), encoderContext)
+      override def bsonEncode(writer: BsonWriter, b: B, encoderContext: EncoderContext): Unit =
+        self.bsonEncode(writer, f(b), encoderContext)
     }
 
   /** Create a new [[BsonEncoder]] by applying a function to the output of this one.
@@ -45,8 +45,8 @@ trait BsonEncoder[A] extends Serializable with AsJava { self =>
     new BsonEncoder[A] {
       override def toBsonValue(a: A): BsonValue = f(self.toBsonValue(a))
 
-      override def encode(writer: BsonWriter, value: A, encoderContext: EncoderContext): Unit =
-        bsonValueCodecSingleton.encode(writer, toBsonValue(value), encoderContext)
+      override def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+        bsonValueCodecSingleton.encode(writer, toBsonValue(a), encoderContext)
     }
 }
 
@@ -58,8 +58,8 @@ object BsonEncoder {
     new BsonEncoder[A] {
       override def toBsonValue(a: A): BsonValue = f(a)
 
-      override def encode(writer: BsonWriter, value: A, encoderContext: EncoderContext): Unit =
-        bsonValueCodecSingleton.encode(writer, toBsonValue(value), encoderContext)
+      override def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+        bsonValueCodecSingleton.encode(writer, toBsonValue(a), encoderContext)
     }
 
   def instanceFromJavaCodec[A](javaEncoder: org.bson.codecs.Encoder[A]): BsonEncoder[A] =
@@ -76,8 +76,8 @@ object BsonEncoder {
         bsonDocument.get(dummyRoot)
       }
 
-      override def encode(writer: BsonWriter, value: A, encoderContext: EncoderContext): Unit =
-        javaEncoder.encode(writer, value, encoderContext)
+      override def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+        javaEncoder.encode(writer, a, encoderContext)
     }
 
   implicit final val bsonEncoderContravariant: Contravariant[BsonEncoder] =

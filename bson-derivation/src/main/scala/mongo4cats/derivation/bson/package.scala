@@ -67,15 +67,12 @@ package object bson {
     val javaCodecSingleton: Codec[A] =
       new Codec[A] {
         override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-          encA.encode(writer, a, encoderContext)
+          encA.bsonEncode(writer, a, encoderContext)
 
         override def getEncoderClass: Class[A] = classA
 
         override def decode(reader: BsonReader, decoderContext: DecoderContext): A =
-          decA.fromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext)) match {
-            case Right(a) => a
-            case Left(ex) => throw ex
-          }
+          decA.unsafeFromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext))
       }
 
     new MongoCodecProvider[Fast[A]] {

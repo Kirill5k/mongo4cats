@@ -27,8 +27,8 @@ trait ScalaVersionDependentBsonDecoders {
 
   implicit def iterableBsonDecoder[L[_], A](implicit decA: BsonDecoder[A], cbf: CanBuildFrom[Nothing, A, L[A]]): BsonDecoder[L[A]] =
     instanceFromBsonValue {
-      case vs: BsonArray => vs.getValues.asScala.toList.traverse(decA.fromBsonValue(_)).map(_.to[L])
-      case other         => new Throwable(s"Not a Iterable: ${other}").asLeft
+      case vs: BsonArray => vs.getValues.asScala.toList.map(decA.unsafeFromBsonValue(_)).to[L]
+      case other         => throw new Throwable(s"Not a Iterable: ${other}")
     }
 
 }

@@ -52,7 +52,7 @@ private[bson] object MagnoliaBsonEncoder {
                 throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
               )
               writer.writeName(label)
-              p.typeclass.encode(writer, p.dereference(value), encoderContext)
+              p.typeclass.bsonEncode(writer, p.dereference(value), encoderContext)
             }
           writer.writeEndDocument()
         }
@@ -91,14 +91,14 @@ private[bson] object MagnoliaBsonEncoder {
                 case _ =>
                   writer.writeStartDocument()
                   writer.writeName(constructorName)
-                  subtype.typeclass.encode(writer, subtype.cast(a), encoderContext)
+                  subtype.typeclass.bsonEncode(writer, subtype.cast(a), encoderContext)
                   writer.writeEndDocument()
               }
 
             case _ =>
               writer.writeStartDocument()
               writer.writeName(constructorName)
-              subtype.typeclass.encode(writer, subtype.cast(a), encoderContext)
+              subtype.typeclass.bsonEncode(writer, subtype.cast(a), encoderContext)
               writer.writeEndDocument()
           }
         }

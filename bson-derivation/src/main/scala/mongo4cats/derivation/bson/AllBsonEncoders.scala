@@ -18,6 +18,6 @@ package mongo4cats.derivation.bson
 
 import mongo4cats.AsJava
 
-trait AllBsonEncoders extends ScalaVersionDependentBsonEncoders with MidBsonEncoder with AsJava
+trait AllBsonEncoders extends ScalaVersionDependentBsonEncoders with BaseBsonEncoder with AsJava
 
 object AllBsonEncoders extends AllBsonEncoders

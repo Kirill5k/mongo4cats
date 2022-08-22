@@ -46,7 +46,7 @@ private[bson] object MagnoliaBsonDecoder {
     if (configuration.useDefaults) {
       instanceFromBsonValue { bson =>
         caseClass
-          .constructEither { p =>
+          .construct { p =>
             val key: String = paramBsonKeyLookup.getOrElse(
               p.label,
               throw new IllegalStateException("Looking up a parameter label should always yield a value. This is a bug")
@@ -60,24 +60,23 @@ private[bson] object MagnoliaBsonDecoder {
                   p.default.fold(
                     // Some decoders (in particular, the default Option[T] decoder) do special things when a key is missing,
                     // so we give them a chance to do their thing here.
-                    p.typeclass.fromBsonValue(value)
-                  )(x => x.asRight)
+                    p.typeclass.unsafeFromBsonValue(value)
+                  )(x => x)
                 } else {
-                  p.typeclass.fromBsonValue(value)
+                  p.typeclass.unsafeFromBsonValue(value)
                 }
 
-              case other => new Throwable(s"Not a BsonDocument: ${other}").asLeft
+              case other => throw new Throwable(s"Not a BsonDocument: ${other}")
             }
           }
-          .leftMap(_.head)
       }
     } else {
       instanceFromBsonValue {
         case doc: BsonDocument =>
           caseClass
-            .constructEither(p =>
+            .construct(p =>
               p.typeclass
-                .fromBsonValue(
+                .unsafeFromBsonValue(
                   doc
                     .get(
                       paramBsonKeyLookup.getOrElse(
@@ -87,12 +86,11 @@ private[bson] object MagnoliaBsonDecoder {
                     )
                 )
             )
-            .leftMap(_.head)
         case other =>
-          new IllegalStateException(
+          throw new IllegalStateException(
             s"""|Not BsonDocument: $other
                     |Type: ${caseClass.typeInfo.full}""".stripMargin
-          ).asLeft
+          )
       }
     }
   }
@@ -107,7 +105,7 @@ private[bson] object MagnoliaBsonDecoder {
       throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
     }
 
-    lazy val knownSubTypes: String = constructorLookup.keys.toSeq.sorted.mkString(",")
+    val knownSubTypes: String = constructorLookup.keys.toSeq.sorted.mkString(",")
 
     configuration.discriminator match {
       case Some(discriminator) =>
@@ -118,37 +116,37 @@ private[bson] object MagnoliaBsonDecoder {
                 val constructorName = constructorNameBsonString.getValue
 
                 constructorLookup.get(constructorName) match {
-                  case Some(subType) => subType.typeclass.fromBsonValue(doc)
+                  case Some(subType) => subType.typeclass.unsafeFromBsonValue(doc)
                   case _ =>
-                    new Throwable(
+                    throw new Throwable(
                       s"""|Can't decode coproduct type: constructor name "$constructorName" not found in known constructor names
                           |BSON: $doc
                           |
                           |Allowed discriminators: $knownSubTypes""".stripMargin
-                    ).asLeft
+                    )
                 }
 
               case Left(ex) =>
-                new Throwable(
+                throw new Throwable(
                   s"""|Can't decode coproduct type: couldn't find discriminator or is not of type String.
                       |discriminator key: $discriminator
                       |Exception: $ex
                       |
                       |BSON: $doc""".stripMargin
-                ).asLeft
+                )
             }
 
-          case _ => new Throwable("Not a BsonDocument").asLeft
+          case _ => throw new Throwable("Not a BsonDocument")
         }
       case _ =>
         instanceFromBsonValue {
           case doc: BsonDocument if doc.size() === 1 =>
             val key: String = doc.getFirstKey
 
-            for {
-              theSubtype <- Either.fromOption(
-                constructorLookup.get(key),
-                new Throwable(
+            val theSubtype =
+              constructorLookup.getOrElse(
+                key,
+                throw new Throwable(
                   s"""|Can't decode coproduct type: couldn't find matching subtype.
                       |BSON: $doc
                       |Key: $key
@@ -157,14 +155,15 @@ private[bson] object MagnoliaBsonDecoder {
                 )
               )
 
-              result <- theSubtype.typeclass.fromBsonValue(doc.get(key))
-            } yield result
+            theSubtype.typeclass.unsafeFromBsonValue(doc.get(key))
 
           case bson =>
-            new Throwable(s"""|Can't decode coproduct type: zero or several keys were found, while coproduct type requires exactly one.
+            throw new Throwable(
+              s"""|Can't decode coproduct type: zero or several keys were found, while coproduct type requires exactly one.
                   |BSON: ${bson},
                   |Keys: $${c.keys.map(_.mkString(","))}
-                  |Known subtypes: $knownSubTypes\n""".stripMargin).asLeft
+                  |Known subtypes: $knownSubTypes\n""".stripMargin
+            )
         }
     }
   }
