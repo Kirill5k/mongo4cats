@@ -25,85 +25,29 @@ import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
-import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
-import mongo4cats.collection.MongoCollection
+import mongo4cats.codecs.CodecRegistry
+import mongo4cats.collection.{Fs2MongoCollection, MongoCollection}
 import mongo4cats.helpers._
 import org.bson.conversions.Bson
 
 import scala.reflect.ClassTag
-import scala.util.Try
-
-abstract class MongoDatabase[F[_]] {
-  def underlying: JMongoDatabase
-
-  def name: String                   = underlying.getName
-  def readPreference: ReadPreference = underlying.getReadPreference
-  def writeConcern: WriteConcern     = underlying.getWriteConcern
-  def readConcern: ReadConcern       = underlying.getReadConcern
-  def codecs: CodecRegistry          = underlying.getCodecRegistry
-
-  def withReadPreference(readPreference: ReadPreference): MongoDatabase[F]
-  def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F]
-  def witReadConcern(readConcern: ReadConcern): MongoDatabase[F]
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F]
-  def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): MongoDatabase[F] =
-    Try(codecs.get(Clazz.tag[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)
-
-  def listCollectionNames: F[Iterable[String]]
-  def listCollectionNames(session: ClientSession[F]): F[Iterable[String]]
-
-  def listCollections: F[Iterable[Document]]
-  def listCollections(session: ClientSession[F]): F[Iterable[Document]]
-
-  def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
-  def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
-
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]]
-  def getCollection(name: String): F[MongoCollection[F, Document]] = getCollection[Document](name, CodecRegistry.Default)
-  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
-    getCollection[T](name, CodecRegistry.mergeWithDefault(CodecRegistry.from(cp.get)))
-
-  /** Executes command in the context of the current database.
-    *
-    * @param command
-    *   the command to be run
-    * @param readPreference
-    *   the ReadPreference to be used when executing the command
-    * @since 1.7
-    */
-  def runCommand(command: Bson, readPreference: ReadPreference): F[Document]
-  def runCommand(command: Bson): F[Document]                            = runCommand(command, ReadPreference.primary)
-  def runCommand(session: ClientSession[F], command: Bson): F[Document] = runCommand(session, command, ReadPreference.primary)
-  def runCommand(session: ClientSession[F], command: Bson, readPreference: ReadPreference): F[Document]
-
-  /** Drops this database. [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
-    */
-  def drop: F[Unit]
-
-  /** Drops this database.
-    *
-    * @param clientSession
-    *   the client session with which to associate this operation [[https://docs.mongodb.com/manual/reference/method/db.dropDatabase/]]
-    * @since 1.7
-    */
-  def drop(clientSession: ClientSession[F]): F[Unit]
-}
+import fs2.Stream
 
 final private class LiveMongoDatabase[F[_]](
     val underlying: JMongoDatabase
 )(implicit
     val F: Async[F]
-) extends MongoDatabase[F] {
-  def withReadPreference(readPreference: ReadPreference): MongoDatabase[F] =
+) extends MongoDatabase[F, Stream[F, *]] {
+  def withReadPreference(readPreference: ReadPreference): MongoDatabase[F, Stream[F, *]] =
     new LiveMongoDatabase[F](underlying.withReadPreference(readPreference))
 
-  def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F] =
+  def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F, Stream[F, *]] =
     new LiveMongoDatabase[F](underlying.withWriteConcern(writeConcert))
 
-  def witReadConcern(readConcern: ReadConcern): MongoDatabase[F] =
+  def witReadConcern(readConcern: ReadConcern): MongoDatabase[F, Stream[F, *]] =
     new LiveMongoDatabase[F](underlying.withReadConcern(readConcern))
 
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F, Stream[F, *]] =
     new LiveMongoDatabase[F](underlying.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
   def listCollectionNames: F[Iterable[String]]                       = underlying.listCollectionNames().asyncIterable[F]
@@ -113,13 +57,13 @@ final private class LiveMongoDatabase[F[_]](
   def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
     underlying.listCollections(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T, Stream[F, *]]] =
     F.delay {
       underlying
         .getCollection[T](name, Clazz.tag[T])
         .withCodecRegistry(codecRegistry)
         .withDocumentClass[T](Clazz.tag[T])
-    }.flatMap(MongoCollection.make[F, T])
+    }.flatMap(Fs2MongoCollection.make[F, T])
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
     underlying.createCollection(name, options).asyncVoid[F]
@@ -134,8 +78,8 @@ final private class LiveMongoDatabase[F[_]](
   def drop(cs: ClientSession[F]): F[Unit] = underlying.drop(cs.underlying).asyncVoid[F]
 }
 
-object MongoDatabase {
+object Fs2MongoDatabase {
 
-  private[mongo4cats] def make[F[_]: Async](database: JMongoDatabase): F[MongoDatabase[F]] =
+  private[mongo4cats] def make[F[_]: Async](database: JMongoDatabase): F[MongoDatabase[F, Stream[F, *]]] =
     Monad[F].pure(new LiveMongoDatabase[F](database).withAddedCodec(CodecRegistry.Default))
 }

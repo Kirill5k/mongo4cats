@@ -24,14 +24,15 @@ import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPubli
 import mongo4cats.bson.Document
 import mongo4cats.queries._
 import mongo4cats.helpers._
+import fs2.Stream
 
 import scala.reflect.ClassTag
 
 private[collection] object QueryBuilder {
-  type Aggregate[F[_], T] = AggregateQueryBuilder[F, T, fs2.Stream[F, *]]
-  type Watch[F[_], T]     = WatchQueryBuilder[F, T, fs2.Stream[F, *]]
-  type Find[F[_], T]      = FindQueryBuilder[F, T, fs2.Stream[F, *]]
-  type Distinct[F[_], T]  = DistinctQueryBuilder[F, T, fs2.Stream[F, *]]
+  type Aggregate[F[_], T] = AggregateQueryBuilder[F, T, Stream[F, *]]
+  type Watch[F[_], T]     = WatchQueryBuilder[F, T, Stream[F, *]]
+  type Find[F[_], T]      = FindQueryBuilder[F, T, Stream[F, *]]
+  type Distinct[F[_], T]  = DistinctQueryBuilder[F, T, Stream[F, *]]
 
   def watch[F[_]: Async, T: ClassTag](observable: ChangeStreamPublisher[T]): Watch[F, T] =
     Fs2WatchQueryBuilder(observable, Nil)
@@ -48,10 +49,10 @@ private[collection] object QueryBuilder {
   final private case class Fs2WatchQueryBuilder[F[_]: Async, T: ClassTag](
       protected val observable: ChangeStreamPublisher[T],
       protected val queries: List[QueryCommand]
-  ) extends WatchQueryBuilder[F, T, fs2.Stream[F, *]] {
+  ) extends WatchQueryBuilder[F, T, Stream[F, *]] {
 
-    def stream: fs2.Stream[F, ChangeStreamDocument[T]]                       = applyQueries().stream[F]
-    def boundedStream(capacity: Int): fs2.Stream[F, ChangeStreamDocument[T]] = applyQueries().boundedStream[F](capacity)
+    def stream: Stream[F, ChangeStreamDocument[T]]                       = applyQueries().stream[F]
+    def boundedStream(capacity: Int): Stream[F, ChangeStreamDocument[T]] = applyQueries().boundedStream[F](capacity)
 
     override protected def withQuery(command: QueryCommand): Watch[F, T] = Fs2WatchQueryBuilder(observable, command :: queries)
   }
@@ -59,12 +60,12 @@ private[collection] object QueryBuilder {
   final private case class Fs2FindQueryBuilder[F[_]: Async, T: ClassTag](
       protected val observable: FindPublisher[T],
       protected val queries: List[QueryCommand]
-  ) extends FindQueryBuilder[F, T, fs2.Stream[F, *]] {
+  ) extends FindQueryBuilder[F, T, Stream[F, *]] {
 
     def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F].map(Option.apply)
     def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
-    def stream: fs2.Stream[F, T]                          = applyQueries().stream[F]
-    def boundedStream(capacity: Int): fs2.Stream[F, T]    = applyQueries().boundedStream[F](capacity)
+    def stream: Stream[F, T]                              = applyQueries().stream[F]
+    def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
     def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
     def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
 
@@ -74,12 +75,12 @@ private[collection] object QueryBuilder {
   final private case class Fs2DistinctQueryBuilder[F[_]: Async, T: ClassTag](
       protected val observable: DistinctPublisher[T],
       protected val queries: List[QueryCommand]
-  ) extends DistinctQueryBuilder[F, T, fs2.Stream[F, *]] {
+  ) extends DistinctQueryBuilder[F, T, Stream[F, *]] {
 
-    def first: F[Option[T]]                            = applyQueries().first().asyncSingle[F].map(Option.apply)
-    def all: F[Iterable[T]]                            = applyQueries().asyncIterable[F]
-    def stream: fs2.Stream[F, T]                       = applyQueries().stream[F]
-    def boundedStream(capacity: Int): fs2.Stream[F, T] = applyQueries().boundedStream[F](capacity)
+    def first: F[Option[T]]                        = applyQueries().first().asyncSingle[F].map(Option.apply)
+    def all: F[Iterable[T]]                        = applyQueries().asyncIterable[F]
+    def stream: Stream[F, T]                       = applyQueries().stream[F]
+    def boundedStream(capacity: Int): Stream[F, T] = applyQueries().boundedStream[F](capacity)
 
     override protected def withQuery(command: QueryCommand): Distinct[F, T] = Fs2DistinctQueryBuilder(observable, command :: queries)
   }
@@ -87,13 +88,13 @@ private[collection] object QueryBuilder {
   final private case class Fs2AggregateQueryBuilder[F[_]: Async, T: ClassTag](
       protected val observable: AggregatePublisher[T],
       protected val queries: List[QueryCommand]
-  ) extends AggregateQueryBuilder[F, T, fs2.Stream[F, *]] {
+  ) extends AggregateQueryBuilder[F, T, Stream[F, *]] {
 
     def toCollection: F[Unit]                             = applyQueries().toCollection.asyncVoid[F]
     def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F].map(Option.apply)
     def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
-    def stream: fs2.Stream[F, T]                          = applyQueries().stream[F]
-    def boundedStream(capacity: Int): fs2.Stream[F, T]    = applyQueries().boundedStream[F](capacity)
+    def stream: Stream[F, T]                              = applyQueries().stream[F]
+    def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
     def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
     def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
 
