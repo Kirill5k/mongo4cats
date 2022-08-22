@@ -80,9 +80,9 @@ private[mongo4cats] trait DistinctQueries[T, QB] extends QueryBuilder[DistinctPu
     }
 }
 
-abstract class DistinctQueryBuilder[F[_], T, S] extends DistinctQueries[T, DistinctQueryBuilder[F, T, S]] {
+abstract class DistinctQueryBuilder[F[_], T, S[_]] extends DistinctQueries[T, DistinctQueryBuilder[F, T, S]] {
   def first: F[Option[T]]
   def all: F[Iterable[T]]
-  def stream: S
-  def boundedStream(capacity: Int): S
+  def stream: S[T]
+  def boundedStream(capacity: Int): S[T]
 }

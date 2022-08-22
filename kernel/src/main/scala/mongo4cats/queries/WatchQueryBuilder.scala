@@ -17,7 +17,7 @@
 package mongo4cats.queries
 
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream.FullDocument
+import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher
 import org.bson.{BsonDocument, BsonTimestamp}
 
@@ -118,7 +118,7 @@ private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamP
     }
 }
 
-abstract class WatchQueryBuilder[F[_], T, S] extends WatchQueries[T, WatchQueryBuilder[F, T, S]] {
-  def stream: S
-  def boundedStream(capacity: Int): S
+abstract class WatchQueryBuilder[F[_], T, S[_]] extends WatchQueries[T, WatchQueryBuilder[F, T, S]] {
+  def stream: S[ChangeStreamDocument[T]]
+  def boundedStream(capacity: Int): S[ChangeStreamDocument[T]]
 }

@@ -149,11 +149,11 @@ private[mongo4cats] trait AggregateQueries[T, QB] extends QueryBuilder[Aggregate
     }
 }
 
-abstract class AggregateQueryBuilder[F[_], T, S] extends AggregateQueries[T, AggregateQueryBuilder[F, T, S]] {
+abstract class AggregateQueryBuilder[F[_], T, S[_]] extends AggregateQueries[T, AggregateQueryBuilder[F, T, S]] {
   def first: F[Option[T]]
   def all: F[Iterable[T]]
-  def stream: S
-  def boundedStream(capacity: Int): S
+  def stream: S[T]
+  def boundedStream(capacity: Int): S[T]
 
   /** Aggregates documents according to the specified aggregation pipeline, which must end with a \$out stage.
     *

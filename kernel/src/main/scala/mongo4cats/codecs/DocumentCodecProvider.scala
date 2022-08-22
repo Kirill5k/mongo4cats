@@ -20,7 +20,7 @@ import mongo4cats.Clazz
 import mongo4cats.bson.{Document, ObjectId}
 import org.bson.codecs.{Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator}
 import org.bson.codecs.configuration.CodecProvider
-import org.bson.{BsonObjectId, BsonReader, BsonWriter, BsonValue => JBsonValue}
+import org.bson.{BsonObjectId, BsonReader, BsonValue => JBsonValue, BsonWriter}
 
 final private class DocumentCodec(
     private val idGenerator: IdGenerator

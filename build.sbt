@@ -2,17 +2,12 @@ import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 import microsites.CdnDirectives
 import sbtghactions.JavaSpec
+import Utils._
 
 val scala212               = "2.12.16"
 val scala213               = "2.13.8"
 val scala3                 = "3.1.1"
 val supportedScalaVersions = List(scala212, scala213, scala3)
-
-def priorTo2_13(scalaVersion: String): Boolean =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, minor)) if minor < 13 => true
-    case _                              => false
-  }
 
 ThisBuild / scalaVersion           := scala213
 ThisBuild / organization           := "io.github.kirill5k"
@@ -59,7 +54,7 @@ val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
-  scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil)
+  scalacOptions ++= partialUnificationOption(scalaVersion.value)
 )
 
 val embedded = project
@@ -92,7 +87,8 @@ val core = project
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
   )
   .enablePlugins(AutomateHeaderPlugin)
 

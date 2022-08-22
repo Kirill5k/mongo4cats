@@ -2,12 +2,13 @@ import sbt._
 
 object Dependencies {
   private object Versions {
-    val cats        = "2.8.0"
-    val mongodb     = "4.7.1"
-    val fs2         = "3.2.11"
-    val scalaCompat = "2.8.1"
-    val circe       = "0.14.2"
-    val zio         = "2.0.1"
+    val kindProjector = "0.13.2"
+    val cats          = "2.8.0"
+    val mongodb       = "4.7.1"
+    val fs2           = "3.2.11"
+    val scalaCompat   = "2.8.1"
+    val circe         = "0.14.2"
+    val zio           = "2.0.1"
 
     val logback   = "1.2.11"
     val scalaTest = "3.2.13"
@@ -42,6 +43,8 @@ object Dependencies {
     val immutableValue  = "org.immutables"      % "value"                     % Versions.immutableValue
     val commonsCompress = "org.apache.commons"  % "commons-compress"          % Versions.commonsCompress
   }
+
+  val kindProjector = "org.typelevel" % "kind-projector" % Versions.kindProjector
 
   val kernel = Seq(
     Libraries.mongodbBson,
