@@ -222,7 +222,7 @@ private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher,
     }
 }
 
-abstract class FindQueryBuilder[F[_], T, S[_]] extends FindQueries[T, FindQueryBuilder[F, T, S]] {
+abstract private[mongo4cats] class FindQueryBuilder[F[_], T, S[_]] extends FindQueries[T, FindQueryBuilder[F, T, S]] {
   def first: F[Option[T]]
   def all: F[Iterable[T]]
   def stream: S[T]

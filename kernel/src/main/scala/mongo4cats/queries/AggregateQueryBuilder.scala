@@ -149,7 +149,7 @@ private[mongo4cats] trait AggregateQueries[T, QB] extends QueryBuilder[Aggregate
     }
 }
 
-abstract class AggregateQueryBuilder[F[_], T, S[_]] extends AggregateQueries[T, AggregateQueryBuilder[F, T, S]] {
+abstract private[mongo4cats] class AggregateQueryBuilder[F[_], T, S[_]] extends AggregateQueries[T, AggregateQueryBuilder[F, T, S]] {
   def first: F[Option[T]]
   def all: F[Iterable[T]]
   def stream: S[T]

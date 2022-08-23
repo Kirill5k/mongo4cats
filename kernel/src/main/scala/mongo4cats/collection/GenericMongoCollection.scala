@@ -34,7 +34,7 @@ import org.bson.conversions.Bson
 import scala.reflect.ClassTag
 import scala.util.Try
 
-abstract class GenericMongoCollection[F[_], T, S[_]] {
+abstract private[mongo4cats] class GenericMongoCollection[F[_], T, S[_]] {
   def underlying: JMongoCollection[T]
 
   def namespace: MongoNamespace      = underlying.getNamespace

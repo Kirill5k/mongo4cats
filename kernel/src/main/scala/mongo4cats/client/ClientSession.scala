@@ -21,7 +21,7 @@ import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
 import mongo4cats.client.models.TransactionOptions
 
-abstract class ClientSession[F[_]] {
+abstract private[mongo4cats] class ClientSession[F[_]] {
   def underlying: JClientSession
 
   /** Returns true if there is an active transaction on this session, and false otherwise

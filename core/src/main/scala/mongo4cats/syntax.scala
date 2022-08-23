@@ -27,9 +27,9 @@ import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
 import scala.collection.mutable.ListBuffer
 
-private[mongo4cats] object helpers {
+private[mongo4cats] object syntax {
 
-  implicit final class PublisherOps[T](private val publisher: Publisher[T]) extends AnyVal {
+  implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {
     def asyncSingle[F[_]: Async]: F[T] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {

@@ -23,12 +23,12 @@ import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.bson.Document
 import mongo4cats.queries._
-import mongo4cats.helpers._
+import mongo4cats.syntax._
 import fs2.Stream
 
 import scala.reflect.ClassTag
 
-private[collection] object QueryBuilder {
+private[collection] object Queries {
   type Aggregate[F[_], T] = AggregateQueryBuilder[F, T, Stream[F, *]]
   type Watch[F[_], T]     = WatchQueryBuilder[F, T, Stream[F, *]]
   type Find[F[_], T]      = FindQueryBuilder[F, T, Stream[F, *]]

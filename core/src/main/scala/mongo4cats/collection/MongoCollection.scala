@@ -26,7 +26,7 @@ import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.models._
-import mongo4cats.helpers._
+import mongo4cats.syntax._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.{AsJava, Clazz}
 import org.bson.codecs.configuration.CodecRegistries.fromRegistries
@@ -59,35 +59,35 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def as[Y: ClassTag]: MongoCollection[F, Y] =
     new LiveMongoCollection[F, Y](withNewDocumentClass(underlying))
 
-  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): QueryBuilder.Aggregate[F, Y] =
-    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)))
+  def aggregate[Y: ClassTag](pipeline: Seq[Bson]): Queries.Aggregate[F, Y] =
+    Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(asJava(pipeline)))
 
-  def aggregate[Y: ClassTag](pipeline: Aggregate): QueryBuilder.Aggregate[F, Y] =
-    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson))
+  def aggregate[Y: ClassTag](pipeline: Aggregate): Queries.Aggregate[F, Y] =
+    Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson))
 
-  def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): QueryBuilder.Aggregate[F, Y] =
-    QueryBuilder.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
+  def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): Queries.Aggregate[F, Y] =
+    Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
 
-  def watch(pipeline: Seq[Bson]): QueryBuilder.Watch[F, Document] =
-    QueryBuilder.watch(underlying.watch(asJava(pipeline), Clazz.tag[Document]))
+  def watch(pipeline: Seq[Bson]): Queries.Watch[F, Document] =
+    Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[Document]))
 
-  def watch(pipeline: Aggregate): QueryBuilder.Watch[F, Document] =
-    QueryBuilder.watch(underlying.watch(pipeline.toBson, Clazz.tag[Document]))
+  def watch(pipeline: Aggregate): Queries.Watch[F, Document] =
+    Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[Document]))
 
-  def watch(cs: ClientSession[F], pipeline: Aggregate): QueryBuilder.Watch[F, Document] =
-    QueryBuilder.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[Document]))
+  def watch(cs: ClientSession[F], pipeline: Aggregate): Queries.Watch[F, Document] =
+    Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[Document]))
 
-  def distinct[Y: ClassTag](fieldName: String, filter: Bson): QueryBuilder.Distinct[F, Y] =
-    QueryBuilder.distinct(underlying.distinct(fieldName, filter, Clazz.tag[Y]))
+  def distinct[Y: ClassTag](fieldName: String, filter: Bson): Queries.Distinct[F, Y] =
+    Queries.distinct(underlying.distinct(fieldName, filter, Clazz.tag[Y]))
 
-  def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): QueryBuilder.Distinct[F, Y] =
-    QueryBuilder.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, Clazz.tag[Y]))
+  def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): Queries.Distinct[F, Y] =
+    Queries.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, Clazz.tag[Y]))
 
-  def find(filter: Bson): QueryBuilder.Find[F, T] =
-    QueryBuilder.find(underlying.find(filter))
+  def find(filter: Bson): Queries.Find[F, T] =
+    Queries.find(underlying.find(filter))
 
-  def find(cs: ClientSession[F], filter: Filter): QueryBuilder.Find[F, T] =
-    QueryBuilder.find(underlying.find(cs.underlying, filter.toBson))
+  def find(cs: ClientSession[F], filter: Filter): Queries.Find[F, T] =
+    Queries.find(underlying.find(cs.underlying, filter.toBson))
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
     underlying.findOneAndDelete(filter, options).asyncSingle[F].map(Option.apply[T])

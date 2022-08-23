@@ -23,15 +23,16 @@ import com.mongodb.reactivestreams.client.{ClientSession => JClientSession, Mong
 import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
-import mongo4cats.helpers._
+import mongo4cats.syntax._
 import mongo4cats.client.models.{ClientSessionOptions, MongoClientSettings, MongoDriverInformation, ServerAddress, TransactionOptions}
 
 import scala.util.Try
 
 final private class LiveClientSession[F[_]](
     val underlying: JClientSession
-)(implicit F: Async[F])
-    extends ClientSession[F] {
+)(implicit
+    F: Async[F]
+) extends ClientSession[F] {
 
   override def startTransaction(options: TransactionOptions): F[Unit] =
     F.fromTry(Try(underlying.startTransaction(options)))

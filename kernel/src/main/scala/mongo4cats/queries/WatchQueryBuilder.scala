@@ -118,7 +118,7 @@ private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamP
     }
 }
 
-abstract class WatchQueryBuilder[F[_], T, S[_]] extends WatchQueries[T, WatchQueryBuilder[F, T, S]] {
+abstract private[mongo4cats] class WatchQueryBuilder[F[_], T, S[_]] extends WatchQueries[T, WatchQueryBuilder[F, T, S]] {
   def stream: S[ChangeStreamDocument[T]]
   def boundedStream(capacity: Int): S[ChangeStreamDocument[T]]
 }

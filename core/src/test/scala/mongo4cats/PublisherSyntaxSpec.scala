@@ -20,21 +20,21 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.syntax.applicativeError._
 import cats.syntax.either._
-import mongo4cats.helpers._
+import mongo4cats.syntax._
 import org.reactivestreams.{Publisher, Subscriber}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.duration._
 
-class PublisherOpsSpec extends AsyncWordSpec with Matchers {
+class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
 
   sealed trait Action[+T]              extends Serializable with Product
   case class OnNext[T](element: T)     extends Action[T]
   case class OnError(error: Throwable) extends Action[Nothing]
   case object OnComplete               extends Action[Nothing]
 
-  "A PublisherOps" when {
+  "A PublisherSyntax" when {
 
     "stream" should {
 

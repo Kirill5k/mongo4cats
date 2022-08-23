@@ -22,7 +22,7 @@ import mongo4cats.bson.Document
 import mongo4cats.client.models.ClientSessionOptions
 import mongo4cats.database.GenericMongoDatabase
 
-abstract class GenericMongoClient[F[_], S[_]] {
+abstract private[mongo4cats] class GenericMongoClient[F[_], S[_]] {
   def underlying: JMongoClient
   def clusterDescription: ClusterDescription = underlying.getClusterDescription
   def getDatabase(name: String): F[GenericMongoDatabase[F, S]]
