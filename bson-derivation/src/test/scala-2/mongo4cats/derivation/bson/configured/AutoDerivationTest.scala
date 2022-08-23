@@ -43,11 +43,8 @@ import java.time.Instant
 import java.util.UUID
 
 final case class RootTestData(
-    // testData: TestData[_root_.cats.Id],
-    testSealedTrait: TestSealedTrait,
-    // testSealedTraits: List[TestSealedTrait],
-    // items: List[ItemTestDatas],
-    rootTuple2: (String, Int)
+    testSealedTrait: TestSealedTrait
+    // items: ItemTestDatas,
 )
 
 final case class ItemTestDatas(
@@ -100,11 +97,11 @@ object TestSealedTrait {
   ) extends TestSealedTrait
 }
 
+// $ sbt "~+mongo4cats-bson-derivation/testOnly mongo4cats.derivation.bson.configured.AutoDerivationTest"
 class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks {
 
   implicit val instantArb: Arbitrary[Instant] =
-    // Arbitrary(Gen.choose(0, 1000000L) /*, Gen.choose(0, 0L /*999999999L*/ )*/.map(Instant.ofEpochMilli(_)))
-    Arbitrary(Gen.const(Instant.parse("2022-08-21T13:52:42.586Z")))
+    Arbitrary(Gen.choose(0, 1000000L).map(Instant.ofEpochSecond(_)))
 
   implicit val objectIdArb: Arbitrary[org.bson.types.ObjectId] =
     Arbitrary((Gen.choose(0, 16777215), Gen.choose(0, 16777215)).mapN(new org.bson.types.ObjectId(_, _)))

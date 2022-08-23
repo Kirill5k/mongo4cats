@@ -16,7 +16,7 @@
 
 package mongo4cats.derivation.bson
 import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaCodec
-import org.bson.{BsonReader, BsonWriter}
+import org.bson.{types, BsonNull, BsonReader, BsonValue, BsonWriter}
 import org.bson.codecs._
 import org.bson.codecs.jsr310.InstantCodec
 
@@ -25,22 +25,28 @@ import java.util.UUID
 
 trait BaseBsonEncoder {
 
-  implicit val stringBsonEncoder: BsonEncoder[String] = instanceFromJavaCodec(new StringCodec())
-  implicit val byteBsonEncoder: BsonEncoder[Byte]     = instanceFromJavaCodec(new ByteCodec()).asInstanceOf[BsonEncoder[Byte]]
-  implicit val shortBsonEncoder: BsonEncoder[Short]   = instanceFromJavaCodec(new ShortCodec()).asInstanceOf[BsonEncoder[Short]]
-  implicit val intBsonEncoder: BsonEncoder[Int]       = instanceFromJavaCodec(new IntegerCodec()).asInstanceOf[BsonEncoder[Int]]
-  implicit val longBsonEncoder: BsonEncoder[Long]     = instanceFromJavaCodec(new LongCodec()).asInstanceOf[BsonEncoder[Long]]
-  implicit val objectIdBsonEncoder: BsonEncoder[org.bson.types.ObjectId] = instanceFromJavaCodec(new ObjectIdCodec())
-  implicit val instantBsonEncoder: BsonEncoder[Instant]                  = instanceFromJavaCodec(new InstantCodec())
+  implicit val stringBsonEncoder: BsonEncoder[String]           = instanceFromJavaCodec(new StringCodec())
+  implicit val byteBsonEncoder: BsonEncoder[Byte]               = instanceFromJavaCodec(new ByteCodec()).asInstanceOf[BsonEncoder[Byte]]
+  implicit val shortBsonEncoder: BsonEncoder[Short]             = instanceFromJavaCodec(new ShortCodec()).asInstanceOf[BsonEncoder[Short]]
+  implicit val intBsonEncoder: BsonEncoder[Int]                 = instanceFromJavaCodec(new IntegerCodec()).asInstanceOf[BsonEncoder[Int]]
+  implicit val longBsonEncoder: BsonEncoder[Long]               = instanceFromJavaCodec(new LongCodec()).asInstanceOf[BsonEncoder[Long]]
+  implicit val objectIdBsonEncoder: BsonEncoder[types.ObjectId] = instanceFromJavaCodec(new ObjectIdCodec())
+  implicit val instantBsonEncoder: BsonEncoder[Instant]         = instanceFromJavaCodec(new InstantCodec())
 
   implicit def encodeOption[A](implicit encA: BsonEncoder[A]): BsonEncoder[Option[A]] =
-    instanceFromJavaCodec(new JavaEncoder[Option[A]] {
-      override def encode(writer: BsonWriter, value: Option[A], encoderContext: EncoderContext): Unit =
-        value match {
+    new BsonEncoder[Option[A]] {
+      override def toBsonValue(aOpt: Option[A]): BsonValue =
+        aOpt match {
+          case Some(a) => encA.toBsonValue(a)
+          case None    => BsonNull.VALUE
+        }
+
+      override def bsonEncode(writer: BsonWriter, aOpt: Option[A], encoderContext: EncoderContext): Unit =
+        aOpt match {
           case Some(a) => encA.bsonEncode(writer, a, encoderContext)
           case None    => writer.writeNull()
         }
-    })
+    }
 
   implicit def encodeSeq[L[_] <: Seq[_], A](implicit encA: BsonEncoder[A]): BsonEncoder[L[A]] =
     instanceFromJavaCodec(new JavaEncoder[L[A]] {

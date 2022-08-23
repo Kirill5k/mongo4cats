@@ -20,29 +20,34 @@ import cats.syntax.all._
 import mongo4cats.derivation.bson.BsonDecoder.{instanceFromBsonValue, instanceFromJavaDecoder, JavaDecoder}
 import org.bson._
 import org.bson.codecs.jsr310.InstantCodec
-import org.bson.codecs.{ByteCodec, DecoderContext, IntegerCodec, LongCodec, ObjectIdCodec, ShortCodec, StringCodec}
+import org.bson.codecs.{ByteCodec, DecoderContext, IntegerCodec, LongCodec, ObjectIdCodec, ShortCodec, StringCodec, UuidCodec}
 
 import java.time.Instant
 import java.util.UUID
 
 trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
 
-  implicit val byteBsonDecoder: BsonDecoder[Byte]                       = instanceFromJavaDecoder(new ByteCodec()).map(_.toByte)
-  implicit val shortBsonDecoder: BsonDecoder[Short]                     = instanceFromJavaDecoder(new ShortCodec()).map(_.toShort)
-  implicit val intBsonDecoder: BsonDecoder[Int]                         = instanceFromJavaDecoder(new IntegerCodec()).map(_.toInt)
-  implicit val longBsonDecoder: BsonDecoder[Long]                       = instanceFromJavaDecoder(new LongCodec()).map(_.toLong)
-  implicit val stringBsonDecoder: BsonDecoder[String]                   = instanceFromJavaDecoder(new StringCodec())
-  implicit val decodeBsonObjectId: BsonDecoder[org.bson.types.ObjectId] = instanceFromJavaDecoder(new ObjectIdCodec())
-  implicit val instantBsonDecoder: BsonDecoder[Instant]                 = instanceFromJavaDecoder(new InstantCodec())
+  implicit val byteBsonDecoder: BsonDecoder[Byte]                        = instanceFromJavaDecoder(new ByteCodec()).map(_.toByte)
+  implicit val shortBsonDecoder: BsonDecoder[Short]                      = instanceFromJavaDecoder(new ShortCodec()).map(_.toShort)
+  implicit val intBsonDecoder: BsonDecoder[Int]                          = instanceFromJavaDecoder(new IntegerCodec()).map(_.toInt)
+  implicit val longBsonDecoder: BsonDecoder[Long]                        = instanceFromJavaDecoder(new LongCodec()).map(_.toLong)
+  implicit val stringBsonDecoder: BsonDecoder[String]                    = instanceFromJavaDecoder(new StringCodec())
+  implicit val objectIdBsonDecoder: BsonDecoder[org.bson.types.ObjectId] = instanceFromJavaDecoder(new ObjectIdCodec())
+  implicit val instantBsonDecoder: BsonDecoder[Instant]                  = instanceFromJavaDecoder(new InstantCodec())
 
   implicit def optionBsonDecoder[A](implicit decA: BsonDecoder[A]): BsonDecoder[Option[A]] =
-    instanceFromJavaDecoder(new JavaDecoder[Option[A]] {
-      override def decode(reader: BsonReader, decoderContext: DecoderContext): Option[A] =
-        if (reader.getCurrentBsonType() == BsonType.NULL) {
+    new BsonDecoder[Option[A]] {
+
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): Option[A] =
+        if (reader.getCurrentBsonType == BsonType.NULL) {
           reader.readNull()
           none
-        } else decA.unsafeDecode(reader, decoderContext).some
-    })
+        } else Option(decA.unsafeDecode(reader, decoderContext))
+
+      override def unsafeFromBsonValue(bson: BsonValue): Option[A] =
+        if (bson == null || bson.isNull) none
+        else Option(decA.unsafeFromBsonValue(bson))
+    }
 
   implicit def tuple2BsonDecoder[A, B](implicit decA: BsonDecoder[A], decB: BsonDecoder[B]): BsonDecoder[(A, B)] =
     BsonDecoder.instanceFromBsonValue {

@@ -62,10 +62,9 @@ object BsonEncoder {
         bsonValueCodecSingleton.encode(writer, toBsonValue(a), encoderContext)
     }
 
+  private val dummyRoot = "d"
   def instanceFromJavaCodec[A](javaEncoder: org.bson.codecs.Encoder[A]): BsonEncoder[A] =
     new BsonEncoder[A] {
-      val dummyRoot = "d"
-
       override def toBsonValue(a: A): BsonValue = {
         val bsonDocument = new BsonDocument(1)
         val writer       = new BsonDocumentWriter(bsonDocument)
