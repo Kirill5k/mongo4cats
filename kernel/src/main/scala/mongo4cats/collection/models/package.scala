@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.collection
 
 import com.mongodb.client.model.{
   BulkWriteOptions => JBulkWriteOptions,
@@ -32,7 +32,7 @@ import com.mongodb.client.model.{
   UpdateOptions => JUpdateOptions
 }
 
-package object collection {
+package object models {
 
   type BulkWriteOptions = JBulkWriteOptions
   object BulkWriteOptions {

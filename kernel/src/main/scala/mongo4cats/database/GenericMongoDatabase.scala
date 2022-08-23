@@ -22,13 +22,14 @@ import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
-import mongo4cats.collection.MongoCollection
+import mongo4cats.collection.GenericMongoCollection
+import mongo4cats.database.models.CreateCollectionOptions
 import org.bson.conversions.Bson
 
 import scala.reflect.ClassTag
 import scala.util.Try
 
-abstract class MongoDatabase[F[_], S[_]] {
+abstract class GenericMongoDatabase[F[_], S[_]] {
   def underlying: JMongoDatabase
 
   def name: String                   = underlying.getName
@@ -37,11 +38,11 @@ abstract class MongoDatabase[F[_], S[_]] {
   def readConcern: ReadConcern       = underlying.getReadConcern
   def codecs: CodecRegistry          = underlying.getCodecRegistry
 
-  def withReadPreference(readPreference: ReadPreference): MongoDatabase[F, S]
-  def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F, S]
-  def witReadConcern(readConcern: ReadConcern): MongoDatabase[F, S]
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F, S]
-  def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): MongoDatabase[F, S] =
+  def withReadPreference(readPreference: ReadPreference): GenericMongoDatabase[F, S]
+  def withWriteConcern(writeConcert: WriteConcern): GenericMongoDatabase[F, S]
+  def witReadConcern(readConcern: ReadConcern): GenericMongoDatabase[F, S]
+  def withAddedCodec(codecRegistry: CodecRegistry): GenericMongoDatabase[F, S]
+  def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): GenericMongoDatabase[F, S] =
     Try(codecs.get(Clazz.tag[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)
 
   def listCollectionNames: F[Iterable[String]]
@@ -53,9 +54,9 @@ abstract class MongoDatabase[F[_], S[_]] {
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
 
-  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T, S]]
-  def getCollection(name: String): F[MongoCollection[F, Document, S]] = getCollection[Document](name, CodecRegistry.Default)
-  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T, S]] =
+  def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[GenericMongoCollection[F, T, S]]
+  def getCollection(name: String): F[GenericMongoCollection[F, Document, S]] = getCollection[Document](name, CodecRegistry.Default)
+  def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[GenericMongoCollection[F, T, S]] =
     getCollection[T](name, CodecRegistry.mergeWithDefault(CodecRegistry.from(cp.get)))
 
   /** Executes command in the context of the current database.

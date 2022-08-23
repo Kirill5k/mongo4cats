@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats
+package mongo4cats.client
 
 import java.net.InetSocketAddress
 import com.mongodb.{
@@ -25,7 +25,7 @@ import com.mongodb.{
   TransactionOptions => JTransactionOptions
 }
 
-package object client {
+object models {
   type ServerAddress = JServerAddress
   object ServerAddress {
     def apply(host: String, port: Int): ServerAddress    = new JServerAddress(host, port)
@@ -57,5 +57,4 @@ package object client {
     def apply(): JTransactionOptions         = builder.build()
     def builder: JTransactionOptions.Builder = JTransactionOptions.builder()
   }
-
 }

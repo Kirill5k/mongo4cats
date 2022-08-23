@@ -24,6 +24,7 @@ import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
+import mongo4cats.collection.models._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.codecs.configuration.CodecRegistries.fromProviders
@@ -33,7 +34,7 @@ import org.bson.conversions.Bson
 import scala.reflect.ClassTag
 import scala.util.Try
 
-abstract class MongoCollection[F[_], T, S[_]] {
+abstract class GenericMongoCollection[F[_], T, S[_]] {
   def underlying: JMongoCollection[T]
 
   def namespace: MongoNamespace      = underlying.getNamespace
@@ -43,14 +44,14 @@ abstract class MongoCollection[F[_], T, S[_]] {
   def codecs: CodecRegistry          = underlying.getCodecRegistry
   def writeConcern: WriteConcern     = underlying.getWriteConcern
 
-  def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T, S]
-  def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T, S]
-  def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T, S]
+  def withReadPreference(readPreference: ReadPreference): GenericMongoCollection[F, T, S]
+  def withWriteConcern(writeConcert: WriteConcern): GenericMongoCollection[F, T, S]
+  def withReadConcern(readConcern: ReadConcern): GenericMongoCollection[F, T, S]
 
-  def as[Y: ClassTag]: MongoCollection[F, Y, S]
+  def as[Y: ClassTag]: GenericMongoCollection[F, Y, S]
 
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T, S]
-  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): MongoCollection[F, T, S] =
+  def withAddedCodec(codecRegistry: CodecRegistry): GenericMongoCollection[F, T, S]
+  def withAddedCodec[Y](implicit classTag: ClassTag[Y], cp: MongoCodecProvider[Y]): GenericMongoCollection[F, T, S] =
     Try(codecs.get(Clazz.tag[Y])).fold(_ => withAddedCodec(fromProviders(cp.get)), _ => this)
 
   /** Drops this collection from the Database.

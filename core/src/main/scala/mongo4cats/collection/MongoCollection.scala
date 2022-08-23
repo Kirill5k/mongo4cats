@@ -23,9 +23,9 @@ import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
-import fs2.Stream
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
+import mongo4cats.collection.models._
 import mongo4cats.helpers._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.{AsJava, Clazz}
@@ -37,26 +37,26 @@ import scala.reflect.ClassTag
 
 final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     val underlying: JMongoCollection[T]
-) extends MongoCollection[F, T, Stream[F, *]] with AsJava {
+) extends MongoCollection[F, T] with AsJava {
 
-  def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T, Stream[F, *]] =
+  def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadPreference(readPreference))
 
-  def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T, Stream[F, *]] =
+  def withWriteConcern(writeConcert: WriteConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withWriteConcern(writeConcert))
 
-  def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T, Stream[F, *]] =
+  def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadConcern(readConcern))
 
   private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
     coll.withDocumentClass[Y](Clazz.tag[Y])
 
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T, Stream[F, *]] = {
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T] = {
     val newCodecs = fromRegistries(codecs, codecRegistry)
     new LiveMongoCollection[F, T](underlying.withCodecRegistry(newCodecs))
   }
 
-  def as[Y: ClassTag]: MongoCollection[F, Y, Stream[F, *]] =
+  def as[Y: ClassTag]: MongoCollection[F, Y] =
     new LiveMongoCollection[F, Y](withNewDocumentClass(underlying))
 
   def aggregate[Y: ClassTag](pipeline: Seq[Bson]): QueryBuilder.Aggregate[F, Y] =
@@ -191,7 +191,7 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     underlying.renameCollection(session.underlying, target, options).asyncVoid[F]
 }
 
-object Fs2MongoCollection {
-  private[mongo4cats] def make[F[_]: Async, T: ClassTag](collection: JMongoCollection[T]): F[MongoCollection[F, T, Stream[F, *]]] =
+object MongoCollection {
+  private[mongo4cats] def make[F[_]: Async, T: ClassTag](collection: JMongoCollection[T]): F[MongoCollection[F, T]] =
     Monad[F].pure(new LiveMongoCollection(collection))
 }

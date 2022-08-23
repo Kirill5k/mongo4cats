@@ -21,6 +21,7 @@ import cats.effect.unsafe.IORuntime
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
+import mongo4cats.database.models.CreateCollectionOptions
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec

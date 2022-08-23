@@ -21,6 +21,7 @@ import cats.syntax.either._
 import cats.effect.unsafe.implicits.global
 import com.mongodb.MongoTimeoutException
 import com.mongodb.connection.ClusterConnectionMode
+import mongo4cats.client.models.ServerAddress
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec

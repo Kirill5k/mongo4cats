@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.collection
+package mongo4cats.collection.models
 
 import com.mongodb.client.model.{
   DeleteManyModel,

@@ -19,6 +19,7 @@ package mongo4cats.client
 import cats.syntax.alternative._
 import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
+import mongo4cats.client.models.TransactionOptions
 
 abstract class ClientSession[F[_]] {
   def underlying: JClientSession

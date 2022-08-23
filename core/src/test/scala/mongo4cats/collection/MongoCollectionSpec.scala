@@ -29,6 +29,7 @@ import mongo4cats.operations.{Filter, Index, Sort, Update}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import fs2.Stream
+import mongo4cats.collection.models._
 import mongo4cats.database.MongoDatabase
 import org.scalatest.prop.TableDrivenPropertyChecks
 

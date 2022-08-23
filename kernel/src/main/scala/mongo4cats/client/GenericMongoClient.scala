@@ -19,12 +19,13 @@ package mongo4cats.client
 import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient}
 import mongo4cats.bson.Document
-import mongo4cats.database.MongoDatabase
+import mongo4cats.client.models.ClientSessionOptions
+import mongo4cats.database.GenericMongoDatabase
 
-abstract class MongoClient[F[_], S[_]] {
+abstract class GenericMongoClient[F[_], S[_]] {
   def underlying: JMongoClient
   def clusterDescription: ClusterDescription = underlying.getClusterDescription
-  def getDatabase(name: String): F[MongoDatabase[F, S]]
+  def getDatabase(name: String): F[GenericMongoDatabase[F, S]]
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
