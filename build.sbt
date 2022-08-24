@@ -68,6 +68,17 @@ val embedded = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+val `zio-embedded` = project
+  .in(file("zio-embedded"))
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-zio-embedded",
+    libraryDependencies ++= Dependencies.zioEmbedded,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
 val kernel = project
   .in(file("kernel"))
   .settings(commonSettings)
@@ -94,7 +105,7 @@ val core = project
 
 val zio = project
   .in(file("zio"))
-  .dependsOn(kernel, embedded % "test->compile")
+  .dependsOn(kernel, `zio-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio",
@@ -166,5 +177,6 @@ val root = project
     zio,
     circe,
     examples,
-    embedded
+    embedded,
+    `zio-embedded`
   )

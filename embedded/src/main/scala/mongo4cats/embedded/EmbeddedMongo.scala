@@ -19,7 +19,7 @@ package mongo4cats.embedded
 import cats.effect.{Async, Resource}
 import cats.syntax.apply._
 import cats.syntax.applicativeError._
-import de.flapdoodle.embed.mongo.config.{MongodConfig, Net}
+import de.flapdoodle.embed.mongo.config.{ImmutableMongodConfig, MongodConfig, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.mongo.{MongodProcess, MongodStarter}
 import de.flapdoodle.embed.process.runtime.Network
@@ -54,35 +54,29 @@ trait EmbeddedMongo {
   protected val mongoPort = 27017
 
   def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] =
-    runMongo(mongoHost, mongoPort)(test)
+    runMongo(mongoHost, mongoPort, None, None)(test)
 
   def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
-    runMongo(host, port)(test)
+    runMongo(host, port, None, None)(test)
 
   def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int, username: String, password: String)(test: => F[A]): F[A] =
-    runMongo(host, port, username, password)(test)
+    runMongo(host, port, Some(username), Some(password))(test)
 
-  private def runMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
+  private def runMongo[F[_]: Async, A](host: String, port: Int, username: Option[String], password: Option[String])(test: => F[A]): F[A] =
     EmbeddedMongo
       .start[F] {
         MongodConfig
           .builder()
+          .withUsername(username)
+          .withPassword(password)
           .version(Version.Main.PRODUCTION)
           .net(new Net(host, port, Network.localhostIsIPv6))
           .build
       }
       .use(_ => test)
 
-  private def runMongo[F[_]: Async, A](host: String, port: Int, username: String, password: String)(test: => F[A]): F[A] =
-    EmbeddedMongo
-      .start[F] {
-        MongodConfig
-          .builder()
-          .userName(username)
-          .password(password)
-          .version(Version.Main.PRODUCTION)
-          .net(new Net(host, port, Network.localhostIsIPv6))
-          .build
-      }
-      .use(_ => test)
+  implicit final class BuilderSyntax(private val builder: ImmutableMongodConfig.Builder) {
+    def withUsername(username: Option[String]): ImmutableMongodConfig.Builder = username.fold(builder)(builder.userName)
+    def withPassword(password: Option[String]): ImmutableMongodConfig.Builder = password.fold(builder)(builder.password)
+  }
 }

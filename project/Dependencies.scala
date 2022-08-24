@@ -89,4 +89,11 @@ object Dependencies {
     Libraries.immutableValue,
     Libraries.commonsCompress
   )
+
+  val zioEmbedded = Seq(
+    Libraries.zio,
+    Libraries.embeddedMongo,
+    Libraries.immutableValue,
+    Libraries.commonsCompress
+  )
 }
