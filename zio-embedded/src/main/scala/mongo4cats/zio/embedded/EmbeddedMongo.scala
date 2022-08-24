@@ -14,39 +14,35 @@
  * limitations under the License.
  */
 
-package mongo4cats.embedded
+package mongo4cats.zio.embedded
 
-import cats.effect.{Async, Resource}
-import cats.syntax.apply._
-import cats.syntax.applicativeError._
 import de.flapdoodle.embed.mongo.config.{ImmutableMongodConfig, MongodConfig, Net}
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.mongo.{MongodProcess, MongodStarter}
 import de.flapdoodle.embed.process.runtime.Network
-
-import scala.concurrent.duration._
+import zio._
 
 object EmbeddedMongo {
 
   private lazy val defaultStarter: MongodStarter = MongodStarter.getDefaultInstance
 
-  def start[F[_]](
+  def start(
       config: MongodConfig,
       starter: MongodStarter = defaultStarter,
       maxAttempts: Int = 10,
       attempt: Int = 0,
       lastError: Option[Throwable] = None
-  )(implicit F: Async[F]): Resource[F, MongodProcess] =
+  ): ZIO[Scope, Nothing, MongodProcess] =
     if (attempt >= maxAttempts) {
-      val error = lastError.getOrElse(new RuntimeException("Failed to start embedded mongo too many times"))
-      Resource.eval(error.raiseError[F, MongodProcess])
-    } else
-      Resource
-        .make(F.delay(starter.prepare(config)))(ex => F.delay(ex.stop()))
-        .flatMap(ex => Resource.make(F.delay(ex.start()))(p => F.delay(p.stop())))
-        .handleErrorWith[MongodProcess, Throwable] { e =>
-          Resource.eval(F.sleep(attempt.seconds)) *> start[F](config, starter, maxAttempts, attempt + 1, Some(e))
+      ZIO.die(lastError.getOrElse(new RuntimeException("Failed to start embedded mongo too many times")))
+    } else {
+      ZIO
+        .acquireRelease(ZIO.attempt(starter.prepare(config)))(ex => ZIO.attempt(ex.stop()).orDie)
+        .flatMap(ex => ZIO.acquireRelease(ZIO.attempt(ex.start()))(p => ZIO.attempt(p.stop()).orDie))
+        .catchAll { e =>
+          ZIO.sleep(attempt.seconds) *> start(config, starter, maxAttempts, attempt + 1, Some(e))
         }
+    }
 }
 
 trait EmbeddedMongo {
@@ -55,18 +51,22 @@ trait EmbeddedMongo {
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
 
-  def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] =
+  def withRunningEmbeddedMongo[R, E, A](test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
     runMongo(mongoHost, mongoPort, mongoUsername, mongoPassword)(test)
 
-  def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
+  def withRunningEmbeddedMongo[R, E, A](host: String, port: Int)(test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
     runMongo(host, port, None, None)(test)
 
-  def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int, username: String, password: String)(test: => F[A]): F[A] =
+  def withRunningEmbeddedMongo[R, E, A](host: String, port: Int, username: String, password: String)(
+      test: => ZIO[R, E, A]
+  ): ZIO[R with Scope, E, A] =
     runMongo(host, port, Some(username), Some(password))(test)
 
-  private def runMongo[F[_]: Async, A](host: String, port: Int, username: Option[String], password: Option[String])(test: => F[A]): F[A] =
+  private def runMongo[R, E, A](host: String, port: Int, username: Option[String], password: Option[String])(
+      test: => ZIO[R, E, A]
+  ): ZIO[R with Scope, E, A] =
     EmbeddedMongo
-      .start[F](
+      .start(
         MongodConfig
           .builder()
           .withUsername(username)
@@ -74,8 +74,7 @@ trait EmbeddedMongo {
           .version(Version.Main.PRODUCTION)
           .net(new Net(host, port, Network.localhostIsIPv6))
           .build
-      )
-      .use(_ => test)
+      ) *> test
 
   implicit final private class BuilderSyntax(private val builder: ImmutableMongodConfig.Builder) {
     def withUsername(username: Option[String]): ImmutableMongodConfig.Builder = username.fold(builder)(builder.userName)
