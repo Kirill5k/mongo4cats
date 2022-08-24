@@ -100,7 +100,8 @@ val zio = project
     name := "mongo4cats-zio",
     libraryDependencies ++= Dependencies.zio,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
   )
   .enablePlugins(AutomateHeaderPlugin)
 

@@ -34,7 +34,7 @@ import org.bson.conversions.Bson
 import scala.reflect.ClassTag
 import scala.util.Try
 
-abstract private[mongo4cats] class GenericMongoCollection[F[_], T, S[_]] {
+abstract class GenericMongoCollection[F[_], T, S[_]] {
   def underlying: JMongoCollection[T]
 
   def namespace: MongoNamespace      = underlying.getNamespace
@@ -469,4 +469,7 @@ abstract private[mongo4cats] class GenericMongoCollection[F[_], T, S[_]] {
   def renameCollection(session: ClientSession[F], target: MongoNamespace, options: RenameCollectionOptions): F[Unit]
   def renameCollection(session: ClientSession[F], target: MongoNamespace): F[Unit] =
     renameCollection(session, target, RenameCollectionOptions())
+
+  protected def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
+    coll.withDocumentClass[Y](Clazz.tag[Y])
 }

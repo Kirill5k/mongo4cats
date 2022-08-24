@@ -25,12 +25,11 @@ import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
+import mongo4cats.codecs.CodecRegistry
 import mongo4cats.collection.models._
 import mongo4cats.syntax._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.{AsJava, Clazz}
-import org.bson.codecs.configuration.CodecRegistries.fromRegistries
-import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 
 import scala.reflect.ClassTag
@@ -48,13 +47,8 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def withReadConcern(readConcern: ReadConcern): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadConcern(readConcern))
 
-  private def withNewDocumentClass[Y: ClassTag](coll: JMongoCollection[T]): JMongoCollection[Y] =
-    coll.withDocumentClass[Y](Clazz.tag[Y])
-
-  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T] = {
-    val newCodecs = fromRegistries(codecs, codecRegistry)
-    new LiveMongoCollection[F, T](underlying.withCodecRegistry(newCodecs))
-  }
+  def withAddedCodec(codecRegistry: CodecRegistry): MongoCollection[F, T] =
+    new LiveMongoCollection[F, T](underlying.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
   def as[Y: ClassTag]: MongoCollection[F, Y] =
     new LiveMongoCollection[F, Y](withNewDocumentClass(underlying))

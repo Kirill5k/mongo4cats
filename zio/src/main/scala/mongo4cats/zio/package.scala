@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
-package mongo4cats.zio
+package mongo4cats
 
-package object collection {}
+import mongo4cats.client.{ClientSession, GenericMongoClient}
+import mongo4cats.collection.GenericMongoCollection
+import mongo4cats.database.GenericMongoDatabase
+import _root_.zio.Task
+import _root_.zio.stream.Stream
+
+package object zio {
+  type ZClientSession      = ClientSession[Task]
+  type ZMongoClient        = GenericMongoClient[Task, Stream[Throwable, *]]
+  type ZMongoDatabase      = GenericMongoDatabase[Task, Stream[Throwable, *]]
+  type ZMongoCollection[T] = GenericMongoCollection[Task, T, Stream[Throwable, *]]
+}

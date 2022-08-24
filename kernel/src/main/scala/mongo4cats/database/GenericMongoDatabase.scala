@@ -29,7 +29,7 @@ import org.bson.conversions.Bson
 import scala.reflect.ClassTag
 import scala.util.Try
 
-abstract private[mongo4cats] class GenericMongoDatabase[F[_], S[_]] {
+abstract class GenericMongoDatabase[F[_], S[_]] {
   def underlying: JMongoDatabase
 
   def name: String                   = underlying.getName

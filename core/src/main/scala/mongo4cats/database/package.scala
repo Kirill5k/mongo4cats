@@ -17,6 +17,7 @@
 package mongo4cats
 
 import fs2.Stream
+
 package object database {
   type MongoDatabase[F[_]] = GenericMongoDatabase[F, Stream[F, *]]
 }
