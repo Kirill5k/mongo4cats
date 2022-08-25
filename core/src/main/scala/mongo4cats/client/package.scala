@@ -16,46 +16,8 @@
 
 package mongo4cats
 
-import java.net.InetSocketAddress
-import com.mongodb.{
-  ClientSessionOptions => JClientSessionOptions,
-  MongoClientSettings => JMongoClientSettings,
-  MongoDriverInformation => JMongoDriverInformation,
-  ServerAddress => JServerAddress,
-  TransactionOptions => JTransactionOptions
-}
+import fs2.Stream
 
 package object client {
-  type ServerAddress = JServerAddress
-  object ServerAddress {
-    def apply(host: String, port: Int): ServerAddress    = new JServerAddress(host, port)
-    def apply(address: InetSocketAddress): ServerAddress = apply(address.getHostName, address.getPort)
-  }
-
-  type MongoClientSettings = JMongoClientSettings
-  object MongoClientSettings {
-    def builder: JMongoClientSettings.Builder                                = JMongoClientSettings.builder()
-    def builder(settings: MongoClientSettings): JMongoClientSettings.Builder = JMongoClientSettings.builder(settings)
-  }
-
-  type MongoDriverInformation = JMongoDriverInformation
-  object MongoDriverInformation {
-    def apply(): JMongoDriverInformation                                              = builder.build()
-    def builder: JMongoDriverInformation.Builder                                      = JMongoDriverInformation.builder()
-    def builder(information: MongoDriverInformation): JMongoDriverInformation.Builder = JMongoDriverInformation.builder(information)
-  }
-
-  type ClientSessionOptions = JClientSessionOptions
-  object ClientSessionOptions {
-    def apply(): JClientSessionOptions                                            = builder.build()
-    def builder: JClientSessionOptions.Builder                                    = JClientSessionOptions.builder()
-    def builder(information: ClientSessionOptions): JClientSessionOptions.Builder = JClientSessionOptions.builder(information)
-  }
-
-  type TransactionOptions = JTransactionOptions
-  object TransactionOptions {
-    def apply(): JTransactionOptions         = builder.build()
-    def builder: JTransactionOptions.Builder = JTransactionOptions.builder()
-  }
-
+  type MongoClient[F[_]] = GenericMongoClient[F, Stream[F, *]]
 }

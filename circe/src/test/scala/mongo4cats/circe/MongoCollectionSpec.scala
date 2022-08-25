@@ -22,7 +22,7 @@ import io.circe.generic.auto._
 import io.circe.{Decoder, Encoder}
 import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.operations.Filter
+import mongo4cats.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec

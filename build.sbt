@@ -2,17 +2,12 @@ import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations._
 import microsites.CdnDirectives
 import sbtghactions.JavaSpec
+import Utils._
 
 val scala212               = "2.12.16"
 val scala213               = "2.13.8"
 val scala3                 = "3.1.1"
 val supportedScalaVersions = List(scala212, scala213, scala3)
-
-def priorTo2_13(scalaVersion: String): Boolean =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, minor)) if minor < 13 => true
-    case _                              => false
-  }
 
 ThisBuild / scalaVersion           := scala213
 ThisBuild / organization           := "io.github.kirill5k"
@@ -59,10 +54,10 @@ val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
-  scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil)
+  scalacOptions ++= partialUnificationOption(scalaVersion.value)
 )
 
-val `mongo4cats-embedded` = project
+val embedded = project
   .in(file("embedded"))
   .settings(commonSettings)
   .settings(
@@ -73,44 +68,80 @@ val `mongo4cats-embedded` = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-core` = project
+val `zio-embedded` = project
+  .in(file("zio-embedded"))
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-zio-embedded",
+    libraryDependencies ++= Dependencies.zioEmbedded,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+val kernel = project
+  .in(file("kernel"))
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-kernel",
+    libraryDependencies ++= Dependencies.kernel,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+val core = project
   .in(file("core"))
-  .dependsOn(`mongo4cats-embedded` % "test->compile")
+  .dependsOn(kernel % "test->test;compile->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
-    libraryDependencies ++= Dependencies.core ++ Dependencies.test,
+    libraryDependencies ++= Dependencies.core,
     test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-circe` = project
+val zio = project
+  .in(file("zio"))
+  .dependsOn(kernel % "test->test;compile->compile", `zio-embedded` % "test->compile")
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-zio",
+    libraryDependencies ++= Dependencies.zio,
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
+val circe = project
   .in(file("circe"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-embedded` % "test->compile")
+  .dependsOn(kernel, core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
-    libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
+    libraryDependencies ++= Dependencies.circe,
     test / parallelExecution := false,
     mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val `mongo4cats-examples` = project
+val examples = project
   .in(file("examples"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, circe, zio, embedded)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-examples",
-    libraryDependencies ++= Dependencies.examples ++ Dependencies.test
+    libraryDependencies ++= Dependencies.examples
   )
   .enablePlugins(AutomateHeaderPlugin)
 
 val docs = project
   .in(file("docs"))
-  .dependsOn(`mongo4cats-core`, `mongo4cats-circe`, `mongo4cats-embedded`)
+  .dependsOn(core, circe, embedded)
   .enablePlugins(MicrositesPlugin)
   .settings(noPublish)
   .settings(commonSettings)
@@ -141,8 +172,11 @@ val root = project
     crossScalaVersions := Nil
   )
   .aggregate(
-    `mongo4cats-core`,
-    `mongo4cats-circe`,
-    `mongo4cats-examples`,
-    `mongo4cats-embedded`
+    kernel,
+    core,
+    zio,
+    circe,
+    examples,
+    embedded,
+    `zio-embedded`
   )

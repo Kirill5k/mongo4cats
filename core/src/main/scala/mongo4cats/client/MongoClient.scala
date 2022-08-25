@@ -19,22 +19,30 @@ package mongo4cats.client
 import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
 import cats.syntax.functor._
-import com.mongodb.connection.ClusterDescription
-import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient, MongoClients}
+import com.mongodb.reactivestreams.client.{ClientSession => JClientSession, MongoClient => JMongoClient, MongoClients}
 import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
-import mongo4cats.helpers._
+import mongo4cats.syntax._
+import mongo4cats.models.client.{ClientSessionOptions, MongoClientSettings, MongoDriverInformation, ServerAddress, TransactionOptions}
+import mongo4cats.models.client.MongoConnection
 
-abstract class MongoClient[F[_]] {
-  def underlying: JMongoClient
-  def clusterDescription: ClusterDescription = underlying.getClusterDescription
-  def getDatabase(name: String): F[MongoDatabase[F]]
-  def listDatabaseNames: F[Iterable[String]]
-  def listDatabases: F[Iterable[Document]]
-  def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
-  def startSession(options: ClientSessionOptions): F[ClientSession[F]]
-  def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
+import scala.util.Try
+
+final private class LiveClientSession[F[_]](
+    val underlying: JClientSession
+)(implicit
+    F: Async[F]
+) extends ClientSession[F] {
+
+  override def startTransaction(options: TransactionOptions): F[Unit] =
+    F.fromTry(Try(underlying.startTransaction(options)))
+
+  override def commitTransaction: F[Unit] =
+    underlying.commitTransaction().asyncVoid[F]
+
+  override def abortTransaction: F[Unit] =
+    underlying.abortTransaction().asyncVoid[F]
 }
 
 final private class LiveMongoClient[F[_]](
@@ -55,7 +63,7 @@ final private class LiveMongoClient[F[_]](
     underlying.listDatabases(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
 
   def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
-    underlying.startSession(options).asyncSingle[F].flatMap(ClientSession.make[F])
+    underlying.startSession(options).asyncSingle[F].map(new LiveClientSession(_))
 }
 
 object MongoClient extends AsJava {

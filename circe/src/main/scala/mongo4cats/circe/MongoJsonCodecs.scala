@@ -18,10 +18,10 @@ package mongo4cats.circe
 
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
+import mongo4cats.Clazz
 import mongo4cats.bson.{BsonValueDecoder, BsonValueEncoder, ObjectId}
 import mongo4cats.bson.syntax._
 import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
-import mongo4cats.helpers.clazz
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
@@ -59,7 +59,7 @@ trait MongoJsonCodecs {
 
   implicit def deriveCirceCodecProvider[T: Encoder: Decoder: ClassTag]: MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
-      implicit val classT: Class[T]   = clazz[T]
+      implicit val classT: Class[T]   = Clazz.tag[T]
       override def get: CodecProvider = circeBasedCodecProvider[T]
     }
 

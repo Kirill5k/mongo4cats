@@ -19,17 +19,18 @@ package mongo4cats.collection
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.syntax.parallel._
-import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.operations.{Filter, Index, Sort, Update}
+import mongo4cats.operations.{Filter, Index, Sort, Update}
+import mongo4cats.models.collection._
+import mongo4cats.database.MongoDatabase
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import fs2.Stream
-import mongo4cats.database.MongoDatabase
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.concurrent.Future
@@ -529,13 +530,13 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             val result = for {
               coll  <- db.getCollection("coll")
               _     <- coll.insertMany(TestData.accounts)
-              _     <- coll.renameCollection(new MongoNamespace("db.coll2"), RenameCollectionOptions(dropTarget = false))
+              _     <- coll.renameCollection(MongoNamespace("db", "coll2"), RenameCollectionOptions(dropTarget = false))
               coll2 <- db.getCollection("coll2")
               count <- coll2.count
             } yield (count, coll2.namespace)
 
             result.map { case (count, ns) =>
-              ns.getCollectionName mustBe "coll2"
+              ns.collectionName mustBe "coll2"
               count mustBe 3
             }
           }

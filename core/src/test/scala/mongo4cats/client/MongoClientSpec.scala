@@ -21,6 +21,7 @@ import cats.syntax.either._
 import cats.effect.unsafe.implicits.global
 import com.mongodb.MongoTimeoutException
 import com.mongodb.connection.ClusterConnectionMode
+import mongo4cats.models.client._
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -34,7 +35,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
   "A MongoClient" should {
     "connect to a db via connection string" in withRunningEmbeddedMongo {
       MongoClient
-        .fromConnectionString[IO]("mongodb://localhost:12345")
+        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use { client =>
           val cluster = client.clusterDescription
 
@@ -64,7 +65,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
     "return current database names" in withRunningEmbeddedMongo {
       MongoClient
-        .fromConnectionString[IO]("mongodb://localhost:12345")
+        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use { client =>
           for {
             db1   <- client.getDatabase("db1")
@@ -79,7 +80,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
     "return current databases" in withRunningEmbeddedMongo {
       MongoClient
-        .fromConnectionString[IO]("mongodb://localhost:12345")
+        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
         .use { client =>
           for {
             db1 <- client.getDatabase("db1")
@@ -97,7 +98,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
     "connect to a db via server address class" in withRunningEmbeddedMongo {
       MongoClient
-        .fromServerAddress[IO](ServerAddress("localhost", 12345))
+        .fromServerAddress[IO](ServerAddress("localhost", mongoPort))
         .use { client =>
           for {
             db    <- client.getDatabase("test-db")

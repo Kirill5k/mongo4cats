@@ -16,11 +16,8 @@
 
 package mongo4cats
 
-import com.mongodb.client.model.{CreateCollectionOptions => JCreateCollectionOptions}
+import fs2.Stream
 
 package object database {
-  type CreateCollectionOptions = JCreateCollectionOptions
-  object CreateCollectionOptions {
-    def apply(): CreateCollectionOptions = new JCreateCollectionOptions()
-  }
+  type MongoDatabase[F[_]] = GenericMongoDatabase[F, Stream[F, *]]
 }
