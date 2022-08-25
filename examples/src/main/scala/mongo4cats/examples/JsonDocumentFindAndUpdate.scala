@@ -41,7 +41,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
   val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
-        db      <- client.getDatabase("testdb")
+        db      <- client.getDatabase("my-db")
         coll    <- db.getCollection("jsoncoll")
         _       <- coll.insertOne(Document.parse(json))
         old     <- coll.findOneAndUpdate(filterQuery, updateQuery)

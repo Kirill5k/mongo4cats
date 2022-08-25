@@ -33,7 +33,7 @@ object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMo
     withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
+          db   <- client.getDatabase("my-db")
           coll <- db.getCollectionWithCodec[Person]("people")
           person1 = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
           person2 = Person("John", "Doe", Address("Los-Angeles", "USA"), Instant.now())

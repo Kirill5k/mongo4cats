@@ -31,7 +31,7 @@ object CaseClassesWithCirceCodecs extends IOApp.Simple {
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
-        db   <- client.getDatabase("testdb")
+        db   <- client.getDatabase("my-db")
         coll <- db.getCollectionWithCodec[Person]("people")
         person = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
         _    <- coll.insertOne(person)

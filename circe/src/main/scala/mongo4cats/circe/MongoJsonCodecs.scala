@@ -19,8 +19,8 @@ package mongo4cats.circe
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.Clazz
-import mongo4cats.bson.{BsonValueDecoder, BsonValueEncoder, ObjectId}
 import mongo4cats.bson.syntax._
+import mongo4cats.bson.{BsonValueDecoder, BsonValueEncoder, ObjectId}
 import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
@@ -40,19 +40,19 @@ trait MongoJsonCodecs {
   implicit def deriveJsonBsonValueEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
     value => JsonMapper.toBson(e(value))
 
-  implicit val encodeObjectId: Encoder[ObjectId] =
+  implicit val objectIdEncoder: Encoder[ObjectId] =
     Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(JsonMapper.idTag -> Json.fromString(i.toHexString)))
-  implicit val decodeObjectId: Decoder[ObjectId] =
+  implicit val objectIdDecoder: Decoder[ObjectId] =
     Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id(JsonMapper.idTag).flatMap(_.asString).get)))
 
-  implicit val encodeInstant: Encoder[Instant] =
+  implicit val instantEncoder: Encoder[Instant] =
     Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
-  implicit val decodeInstant: Decoder[Instant] =
+  implicit val instantDecoder: Decoder[Instant] =
     Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).get)))
 
-  implicit val encodeLocalDate: Encoder[LocalDate] =
+  implicit val localDateEncoder: Encoder[LocalDate] =
     Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
-  implicit val decodeLocalDate: Decoder[LocalDate] =
+  implicit val localDateDecoder: Decoder[LocalDate] =
     Decoder.decodeJsonObject.emapTry(dateObj =>
       Try(LocalDate.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
     )

@@ -28,7 +28,7 @@ object BulkWrites extends IOApp.Simple {
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
-        db   <- client.getDatabase("testdb")
+        db   <- client.getDatabase("my-db")
         coll <- db.getCollection("docs")
         _    <- coll.insertMany((0 to 100).map(i => Document("name" := s"doc-$i", "index" := i)))
         commands = List(

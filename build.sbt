@@ -130,7 +130,7 @@ val circe = project
 
 val examples = project
   .in(file("examples"))
-  .dependsOn(core, circe, zio, embedded)
+  .dependsOn(core, circe, embedded, zio, `zio-embedded`)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
