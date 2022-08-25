@@ -64,7 +64,7 @@ private[zio] object syntax {
       })
     }
 
-    def stream: Stream[Throwable, T]                       = publisher.toZIOStream(1024)
+    def stream: Stream[Throwable, T]                       = publisher.toZIOStream(512)
     def boundedStream(capacity: Int): Stream[Throwable, T] = publisher.toZIOStream(capacity)
   }
 }

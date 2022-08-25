@@ -22,7 +22,7 @@ import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 
-object ManagingTransactions extends IOApp.Simple {
+object Transactions extends IOApp.Simple {
 
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>

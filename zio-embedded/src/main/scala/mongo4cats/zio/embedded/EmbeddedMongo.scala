@@ -40,8 +40,8 @@ object EmbeddedMongo {
       ZIO.die(lastError.getOrElse(new RuntimeException("Failed to start embedded mongo too many times")))
     } else {
       ZIO
-        .acquireRelease(ZIO.attempt(starter.prepare(config)))(ex => ZIO.attempt(ex.stop()).orDie)
-        .flatMap(ex => ZIO.acquireRelease(ZIO.attempt(ex.start()))(p => ZIO.attempt(p.stop()).orDie))
+        .acquireRelease(ZIO.attemptBlocking(starter.prepare(config)))(ex => ZIO.attemptBlocking(ex.stop()).orDie)
+        .flatMap(ex => ZIO.acquireRelease(ZIO.attemptBlocking(ex.start()))(p => ZIO.attemptBlocking(p.stop()).orDie))
         .catchAll { e =>
           attemptStart(config, starter, maxAttempts, attempt + 1, Some(e))
         }
