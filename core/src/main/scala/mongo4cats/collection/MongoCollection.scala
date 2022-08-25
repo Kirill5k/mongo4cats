@@ -22,11 +22,11 @@ import cats.syntax.functor._
 import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
-import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.CodecRegistry
-import mongo4cats.collection.models._
+import mongo4cats.models.collection._
 import mongo4cats.syntax._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.{AsJava, Clazz}
@@ -179,10 +179,10 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle[F]
 
   def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
-    underlying.renameCollection(target, options).asyncVoid[F]
+    underlying.renameCollection(target.toJava, options).asyncVoid[F]
 
   def renameCollection(session: ClientSession[F], target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
-    underlying.renameCollection(session.underlying, target, options).asyncVoid[F]
+    underlying.renameCollection(session.underlying, target.toJava, options).asyncVoid[F]
 }
 
 object MongoCollection {

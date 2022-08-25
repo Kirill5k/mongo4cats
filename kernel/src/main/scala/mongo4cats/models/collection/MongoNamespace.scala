@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package mongo4cats.database
+package mongo4cats.models.collection
 
-import com.mongodb.client.model.{CreateCollectionOptions => JCreateCollectionOptions}
+import com.mongodb.{MongoNamespace => JMongoNamespace}
 
-object models {
-  type CreateCollectionOptions = JCreateCollectionOptions
-  object CreateCollectionOptions {
-    def apply(): CreateCollectionOptions = new JCreateCollectionOptions()
-  }
+final case class MongoNamespace(databaseName: String, collectionName: String) {
+  private[mongo4cats] def toJava = new JMongoNamespace(databaseName, collectionName)
+}
+
+object MongoNamespace {
+  private[mongo4cats] def fromJava(namespace: JMongoNamespace): MongoNamespace =
+    MongoNamespace(namespace.getDatabaseName, namespace.getCollectionName)
 }

@@ -289,7 +289,7 @@ trait Aggregate extends AsJava {
 
 object Aggregate {
   final case class Facet(name: String, pipeline: Aggregate) {
-    private[operations] def asNative: JFacet = new JFacet(name, pipeline.toBson)
+    private[operations] def toJava: JFacet = new JFacet(name, pipeline.toBson)
   }
 
   private[mongo4cats] val empty: Aggregate = AggregateBuilder(Nil)
@@ -396,7 +396,7 @@ final private case class AggregateBuilder(
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
 
-  def facet(facets: List[Aggregate.Facet]): Aggregate = AggregateBuilder(Aggregates.facet(asJava(facets.map(_.asNative))) :: aggregates)
+  def facet(facets: List[Aggregate.Facet]): Aggregate = AggregateBuilder(Aggregates.facet(asJava(facets.map(_.toJava))) :: aggregates)
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)

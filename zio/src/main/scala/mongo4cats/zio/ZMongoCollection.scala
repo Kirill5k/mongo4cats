@@ -15,14 +15,14 @@
  */
 
 package mongo4cats.zio
-import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result.{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult}
 import com.mongodb.reactivestreams.client.MongoCollection
 import mongo4cats.{AsJava, Clazz}
 import mongo4cats.bson.Document
 import mongo4cats.codecs.CodecRegistry
-import mongo4cats.collection.models._
+import mongo4cats.models.collection._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.zio.syntax._
 import org.bson.conversions.Bson
@@ -190,10 +190,10 @@ final private class ZMongoCollectionLive[T: ClassTag](
     underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle.unNone
 
   def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): Task[Unit] =
-    underlying.renameCollection(target, options).asyncVoid
+    underlying.renameCollection(target.toJava, options).asyncVoid
 
   def renameCollection(cs: ZClientSession, target: MongoNamespace, options: RenameCollectionOptions): Task[Unit] =
-    underlying.renameCollection(cs.underlying, target, options).asyncVoid
+    underlying.renameCollection(cs.underlying, target.toJava, options).asyncVoid
 }
 
 object ZMongoCollection {

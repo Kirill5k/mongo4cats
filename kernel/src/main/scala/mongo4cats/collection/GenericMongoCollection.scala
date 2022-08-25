@@ -19,12 +19,12 @@ package mongo4cats.collection
 import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result._
 import com.mongodb.reactivestreams.client.{MongoCollection => JMongoCollection}
-import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.MongoCodecProvider
-import mongo4cats.collection.models._
+import mongo4cats.models.collection._
 import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, WatchQueryBuilder}
 import org.bson.codecs.configuration.CodecRegistries.fromProviders
@@ -37,7 +37,7 @@ import scala.util.Try
 abstract class GenericMongoCollection[F[_], T, S[_]] {
   def underlying: JMongoCollection[T]
 
-  def namespace: MongoNamespace      = underlying.getNamespace
+  def namespace: MongoNamespace      = MongoNamespace.fromJava(underlying.getNamespace)
   def documentClass: Class[T]        = underlying.getDocumentClass
   def readPreference: ReadPreference = underlying.getReadPreference
   def readConcern: ReadConcern       = underlying.getReadConcern

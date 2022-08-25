@@ -24,7 +24,8 @@ import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
 import mongo4cats.syntax._
-import mongo4cats.client.models.{ClientSessionOptions, MongoClientSettings, MongoDriverInformation, ServerAddress, TransactionOptions}
+import mongo4cats.models.client.{ClientSessionOptions, MongoClientSettings, MongoDriverInformation, ServerAddress, TransactionOptions}
+import mongo4cats.models.client.MongoConnection
 
 import scala.util.Try
 

@@ -19,7 +19,7 @@ package mongo4cats.client
 import com.mongodb.connection.ClusterDescription
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient}
 import mongo4cats.bson.Document
-import mongo4cats.client.models.ClientSessionOptions
+import mongo4cats.models.client.ClientSessionOptions
 import mongo4cats.database.GenericMongoDatabase
 
 abstract class GenericMongoClient[F[_], S[_]] {

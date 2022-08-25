@@ -24,11 +24,14 @@ import zio._
 
 object EmbeddedMongo {
 
-  private lazy val defaultStarter: MongodStarter = MongodStarter.getDefaultInstance
+  private val defaultStarter = ZIO.attempt(MongodStarter.getDefaultInstance)
 
-  def start(
+  def start(config: MongodConfig): ZIO[Scope, Nothing, MongodProcess] =
+    defaultStarter.orDie.flatMap(s => attemptStart(config, s))
+
+  private def attemptStart(
       config: MongodConfig,
-      starter: MongodStarter = defaultStarter,
+      starter: MongodStarter,
       maxAttempts: Int = 10,
       attempt: Int = 0,
       lastError: Option[Throwable] = None
@@ -40,7 +43,7 @@ object EmbeddedMongo {
         .acquireRelease(ZIO.attempt(starter.prepare(config)))(ex => ZIO.attempt(ex.stop()).orDie)
         .flatMap(ex => ZIO.acquireRelease(ZIO.attempt(ex.start()))(p => ZIO.attempt(p.stop()).orDie))
         .catchAll { e =>
-          ZIO.sleep(attempt.seconds) *> start(config, starter, maxAttempts, attempt + 1, Some(e))
+          attemptStart(config, starter, maxAttempts, attempt + 1, Some(e))
         }
     }
 }

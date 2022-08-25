@@ -27,11 +27,11 @@ import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.CodecRegistry
 import mongo4cats.collection.MongoCollection
+import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.syntax._
 import org.bson.conversions.Bson
 
 import scala.reflect.ClassTag
-import mongo4cats.database.models.CreateCollectionOptions
 
 final private class LiveMongoDatabase[F[_]](
     val underlying: JMongoDatabase

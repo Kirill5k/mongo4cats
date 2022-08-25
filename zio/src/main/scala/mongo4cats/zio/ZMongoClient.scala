@@ -19,8 +19,7 @@ package mongo4cats.zio
 import com.mongodb.reactivestreams.client.{ClientSession, MongoClient, MongoClients}
 import mongo4cats.AsJava
 import mongo4cats.bson.Document
-import mongo4cats.client.MongoConnection
-import mongo4cats.client.models.{ClientSessionOptions, MongoClientSettings, MongoDriverInformation, ServerAddress, TransactionOptions}
+import mongo4cats.models.client._
 import mongo4cats.zio.syntax._
 import zio.{Scope, Task, ZIO}
 

@@ -92,7 +92,7 @@ val kernel = project
 
 val core = project
   .in(file("core"))
-  .dependsOn(kernel, embedded % "test->compile")
+  .dependsOn(kernel % "test->test;compile->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
@@ -105,7 +105,7 @@ val core = project
 
 val zio = project
   .in(file("zio"))
-  .dependsOn(kernel, `zio-embedded` % "test->compile")
+  .dependsOn(kernel % "test->test;compile->compile", `zio-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio",

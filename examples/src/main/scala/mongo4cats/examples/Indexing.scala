@@ -18,7 +18,7 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.models.IndexOptions
+import mongo4cats.models.collection.IndexOptions
 import mongo4cats.operations.Index
 
 object Indexing extends IOApp.Simple {

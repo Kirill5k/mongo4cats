@@ -21,7 +21,7 @@ import com.mongodb.reactivestreams.client.MongoDatabase
 import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.codecs.CodecRegistry
-import mongo4cats.database.models.CreateCollectionOptions
+import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.zio.syntax._
 import org.bson.conversions.Bson
 import zio.{Task, UIO, ZIO}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mongo4cats.client
+package mongo4cats.models.client
 
 sealed abstract class MongoConnectionType(val `type`: String)
 
