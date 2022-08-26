@@ -67,7 +67,7 @@ package object bson {
     val javaCodecSingleton: Codec[A] =
       new Codec[A] {
         override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-          encA.bsonEncode(writer, a, encoderContext)
+          encA.unsafeBsonEncode(writer, a, encoderContext)
 
         override def getEncoderClass: Class[A] = classA
 

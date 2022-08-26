@@ -154,7 +154,7 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
       val circeJsonStr: String = circeJson.noSpaces
       val bsonDoc              = new BsonDocument()
       val bsonWriter           = new BsonDocumentWriter(bsonDoc)
-      BsonEncoder[RootTestData].bsonEncode(bsonWriter, testData, bsonEncoderContextSingleton)
+      BsonEncoder[RootTestData].unsafeBsonEncode(bsonWriter, testData, bsonEncoderContextSingleton)
       val bsonStr: String = bsonDoc.toJson().replace("\": ", "\":").replace(", ", ",")
       assert(
         bsonStr == circeJsonStr,

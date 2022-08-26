@@ -16,7 +16,7 @@
 
 package mongo4cats.derivation.bson
 import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaCodec
-import org.bson.{types, BsonNull, BsonReader, BsonValue, BsonWriter}
+import org.bson.{types, BsonInt32, BsonInt64, BsonNull, BsonObjectId, BsonReader, BsonString, BsonValue, BsonWriter}
 import org.bson.codecs._
 import org.bson.codecs.jsr310.InstantCodec
 
@@ -25,35 +25,55 @@ import java.util.UUID
 
 trait BaseBsonEncoder {
 
-  implicit val stringBsonEncoder: BsonEncoder[String]           = instanceFromJavaCodec(new StringCodec())
-  implicit val byteBsonEncoder: BsonEncoder[Byte]               = instanceFromJavaCodec(new ByteCodec()).asInstanceOf[BsonEncoder[Byte]]
-  implicit val shortBsonEncoder: BsonEncoder[Short]             = instanceFromJavaCodec(new ShortCodec()).asInstanceOf[BsonEncoder[Short]]
-  implicit val intBsonEncoder: BsonEncoder[Int]                 = instanceFromJavaCodec(new IntegerCodec()).asInstanceOf[BsonEncoder[Int]]
-  implicit val longBsonEncoder: BsonEncoder[Long]               = instanceFromJavaCodec(new LongCodec()).asInstanceOf[BsonEncoder[Long]]
-  implicit val objectIdBsonEncoder: BsonEncoder[types.ObjectId] = instanceFromJavaCodec(new ObjectIdCodec())
-  implicit val instantBsonEncoder: BsonEncoder[Instant]         = instanceFromJavaCodec(new InstantCodec())
+  implicit val stringBsonEncoder: BsonEncoder[String] =
+    instanceFromJavaCodec(new StringCodec(), new BsonString(_))
+
+  implicit val byteBsonEncoder: BsonEncoder[Byte] =
+    instanceFromJavaCodec(new ByteCodec(), (b: java.lang.Byte) => new BsonInt32(b.intValue())).asInstanceOf[BsonEncoder[Byte]]
+
+  implicit val shortBsonEncoder: BsonEncoder[Short] =
+    instanceFromJavaCodec(new ShortCodec(), (s: java.lang.Short) => new BsonInt32(s.intValue())).asInstanceOf[BsonEncoder[Short]]
+
+  implicit val intBsonEncoder: BsonEncoder[Int] =
+    instanceFromJavaCodec(new IntegerCodec(), new BsonInt32(_: Integer)).asInstanceOf[BsonEncoder[Int]]
+
+  implicit val longBsonEncoder: BsonEncoder[Long] =
+    instanceFromJavaCodec(new LongCodec(), new BsonInt64(_: java.lang.Long)).asInstanceOf[BsonEncoder[Long]]
+
+  implicit val objectIdBsonEncoder: BsonEncoder[types.ObjectId] =
+    instanceFromJavaCodec(new ObjectIdCodec(), new BsonObjectId(_))
+
+  implicit val instantBsonEncoder: BsonEncoder[Instant] = instanceFromJavaCodec(new InstantCodec())
 
   implicit def encodeOption[A](implicit encA: BsonEncoder[A]): BsonEncoder[Option[A]] =
     new BsonEncoder[Option[A]] {
-      override def toBsonValue(aOpt: Option[A]): BsonValue =
-        aOpt match {
-          case Some(a) => encA.toBsonValue(a)
-          case None    => BsonNull.VALUE
-        }
+      override def unsafeToBsonValue(aOpt: Option[A]): BsonValue =
+        aOpt.fold[BsonValue](BsonNull.VALUE)(encA.unsafeToBsonValue)
 
-      override def bsonEncode(writer: BsonWriter, aOpt: Option[A], encoderContext: EncoderContext): Unit =
-        aOpt match {
-          case Some(a) => encA.bsonEncode(writer, a, encoderContext)
-          case None    => writer.writeNull()
-        }
+      override def unsafeBsonEncode(writer: BsonWriter, aOpt: Option[A], encoderContext: EncoderContext): Unit =
+        aOpt.fold(writer.writeNull())(encA.unsafeBsonEncode(writer, _, encoderContext))
     }
 
-  implicit def encodeSeq[L[_] <: Seq[_], A](implicit encA: BsonEncoder[A]): BsonEncoder[L[A]] =
+  implicit def arrayBsonEncoder[A](implicit encA: BsonEncoder[A]): BsonEncoder[Array[A]] =
+    instanceFromJavaCodec(new JavaEncoder[Array[A]] {
+      override def encode(writer: BsonWriter, as: Array[A], encoderContext: EncoderContext): Unit = {
+        writer.writeStartArray()
+        val len = as.length
+        var i   = 0
+        while (i < len) {
+          encA.unsafeBsonEncode(writer, as(i), encoderContext)
+          i += 1
+        }
+        writer.writeEndArray()
+      }
+    })
+
+  implicit def seqBsonEncoder[L[_] <: Seq[_], A](implicit encA: BsonEncoder[A]): BsonEncoder[L[A]] =
     instanceFromJavaCodec(new JavaEncoder[L[A]] {
       override def encode(writer: BsonWriter, value: L[A], encoderContext: EncoderContext): Unit = {
         writer.writeStartArray()
         value.toSeq.foreach[Unit] { a =>
-          encA.bsonEncode(writer, a.asInstanceOf[A], encoderContext)
+          encA.unsafeBsonEncode(writer, a.asInstanceOf[A], encoderContext)
         }
         writer.writeEndArray()
       }
@@ -63,8 +83,8 @@ trait BaseBsonEncoder {
     instanceFromJavaCodec(new JavaEncoder[(A, B)] {
       override def encode(writer: BsonWriter, value: (A, B), encoderContext: EncoderContext): Unit = {
         writer.writeStartArray()
-        encA.bsonEncode(writer, value._1, encoderContext)
-        encB.bsonEncode(writer, value._2, encoderContext)
+        encA.unsafeBsonEncode(writer, value._1, encoderContext)
+        encB.unsafeBsonEncode(writer, value._2, encoderContext)
         writer.writeEndArray()
       }
     })
@@ -78,7 +98,7 @@ trait BaseBsonEncoder {
         writer.writeStartDocument()
         kvs.foreach { case (k, v) =>
           writer.writeName(encK(k))
-          encV.bsonEncode(writer, v, encoderContext)
+          encV.unsafeBsonEncode(writer, v, encoderContext)
         }
         writer.writeEndDocument()
       }

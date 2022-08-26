@@ -16,6 +16,9 @@
 
 package mongo4cats.derivation.bson.configured
 
+import org.bson.YoloWriter
+import org.bson.{AbstractBsonWriter, BsonBinaryWriter, BsonWriter}
+
 import java.util.regex.Pattern
 
 /** Configuration allowing customisation of the BSON produced when encoding, or expected when decoding.
@@ -37,7 +40,8 @@ final case class Configuration(
     transformMemberNames: String => String,
     transformConstructorNames: String => String,
     useDefaults: Boolean,
-    discriminator: Option[String]
+    discriminator: Option[String],
+    yoloMode: Boolean = false
 ) {
   def withSnakeCaseMemberNames: Configuration = copy(
     transformMemberNames = Configuration.snakeCaseTransformation
@@ -57,6 +61,10 @@ final case class Configuration(
 
   def withDefaults: Configuration                             = copy(useDefaults = true)
   def withDiscriminator(discriminator: String): Configuration = copy(discriminator = Some(discriminator))
+
+  def mayOptimizeWriter(writer: BsonWriter): BsonWriter =
+    if (yoloMode && writer.isInstanceOf[BsonBinaryWriter]) YoloWriter.from(writer.asInstanceOf[BsonBinaryWriter])
+    else writer
 }
 
 object Configuration {

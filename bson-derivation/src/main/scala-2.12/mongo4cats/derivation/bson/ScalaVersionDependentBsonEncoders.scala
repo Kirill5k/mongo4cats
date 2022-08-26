@@ -30,7 +30,7 @@ trait ScalaVersionDependentBsonEncoders {
     instanceFromJavaCodec(new JavaEncoder[L[A]] {
       override def encode(writer: BsonWriter, value: L[A], encoderContext: EncoderContext): Unit = {
         writer.writeStartArray()
-        value.iterator.foreach(a => encA.bsonEncode(writer, a.asInstanceOf[A], encoderContext))
+        value.iterator.foreach(a => encA.unsafeBsonEncode(writer, a.asInstanceOf[A], encoderContext))
         writer.writeEndArray()
       }
     })

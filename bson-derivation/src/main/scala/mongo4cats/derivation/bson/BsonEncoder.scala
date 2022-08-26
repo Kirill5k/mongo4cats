@@ -16,37 +16,56 @@
 
 package mongo4cats.derivation.bson
 
+import cats.syntax.all._
 import cats.Contravariant
 import mongo4cats.AsJava
+import mongo4cats.derivation.bson.BsonEncoder.dummyRoot
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson._
 
 /** A type class that provides a conversion from a value of type `A` to a [[BsonValue]] value. */
 trait BsonEncoder[A] extends Serializable with AsJava { self =>
 
-  /** Convert a value to BsonValue. */
-  def toBsonValue(a: A): BsonValue
+  def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit
 
-  def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit
+  /** Convert a value to BsonValue. */
+  def unsafeToBsonValue(a: A): BsonValue = {
+    println(s"Default Slow unsafeToBsonValue(): ${a}")
+    val bsonDocument = new BsonDocument(1)
+    val writer       = new BsonDocumentWriter(bsonDocument)
+    writer.writeStartDocument()
+    writer.writeName(dummyRoot)
+    unsafeBsonEncode(writer, a, bsonEncoderContextSingleton)
+    // writer.writeEndDocument()
+    bsonDocument.get(dummyRoot)
+  }
+
+  def safeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Either[Throwable, Unit] =
+    Either.catchNonFatal(unsafeBsonEncode(writer, a, encoderContext))
+
+  def safeToBsonValue(a: A): Either[Throwable, BsonValue] =
+    Either.catchNonFatal(unsafeToBsonValue(a))
 
   /** Create a new [[BsonEncoder]] by applying a function to a value of type `B` before encoding as an `A`. */
   final def contramap[B](f: B => A): BsonEncoder[B] =
     new BsonEncoder[B] {
-      override def toBsonValue(b: B): BsonValue =
-        self.toBsonValue(f(b))
+      override def unsafeToBsonValue(b: B): BsonValue =
+        self.unsafeToBsonValue(f(b))
 
-      override def bsonEncode(writer: BsonWriter, b: B, encoderContext: EncoderContext): Unit =
-        self.bsonEncode(writer, f(b), encoderContext)
+      override def unsafeBsonEncode(writer: BsonWriter, b: B, encoderContext: EncoderContext): Unit =
+        self.unsafeBsonEncode(writer, f(b), encoderContext)
     }
 
   /** Create a new [[BsonEncoder]] by applying a function to the output of this one.
     */
   final def mapBsonValue(f: BsonValue => BsonValue): BsonEncoder[A] =
     new BsonEncoder[A] {
-      override def toBsonValue(a: A): BsonValue = f(self.toBsonValue(a))
+      override def unsafeToBsonValue(a: A): BsonValue = f(self.unsafeToBsonValue(a))
 
-      override def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-        bsonValueCodecSingleton.encode(writer, toBsonValue(a), encoderContext)
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
+        val bsonValue = unsafeToBsonValue(a)
+        bsonValueCodecSingleton.encode(writer, bsonValue, encoderContext)
+      }
     }
 }
 
@@ -56,26 +75,23 @@ object BsonEncoder {
 
   def instanceWithBsonValue[A](f: A => BsonValue): BsonEncoder[A] =
     new BsonEncoder[A] {
-      override def toBsonValue(a: A): BsonValue = f(a)
+      override def unsafeToBsonValue(a: A): BsonValue = f(a)
 
-      override def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-        bsonValueCodecSingleton.encode(writer, toBsonValue(a), encoderContext)
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+        bsonValueCodecSingleton.encode(writer, unsafeToBsonValue(a), encoderContext)
     }
 
-  private val dummyRoot = "d"
-  def instanceFromJavaCodec[A](javaEncoder: org.bson.codecs.Encoder[A]): BsonEncoder[A] =
+  val dummyRoot = "d"
+  def instanceFromJavaCodec[A](javaEncoder: org.bson.codecs.Encoder[A], toBsonValueOpt: A => BsonValue = null): BsonEncoder[A] =
     new BsonEncoder[A] {
-      override def toBsonValue(a: A): BsonValue = {
-        val bsonDocument = new BsonDocument(1)
-        val writer       = new BsonDocumentWriter(bsonDocument)
-        writer.writeStartDocument()
-        writer.writeName(dummyRoot)
-        javaEncoder.encode(writer, a, bsonEncoderContextSingleton)
-        // writer.writeEndDocument()
-        bsonDocument.get(dummyRoot)
-      }
+      val toBson: A => BsonValue =
+        if (toBsonValueOpt == null) super.unsafeToBsonValue
+        else toBsonValueOpt
 
-      override def bsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+      override def unsafeToBsonValue(a: A): BsonValue =
+        toBson(a)
+
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
         javaEncoder.encode(writer, a, encoderContext)
     }
 
@@ -83,6 +99,20 @@ object BsonEncoder {
     new Contravariant[BsonEncoder] {
       final def contramap[A, B](e: BsonEncoder[A])(f: B => A): BsonEncoder[B] = e.contramap(f)
     }
+}
+
+trait BsonDocumentEncoder[A] extends BsonEncoder[A] {
+
+  override def unsafeToBsonValue(a: A): BsonDocument = ???
+  // super.unsafeToBsonValue(a).asInstanceOf[BsonDocument]
+
+  override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
+    writer.writeStartDocument()
+    unsafeFieldsBsonEncode(writer, a, encoderContext)
+    writer.writeEndDocument()
+  }
+
+  def unsafeFieldsBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit
 }
 
 trait JavaEncoder[A] extends org.bson.codecs.Encoder[A] {
