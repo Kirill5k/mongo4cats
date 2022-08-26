@@ -63,7 +63,7 @@ private[mongo4cats] object syntax {
       }
 
     def stream[F[_]: Async]: Stream[F, T] =
-      mkStream(Queue.unbounded)
+      boundedStream(1024)
 
     def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
       mkStream(Queue.bounded(capacity))

@@ -12,14 +12,14 @@ Indexes support efficient execution of queries in MongoDB as well as allow effic
 The simplest one would be calling `createIndex` method and passing defined index specification object:
 
 ```scala
-import mongo4cats.collection.operations.Index
+import mongo4cats.operations.Index
 
 val result: IO[String] = collection.createIndex(Index.ascending("field"))
 ```
 To create a compound index, multiple specifications can be combined together:
 
 ```scala
-import mongo4cats.collection.operations.Index
+import mongo4cats.operations.Index
 
 val compoundIndex = Index.ascending("field1").descending("field2")
 
@@ -31,8 +31,8 @@ val compoundIndex = index1.combinedWith(index2)
 If some additional configuration required, `createIndex` has an overloaded variant which accepts options object:
 
 ```scala
-import mongo4cats.collection.operations.Index
-import mongo4cats.collection.IndexOptions
+import mongo4cats.operations.Index
+import mongo4cats.models.collection.IndexOptions
 
 val index = Index.ascending("name", "email")
 val options = IndexOptions().unique(true)

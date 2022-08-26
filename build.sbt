@@ -141,7 +141,7 @@ val examples = project
 
 val docs = project
   .in(file("docs"))
-  .dependsOn(core, circe, embedded)
+  .dependsOn(core, circe, embedded, zio, `zio-embedded`)
   .enablePlugins(MicrositesPlugin)
   .settings(noPublish)
   .settings(commonSettings)

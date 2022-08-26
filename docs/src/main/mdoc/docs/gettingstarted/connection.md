@@ -14,17 +14,22 @@ There are multiple ways of creating a client:
 
 ```scala
 import cats.effect.IO
+import mongo4cats.models.client._
 import mongo4cats.client._
 
 // From a connection string
-val client = MongoClient.fromConnectionString[IO]("mongodb://localhost:27017")
+val clientFromConnString = MongoClient.fromConnectionString[IO]("mongodb://localhost:27017")
 
-// By providing ServerAddress object
-val client = MongoClient.fromServerAddress[IO](ServerAddress("localhost", 27017))
+// By providing ServerAddress
+val clientFromServerAddress = MongoClient.fromServerAddress[IO](ServerAddress("localhost", 27017))
+
+// By providing Connection
+val connection = MongoConnection("localhost", 27017, Some(MongoCredential("username", "password")), MongoConnectionType.Srv)
+val clientFromConnection = MongoClient.fromConnection(connection)
 
 // By providing custom MongoClientSettings object
 val settings = MongoClientSettings.builder.build()
-val client = MongoClient.create[IO](settings)
+val clientFromSettings = MongoClient.create[IO](settings)
 ```
 
 Creating a client through any of the available constructor methods in its companion object returns a `Resource[F, MongoClient[F]]`, meaning that the connection to the MongoDB server will be disposed after its use.
