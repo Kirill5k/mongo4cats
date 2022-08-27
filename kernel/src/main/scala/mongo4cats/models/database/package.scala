@@ -16,12 +16,28 @@
 
 package mongo4cats.models
 
-import com.mongodb.client.model.{CreateCollectionOptions => JCreateCollectionOptions}
+import com.mongodb.client.model.{Collation => JCollation, CreateCollectionOptions => JCreateCollectionOptions}
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 package object database {
-  type CreateCollectionOptions = JCreateCollectionOptions
+  type Collation = JCollation
+  object Collation {
+    def builder: JCollation.Builder = JCollation.builder()
+  }
 
+  type CreateCollectionOptions = JCreateCollectionOptions
   object CreateCollectionOptions {
-    def apply(): CreateCollectionOptions = new JCreateCollectionOptions()
+    def apply(
+        maxDocuments: Long = 0,
+        capped: Boolean = false,
+        sizeInBytes: Long = 0,
+        expireAfter: FiniteDuration = Duration.Zero
+    ): CreateCollectionOptions = new JCreateCollectionOptions()
+      .capped(capped)
+      .maxDocuments(maxDocuments)
+      .sizeInBytes(sizeInBytes)
+      .expireAfter(expireAfter.toMillis, TimeUnit.MILLISECONDS)
   }
 }
