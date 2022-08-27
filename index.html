@@ -3,8 +3,8 @@
 <p><a href="http://search.maven.org/#search%7Cga%7C1%mongo4cats-core"><img src="https://img.shields.io/maven-central/v/io.github.kirill5k/mongo4cats-core_2.13.svg" alt="Maven Central" /></a>
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a></p>
 
-<p>MongoDB Java client wrapper compatible with <a href="https://typelevel.org/cats-effect/">Cats-Effect</a> ans <a href="http://fs2.io/">Fs2</a>.
-Available for Scala 2.12, 2.13 and 3.0.</p>
+<p>MongoDB Java client wrapper compatible with <a href="https://typelevel.org/cats-effect/">Cats-Effect</a>/<a href="http://fs2.io/">Fs2</a> and ZIO.
+Available for Scala 2.12, 2.13 and 3.1.</p>
 
 <p>Documentation is available in the <a href="https://kirill5k.github.io/mongo4cats/docs/">documentation</a> section.</p>
 
@@ -13,15 +13,25 @@ Available for Scala 2.12, 2.13 and 3.0.</p>
 <p>Add this to your <code class="language-plaintext highlighter-rouge">build.sbt</code> (depends on <code class="language-plaintext highlighter-rouge">cats-effect</code> and <code class="language-plaintext highlighter-rouge">FS2</code>):</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-core"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-circe"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span><span class="c1">// circe support</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-embedded"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span> <span class="c1">// embedded-mongodb</span>
 </code></pre></div></div>
 
-<h3 id="quick-start">Quick start</h3>
+<p>Alternatively, for <code class="language-plaintext highlighter-rouge">ZIO 2</code>, add this:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio-embedded"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+</code></pre></div></div>
+
+<p>Optional support for <code class="language-plaintext highlighter-rouge">circe</code> can be enabled with:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-circe"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+</code></pre></div></div>
+
+<h3 id="quick-start-with-cats-effect">Quick start with Cats Effect</h3>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect.</span><span class="o">{</span><span class="nc">IO</span><span class="o">,</span> <span class="nc">IOApp</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">mongo4cats.client.MongoClient</span>
-<span class="k">import</span> <span class="nn">mongo4cats.operations.Filter</span>
+<span class="k">import</span> <span class="nn">mongo4cats.operations.</span><span class="o">{</span><span class="nc">Filter</span><span class="o">,</span> <span class="nc">Projection</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">mongo4cats.bson.Document</span>
 <span class="k">import</span> <span class="nn">mongo4cats.bson.syntax._</span>
 
@@ -30,11 +40,12 @@ Available for Scala 2.12, 2.13 and 3.0.</p>
   <span class="k">override</span> <span class="k">val</span> <span class="nv">run</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
     <span class="nv">MongoClient</span><span class="o">.</span><span class="py">fromConnectionString</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">"mongodb://localhost:27017"</span><span class="o">).</span><span class="py">use</span> <span class="o">{</span> <span class="n">client</span> <span class="k">=&gt;</span>
       <span class="k">for</span> <span class="o">{</span>
-        <span class="n">db</span>   <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"testdb"</span><span class="o">)</span>
+        <span class="n">db</span>   <span class="k">&lt;-</span> <span class="nv">client</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"my-db"</span><span class="o">)</span>
         <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">db</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)</span>
         <span class="k">_</span>    <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertMany</span><span class="o">((</span><span class="mi">0</span> <span class="n">to</span> <span class="mi">100</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"name"</span> <span class="o">:=</span> <span class="n">s</span><span class="s">"doc-$i"</span><span class="o">,</span> <span class="s">"index"</span> <span class="o">:=</span> <span class="n">i</span><span class="o">)))</span>
         <span class="n">docs</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span>
           <span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="nv">Filter</span><span class="o">.</span><span class="py">gte</span><span class="o">(</span><span class="s">"index"</span><span class="o">,</span> <span class="mi">10</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="nv">Filter</span><span class="o">.</span><span class="py">regex</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"doc-[1-9]0"</span><span class="o">))</span>
+          <span class="o">.</span><span class="py">projection</span><span class="o">(</span><span class="nv">Projection</span><span class="o">.</span><span class="py">excludeId</span><span class="o">)</span>
           <span class="o">.</span><span class="py">sortByDesc</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span>
           <span class="o">.</span><span class="py">limit</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
           <span class="o">.</span><span class="py">all</span>
@@ -42,7 +53,36 @@ Available for Scala 2.12, 2.13 and 3.0.</p>
       <span class="o">}</span> <span class="nf">yield</span> <span class="o">()</span>
     <span class="o">}</span>
 <span class="o">}</span>
+</code></pre></div></div>
 
+<h3 id="quick-start-with-zio">Quick start with ZIO</h3>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">mongo4cats.bson.Document</span>
+<span class="k">import</span> <span class="nn">mongo4cats.bson.syntax._</span>
+<span class="k">import</span> <span class="nn">mongo4cats.operations.</span><span class="o">{</span><span class="nc">Filter</span><span class="o">,</span> <span class="nc">Projection</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">mongo4cats.zio.</span><span class="o">{</span><span class="nc">ZMongoClient</span><span class="o">,</span> <span class="nc">ZMongoCollection</span><span class="o">,</span> <span class="nc">ZMongoDatabase</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">zio._</span>
+
+<span class="k">object</span> <span class="nc">Zio</span> <span class="k">extends</span> <span class="nc">ZIOAppDefault</span> <span class="o">{</span>
+
+  <span class="k">val</span> <span class="nv">client</span>     <span class="k">=</span> <span class="nv">ZLayer</span><span class="o">.</span><span class="py">scoped</span><span class="o">[</span><span class="kt">Any</span><span class="o">](</span><span class="nv">ZMongoClient</span><span class="o">.</span><span class="py">fromConnectionString</span><span class="o">(</span><span class="s">"mongodb://localhost:27017"</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">database</span>   <span class="k">=</span> <span class="nv">ZLayer</span><span class="o">.</span><span class="py">fromZIO</span><span class="o">(</span><span class="nv">ZIO</span><span class="o">.</span><span class="py">serviceWithZIO</span><span class="o">[</span><span class="kt">ZMongoClient</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">getDatabase</span><span class="o">(</span><span class="s">"my-db"</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">collection</span> <span class="k">=</span> <span class="nv">ZLayer</span><span class="o">.</span><span class="py">fromZIO</span><span class="o">(</span><span class="nv">ZIO</span><span class="o">.</span><span class="py">serviceWithZIO</span><span class="o">[</span><span class="kt">ZMongoDatabase</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">getCollection</span><span class="o">(</span><span class="s">"docs"</span><span class="o">)))</span>
+
+  <span class="k">val</span> <span class="nv">program</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+    <span class="n">coll</span> <span class="k">&lt;-</span> <span class="nv">ZIO</span><span class="o">.</span><span class="py">service</span><span class="o">[</span><span class="kt">ZMongoCollection</span><span class="o">[</span><span class="kt">Document</span><span class="o">]]</span>
+    <span class="k">_</span>    <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">insertMany</span><span class="o">((</span><span class="mi">0</span> <span class="n">to</span> <span class="mi">100</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Document</span><span class="o">(</span><span class="s">"name"</span> <span class="o">:=</span> <span class="n">s</span><span class="s">"doc-$i"</span><span class="o">,</span> <span class="s">"index"</span> <span class="o">:=</span> <span class="n">i</span><span class="o">)))</span>
+    <span class="n">docs</span> <span class="k">&lt;-</span> <span class="nv">coll</span><span class="o">.</span><span class="py">find</span>
+      <span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="nv">Filter</span><span class="o">.</span><span class="py">gte</span><span class="o">(</span><span class="s">"index"</span><span class="o">,</span> <span class="mi">10</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="nv">Filter</span><span class="o">.</span><span class="py">regex</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"doc-[1-9]0"</span><span class="o">))</span>
+      <span class="o">.</span><span class="py">projection</span><span class="o">(</span><span class="nv">Projection</span><span class="o">.</span><span class="py">excludeId</span><span class="o">)</span>
+      <span class="o">.</span><span class="py">sortByDesc</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span>
+      <span class="o">.</span><span class="py">limit</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
+      <span class="o">.</span><span class="py">all</span>
+    <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">Console</span><span class="o">.</span><span class="py">printLine</span><span class="o">(</span><span class="nv">docs</span><span class="o">.</span><span class="py">mkString</span><span class="o">(</span><span class="s">"[\n"</span><span class="o">,</span> <span class="s">",\n"</span><span class="o">,</span> <span class="s">"]"</span><span class="o">))</span>
+  <span class="o">}</span> <span class="nf">yield</span> <span class="o">()</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="nf">run</span> <span class="k">=</span> <span class="nv">program</span><span class="o">.</span><span class="py">provide</span><span class="o">(</span><span class="n">client</span><span class="o">,</span> <span class="n">database</span><span class="o">,</span> <span class="n">collection</span><span class="o">)</span>
+<span class="o">}</span>
 </code></pre></div></div>
 
 <p>If you find this library useful, consider giving it a ⭐!</p>
