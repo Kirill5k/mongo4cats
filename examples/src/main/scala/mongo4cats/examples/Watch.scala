@@ -32,7 +32,7 @@ object Watch extends IOApp.Simple {
         watchStream  = coll.watch.stream
         insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" := s"doc-$i")))
         updates <- watchStream.concurrently(insertStream).take(10).compile.toList
-        _       <- IO.println(updates.mkString("[\n", ",\n", "]"))
+        _       <- IO.println(updates.mkString("[\n", ",\n", "\n]"))
       } yield ()
     }
 }

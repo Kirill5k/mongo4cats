@@ -29,8 +29,13 @@ import com.mongodb.client.model.{
   InsertOneOptions => JInsertOneOptions,
   RenameCollectionOptions => JRenameCollectionOptions,
   ReplaceOptions => JReplaceOptions,
+  ReturnDocument,
   UpdateOptions => JUpdateOptions
 }
+import mongo4cats.operations.Sort
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 package object collection {
 
@@ -38,8 +43,10 @@ package object collection {
   object BulkWriteOptions {
     def apply(
         ordered: Boolean = true,
-        bypassDocumentValidation: Boolean = false
-    ): BulkWriteOptions = new JBulkWriteOptions().ordered(ordered).bypassDocumentValidation(bypassDocumentValidation)
+        bypassDocumentValidation: Boolean = true,
+        comment: Option[String] = None
+    ): BulkWriteOptions =
+      new JBulkWriteOptions().ordered(ordered).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
 
   type RenameCollectionOptions = JRenameCollectionOptions
@@ -49,56 +56,116 @@ package object collection {
 
   type IndexOptions = JIndexOptions
   object IndexOptions {
-    def apply(): IndexOptions = new JIndexOptions()
+    def apply(
+        background: Boolean = false,
+        unique: Boolean = false,
+        sparse: Boolean = false,
+        hidden: Boolean = false
+    ): IndexOptions = new JIndexOptions().background(background).unique(unique).sparse(sparse).hidden(hidden)
   }
 
   type UpdateOptions = JUpdateOptions
   object UpdateOptions {
-    def apply(): UpdateOptions = new JUpdateOptions()
+    def apply(
+        upsert: Boolean = false,
+        bypassDocumentValidation: Boolean = true,
+        comment: Option[String] = None
+    ): UpdateOptions = new JUpdateOptions().upsert(upsert).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
 
   type ReplaceOptions = JReplaceOptions
   object ReplaceOptions {
-    def apply(): ReplaceOptions = new JReplaceOptions()
+    def apply(
+        upsert: Boolean = false,
+        bypassDocumentValidation: Boolean = true,
+        comment: Option[String] = None
+    ): ReplaceOptions = new JReplaceOptions().upsert(upsert).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
 
   type DropIndexOptions = JDropIndexOptions
   object DropIndexOptions {
-    def apply(): DropIndexOptions = new JDropIndexOptions()
+    def apply(maxTime: FiniteDuration = Duration.Zero): DropIndexOptions =
+      new JDropIndexOptions().maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS)
   }
 
   type FindOneAndReplaceOptions = JFindOneAndReplaceOptions
   object FindOneAndReplaceOptions {
-    def apply(): FindOneAndReplaceOptions = new JFindOneAndReplaceOptions()
+    def apply(
+        upsert: Boolean = false,
+        maxTime: FiniteDuration = Duration.Zero,
+        returnDocument: ReturnDocument = ReturnDocument.BEFORE,
+        bypassDocumentValidation: Boolean = true,
+        sort: Option[Sort] = None,
+        comment: Option[String] = None
+    ): FindOneAndReplaceOptions = new JFindOneAndReplaceOptions()
+      .upsert(upsert)
+      .maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS)
+      .returnDocument(returnDocument)
+      .bypassDocumentValidation(bypassDocumentValidation)
+      .comment(comment.orNull)
+      .sort(sort.map(_.toBson).orNull)
   }
 
   type DeleteOptions = JDeleteOptions
   object DeleteOptions {
-    def apply(): DeleteOptions = new JDeleteOptions()
+    def apply(comment: Option[String] = None): DeleteOptions = new JDeleteOptions().comment(comment.orNull)
   }
 
   type CountOptions = JCountOptions
   object CountOptions {
-    def apply(): CountOptions = new JCountOptions()
+    def apply(
+        limit: Int = 0,
+        skip: Int = 0,
+        maxTime: FiniteDuration = Duration.Zero,
+        comment: Option[String] = None
+    ): CountOptions = new JCountOptions().limit(limit).skip(skip).maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS).comment(comment.orNull)
   }
 
   type InsertManyOptions = JInsertManyOptions
   object InsertManyOptions {
-    def apply(): InsertManyOptions = new JInsertManyOptions()
+    def apply(
+        ordered: Boolean = true,
+        bypassDocumentValidation: Boolean = true,
+        comment: Option[String] = None
+    ): InsertManyOptions =
+      new JInsertManyOptions().ordered(ordered).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
 
   type InsertOneOptions = JInsertOneOptions
   object InsertOneOptions {
-    def apply(): InsertOneOptions = new JInsertOneOptions()
+    def apply(bypassDocumentValidation: Boolean = true, comment: Option[String] = None): InsertOneOptions =
+      new JInsertOneOptions().bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
 
   type FindOneAndUpdateOptions = JFindOneAndUpdateOptions
   object FindOneAndUpdateOptions {
-    def apply(): FindOneAndUpdateOptions = new JFindOneAndUpdateOptions()
+    def apply(
+        upsert: Boolean = false,
+        returnDocument: ReturnDocument = ReturnDocument.BEFORE,
+        bypassDocumentValidation: Boolean = true,
+        maxTime: FiniteDuration = Duration.Zero,
+        sort: Option[Sort] = None,
+        comment: Option[String] = None
+    ): FindOneAndUpdateOptions =
+      new JFindOneAndUpdateOptions()
+        .upsert(upsert)
+        .returnDocument(returnDocument)
+        .bypassDocumentValidation(bypassDocumentValidation)
+        .maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS)
+        .sort(sort.map(_.toBson).orNull)
+        .comment(comment.orNull)
   }
 
   type FindOneAndDeleteOptions = JFindOneAndDeleteOptions
   object FindOneAndDeleteOptions {
-    def apply(): FindOneAndDeleteOptions = new JFindOneAndDeleteOptions()
+    def apply(
+        maxTime: FiniteDuration = Duration.Zero,
+        sort: Option[Sort] = None,
+        comment: Option[String] = None
+    ): FindOneAndDeleteOptions =
+      new JFindOneAndDeleteOptions()
+        .comment(comment.orNull)
+        .maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS)
+        .sort(sort.map(_.toBson).orNull)
   }
 }

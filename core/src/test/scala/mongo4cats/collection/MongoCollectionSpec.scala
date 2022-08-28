@@ -95,6 +95,20 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             }
           }
         }
+
+        "insert a document with options" in {
+          withEmbeddedMongoDatabase { db =>
+            val result = for {
+              coll <- db.getCollection("coll")
+              options = InsertOneOptions(bypassDocumentValidation = true, comment = Some("test"))
+              insertResult <- coll.insertOne(TestData.gbpAccount, options)
+            } yield insertResult
+
+            result.map { result =>
+              result.wasAcknowledged() mustBe true
+            }
+          }
+        }
       }
 
       "insertMany" should {

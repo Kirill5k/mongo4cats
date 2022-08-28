@@ -28,7 +28,7 @@ private[zio] object syntax {
 
   case object MongoEmptyStreamException extends MongoClientException("Stream did not return any elements")
 
-  implicit final class TaskSyntax[T](private val task: Task[Option[T]]) extends AnyVal {
+  implicit final class TaskOptionSyntax[T](private val task: Task[Option[T]]) extends AnyVal {
     def unNone: Task[T] = task.flatMap(v => ZIO.fromEither(v.toRight(MongoEmptyStreamException)))
   }
 

@@ -37,7 +37,7 @@ object Zio extends ZIOAppDefault {
       .sortByDesc("name")
       .limit(5)
       .all
-    _ <- Console.printLine(docs.mkString("[\n", ",\n", "]"))
+    _ <- Console.printLine(docs.mkString("[\n", ",\n", "\n]"))
   } yield ()
 
   override def run = program.provide(client, database, collection)
