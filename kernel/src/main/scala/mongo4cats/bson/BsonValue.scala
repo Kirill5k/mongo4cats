@@ -21,6 +21,7 @@ import scala.util.matching.Regex
 
 sealed abstract class BsonValue {
   def isNull: Boolean
+  def isUndefined: Boolean
   def asInt: Option[Int]
   def asLong: Option[Long]
   def asDouble: Option[Double]
@@ -36,6 +37,7 @@ sealed abstract class BsonValue {
 object BsonValue {
   case object BNull extends BsonValue {
     override def isNull: Boolean                  = true
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -49,6 +51,7 @@ object BsonValue {
   }
   case object BUndefined extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = true
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -62,6 +65,7 @@ object BsonValue {
   }
   case object BMaxKey extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -75,6 +79,7 @@ object BsonValue {
   }
   case object BMinKey extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -88,6 +93,7 @@ object BsonValue {
   }
   final case class BInt32(value: Int) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = Some(value)
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -101,6 +107,7 @@ object BsonValue {
   }
   final case class BInt64(value: Long) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = Some(value)
     override def asDouble: Option[Double]         = None
@@ -114,6 +121,7 @@ object BsonValue {
   }
   final case class BDouble(value: Double) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = Some(value)
@@ -127,6 +135,7 @@ object BsonValue {
   }
   final case class BDateTime(value: Instant) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -140,6 +149,7 @@ object BsonValue {
   }
   final case class BBinary(value: Array[Byte]) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -153,6 +163,7 @@ object BsonValue {
   }
   final case class BBoolean(value: Boolean) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -166,6 +177,7 @@ object BsonValue {
   }
   final case class BDecimal(value: BigDecimal) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -179,6 +191,7 @@ object BsonValue {
   }
   final case class BString(value: String) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -192,6 +205,7 @@ object BsonValue {
   }
   final case class BObjectId(value: ObjectId) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -205,6 +219,7 @@ object BsonValue {
   }
   final case class BDocument(value: Document) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -218,6 +233,7 @@ object BsonValue {
   }
   final case class BArray(value: Iterable[BsonValue]) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None
@@ -231,6 +247,7 @@ object BsonValue {
   }
   final case class BRegex(regex: Regex) extends BsonValue {
     override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
     override def asLong: Option[Long]             = None
     override def asDouble: Option[Double]         = None

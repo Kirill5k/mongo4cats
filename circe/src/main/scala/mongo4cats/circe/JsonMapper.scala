@@ -72,7 +72,27 @@ private[circe] object JsonMapper {
       case BsonValue.BString(value)   => Right(Json.fromString(value))
       case BsonValue.BDouble(value)   => Json.fromDouble(value).toRight(MongoJsonParsingException(s"$value is not a valid double"))
       case BsonValue.BArray(value)    => value.toList.traverse(fromBson).map(Json.fromValues)
-      case BsonValue.BDocument(value) => value.toList.traverse { case (k, v) => fromBson(v).map(k -> _) }.map(Json.fromFields)
-      case value                      => Left(MongoJsonParsingException(s"Cannot map $value bson value to json"))
+      case BsonValue.BDocument(value) =>
+        value.toList
+          .filterNot { case (_, v) => v.isUndefined }
+          .traverse { case (k, v) => fromBson(v).map(k -> _) }
+          .map(Json.fromFields)
+      case value => Left(MongoJsonParsingException(s"Cannot map $value bson value to json"))
+    }
+
+  def fromBsonOpt(bson: BsonValue): Option[Json] =
+    bson match {
+      case BsonValue.BNull            => Some(Json.Null)
+      case BsonValue.BObjectId(value) => Some(Json.obj(idTag -> Json.fromString(value.toHexString)))
+      case BsonValue.BDateTime(value) => Some(Json.obj(dateTag -> Json.fromString(value.toString)))
+      case BsonValue.BInt32(value)    => Some(Json.fromInt(value))
+      case BsonValue.BInt64(value)    => Some(Json.fromLong(value))
+      case BsonValue.BBoolean(value)  => Some(Json.fromBoolean(value))
+      case BsonValue.BDecimal(value)  => Some(Json.fromBigDecimal(value))
+      case BsonValue.BString(value)   => Some(Json.fromString(value))
+      case BsonValue.BDouble(value)   => Json.fromDouble(value)
+      case BsonValue.BArray(value)    => Some(Json.fromValues(value.toList.flatMap(fromBsonOpt)))
+      case BsonValue.BDocument(value) => Some(Json.fromFields(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }))
+      case _                          => None
     }
 }

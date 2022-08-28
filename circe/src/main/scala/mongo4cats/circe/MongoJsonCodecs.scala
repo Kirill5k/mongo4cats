@@ -19,8 +19,8 @@ package mongo4cats.circe
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.Clazz
+import mongo4cats.bson.{BsonValue, BsonValueDecoder, BsonValueEncoder, Document, ObjectId}
 import mongo4cats.bson.syntax._
-import mongo4cats.bson.{BsonValueDecoder, BsonValueEncoder, ObjectId}
 import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
@@ -33,12 +33,18 @@ import scala.util.Try
 final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
 trait MongoJsonCodecs {
+  private val emptyJsonObject = Json.fromJsonObject(JsonObject.empty)
 
   implicit def deriveJsonBsonValueDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
     bson => JsonMapper.fromBson(bson).flatMap(d.decodeJson).toOption
 
   implicit def deriveJsonBsonValueEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
     value => JsonMapper.toBson(e(value))
+
+  implicit val documentEncoder: Encoder[Document] =
+    Encoder.encodeJson.contramap[Document](d => JsonMapper.fromBsonOpt(BsonValue.document(d)).getOrElse(emptyJsonObject))
+  implicit val documentDecoder: Decoder[Document] =
+    Decoder.decodeJson.emap(j => JsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: Encoder[ObjectId] =
     Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(JsonMapper.idTag -> Json.fromString(i.toHexString)))

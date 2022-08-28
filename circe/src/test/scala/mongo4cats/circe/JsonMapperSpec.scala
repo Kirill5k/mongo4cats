@@ -30,6 +30,7 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
 
   val bsonDocument = BsonValue.document(
     Document(
+      "_id"           -> BsonValue.objectId(id),
       "string"        -> BsonValue.string("string"),
       "null"          -> BsonValue.Null,
       "boolean"       -> BsonValue.True,
@@ -40,7 +41,6 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
       "dateInstant"   -> BsonValue.instant(ts),
       "dateEpoch"     -> BsonValue.instant(ts),
       "dateLocalDate" -> BsonValue.instant(Instant.parse("2022-01-01T00:00:00Z")),
-      "id"            -> BsonValue.objectId(id),
       "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2)))
     )
   )
@@ -49,6 +49,7 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
     "toBson" should {
       "accurately convert json to bson" in {
         val jsonObject = Json.obj(
+          "_id"           -> Json.obj("$oid" -> Json.fromString(id.toHexString)),
           "string"        -> Json.fromString("string"),
           "null"          -> Json.Null,
           "boolean"       -> Json.fromBoolean(true),
@@ -59,7 +60,6 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
           "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
           "dateEpoch"     -> Json.obj("$date" -> Json.fromLong(ts.toEpochMilli)),
           "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01")),
-          "id"            -> Json.obj("$oid" -> Json.fromString(id.toHexString)),
           "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
         )
 
@@ -69,6 +69,7 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
       "accurately convert bson to json" in {
         JsonMapper.fromBson(bsonDocument) mustBe Right(
           Json.obj(
+            "_id"           -> Json.obj("$oid" -> Json.fromString(id.toHexString)),
             "string"        -> Json.fromString("string"),
             "null"          -> Json.Null,
             "boolean"       -> Json.fromBoolean(true),
@@ -79,7 +80,6 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
             "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateEpoch"     -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01T00:00:00Z")),
-            "id"            -> Json.obj("$oid" -> Json.fromString(id.toHexString)),
             "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
           )
         )
