@@ -21,7 +21,7 @@ import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.models.client._
 import mongo4cats.zio.syntax._
-import zio.{Scope, Task, ZIO}
+import zio.{RIO, Scope, Task, ZIO}
 
 final private class ZClientSessionLive(
     val underlying: ClientSession
@@ -51,13 +51,13 @@ final private class ZMongoClientLive(
 }
 
 object ZMongoClient extends AsJava {
-  def fromConnection(connection: MongoConnection): ZIO[Scope, Throwable, ZMongoClient] =
+  def fromConnection(connection: MongoConnection): RIO[Scope, ZMongoClient] =
     fromConnectionString(connection.toString)
 
-  def fromConnectionString(connectionString: String): ZIO[Scope, Throwable, ZMongoClient] =
+  def fromConnectionString(connectionString: String): RIO[Scope, ZMongoClient] =
     mkClient(MongoClients.create(connectionString))
 
-  def fromServerAddress(serverAddresses: ServerAddress*): ZIO[Scope, Throwable, ZMongoClient] =
+  def fromServerAddress(serverAddresses: ServerAddress*): RIO[Scope, ZMongoClient] =
     create {
       MongoClientSettings.builder
         .applyToClusterSettings { builder =>
@@ -66,12 +66,12 @@ object ZMongoClient extends AsJava {
         .build()
     }
 
-  def create(settings: MongoClientSettings): ZIO[Scope, Throwable, ZMongoClient] =
+  def create(settings: MongoClientSettings): RIO[Scope, ZMongoClient] =
     create(settings, null)
 
-  def create(settings: MongoClientSettings, driver: MongoDriverInformation): ZIO[Scope, Throwable, ZMongoClient] =
+  def create(settings: MongoClientSettings, driver: MongoDriverInformation): RIO[Scope, ZMongoClient] =
     mkClient(MongoClients.create(settings, driver))
 
-  private def mkClient(client: => MongoClient): ZIO[Scope, Throwable, ZMongoClient] =
+  private def mkClient(client: => MongoClient): RIO[Scope, ZMongoClient] =
     ZIO.fromAutoCloseable(ZIO.attempt(client)).map(new ZMongoClientLive(_))
 }

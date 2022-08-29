@@ -21,9 +21,13 @@ import com.mongodb.{
   ClientSessionOptions => JClientSessionOptions,
   MongoClientSettings => JMongoClientSettings,
   MongoDriverInformation => JMongoDriverInformation,
+  ReadConcern,
+  ReadPreference,
   ServerAddress => JServerAddress,
-  TransactionOptions => JTransactionOptions
+  TransactionOptions => JTransactionOptions,
+  WriteConcern
 }
+import mongo4cats.codecs.CodecRegistry
 
 package object client {
   type ServerAddress = JServerAddress
@@ -36,6 +40,22 @@ package object client {
   object MongoClientSettings {
     def builder: JMongoClientSettings.Builder                                = JMongoClientSettings.builder()
     def builder(settings: MongoClientSettings): JMongoClientSettings.Builder = JMongoClientSettings.builder(settings)
+
+    def apply(
+        readPreference: ReadPreference = ReadPreference.primary(),
+        writeConcern: WriteConcern = WriteConcern.ACKNOWLEDGED,
+        retryWrites: Boolean = true,
+        retryReads: Boolean = true,
+        readConcern: ReadConcern = ReadConcern.DEFAULT,
+        codecRegistry: CodecRegistry = CodecRegistry.Default
+    ): JMongoClientSettings = builder
+      .readPreference(readPreference)
+      .writeConcern(writeConcern)
+      .retryWrites(retryWrites)
+      .retryReads(retryReads)
+      .readConcern(readConcern)
+      .codecRegistry(codecRegistry)
+      .build()
   }
 
   type MongoDriverInformation = JMongoDriverInformation

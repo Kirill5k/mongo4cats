@@ -24,9 +24,14 @@ import zio._
 
 object Zio extends ZIOAppDefault {
 
-  val client     = ZLayer.scoped[Any](ZMongoClient.fromConnectionString("mongodb://localhost:27017"))
-  val database   = ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("my-db")))
-  val collection = ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoDatabase](_.getCollection("docs")))
+  val client: TaskLayer[ZMongoClient] =
+    ZLayer.scoped[Any](ZMongoClient.fromConnectionString("mongodb://localhost:27017"))
+
+  val database: RLayer[ZMongoClient, ZMongoDatabase] =
+    ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("my-db")))
+
+  val collection: RLayer[ZMongoDatabase, ZMongoCollection[Document]] =
+    ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoDatabase](_.getCollection("docs")))
 
   val program = for {
     coll <- ZIO.service[ZMongoCollection[Document]]
