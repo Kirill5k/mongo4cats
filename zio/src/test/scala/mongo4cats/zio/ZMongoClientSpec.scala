@@ -84,7 +84,7 @@ object ZMongoClientSpec extends ZIOSpecDefault with EmbeddedMongo {
               db1 <- client.getDatabase("db1")
               _   <- db1.createCollection("coll")
               dbs <- client.listDatabases
-            } yield assert(dbs.flatMap(_.getString("name")))(hasSameElements(List("local", "admin", "db1")))
+            } yield assert(dbs.flatMap(_.getString("name")))(hasSubset(List("local", "admin", "db1")))
           }
       }
     },
