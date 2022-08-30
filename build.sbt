@@ -20,6 +20,7 @@ ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("18"))
+ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
