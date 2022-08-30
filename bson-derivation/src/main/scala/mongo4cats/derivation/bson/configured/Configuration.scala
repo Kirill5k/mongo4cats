@@ -16,8 +16,8 @@
 
 package mongo4cats.derivation.bson.configured
 
-import org.bson.YoloWriter
-import org.bson.{AbstractBsonWriter, BsonBinaryWriter, BsonWriter}
+import cats.syntax.all._
+import org.bson.{AbstractBsonReader, BsonBinaryReader, BsonBinaryWriter, BsonWriter, YoloReader, YoloWriter}
 
 import java.util.regex.Pattern
 
@@ -37,39 +37,38 @@ import java.util.regex.Pattern
   *   in transformed constructor names, an exception will be thrown during derivation (runtime)
   */
 final case class Configuration(
-    transformMemberNames: String => String,
-    transformConstructorNames: String => String,
-    useDefaults: Boolean,
-    discriminator: Option[String],
-    yoloMode: Boolean = false
+    transformMemberNames: String => String = identity[String],
+    transformConstructorNames: String => String = identity[String],
+    useDefaults: Boolean = false,
+    discriminator: Option[String] = none,
+    yoloWriteMode: Boolean = false,
+    yoloReadMode: Boolean = false
 ) {
-  def withSnakeCaseMemberNames: Configuration = copy(
-    transformMemberNames = Configuration.snakeCaseTransformation
-  )
+  def withSnakeCaseMemberNames                 = copy(transformMemberNames = Configuration.snakeCaseTransformation)
+  def withKebabCaseMemberNames                 = copy(transformMemberNames = Configuration.kebabCaseTransformation)
+  def withSnakeCaseConstructorNames            = copy(transformConstructorNames = Configuration.snakeCaseTransformation)
+  def withKebabCaseConstructorNames            = copy(transformConstructorNames = Configuration.kebabCaseTransformation)
+  def withDefaults                             = copy(useDefaults = true)
+  def withDiscriminator(discriminator: String) = copy(discriminator = Some(discriminator))
 
-  def withKebabCaseMemberNames: Configuration = copy(
-    transformMemberNames = Configuration.kebabCaseTransformation
-  )
+  // def mayOptimizeWriter(writer: BsonWriter): BsonWriter =
+  //  if (yoloWriteMode && writer.isInstanceOf[BsonBinaryWriter]) YoloWriter(writer.asInstanceOf[BsonBinaryWriter])
+  //  else writer
 
-  def withSnakeCaseConstructorNames: Configuration = copy(
-    transformConstructorNames = Configuration.snakeCaseTransformation
-  )
+  def mayOptimizeWriter: BsonWriter => BsonWriter =
+    if (yoloWriteMode) // First `if` is resolved at compile time.
+      writer => if (writer.isInstanceOf[BsonBinaryWriter]) YoloWriter(writer.asInstanceOf[BsonBinaryWriter]) else writer
+    else identity[BsonWriter]
 
-  def withKebabCaseConstructorNames: Configuration = copy(
-    transformConstructorNames = Configuration.kebabCaseTransformation
-  )
-
-  def withDefaults: Configuration                             = copy(useDefaults = true)
-  def withDiscriminator(discriminator: String): Configuration = copy(discriminator = Some(discriminator))
-
-  def mayOptimizeWriter(writer: BsonWriter): BsonWriter =
-    if (yoloMode && writer.isInstanceOf[BsonBinaryWriter]) YoloWriter.from(writer.asInstanceOf[BsonBinaryWriter])
-    else writer
+  def mayOptimizeReader: AbstractBsonReader => AbstractBsonReader =
+    if (yoloReadMode) // First `if` is resolved at compile time.
+      reader => if (reader.isInstanceOf[BsonBinaryReader]) new YoloReader(reader.asInstanceOf[BsonBinaryReader]) else reader
+    else identity[AbstractBsonReader]
 }
 
 object Configuration {
 
-  val default: Configuration       = Configuration(identity, identity, false, None)
+  val default: Configuration       = Configuration()
   private val basePattern: Pattern = Pattern.compile("([A-Z]+)([A-Z][a-z])")
   private val swapPattern: Pattern = Pattern.compile("([a-z\\d])([A-Z])")
 

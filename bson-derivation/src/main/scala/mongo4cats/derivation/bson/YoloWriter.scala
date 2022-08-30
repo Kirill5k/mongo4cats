@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-//package mongo4cats.derivation.bson
 package org.bson
 
 import org.bson.AbstractBsonWriter.State
@@ -25,19 +24,11 @@ import org.bson.types.{Decimal128, ObjectId}
 
 import java.util
 
-class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWriterSettings) {
+final case class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWriterSettings) {
   private val bsonOutput                       = _writer.getBsonOutput
   private var markk: YoloMark                  = null
   private var currentName: String              = null
-  private var _state: AbstractBsonWriter.State = null
-  // private val maxDocumentSizeStack             = new util.Stack[Integer]
-
-  override protected def setState(state: AbstractBsonWriter.State): Unit =
-    // println(s"Set State: $state")
-    _state = state
-
-  override protected def getState: AbstractBsonWriter.State =
-    _state
+  private var _state: AbstractBsonWriter.State = _writer.getState
 
   override def flush(): Unit = ()
 
@@ -55,7 +46,7 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
   // --- doXxx() methods ---
 
   override protected def doWriteStartDocument(): Unit = {
-    if (getState == State.VALUE) {
+    if (_state eq State.VALUE) {
       bsonOutput.writeByte(BsonType.DOCUMENT.getValue)
       writeCurrentName()
     }
@@ -69,7 +60,7 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
     backpatchSize() // size of document
 
     setContext(getContext.getParentContext)
-    if (getContext != null && (getContext.getContextType == BsonContextType.JAVASCRIPT_WITH_SCOPE)) {
+    if (getContext != null && (getContext.getContextType eq BsonContextType.JAVASCRIPT_WITH_SCOPE)) {
       backpatchSize() // size of the JavaScript with scope value
 
       setContext(getContext.getParentContext)
@@ -209,65 +200,9 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
     writeCurrentName()
   }
 
-  override def pipe(reader: BsonReader): Unit = ???
-  // {
-  //  notNull("reader", reader)
-  //  pipeDocument(reader, null)
-  // }
-
-  override def pipe(reader: BsonReader, extraElements: util.List[BsonElement]): Unit = ???
-  // {
-  //  notNull("reader", reader)
-  //  notNull("extraElements", extraElements)
-  //  pipeDocument(reader, extraElements)
-  // }
-
+  override def pipe(reader: BsonReader): Unit                                               = ???
+  override def pipe(reader: BsonReader, extraElements: util.List[BsonElement]): Unit        = ???
   private def pipeDocument(reader: BsonReader, extraElements: util.List[BsonElement]): Unit = ???
-  // if (reader.isInstanceOf[BsonBinaryReader]) {
-  //  val binaryReader = reader.asInstanceOf[BsonBinaryReader]
-  //  if (getState == State.VALUE) {
-  //    bsonOutput.writeByte(BsonType.DOCUMENT.getValue)
-  //    writeCurrentName()
-  //  }
-  //  val bsonInput = binaryReader.getBsonInput
-  //  val size      = bsonInput.readInt32
-  //  if (size < 5) throw new BsonSerializationException("Document size must be at least 5")
-  //  val pipedDocumentStartPosition = bsonOutput.getPosition
-  //  bsonOutput.writeInt32(size)
-  //  val bytes = new Array[Byte](size - 4)
-  //  bsonInput.readBytes(bytes)
-  //  bsonOutput.writeBytes(bytes)
-  //  binaryReader.setState(AbstractBsonReader.State.TYPE)
-  //  if (extraElements != null) {
-  //    bsonOutput.truncateToPosition(bsonOutput.getPosition - 1)
-  //    setContext(YoloCtx(getContext, BsonContextType.DOCUMENT, pipedDocumentStartPosition))
-  //    setState(State.NAME)
-  //    pipeExtraElements(extraElements)
-  //    bsonOutput.writeByte(0)
-  //    bsonOutput.writeInt32(pipedDocumentStartPosition, bsonOutput.getPosition - pipedDocumentStartPosition)
-  //    setContext(getContext.getParentContext)
-  //  }
-  //  if (getContext == null) setState(State.DONE)
-  //  else {
-  //    if (getContext.getContextType == BsonContextType.JAVASCRIPT_WITH_SCOPE) {
-  //      backpatchSize()
-  //      setContext(getContext.getParentContext)
-  //    }
-  //    setState(getNextState)
-  //  }
-  //  // validateSize(bsonOutput.getPosition - pipedDocumentStartPosition)
-  // } else if (extraElements != null) super.pipe(reader, extraElements)
-  // else super.pipe(reader)
-
-  // def pushMaxDocumentSize(maxDocumentSize: Int): Unit = {
-  //  maxDocumentSizeStack.push(maxDocumentSize)
-  //  ()
-  // }
-
-  // def popMaxDocumentSize(): Unit = {
-  //  maxDocumentSizeStack.pop
-  //  ()
-  // }
 
   def mark(): Unit =
     markk = YoloMark()
@@ -279,7 +214,7 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
   }
 
   private def writeCurrentName(): Unit =
-    if (getContext.getContextType == BsonContextType.ARRAY) bsonOutput.writeCString(Integer.toString {
+    if (getContext.getContextType eq BsonContextType.ARRAY) bsonOutput.writeCString(Integer.toString {
       getContext.index += 1;
       getContext.index - 1
     })
@@ -294,20 +229,20 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
 
   override def writeEndDocument(): Unit = {
     doWriteEndDocument()
-    if (getContext == null || (getContext.getContextType eq BsonContextType.TOP_LEVEL)) setState(State.DONE) else setState(getNextState)
+    if (getContext == null || (getContext.getContextType eq BsonContextType.TOP_LEVEL)) _state = State.DONE else _state = getNextState
   }
 
-  override def writeStartDocument(): Unit                            = { doWriteStartDocument(); setState(State.NAME) }
-  override def writeStartArray(): Unit                               = { doWriteStartArray(); setState(State.VALUE) }
-  override def writeEndArray(): Unit                                 = { doWriteEndArray(); setState(getNextState) }
-  override def writeNull(): Unit                                     = { doWriteNull(); setState(getNextState) }
-  override def writeString(value: String): Unit                      = { doWriteString(value); setState(getNextState) }
-  override def writeBoolean(value: Boolean): Unit                    = { doWriteBoolean(value); setState(getNextState) }
-  override def writeDateTime(value: Long): Unit                      = { doWriteDateTime(value); setState(getNextState) }
-  override def writeInt32(value: Int): Unit                          = { doWriteInt32(value); setState(getNextState) }
-  override def writeInt64(value: Long): Unit                         = { doWriteInt64(value); setState(getNextState) }
+  override def writeStartDocument(): Unit                            = { doWriteStartDocument(); _state = State.NAME}
+  override def writeStartArray(): Unit                               = { doWriteStartArray(); _state = State.VALUE}
+  override def writeEndArray(): Unit                                 = { doWriteEndArray(); _state = getNextState}
+  override def writeNull(): Unit                                     = { doWriteNull(); _state = getNextState}
+  override def writeString(value: String): Unit                      = { doWriteString(value); _state = getNextState}
+  override def writeBoolean(value: Boolean): Unit                    = { doWriteBoolean(value); _state = getNextState}
+  override def writeDateTime(value: Long): Unit                      = { doWriteDateTime(value); _state = getNextState}
+  override def writeInt32(value: Int): Unit                          = { doWriteInt32(value); _state = getNextState}
+  override def writeInt64(value: Long): Unit                         = { doWriteInt64(value); _state = getNextState}
   override def writeObjectId(name: String, objectId: ObjectId): Unit = { writeName(name); writeObjectId(objectId) }
-  override def writeObjectId(objectId: ObjectId): Unit               = { doWriteObjectId(objectId); setState(getNextState) }
+  override def writeObjectId(objectId: ObjectId): Unit               = { doWriteObjectId(objectId); _state = getNextState}
 
   override def writeName(name: String): Unit = {
     doWriteName(name)
@@ -315,7 +250,7 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
     // println(s"writeName(): '${name}'")
     // if (ctx == null) setContext(Ctx(null, null, name = name))
     // else ctx.name = name
-    setState(State.VALUE)
+    _state = State.VALUE
   }
 
   override def getName: String = currentName
@@ -341,13 +276,4 @@ class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWriter(bsonWrite
 
 object YoloWriter {
   val bsonWriterSettings = new BsonWriterSettings
-
-  def from(writer: BsonBinaryWriter): YoloWriter = {
-    // println("YoloWriter.From() ----------------------------------------")
-    val yolo = new YoloWriter(writer)
-    // println("BsonBinaryWriter Context: " + writer.getContext)
-    yolo.setState(writer.getState)
-
-    yolo
-  }
 }

@@ -60,10 +60,11 @@ private[bson] object MagnoliaBsonDecoder {
         p
       )
     )
+    val defaults = conf.useDefaults
 
     new BsonDecoder[A] {
-
-      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+      override def unsafeDecode(_reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+        val reader          = conf.mayOptimizeReader(_reader)
         val foundParamArray = new Array[Boolean](nbParams) // Init to false.
         val rawValuesArray  = new Array[Any](nbParams)
 
@@ -88,7 +89,7 @@ private[bson] object MagnoliaBsonDecoder {
 
         // For missing fields.
         var i = 0
-        if (conf.useDefaults) {
+        if (defaults) {
           while (i < nbParams) {
             if (!foundParamArray(i)) {
               val missingParam = paramArray(i)
@@ -119,8 +120,8 @@ private[bson] object MagnoliaBsonDecoder {
 
   private[bson] def split[A](
       sealedTrait: SealedTrait[BsonDecoder, A]
-  )(implicit configuration: Configuration): BsonDecoder[A] = {
-    val subTypes              = sealedTrait.subtypes.map(s => configuration.transformConstructorNames(s.typeName.short) -> s).toMap
+  )(implicit conf: Configuration): BsonDecoder[A] = {
+    val subTypes              = sealedTrait.subtypes.map(s => conf.transformConstructorNames(s.typeName.short) -> s).toMap
     val knownSubTypes: String = subTypes.keys.toSeq.sorted.mkString(", ")
     val constructorLookup: util.Map[String, Subtype[BsonDecoder, A]] = asJava(subTypes)
 
@@ -128,17 +129,21 @@ private[bson] object MagnoliaBsonDecoder {
       throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
     }
 
-    val discriminatorOpt = configuration.discriminator
+    val discriminatorOpt = conf.discriminator
     if (discriminatorOpt.isDefined)
       new DiscriminatedDecoder[A](discriminatorOpt.get, constructorLookup, knownSubTypes)
     else
       new NonDiscriminatedDecoder[A](constructorLookup, knownSubTypes)
   }
 
-  private[bson] class NonDiscriminatedDecoder[A](constructorLookup: util.Map[String, Subtype[BsonDecoder, A]], knownSubTypes: String)
+  final private[bson] case class NonDiscriminatedDecoder[A](
+      constructorLookup: util.Map[String, Subtype[BsonDecoder, A]],
+      knownSubTypes: String
+  )(implicit conf: Configuration)
       extends BsonDecoder[A] {
 
-    override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+    override def unsafeDecode(_reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+      val reader = conf.mayOptimizeReader(_reader)
       reader.readStartDocument()
       val key = reader.readName()
       val theSubtype = {
@@ -156,13 +161,15 @@ private[bson] object MagnoliaBsonDecoder {
     }
   }
 
-  private[bson] class DiscriminatedDecoder[A](
+  final private[bson] case class DiscriminatedDecoder[A](
       discriminator: String,
       constructorLookup: util.Map[String, Subtype[BsonDecoder, A]],
       knownSubTypes: String
-  ) extends BsonDecoder[A] {
+  )(implicit conf: Configuration)
+      extends BsonDecoder[A] {
 
-    override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+    override def unsafeDecode(_reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+      val reader                  = conf.mayOptimizeReader(_reader)
       val mark                    = reader.getMark
       var constructorName: String = null
       var bsonKey: String         = null

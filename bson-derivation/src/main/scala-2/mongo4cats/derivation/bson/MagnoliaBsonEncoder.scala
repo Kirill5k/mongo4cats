@@ -44,7 +44,6 @@ private[bson] object MagnoliaBsonEncoder {
     }
 
     new BsonDocumentEncoder[A] {
-
       override def unsafeBsonEncode(_writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
         val writer = config.mayOptimizeWriter(_writer)
 
@@ -55,8 +54,6 @@ private[bson] object MagnoliaBsonEncoder {
 
       override def unsafeFieldsBsonEncode(_writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
         val writer = config.mayOptimizeWriter(_writer)
-
-        //if (config.yoloMode) println(s"unsafeFieldsBsonEncode(): ${a}")
 
         var i = 0
         while (i < nbParams) {

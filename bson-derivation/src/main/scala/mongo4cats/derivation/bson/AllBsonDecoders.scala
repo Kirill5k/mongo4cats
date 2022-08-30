@@ -27,11 +27,11 @@ import java.util.UUID
 
 trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
 
-  implicit val byteBsonDecoder: BsonDecoder[Byte]                        = instanceFromJavaDecoder(new ByteCodec()).map(_.toByte)
-  implicit val shortBsonDecoder: BsonDecoder[Short]                      = instanceFromJavaDecoder(new ShortCodec()).map(_.toShort)
-  implicit val intBsonDecoder: BsonDecoder[Int]                          = instanceFromJavaDecoder(new IntegerCodec()).map(_.toInt)
-  implicit val longBsonDecoder: BsonDecoder[Long]                        = instanceFromJavaDecoder(new LongCodec()).map(_.toLong)
-  implicit val stringBsonDecoder: BsonDecoder[String]                    = instanceFromJavaDecoder(new StringCodec())
+  implicit val byteBsonDecoder: BsonDecoder[Byte]     = instanceFromJavaDecoder(new ByteCodec()).asInstanceOf[BsonDecoder[Byte]]
+  implicit val shortBsonDecoder: BsonDecoder[Short]   = instanceFromJavaDecoder(new ShortCodec()).asInstanceOf[BsonDecoder[Short]]
+  implicit val intBsonDecoder: BsonDecoder[Int]       = instanceFromJavaDecoder(new IntegerCodec()).asInstanceOf[BsonDecoder[Int]]
+  implicit val longBsonDecoder: BsonDecoder[Long]     = instanceFromJavaDecoder(new LongCodec()).asInstanceOf[BsonDecoder[Long]]
+  implicit val stringBsonDecoder: BsonDecoder[String] = instanceFromJavaDecoder(new StringCodec())
   implicit val objectIdBsonDecoder: BsonDecoder[org.bson.types.ObjectId] = instanceFromJavaDecoder(new ObjectIdCodec())
   implicit val instantBsonDecoder: BsonDecoder[Instant]                  = instanceFromJavaDecoder(new InstantCodec())
 
@@ -57,7 +57,7 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
     }
 
   implicit val uuidBsonDecoder: BsonDecoder[UUID] =
-    stringBsonDecoder.emap(s => Either.catchNonFatal(UUID.fromString(s)))
+    stringBsonDecoder.map(UUID.fromString)
 
   implicit def mapBsonDecoder[K, V](implicit decK: KeyBsonDecoder[K], decV: BsonDecoder[V]): BsonDecoder[Map[K, V]] =
     instanceFromBsonValue {

@@ -72,7 +72,7 @@ object BsonDecoder {
     Either.catchNonFatal(unsafeDecode(bsonReader))
 
   def unsafeDecode[A](bsonReader: BsonReader)(implicit decA: BsonDecoder[A]): A =
-    decA.unsafeFromBsonValue(bsonValueCodecSingleton.decode(bsonReader, bsonDecoderContextSingleton))
+    decA.unsafeDecode(bsonReader.asInstanceOf[AbstractBsonReader], bsonDecoderContextSingleton)
 
   def instanceFromBsonValue[A](f: BsonValue => A): BsonDecoder[A] = new BsonDecoder[A] {
     override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A =

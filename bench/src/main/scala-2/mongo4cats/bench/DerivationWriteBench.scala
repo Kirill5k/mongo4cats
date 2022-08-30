@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 class DerivationWriteBench {
 
   implicit val bsonConf = mongo4cats.derivation.bson.configured.Configuration.default
-    .copy(yoloMode = true)
+    .copy(yoloWriteMode = true)
   // .withDiscriminator("theDiscriminator")
   implicit val circeConf = io.circe.generic.extras.Configuration(
     transformMemberNames = bsonConf.transformMemberNames,

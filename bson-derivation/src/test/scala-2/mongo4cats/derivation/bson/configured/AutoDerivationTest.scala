@@ -129,8 +129,9 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
         transformationGen,
         Gen.oneOf(false, true).label("useDefaults"),
         Gen.option(Gen.stringOfN(5, Gen.alphaUpperChar)).label("discriminator"),
-        Gen.oneOf(false, true).label("yolo")
-      ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _, _))
+        Gen.oneOf(false, true).label("yoloWrite"),
+        Gen.oneOf(false, true).label("yoloRead")
+      ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _, _, _))
 
     val outputBufferCirce      = new BasicOutputBuffer(10 * 1000 * 1000)
     val outputBufferDerivation = new BasicOutputBuffer(10 * 1000 * 1000)
