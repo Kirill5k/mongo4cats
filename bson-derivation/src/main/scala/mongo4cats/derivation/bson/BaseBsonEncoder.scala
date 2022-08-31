@@ -79,16 +79,6 @@ trait BaseBsonEncoder {
       }
     })
 
-  implicit def tuple2BsonEncoder[A, B](implicit encA: BsonEncoder[A], encB: BsonEncoder[B]): BsonEncoder[(A, B)] =
-    instanceFromJavaCodec(new JavaEncoder[(A, B)] {
-      override def encode(writer: BsonWriter, value: (A, B), encoderContext: EncoderContext): Unit = {
-        writer.writeStartArray()
-        encA.unsafeBsonEncode(writer, value._1, encoderContext)
-        encB.unsafeBsonEncode(writer, value._2, encoderContext)
-        writer.writeEndArray()
-      }
-    })
-
   implicit val uuidBsonEncoder: BsonEncoder[UUID] =
     instanceFromJavaCodec(new StringCodec()).contramap(_.toString)
 

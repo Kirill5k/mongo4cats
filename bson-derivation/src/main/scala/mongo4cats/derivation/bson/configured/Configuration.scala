@@ -17,7 +17,7 @@
 package mongo4cats.derivation.bson.configured
 
 import cats.syntax.all._
-import org.bson.{AbstractBsonReader, BsonBinaryReader, BsonBinaryWriter, BsonWriter, YoloReader, YoloWriter}
+import org.bson.{BsonBinaryWriter, BsonWriter, YoloWriter}
 
 import java.util.regex.Pattern
 
@@ -41,8 +41,7 @@ final case class Configuration(
     transformConstructorNames: String => String = identity[String],
     useDefaults: Boolean = false,
     discriminator: Option[String] = none,
-    yoloWriteMode: Boolean = false,
-    yoloReadMode: Boolean = false
+    yoloWriteMode: Boolean = false
 ) {
   def withSnakeCaseMemberNames                 = copy(transformMemberNames = Configuration.snakeCaseTransformation)
   def withKebabCaseMemberNames                 = copy(transformMemberNames = Configuration.kebabCaseTransformation)
@@ -59,11 +58,6 @@ final case class Configuration(
     if (yoloWriteMode) // First `if` is resolved at compile time.
       writer => if (writer.isInstanceOf[BsonBinaryWriter]) YoloWriter(writer.asInstanceOf[BsonBinaryWriter]) else writer
     else identity[BsonWriter]
-
-  def mayOptimizeReader: AbstractBsonReader => AbstractBsonReader =
-    if (yoloReadMode) // First `if` is resolved at compile time.
-      reader => if (reader.isInstanceOf[BsonBinaryReader]) new YoloReader(reader.asInstanceOf[BsonBinaryReader]) else reader
-    else identity[AbstractBsonReader]
 }
 
 object Configuration {

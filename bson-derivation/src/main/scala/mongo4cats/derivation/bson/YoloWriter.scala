@@ -232,17 +232,17 @@ final case class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWrite
     if (getContext == null || (getContext.getContextType eq BsonContextType.TOP_LEVEL)) _state = State.DONE else _state = getNextState
   }
 
-  override def writeStartDocument(): Unit                            = { doWriteStartDocument(); _state = State.NAME}
-  override def writeStartArray(): Unit                               = { doWriteStartArray(); _state = State.VALUE}
-  override def writeEndArray(): Unit                                 = { doWriteEndArray(); _state = getNextState}
-  override def writeNull(): Unit                                     = { doWriteNull(); _state = getNextState}
-  override def writeString(value: String): Unit                      = { doWriteString(value); _state = getNextState}
-  override def writeBoolean(value: Boolean): Unit                    = { doWriteBoolean(value); _state = getNextState}
-  override def writeDateTime(value: Long): Unit                      = { doWriteDateTime(value); _state = getNextState}
-  override def writeInt32(value: Int): Unit                          = { doWriteInt32(value); _state = getNextState}
-  override def writeInt64(value: Long): Unit                         = { doWriteInt64(value); _state = getNextState}
+  override def writeStartDocument(): Unit                            = { doWriteStartDocument(); _state = State.NAME }
+  override def writeStartArray(): Unit                               = { doWriteStartArray(); _state = State.VALUE }
+  override def writeEndArray(): Unit                                 = { doWriteEndArray(); _state = getNextState }
+  override def writeNull(): Unit                                     = { doWriteNull(); _state = getNextState }
+  override def writeString(value: String): Unit                      = { doWriteString(value); _state = getNextState }
+  override def writeBoolean(value: Boolean): Unit                    = { doWriteBoolean(value); _state = getNextState }
+  override def writeDateTime(value: Long): Unit                      = { doWriteDateTime(value); _state = getNextState }
+  override def writeInt32(value: Int): Unit                          = { doWriteInt32(value); _state = getNextState }
+  override def writeInt64(value: Long): Unit                         = { doWriteInt64(value); _state = getNextState }
   override def writeObjectId(name: String, objectId: ObjectId): Unit = { writeName(name); writeObjectId(objectId) }
-  override def writeObjectId(objectId: ObjectId): Unit               = { doWriteObjectId(objectId); _state = getNextState}
+  override def writeObjectId(objectId: ObjectId): Unit               = { doWriteObjectId(objectId); _state = getNextState }
 
   override def writeName(name: String): Unit = {
     doWriteName(name)

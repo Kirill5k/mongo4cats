@@ -25,7 +25,7 @@ import org.bson.codecs.{ByteCodec, DecoderContext, IntegerCodec, LongCodec, Obje
 import java.time.Instant
 import java.util.UUID
 
-trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
+trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders with TupleBsonDecoders {
 
   implicit val byteBsonDecoder: BsonDecoder[Byte]     = instanceFromJavaDecoder(new ByteCodec()).asInstanceOf[BsonDecoder[Byte]]
   implicit val shortBsonDecoder: BsonDecoder[Short]   = instanceFromJavaDecoder(new ShortCodec()).asInstanceOf[BsonDecoder[Short]]
@@ -39,7 +39,8 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
     new BsonDecoder[Option[A]] {
 
       override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): Option[A] =
-        if (reader.getCurrentBsonType == BsonType.NULL) {
+        // if (reader.getState eq State.TYPE) reader.readBsonType()
+        if (reader.getCurrentBsonType eq BsonType.NULL) {
           reader.readNull()
           none
         } else Option(decA.unsafeDecode(reader, decoderContext))
@@ -47,13 +48,6 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders {
       override def unsafeFromBsonValue(bson: BsonValue): Option[A] =
         if (bson == null || bson.isNull) none
         else Option(decA.unsafeFromBsonValue(bson))
-    }
-
-  implicit def tuple2BsonDecoder[A, B](implicit decA: BsonDecoder[A], decB: BsonDecoder[B]): BsonDecoder[(A, B)] =
-    BsonDecoder.instanceFromBsonValue {
-      case arr: BsonArray if arr.size() == 2 => (decA.unsafeFromBsonValue(arr.get(0)), decB.unsafeFromBsonValue(arr.get(1)))
-      case arr: BsonArray                    => throw new Throwable(s"Not an array of size 2: ${arr}")
-      case other                             => throw new Throwable(s"Not an array: ${other}")
     }
 
   implicit val uuidBsonDecoder: BsonDecoder[UUID] =

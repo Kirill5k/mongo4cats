@@ -110,6 +110,7 @@ val `mongo4cats-bson-derivation` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-bson-derivation",
+    Compile / sourceGenerators += (Compile / sourceManaged).map(Boilerplate.gen).taskValue,
     libraryDependencies ++= Dependencies.circe ++ Dependencies.test,
     libraryDependencies ++=
       Dependencies.scalacheckCats ++

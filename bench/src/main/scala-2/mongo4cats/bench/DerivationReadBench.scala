@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit
 class DerivationReadBench {
 
   implicit val bsonConf = mongo4cats.derivation.bson.configured.Configuration.default
-    .copy(yoloReadMode = true)
   // .withDiscriminator("theDiscriminator")
 
   println(bsonConf)
@@ -86,7 +85,7 @@ class DerivationReadBench {
     ()
   }
 
-  //@Benchmark
+  // @Benchmark
   def d_readViaCirce(): Unit = {
     byteBuffer2.position(0)
     val reader = new BsonBinaryReader(byteBuffer2)

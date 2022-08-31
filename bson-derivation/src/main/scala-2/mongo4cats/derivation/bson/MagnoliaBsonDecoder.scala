@@ -63,8 +63,7 @@ private[bson] object MagnoliaBsonDecoder {
     val defaults = conf.useDefaults
 
     new BsonDecoder[A] {
-      override def unsafeDecode(_reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
-        val reader          = conf.mayOptimizeReader(_reader)
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
         val foundParamArray = new Array[Boolean](nbParams) // Init to false.
         val rawValuesArray  = new Array[Any](nbParams)
 
@@ -142,8 +141,7 @@ private[bson] object MagnoliaBsonDecoder {
   )(implicit conf: Configuration)
       extends BsonDecoder[A] {
 
-    override def unsafeDecode(_reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
-      val reader = conf.mayOptimizeReader(_reader)
+    override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
       reader.readStartDocument()
       val key = reader.readName()
       val theSubtype = {
@@ -168,8 +166,7 @@ private[bson] object MagnoliaBsonDecoder {
   )(implicit conf: Configuration)
       extends BsonDecoder[A] {
 
-    override def unsafeDecode(_reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
-      val reader                  = conf.mayOptimizeReader(_reader)
+    override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
       val mark                    = reader.getMark
       var constructorName: String = null
       var bsonKey: String         = null
