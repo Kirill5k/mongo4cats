@@ -2,10 +2,13 @@ import sbt._
 
 object Dependencies {
   private object Versions {
-    val mongodb     = "4.7.1"
-    val fs2         = "3.2.11"
-    val scalaCompat = "2.8.1"
-    val circe       = "0.14.2"
+    val kindProjector = "0.13.2"
+    val cats          = "2.8.0"
+    val mongodb       = "4.7.1"
+    val fs2           = "3.2.11"
+    val scalaCompat   = "2.8.1"
+    val circe         = "0.14.2"
+    val zio           = "2.0.0"
 
     val logback             = "1.2.11"
     val scalaTest           = "3.2.13"
@@ -27,6 +30,7 @@ object Dependencies {
     val mongodbDriverCore    = "org.mongodb" % "mongodb-driver-core"            % Versions.mongodb
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
 
+    val cats        = "org.typelevel"          %% "cats-core"               % Versions.cats
     val fs2Core     = "co.fs2"                 %% "fs2-core"                % Versions.fs2
     val scalaCompat = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.scalaCompat
 
@@ -34,6 +38,12 @@ object Dependencies {
     val circeParser        = "io.circe" %% "circe-parser"         % Versions.circe
     val circeGeneric       = "io.circe" %% "circe-generic"        % Versions.circe
     val circeGenericExtras = "io.circe" %% "circe-generic-extras" % Versions.circe
+
+    val zio                = "dev.zio" %% "zio"                         % Versions.zio
+    val zioStreams         = "dev.zio" %% "zio-streams"                 % Versions.zio
+    val zioInteropReactive = "dev.zio" %% "zio-interop-reactivestreams" % Versions.zio
+    val zioTest            = "dev.zio" %% "zio-test"                    % Versions.zio
+    val zioTestSbt         = "dev.zio" %% "zio-test-sbt"                % Versions.zio
 
     val scalaTest           = "org.scalatest"     %% "scalatest"       % Versions.scalaTest
     val scalaTestScalaCheck = "org.scalatestplus" %% "scalacheck-1-16" % Versions.scalaTestScalaCheck
@@ -52,43 +62,65 @@ object Dependencies {
     val scalacheckCats = "io.chrisdavenport" %% "cats-scalacheck" % Versions.scalacheckCats
   }
 
-  lazy val core = Seq(
+  val kindProjector = "org.typelevel" % "kind-projector" % Versions.kindProjector
+
+  val kernel = Seq(
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
-    Libraries.fs2Core,
-    Libraries.scalaCompat
+    Libraries.scalaCompat,
+    Libraries.cats,
+    Libraries.scalaTest % Test
   )
 
-  lazy val test = Seq(
+  val core = Seq(
+    Libraries.fs2Core,
     Libraries.logback             % Test,
     Libraries.scalaTest           % Test,
     Libraries.scalaTestScalaCheck % Test,
     Libraries.scalaCheck          % Test
   )
 
-  lazy val examples = Seq(
-    Libraries.logback
+  val examples = Seq(
+    Libraries.logback,
+    Libraries.scalaTest % Test
   )
 
-  lazy val circe = Seq(
+  val circe = Seq(
     Libraries.circeCore,
     Libraries.circeGeneric,
-    Libraries.circeParser
+    Libraries.circeParser,
+    Libraries.logback   % Test,
+    Libraries.scalaTest % Test
   )
 
-  lazy val circeGenericExtras = Seq(
-    Libraries.circeGenericExtras
+  val zio = Seq(
+    Libraries.zio,
+    Libraries.zioStreams,
+    Libraries.zioInteropReactive,
+    Libraries.zioTest    % Test,
+    Libraries.zioTestSbt % Test
   )
 
-  lazy val embedded = Seq(
+  val embedded = Seq(
     Libraries.fs2Core,
     Libraries.embeddedMongo,
     Libraries.immutableValue,
     Libraries.commonsCompress
   )
 
-  lazy val magnolia1_2 = Seq(
+  val zioEmbedded = Seq(
+    Libraries.zio,
+    Libraries.embeddedMongo,
+    Libraries.immutableValue,
+    Libraries.commonsCompress
+  )
+
+  val circeGenericExtras = Seq(
+    Libraries.circeGenericExtras
+  )
+
+  val magnolia1_2 = Seq(
     Libraries.magnolia1_2
   )
 

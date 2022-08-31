@@ -11,8 +11,8 @@ When executed, the update operation will apply changes specified in an update qu
 `MongoCollection[F, T]` has several methods for submitting an update query: `updateOne` updates the first document that matches a filter, whereas `updateMany` will update all documents.
 
 ```scala
-import mongo4cats.collection.operations.{Filter, Update}
-import mongo4cats.collection.UpdateOptions
+import mongo4cats.operations.{Filter, Update}
+import mongo4cats.models.collection.UpdateOptions
 
 // chain multiple updates together
 val update = Update.set("field1", "foo").currentDate("date")

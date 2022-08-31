@@ -12,6 +12,10 @@ options:
         url: docs/gettingstarted/collection.html
         menu_section: getting-started
 
+      - title: Working with documents
+        url: docs/gettingstarted/documents.html
+        menu_section: getting-started
+
   - title: Operations
     url: docs/operations.html
     menu_section: operations
@@ -41,8 +45,11 @@ options:
         url: docs/operations/watch.html
         menu_section: operations
 
+  - title: Embedded MongoDB
+    url: docs/embedded.html
+
   - title: Circe
     url: docs/circe.html
 
-  - title: Embedded MongoDB
-    url: docs/embedded.html
+  - title: ZIO
+    url: docs/zio.html

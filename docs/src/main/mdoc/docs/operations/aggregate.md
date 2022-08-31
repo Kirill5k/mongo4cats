@@ -13,7 +13,7 @@ More detailed explanation of the aggregation process can be found in the officia
 To create such aggregation pipeline, `Aggregate` constructor can be used:
 
 ```scala
-import mongo4cats.collection.operations.{Accumulator, Aggregate, Sort}
+import mongo4cats.operations.{Accumulator, Aggregate, Sort}
 
 // specification for grouping multiple transactions from the same group:
 val accumulator = Accumulator

@@ -27,12 +27,12 @@ object Watch extends IOApp.Simple {
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
       for {
-        db   <- client.getDatabase("testdb")
+        db   <- client.getDatabase("my-db")
         coll <- db.getCollection("docs")
         watchStream  = coll.watch.stream
         insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" := s"doc-$i")))
         updates <- watchStream.concurrently(insertStream).take(10).compile.toList
-        _       <- IO.println(updates.mkString("{", "\n", "}"))
+        _       <- IO.println(updates.mkString("[\n", ",\n", "\n]"))
       } yield ()
     }
 }

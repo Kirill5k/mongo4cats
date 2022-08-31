@@ -12,10 +12,10 @@ which can also optionally take an aggregation pipeline as an argument. Once crea
 ```scala
 import mongo4cats.bson.Document
 
-val changes: fs2.Stream[IO, Document] = collection.watch[Document].stream
+val changes: fs2.Stream[IO, Document] = collection.watch.stream
 
 // or with an aggregation pipeline included
 import mongo4cats.collection.operations.{Aggregate, Filter}
 
-val changes: fs2.Stream[IO, Document] = collection.watch[Document](Aggregate.matchBy(Filter.gte("amount", 100))).stream
+val changes: fs2.Stream[IO, Document] = collection.watch(Aggregate.matchBy(Filter.gte("amount", 100))).stream
 ```

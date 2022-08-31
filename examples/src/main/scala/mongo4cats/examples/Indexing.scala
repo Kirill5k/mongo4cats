@@ -18,15 +18,15 @@ package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.IndexOptions
-import mongo4cats.collection.operations.Index
+import mongo4cats.models.collection.IndexOptions
+import mongo4cats.operations.Index
 
 object Indexing extends IOApp.Simple {
 
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
-        db      <- client.getDatabase("testdb")
+        db      <- client.getDatabase("my-db")
         coll    <- db.getCollection("indexes")
         _       <- coll.createIndex(Index.ascending(List("name", "email")), IndexOptions().unique(true))
         indexes <- coll.listIndexes

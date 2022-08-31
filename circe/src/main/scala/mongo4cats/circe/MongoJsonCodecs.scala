@@ -18,39 +18,54 @@ package mongo4cats.circe
 
 import com.mongodb.MongoClientException
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import io.circe.parser.{decode => circeDecode}
-import mongo4cats.bson.{Document, ObjectId}
-import mongo4cats.codecs.{DocumentCodecProvider, MongoCodecProvider}
+import mongo4cats.Clazz
+import mongo4cats.bson.{BsonValue, BsonValueDecoder, BsonValueEncoder, Document, ObjectId}
+import mongo4cats.bson.syntax._
+import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext, StringCodec}
-import org.bson.{BsonReader, BsonType, BsonWriter}
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonReader, BsonWriter}
 
 import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
 import scala.util.Try
 
-final case class MongoJsonParsingException(jsonString: String, message: String) extends MongoClientException(message)
+final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
 trait MongoJsonCodecs {
+  private val emptyJsonObject = Json.fromJsonObject(JsonObject.empty)
 
-  implicit val encodeObjectId: Encoder[ObjectId] =
-    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject("$oid" -> Json.fromString(i.toHexString)))
-  implicit val decodeObjectId: Decoder[ObjectId] =
-    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id("$oid").flatMap(_.asString).get)))
+  implicit def deriveJsonBsonValueDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
+    bson => JsonMapper.fromBson(bson).flatMap(d.decodeJson).toOption
 
-  implicit val encodeInstant: Encoder[Instant] =
-    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject("$date" -> Json.fromString(i.toString)))
-  implicit val decodeInstant: Decoder[Instant] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj("$date").flatMap(_.asString).get)))
+  implicit def deriveJsonBsonValueEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
+    value => JsonMapper.toBson(e(value))
 
-  implicit val encodeLocalDate: Encoder[LocalDate] =
-    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject("$date" -> Json.fromString(i.toString)))
-  implicit val decodeLocalDate: Decoder[LocalDate] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(LocalDate.parse(dateObj("$date").flatMap(_.asString).map(_.slice(0, 10)).get)))
+  implicit val documentEncoder: Encoder[Document] =
+    Encoder.encodeJson.contramap[Document](d => JsonMapper.fromBsonOpt(BsonValue.document(d)).getOrElse(emptyJsonObject))
+  implicit val documentDecoder: Decoder[Document] =
+    Decoder.decodeJson.emap(j => JsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
+
+  implicit val objectIdEncoder: Encoder[ObjectId] =
+    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(JsonMapper.idTag -> Json.fromString(i.toHexString)))
+  implicit val objectIdDecoder: Decoder[ObjectId] =
+    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id(JsonMapper.idTag).flatMap(_.asString).get)))
+
+  implicit val instantEncoder: Encoder[Instant] =
+    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
+  implicit val instantDecoder: Decoder[Instant] =
+    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).get)))
+
+  implicit val localDateEncoder: Encoder[LocalDate] =
+    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
+  implicit val localDateDecoder: Decoder[LocalDate] =
+    Decoder.decodeJsonObject.emapTry(dateObj =>
+      Try(LocalDate.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
+    )
 
   implicit def deriveCirceCodecProvider[T: Encoder: Decoder: ClassTag]: MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
-      implicit val classT: Class[T]   = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+      implicit val classT: Class[T]   = Clazz.tag[T]
       override def get: CodecProvider = circeBasedCodecProvider[T]
     }
 
@@ -59,27 +74,18 @@ trait MongoJsonCodecs {
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
         if (classY == classT || classT.isAssignableFrom(classY))
           new Codec[Y] {
-            private val stringCodec: Codec[String] = new StringCodec()
-            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit = {
-              val json = enc(t.asInstanceOf[T])
-              if (json.isObject) {
-                DocumentCodecProvider.DefaultCodec.encode(writer, Document.parse(json.noSpaces), encoderContext)
-              } else {
-                stringCodec.encode(writer, json.noSpaces.replaceAll("\"", ""), encoderContext)
-              }
-            }
             override def getEncoderClass: Class[Y] = classY
+            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
+              ContainerValueWriter.writeBsonValue(t.asInstanceOf[T].toBson, writer)
+
             override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
-              reader.getCurrentBsonType match {
-                case BsonType.DOCUMENT =>
-                  val json = DocumentCodecProvider.DefaultCodec.decode(reader, decoderContext).toJson
-                  circeDecode[T](json).fold(e => throw MongoJsonParsingException(json, e.getMessage), _.asInstanceOf[Y])
-                case _ =>
-                  val string = stringCodec.decode(reader, decoderContext)
-                  dec
-                    .decodeJson(Json.fromString(string))
-                    .fold(e => throw MongoJsonParsingException(string, e.getMessage), _.asInstanceOf[Y])
-              }
+              (for {
+                bson <- ContainerValueReader
+                  .readBsonValue(reader)
+                  .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
+                json   <- JsonMapper.fromBson(bson)
+                result <- dec.decodeJson(json).left.map(e => MongoJsonParsingException(e.getMessage, Some(json.noSpaces)))
+              } yield result).fold(e => throw e, c => c.asInstanceOf[Y])
           }
         else null // scalastyle:ignore
     }

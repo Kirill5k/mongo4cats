@@ -33,7 +33,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
     "create and retrieve documents from a db" in withRunningEmbeddedMongo {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12344").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
+          db   <- client.getDatabase("my-db")
           coll <- db.getCollection("docs")
           testDoc = Document("Hello" := "World!")
           _        <- coll.insertOne(testDoc)
@@ -45,7 +45,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
     "start instance on different port" in withRunningEmbeddedMongo("localhost", 12355) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
         for {
-          db   <- client.getDatabase("testdb")
+          db   <- client.getDatabase("my-db")
           coll <- db.getCollection("docs")
           testDoc = Document("Hello" := "World!")
           _        <- coll.insertOne(testDoc)

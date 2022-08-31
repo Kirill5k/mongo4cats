@@ -21,6 +21,7 @@ import cats.effect.unsafe.IORuntime
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
 import mongo4cats.client.MongoClient
+import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -106,8 +107,8 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         } yield collection
 
         result.map { col =>
-          col.namespace.getDatabaseName mustBe "foo"
-          col.namespace.getCollectionName mustBe "c1"
+          col.namespace.databaseName mustBe "foo"
+          col.namespace.collectionName mustBe "c1"
           col.documentClass mustBe classOf[Document]
         }
       }

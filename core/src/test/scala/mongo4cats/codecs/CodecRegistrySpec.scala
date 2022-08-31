@@ -22,7 +22,7 @@ import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
-import mongo4cats.collection.operations.{Filter, Update}
+import mongo4cats.operations.{Filter, Update}
 import mongo4cats.database.MongoDatabase
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
@@ -92,7 +92,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
         result.map { doc =>
           doc.getString("foo") mustBe Some("bar")
-          doc.get("tags") mustBe Some(List("my", "doc").toBson)
+          doc.getAs[List[String]]("tags") mustBe Some(List("my", "doc"))
           doc.getObjectId("_id") mustBe defined
         }
       }
