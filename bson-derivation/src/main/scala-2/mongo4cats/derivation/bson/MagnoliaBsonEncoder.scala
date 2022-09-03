@@ -17,7 +17,7 @@
 package mongo4cats.derivation.bson
 
 import magnolia1._
-import mongo4cats.derivation.bson.BsonEncoder.{dummyRoot, instanceFromJavaCodec}
+import mongo4cats.derivation.bson.BsonEncoder.{dummyRoot, fastInstance}
 import mongo4cats.derivation.bson.configured.Configuration
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonDocument, BsonDocumentWriter, BsonReader, BsonString, BsonValue, BsonWriter}

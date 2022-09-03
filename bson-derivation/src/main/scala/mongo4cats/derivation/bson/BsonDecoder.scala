@@ -22,6 +22,8 @@ import mongo4cats.derivation.bson.BsonDecoder.Result
 import org.bson.codecs.DecoderContext
 import org.bson.{AbstractBsonReader, BsonDocument, BsonDocumentReader, BsonReader, BsonValue}
 
+import scala.util.Try
+
 /** A type class that provides a way to produce a value of type `A` from a [[org.bson.BsonValue]] value. */
 trait BsonDecoder[A] { self =>
 
@@ -44,18 +46,128 @@ trait BsonDecoder[A] { self =>
         f(self.unsafeFromBsonValue(bson))
     }
 
-  final def emap[B](f: A => Result[B]): BsonDecoder[B] = new BsonDecoder[B] {
-    override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): B =
-      f(self.unsafeDecode(reader, decoderContext)).getOrElse {
+  final def emap[B](f: A => Result[B]): BsonDecoder[B] =
+    new BsonDecoder[B] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): B = {
         val mark = reader.getMark
-        val bson = bsonValueCodecSingleton.decode(reader, decoderContext)
-        mark.reset()
-        throw new Throwable(s"Can't decode via `emap()`: ${bson}")
+        f(self.unsafeDecode(reader, decoderContext)).getOrElse {
+          mark.reset()
+          val bson = bsonValueCodecSingleton.decode(reader, decoderContext)
+          mark.reset()
+          throw new Throwable(s"Can't decode via `emap()`: ${bson}")
+        }
       }
 
-    override def unsafeFromBsonValue(bson: BsonValue): B =
-      f(self.unsafeFromBsonValue(bson)).getOrElse(throw new Throwable(s"Can't decode via `emap()`: ${bson}"))
-  }
+      override def unsafeFromBsonValue(bson: BsonValue): B =
+        f(self.unsafeFromBsonValue(bson)).getOrElse(throw new Throwable(s"Can't decode via `emap()`: ${bson}"))
+    }
+
+  final def emapTry[B](f: A => Try[B]): BsonDecoder[B] =
+    new BsonDecoder[B] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): B = {
+        val mark = reader.getMark
+        f(self.unsafeDecode(reader, decoderContext)).getOrElse {
+          mark.reset()
+          val bson = bsonValueCodecSingleton.decode(reader, decoderContext)
+          mark.reset()
+          throw new Throwable(s"Can't decode via `emapTry()`: ${bson}")
+        }
+      }
+
+      override def unsafeFromBsonValue(bson: BsonValue): B =
+        f(self.unsafeFromBsonValue(bson)).getOrElse(throw new Throwable(s"Can't decode via `emap()`: ${bson}"))
+    }
+
+  final def flatMap[B](f: A => BsonDecoder[B]): BsonDecoder[B] =
+    new BsonDecoder[B] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): B = {
+        val a = self.unsafeDecode(reader, decoderContext)
+        f(a).unsafeDecode(reader, decoderContext)
+      }
+    }
+
+  final def handleErrorWith(f: Throwable => BsonDecoder[A]): BsonDecoder[A] =
+    new BsonDecoder[A] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+        val mark = reader.getMark
+        try self.unsafeDecode(reader, decoderContext)
+        catch {
+          case ex: Throwable =>
+            mark.reset()
+            f(ex).unsafeDecode(reader, decoderContext)
+        }
+      }
+    }
+
+  final def withErrorMessage(message: String): BsonDecoder[A] =
+    new BsonDecoder[A] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A =
+        try self.unsafeDecode(reader, decoderContext)
+        catch { case ex: Throwable => throw WithErrorMessage(message, ex) }
+    }
+
+  final def ensure(pred: A => Boolean, message: => String): BsonDecoder[A] =
+    new BsonDecoder[A] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+        val a = self.unsafeDecode(reader, decoderContext)
+        if (pred(a)) a else throw new Throwable(message)
+      }
+    }
+
+  final def product[B](fb: BsonDecoder[B]): BsonDecoder[(A, B)] =
+    new BsonDecoder[(A, B)] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): (A, B) = {
+        val mark = reader.getMark
+        val a    = self.unsafeDecode(reader, decoderContext)
+        mark.reset()
+        val b = fb.unsafeDecode(reader, decoderContext)
+        (a, b)
+      }
+    }
+
+  final def or[AA >: A](d: => BsonDecoder[AA]): BsonDecoder[AA] =
+    new BsonDecoder[AA] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): AA = {
+        val mark = reader.getMark
+        try self.unsafeDecode(reader, decoderContext)
+        catch {
+          case ex: Throwable =>
+            mark.reset()
+            d.unsafeDecode(reader, decoderContext)
+        }
+      }
+    }
+
+  final def either[B](decodeB: BsonDecoder[B]): BsonDecoder[Either[A, B]] =
+    new BsonDecoder[Either[A, B]] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): Either[A, B] = {
+        val mark = reader.getMark
+        try Left(self.unsafeDecode(reader, decoderContext))
+        catch {
+          case ex: Throwable =>
+            mark.reset()
+            Right(decodeB.unsafeDecode(reader, decoderContext))
+        }
+      }
+    }
+
+  final def prepare(f: BsonReader => BsonReader): BsonDecoder[A] =
+    new BsonDecoder[A] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = ???
+    }
+
+  final def at(field: String): BsonDecoder[A] =
+    new BsonDecoder[A] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+        var name: String = null
+        while ({
+          name = reader.readName()
+          name =!= field
+        }) reader.skipValue()
+        self.unsafeDecode(reader, decoderContext)
+      }
+    }
+
 }
 
 object BsonDecoder {
@@ -64,6 +176,14 @@ object BsonDecoder {
   type JavaDecoder[A] = org.bson.codecs.Decoder[A]
 
   def apply[A](implicit ev: BsonDecoder[A]): BsonDecoder[A] = ev
+
+  final def const[A](a: A): BsonDecoder[A] =
+    new BsonDecoder[A] {
+      override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
+        reader.skipValue()
+        a
+      }
+    }
 
   def safeDecode[A](bsonValue: BsonValue)(implicit decA: BsonDecoder[A]): Result[A] =
     Either.catchNonFatal(decA.unsafeFromBsonValue(bsonValue))
@@ -74,7 +194,7 @@ object BsonDecoder {
   def unsafeDecode[A](bsonReader: BsonReader)(implicit decA: BsonDecoder[A]): A =
     decA.unsafeDecode(bsonReader.asInstanceOf[AbstractBsonReader], bsonDecoderContextSingleton)
 
-  def instanceFromBsonValue[A](f: BsonValue => A): BsonDecoder[A] = new BsonDecoder[A] {
+  def slowInstance[A](f: BsonValue => A): BsonDecoder[A] = new BsonDecoder[A] {
     override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A =
       unsafeFromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext))
 
@@ -82,7 +202,7 @@ object BsonDecoder {
       f(bson)
   }
 
-  def instanceFromJavaDecoder[A](javaDecoder: JavaDecoder[A]): BsonDecoder[A] =
+  def fastInstance[A](javaDecoder: JavaDecoder[A]): BsonDecoder[A] =
     new BsonDecoder[A] {
 
       override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
@@ -96,8 +216,8 @@ object BsonDecoder {
       }
     }
 
-  def instanceFromJavaDecoder[A](f: BsonReader => A): BsonDecoder[A] =
-    instanceFromJavaDecoder(new JavaDecoder[A] {
+  def fastInstance[A](f: BsonReader => A): BsonDecoder[A] =
+    fastInstance(new JavaDecoder[A] {
       override def decode(reader: BsonReader, decoderContext: DecoderContext): A = f(reader)
     })
 
@@ -112,3 +232,5 @@ object BsonDecoder {
     mark.reset()
   }
 }
+
+final case class WithErrorMessage(message: String, cause: Throwable) extends Throwable(message, cause)

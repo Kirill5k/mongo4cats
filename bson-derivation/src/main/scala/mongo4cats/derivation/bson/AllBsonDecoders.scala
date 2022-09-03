@@ -17,7 +17,7 @@
 package mongo4cats.derivation.bson
 
 import cats.syntax.all._
-import mongo4cats.derivation.bson.BsonDecoder.{instanceFromBsonValue, instanceFromJavaDecoder, JavaDecoder}
+import mongo4cats.derivation.bson.BsonDecoder.{fastInstance, slowInstance, JavaDecoder}
 import org.bson._
 import org.bson.codecs.jsr310.InstantCodec
 import org.bson.codecs.{ByteCodec, DecoderContext, IntegerCodec, LongCodec, ObjectIdCodec, ShortCodec, StringCodec, UuidCodec}
@@ -27,13 +27,13 @@ import java.util.UUID
 
 trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders with TupleBsonDecoders {
 
-  implicit val byteBsonDecoder: BsonDecoder[Byte]     = instanceFromJavaDecoder(new ByteCodec()).asInstanceOf[BsonDecoder[Byte]]
-  implicit val shortBsonDecoder: BsonDecoder[Short]   = instanceFromJavaDecoder(new ShortCodec()).asInstanceOf[BsonDecoder[Short]]
-  implicit val intBsonDecoder: BsonDecoder[Int]       = instanceFromJavaDecoder(new IntegerCodec()).asInstanceOf[BsonDecoder[Int]]
-  implicit val longBsonDecoder: BsonDecoder[Long]     = instanceFromJavaDecoder(new LongCodec()).asInstanceOf[BsonDecoder[Long]]
-  implicit val stringBsonDecoder: BsonDecoder[String] = instanceFromJavaDecoder(new StringCodec())
-  implicit val objectIdBsonDecoder: BsonDecoder[org.bson.types.ObjectId] = instanceFromJavaDecoder(new ObjectIdCodec())
-  implicit val instantBsonDecoder: BsonDecoder[Instant]                  = instanceFromJavaDecoder(new InstantCodec())
+  implicit val byteBsonDecoder: BsonDecoder[Byte]                        = fastInstance(new ByteCodec()).asInstanceOf[BsonDecoder[Byte]]
+  implicit val shortBsonDecoder: BsonDecoder[Short]                      = fastInstance(new ShortCodec()).asInstanceOf[BsonDecoder[Short]]
+  implicit val intBsonDecoder: BsonDecoder[Int]                          = fastInstance(new IntegerCodec()).asInstanceOf[BsonDecoder[Int]]
+  implicit val longBsonDecoder: BsonDecoder[Long]                        = fastInstance(new LongCodec()).asInstanceOf[BsonDecoder[Long]]
+  implicit val stringBsonDecoder: BsonDecoder[String]                    = fastInstance(new StringCodec())
+  implicit val objectIdBsonDecoder: BsonDecoder[org.bson.types.ObjectId] = fastInstance(new ObjectIdCodec())
+  implicit val instantBsonDecoder: BsonDecoder[Instant]                  = fastInstance(new InstantCodec())
 
   implicit def optionBsonDecoder[A](implicit decA: BsonDecoder[A]): BsonDecoder[Option[A]] =
     new BsonDecoder[Option[A]] {
@@ -54,7 +54,7 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders with TupleBsonDe
     stringBsonDecoder.map(UUID.fromString)
 
   implicit def mapBsonDecoder[K, V](implicit decK: KeyBsonDecoder[K], decV: BsonDecoder[V]): BsonDecoder[Map[K, V]] =
-    instanceFromBsonValue {
+    slowInstance {
       case doc: BsonDocument =>
         val mapBuilder = scala.collection.mutable.LinkedHashMap[K, V]()
 

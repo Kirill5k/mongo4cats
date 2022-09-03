@@ -3,6 +3,8 @@ package mongo4cats.bench
 import cats.syntax.all._
 import io.circe.generic.extras.auto._
 import mongo4cats.bench.BenchST.BenchST2
+import mongo4cats.bench.DerivationReadBench._
+import mongo4cats.bench.DerivationWriteBench.encoderContext
 import mongo4cats.circe._
 import mongo4cats.derivation.bson.AllBsonEncoders._
 import mongo4cats.derivation.bson.AllBsonDecoders._
@@ -11,8 +13,8 @@ import mongo4cats.derivation.bson.configured.decoder.auto._
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.io.BasicOutputBuffer
 import org.bson.{BsonBinaryReader, BsonBinaryWriter}
-import org.openjdk.jmh.annotations._
 
+import org.openjdk.jmh.annotations._
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
@@ -24,33 +26,6 @@ import java.util.concurrent.TimeUnit
 @Measurement(iterations = 3)
 @Timeout(time = 15)
 class DerivationReadBench {
-
-  implicit val bsonConf = mongo4cats.derivation.bson.configured.Configuration.default
-  // .withDiscriminator("theDiscriminator")
-
-  println(bsonConf)
-
-  implicit val circeConf = io.circe.generic.extras.Configuration(
-    transformMemberNames = bsonConf.transformMemberNames,
-    transformConstructorNames = bsonConf.transformConstructorNames,
-    useDefaults = bsonConf.useDefaults,
-    discriminator = bsonConf.discriminator
-  )
-
-  val encoderContext: EncoderContext  = EncoderContext.builder().build()
-  val decoderContext: DecoderContext  = DecoderContext.builder().build()
-  val bsonDecoder: Typeclass[BenchCC] = BsonDecoder[BenchCC]
-  val circeCodec: Codec[BenchCC]      = deriveCirceCodecProvider[BenchCC].get.get(classOf[BenchCC], null)
-  val cc1: BenchCC                    = BenchCC(BenchST2().some)
-  val cc2: BenchCC                    = BenchCC()
-  def enc(a: BenchCC): ByteBuffer = {
-    val buffer = new BasicOutputBuffer(1000)
-    circeCodec.encode(new BsonBinaryWriter(buffer), a, encoderContext)
-    ByteBuffer.wrap(buffer.toByteArray)
-  }
-
-  val byteBuffer1: ByteBuffer = enc(cc1)
-  val byteBuffer2: ByteBuffer = enc(cc2)
 
   // @Benchmark
   def a_readViaDerivationWithSealedTrait(): Unit = {
@@ -95,4 +70,34 @@ class DerivationReadBench {
     // if (decoded != cc2) throw new Throwable(s"${decoded} != $cc2")
     ()
   }
+}
+
+object DerivationReadBench {
+
+  implicit val bsonConf = mongo4cats.derivation.bson.configured.Configuration.default
+  // .withDiscriminator("theDiscriminator")
+
+  // println(bsonConf)
+
+  implicit val circeConf = io.circe.generic.extras.Configuration(
+    transformMemberNames = bsonConf.transformMemberNames,
+    transformConstructorNames = bsonConf.transformConstructorNames,
+    useDefaults = bsonConf.useDefaults,
+    discriminator = bsonConf.discriminator
+  )
+
+  val decoderContext: DecoderContext  = DecoderContext.builder().build()
+  val bsonDecoder: Typeclass[BenchCC] = BsonDecoder[BenchCC]
+  val circeCodec: Codec[BenchCC]      = deriveCirceCodecProvider[BenchCC].get.get(classOf[BenchCC], null)
+  val cc1: BenchCC                    = BenchCC(BenchST2().some)
+  val cc2: BenchCC                    = BenchCC()
+
+  def enc(a: BenchCC): ByteBuffer = {
+    val buffer = new BasicOutputBuffer(1000)
+    circeCodec.encode(new BsonBinaryWriter(buffer), a, encoderContext)
+    ByteBuffer.wrap(buffer.toByteArray)
+  }
+
+  val byteBuffer1: ByteBuffer = enc(cc1)
+  val byteBuffer2: ByteBuffer = enc(cc2)
 }

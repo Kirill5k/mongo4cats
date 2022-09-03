@@ -134,9 +134,11 @@ object Boilerplate {
       import tv._
 
       val instances = synTypes.map(tpe => s"enc$tpe: BsonEncoder[$tpe]").mkString(", ")
-      val encodeBody = synTypes.zipWithIndex
+      val unsafeBsonEncodeBody = synTypes.zipWithIndex
         .map { case (tpe, n) => s"enc$tpe.unsafeBsonEncode(writer, value._${n + 1}, encoderContext)" }
         .mkString("; ")
+      val unsafeToBsonValueBody =
+        synTypes.zipWithIndex.map { case (tpe, n) => s"bsonArray.add(enc$tpe.unsafeToBsonValue(value._${n + 1}));" }.mkString( "; ")
 
       block"""
         |package mongo4cats.derivation.bson
@@ -144,17 +146,22 @@ object Boilerplate {
         |import org.bson._
         |import org.bson.codecs._
         |import mongo4cats.derivation.bson._
-        |import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaCodec
+        |import mongo4cats.derivation.bson.BsonEncoder._
         |
         |private[bson] trait TupleBsonEncoders {
         -  implicit def tuple${arity}BsonEncoder[${`A..N`}](implicit $instances): BsonEncoder[${`(A..N)`}] =
-        -    instanceFromJavaCodec(new JavaEncoder[${`(A..N)`}] {
-        -      override def encode(writer: BsonWriter, value: ${`(A..N)`}, encoderContext: EncoderContext): Unit = {
+        -    new BsonEncoder[${`(A..N)`}] {
+        -      override def unsafeBsonEncode(writer: BsonWriter, value: ${`(A..N)`}, encoderContext: EncoderContext): Unit = {
         -        writer.writeStartArray()
-        -        $encodeBody
+        -        $unsafeBsonEncodeBody
         -        writer.writeEndArray()
         -      }
-        -    })
+        -      override def unsafeToBsonValue(value: ${`(A..N)`}): BsonValue = {
+        -        val bsonArray = new BsonArray($arity)
+        -        $unsafeToBsonValueBody
+        -        bsonArray
+        -      }
+        -    }
         |}
       """
     }

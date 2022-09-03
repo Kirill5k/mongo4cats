@@ -19,7 +19,7 @@ package mongo4cats.derivation.bson
 import magnolia1._
 import mongo4cats.derivation.bson.configured.Configuration
 import mongo4cats.derivation.bson.BsonEncoder
-import mongo4cats.derivation.bson.BsonEncoder.instanceFromJavaCodec
+import mongo4cats.derivation.bson.BsonEncoder.fastInstance
 import org.bson.BsonType._
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{

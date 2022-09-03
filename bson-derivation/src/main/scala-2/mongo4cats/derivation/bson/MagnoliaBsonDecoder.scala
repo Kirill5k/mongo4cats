@@ -20,7 +20,7 @@ import cats.data.NonEmptyList
 import cats.syntax.all._
 import magnolia1._
 import mongo4cats.client.MongoClient.asJava
-import mongo4cats.derivation.bson.BsonDecoder.{debug, instanceFromBsonValue, instanceFromJavaDecoder, JavaDecoder, Result}
+import mongo4cats.derivation.bson.BsonDecoder.{debug, fastInstance, slowInstance, JavaDecoder, Result}
 import mongo4cats.derivation.bson.configured.Configuration
 import org.bson.AbstractBsonReader.State
 import org.bson.codecs.DecoderContext
@@ -79,9 +79,11 @@ private[bson] object MagnoliaBsonDecoder {
           else {
             val index = param.index
             foundParamArray(index) = true
-            try
-              rawValuesArray(index) = param.typeclass.unsafeDecode(reader, decoderContext)
-            catch { case ex: Throwable => throw new Throwable(s"Error while decoding '${caseClass.typeName.full}.$bsonKey'", ex) }
+            try rawValuesArray(index) = param.typeclass.unsafeDecode(reader, decoderContext)
+            catch {
+              case ex: WithErrorMessage => throw ex
+              case ex: Throwable        => throw new Throwable(s"Error while decoding '${caseClass.typeName.full}.$bsonKey'", ex)
+            }
           }
         }
         reader.readEndDocument()

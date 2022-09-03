@@ -24,6 +24,7 @@ import mongo4cats.circe._
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.derivation.bson.AllBsonEncoders._
 import mongo4cats.derivation.bson.AllBsonDecoders._
+import mongo4cats.derivation.bson.configured.AutoDerivationTest.bsonConfigurationGen
 import mongo4cats.derivation.bson.configured.decoder.auto._
 import mongo4cats.derivation.bson.configured.encoder.auto._
 import mongo4cats.derivation.bson.{bsonDecoderContextSingleton, bsonEncoderContextSingleton, BsonDecoder, BsonEncoder, BsonValueOps}
@@ -115,30 +116,13 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSuccessful = 2000)
 
+  val rootTestDataGen: Gen[RootTestData] = Arbitrary.arbitrary[RootTestData]
+
   "Derived direct Encode/Decode ADT to org.bson.BsonValue with same result as using mongo4cats.circe with io.circe.generic.extras.auto" in {
-
-    val transformationGen: Gen[String => String] =
-      Gen.oneOf(
-        Seq(
-          identity[String](_),
-          mongo4cats.derivation.bson.configured.Configuration.kebabCaseTransformation,
-          mongo4cats.derivation.bson.configured.Configuration.snakeCaseTransformation
-        )
-      )
-
-    val bsonConfigurationGen: Gen[mongo4cats.derivation.bson.configured.Configuration] =
-      (
-        transformationGen,
-        transformationGen,
-        Gen.oneOf(false, true).label("useDefaults"),
-        Gen.option(Gen.stringOfN(5, Gen.alphaUpperChar)).label("discriminator"),
-        Gen.oneOf(false, true).label("yoloWrite")
-      ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _, _))
-
     val outputBufferCirce      = new BasicOutputBuffer(10 * 1000 * 1000)
     val outputBufferDerivation = new BasicOutputBuffer(10 * 1000 * 1000)
 
-    forAll(Arbitrary.arbitrary[RootTestData], bsonConfigurationGen, Gen.oneOf(false, true).label("dropNulls")) {
+    forAll(rootTestDataGen, bsonConfigurationGen, Gen.oneOf(false, true).label("dropNulls")) {
       case (testData, bsonConfiguration, dropNulls) =>
         implicit val bsonConf: mongo4cats.derivation.bson.configured.Configuration =
           bsonConfiguration
@@ -257,5 +241,27 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           assert(decoded == expectedRight, ", 8) Binary BsonEncoder/CirceDecoder")
         }
     }
+  }
+}
+
+object AutoDerivationTest {
+
+  val bsonConfigurationGen: Gen[mongo4cats.derivation.bson.configured.Configuration] = {
+    val transformationGen: Gen[String => String] =
+      Gen.oneOf(
+        Seq(
+          identity[String](_),
+          mongo4cats.derivation.bson.configured.Configuration.kebabCaseTransformation,
+          mongo4cats.derivation.bson.configured.Configuration.snakeCaseTransformation
+        )
+      )
+
+    (
+      transformationGen,
+      transformationGen,
+      Gen.oneOf(false, true).label("useDefaults"),
+      Gen.option(Gen.stringOfN(5, Gen.alphaUpperChar)).label("discriminator"),
+      Gen.oneOf(false, true).label("yoloWriterMode")
+    ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _, _))
   }
 }

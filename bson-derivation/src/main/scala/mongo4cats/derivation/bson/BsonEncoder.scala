@@ -71,29 +71,42 @@ trait BsonEncoder[A] extends Serializable with AsJava { self =>
 
 object BsonEncoder {
 
+  val dummyRoot = "d"
+
   def apply[A](implicit ev: BsonEncoder[A]): BsonEncoder[A] = ev
 
-  def instanceWithBsonValue[A](f: A => BsonValue): BsonEncoder[A] =
+  def fastInstance[A](javaEncoder: org.bson.codecs.Encoder[A], toBsonValueOpt: A => BsonValue = null): BsonEncoder[A] =
     new BsonEncoder[A] {
-      override def unsafeToBsonValue(a: A): BsonValue = f(a)
-
-      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
-        bsonValueCodecSingleton.encode(writer, unsafeToBsonValue(a), encoderContext)
-    }
-
-  val dummyRoot = "d"
-  def instanceFromJavaCodec[A](javaEncoder: org.bson.codecs.Encoder[A], toBsonValueOpt: A => BsonValue = null): BsonEncoder[A] =
-    new BsonEncoder[A] {
-      val toBson: A => BsonValue =
+      val cachedToBsonFunc: A => BsonValue =
         if (toBsonValueOpt == null) super.unsafeToBsonValue
         else toBsonValueOpt
 
       override def unsafeToBsonValue(a: A): BsonValue =
-        toBson(a)
+        cachedToBsonFunc(a)
 
       override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
         javaEncoder.encode(writer, a, encoderContext)
     }
+
+  def fastInstance[A](encodeFunc: (BsonWriter, A) => Unit): BsonEncoder[A] =
+    new BsonEncoder[A] {
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+        encodeFunc(writer, a)
+    }
+
+  def slowInstance[A](f: A => BsonValue): BsonEncoder[A] =
+    new BsonEncoder[A] {
+      override def unsafeToBsonValue(a: A): BsonValue = f(a)
+
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+        bsonValueCodecSingleton.encode(writer, f(a), encoderContext)
+    }
+
+  def unsafeEncodeAsBsonDoc[A](a: A)(implicit encA: BsonDocumentEncoder[A]): BsonDocument = {
+    val doc = new BsonDocument()
+    encA.unsafeBsonEncode(new BsonDocumentWriter(doc), a, bsonEncoderContextSingleton)
+    doc
+  }
 
   implicit final val bsonEncoderContravariant: Contravariant[BsonEncoder] =
     new Contravariant[BsonEncoder] {
