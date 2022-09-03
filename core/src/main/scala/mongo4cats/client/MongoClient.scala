@@ -24,8 +24,15 @@ import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
 import mongo4cats.syntax._
-import mongo4cats.models.client.{ClientSessionOptions, MongoClientSettings, MongoDriverInformation, ServerAddress, TransactionOptions}
-import mongo4cats.models.client.MongoConnection
+import mongo4cats.models.client.{
+  ClientSessionOptions,
+  ConnectionString,
+  MongoClientSettings,
+  MongoConnection,
+  MongoDriverInformation,
+  ServerAddress,
+  TransactionOptions
+}
 
 import scala.util.Try
 
@@ -72,11 +79,12 @@ object MongoClient extends AsJava {
     fromConnectionString(connection.toString)
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
-    clientResource[F](MongoClients.create(connectionString))
+    clientResource[F](MongoClients.create(MongoClientSettings.builder().applyConnectionString(ConnectionString(connectionString)).build()))
 
   def fromServerAddress[F[_]: Async](serverAddresses: ServerAddress*): Resource[F, MongoClient[F]] =
     create {
-      MongoClientSettings.builder
+      MongoClientSettings
+        .builder()
         .applyToClusterSettings { builder =>
           val _ = builder.hosts(asJava(serverAddresses.toList))
         }

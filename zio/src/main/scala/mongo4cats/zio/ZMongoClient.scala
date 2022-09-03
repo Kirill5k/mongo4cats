@@ -55,11 +55,12 @@ object ZMongoClient extends AsJava {
     fromConnectionString(connection.toString)
 
   def fromConnectionString(connectionString: String): RIO[Scope, ZMongoClient] =
-    mkClient(MongoClients.create(connectionString))
+    mkClient(MongoClients.create(MongoClientSettings.builder().applyConnectionString(ConnectionString(connectionString)).build()))
 
   def fromServerAddress(serverAddresses: ServerAddress*): RIO[Scope, ZMongoClient] =
     create {
-      MongoClientSettings.builder
+      MongoClientSettings
+        .builder()
         .applyToClusterSettings { builder =>
           val _ = builder.hosts(asJava(serverAddresses.toList))
         }
