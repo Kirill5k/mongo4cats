@@ -49,7 +49,7 @@ Available for Scala 2.12, 2.13 and 3.1.</p>
           <span class="o">.</span><span class="py">sortByDesc</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span>
           <span class="o">.</span><span class="py">limit</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
           <span class="o">.</span><span class="py">all</span>
-        <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">IO</span><span class="o">.</span><span class="py">println</span><span class="o">(</span><span class="nv">docs</span><span class="o">.</span><span class="py">mkString</span><span class="o">(</span><span class="s">"[\n"</span><span class="o">,</span> <span class="s">",\n"</span><span class="o">,</span> <span class="s">"]"</span><span class="o">))</span>
+        <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">IO</span><span class="o">.</span><span class="py">println</span><span class="o">(</span><span class="nv">docs</span><span class="o">.</span><span class="py">mkString</span><span class="o">(</span><span class="s">"[\n"</span><span class="o">,</span> <span class="s">",\n"</span><span class="o">,</span> <span class="s">"\n]"</span><span class="o">))</span>
       <span class="o">}</span> <span class="nf">yield</span> <span class="o">()</span>
     <span class="o">}</span>
 <span class="o">}</span>
@@ -78,7 +78,7 @@ Available for Scala 2.12, 2.13 and 3.1.</p>
       <span class="o">.</span><span class="py">sortByDesc</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span>
       <span class="o">.</span><span class="py">limit</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
       <span class="o">.</span><span class="py">all</span>
-    <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">Console</span><span class="o">.</span><span class="py">printLine</span><span class="o">(</span><span class="nv">docs</span><span class="o">.</span><span class="py">mkString</span><span class="o">(</span><span class="s">"[\n"</span><span class="o">,</span> <span class="s">",\n"</span><span class="o">,</span> <span class="s">"]"</span><span class="o">))</span>
+    <span class="k">_</span> <span class="k">&lt;-</span> <span class="nv">Console</span><span class="o">.</span><span class="py">printLine</span><span class="o">(</span><span class="nv">docs</span><span class="o">.</span><span class="py">mkString</span><span class="o">(</span><span class="s">"[\n"</span><span class="o">,</span> <span class="s">",\n"</span><span class="o">,</span> <span class="s">"\n]"</span><span class="o">))</span>
   <span class="o">}</span> <span class="nf">yield</span> <span class="o">()</span>
 
   <span class="k">override</span> <span class="k">def</span> <span class="nf">run</span> <span class="k">=</span> <span class="nv">program</span><span class="o">.</span><span class="py">provide</span><span class="o">(</span><span class="n">client</span><span class="o">,</span> <span class="n">database</span><span class="o">,</span> <span class="n">collection</span><span class="o">)</span>
