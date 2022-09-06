@@ -17,14 +17,19 @@
 package mongo4cats.derivation.bson.configured
 
 import cats.syntax.all._
+import cats.data.Validated
 import io.circe.generic.extras.auto._
-import io.circe.{Decoder, Encoder, Json, ParsingFailure}
+import io.circe.disjunctionCodecs.encodeEither
+import io.circe.disjunctionCodecs.decoderEither
+import io.circe.disjunctionCodecs.encodeValidated
+import io.circe.disjunctionCodecs.decodeValidated
 import io.circe.syntax._
 import mongo4cats.circe._
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.derivation.bson.AllBsonEncoders._
 import mongo4cats.derivation.bson.AllBsonDecoders._
 import mongo4cats.derivation.bson.configured.AutoDerivationTest.bsonConfigurationGen
+import mongo4cats.derivation.bson.configured.TestSealedTrait.{CC1, CC2, CC3}
 import mongo4cats.derivation.bson.configured.decoder.auto._
 import mongo4cats.derivation.bson.configured.encoder.auto._
 import mongo4cats.derivation.bson.{bsonDecoderContextSingleton, bsonEncoderContextSingleton, BsonDecoder, BsonEncoder, BsonValueOps}
@@ -41,11 +46,12 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util
 import java.util.UUID
 
 final case class RootTestData(
-    testSealedTrait: TestSealedTrait
-    // items: ItemTestDatas,
+    testSealedTrait: TestSealedTrait,
+    items: ItemTestDatas
 )
 
 final case class ItemTestDatas(
@@ -88,10 +94,13 @@ object TestSealedTrait {
   final case class CC2(
       uuid: UUID,
       int: Option[Int] = 3.some,
-      long: Long
+      long: Long,
+      eitherIntString: Either[Int, String],
+      validatedLongChar: Either[Long, Char]
   ) extends TestSealedTrait
 
   final case class CC3(
+      char: Char,
       byte: Byte,
       short: Short,
       int: Option[Int] = 5.some,
@@ -104,17 +113,14 @@ object TestSealedTrait {
 // $ sbt "~+mongo4cats-bson-derivation/testOnly mongo4cats.derivation.bson.configured.AutoDerivationTest"
 class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks {
 
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    PropertyCheckConfiguration(minSuccessful = 2000)
+
   implicit val instantArb: Arbitrary[Instant] =
-    Arbitrary(Gen.choose(0, 1000000L).map(Instant.ofEpochSecond(_)))
+    Arbitrary(Gen.choose(0, 1000000L).map(Instant.ofEpochSecond))
 
   implicit val objectIdArb: Arbitrary[org.bson.types.ObjectId] =
     Arbitrary((Gen.choose(0, 16777215), Gen.choose(0, 16777215)).mapN(new org.bson.types.ObjectId(_, _)))
-
-  implicit val shortStringArb: Arbitrary[String] =
-    Arbitrary(Gen.choose(0, 5).flatMap(Gen.stringOfN(_, Gen.alphaChar)))
-
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    PropertyCheckConfiguration(minSuccessful = 2000)
 
   val rootTestDataGen: Gen[RootTestData] = Arbitrary.arbitrary[RootTestData]
 
@@ -136,49 +142,37 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           )
 
         // --- Encode ---
-        val expectedRight                     = testData.asRight[Throwable]
-        val circeCodecProvider: CodecProvider = mongo4cats.circe.deriveCirceCodecProvider[RootTestData].get
-        val circeCodec =
-          circeCodecProvider.get(classOf[RootTestData], new ProvidersCodecRegistry(java.util.Arrays.asList(circeCodecProvider)))
-        val bsonEncoder  = BsonEncoder[RootTestData]
+        val expectedRight = testData.asRight[Throwable]
+
+        // --- Circe ---
+        val circeCodecProvider = mongo4cats.circe.deriveCirceCodecProvider[RootTestData].get
+        val circeCodec   = circeCodecProvider.get(classOf[RootTestData], new ProvidersCodecRegistry(util.Arrays.asList(circeCodecProvider)))
         val circeJson    = testData.asJson
         val circeJsonStr = circeJson.noSpacesSortKeys
-        val bsonDoc      = new BsonDocument()
-        val bsonWriter   = new BsonDocumentWriter(bsonDoc)
-        val runEncoding  = bsonEncoder.safeBsonEncode(bsonWriter, testData, bsonEncoderContextSingleton)
+
+        // --- Bson ---
+        val bsonEncoder = BsonEncoder[RootTestData]
+        val bsonDoc     = new BsonDocument()
+        val bsonWriter  = new BsonDocumentWriter(bsonDoc)
+        val runEncoding = bsonEncoder.safeBsonEncode(bsonWriter, testData, bsonEncoderContextSingleton)
         runEncoding.leftMap(_.printStackTrace())
-        assert(runEncoding.isRight, "0) Encoding with BsonEncoder fail")
+        assert(runEncoding.isRight, "--- 0) Encoding with BsonEncoder fail")
         val bsonStr       = bsonDoc.toJson()
         val parsedBsonStr = io.circe.parser.parse(bsonStr)
         assert(parsedBsonStr.isRight, "Unparsable bsonStr")
         val bsonStr2 = parsedBsonStr.toOption.get.noSpacesSortKeys
-        if (bsonStr2 != circeJsonStr) {
-          println(s"""|--------------------
-                  |Bson: $bsonStr2
-                  |Json: $circeJsonStr
-                  |""".stripMargin)
-        }
         val jsons = s"""|Bson: ${bsonStr2}
-            |Json: $circeJsonStr
-            |""".stripMargin
+                        |Json: $circeJsonStr
+                        |""".stripMargin
 
-        assert(
-          bsonStr2 == circeJsonStr,
-          s"""|, 1) Json String from Bson != Json String from Circe
-              |Conf: $bsonConf
-              |$jsons""".stripMargin
-        )
+        assert(bsonStr2 == circeJsonStr, s", --- 1) Json String from Bson != Json String from Circe\n$jsons")
 
         // --- Decode ---
-        // val jsonFromBsonStr: Either[ParsingFailure, Json] = io.circe.parser.parse(jsonFromBson)
-        // assert(jsonFromBsonStr.isRight, ", 2) BsonStr Can't be Circe Json Decoded")
-        // assert(jsonFromBsonStr == circeJson.asRight, ", 3) BsonStr Circe Json Decoded != Circe Json Encoded")
-
         val canDropNulls    = bsonConf.useDefaults || dropNulls
         val expected        = (if (canDropNulls) circeJson.deepDropNullValues else circeJson).as[RootTestData]
         val decodedFromBson = BsonDecoder.safeDecode[RootTestData](if (canDropNulls) bsonDoc.deepDropNullValues else bsonDoc)
         decodedFromBson.leftMap(_.printStackTrace())
-        assert(decodedFromBson == expected, s", 4) Bson Decoder != Circe Decoder\n$jsons")
+        assert(decodedFromBson == expected, s", --- 2) Bson Decoder != Circe Decoder\n$jsons")
 
         // --- Binary ---
         val bytesCirce = ByteBuffer.wrap {
@@ -204,11 +198,11 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           reader.readBsonType()
           val decoded = Either.catchNonFatal(circeCodec.decode(reader, bsonDecoderContextSingleton))
           decoded.leftMap { ex =>
-            println(s"-------------------------- 5) Can't Circe Decode\n$jsons")
+            println(s"--- 3) Can't Circe Decode\n$jsons")
             ex.printStackTrace()
             throw ex
           }
-          assert(decoded == expectedRight, s", 5) Binary CirceEncoder/CirceDecoder\n$jsons")
+          assert(decoded == expectedRight, s", --- 4) Binary CirceEncoder/CirceDecoder\n$jsons")
         }
 
         {
@@ -217,11 +211,11 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           reader.readBsonType()
           val decoded = BsonDecoder.safeDecode[RootTestData](reader)
           decoded.leftMap { ex =>
-            println(s"-------------------------- 6) Can't BsonDecode\n$jsons")
+            println(s"--- 5) Can't BsonDecode\n$jsons")
             ex.printStackTrace()
             throw ex
           }
-          assert(decoded == expectedRight, s", 6) Binary BsonEncoder/BsonDecoder\n$jsons")
+          assert(decoded == expectedRight, s", --- 6) Binary BsonEncoder/BsonDecoder\n$jsons")
         }
 
         {
@@ -230,7 +224,7 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           reader.readBsonType()
           val decoded = BsonDecoder.safeDecode[RootTestData](reader)
           decoded.leftMap(_.printStackTrace())
-          assert(decoded == expectedRight, s", 7) Binary CirceEncoder/BsonDecoder\n$jsons")
+          assert(decoded == expectedRight, s", --- 7) Binary CirceEncoder/BsonDecoder\n$jsons")
         }
 
         {
@@ -238,7 +232,7 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
           val reader = new BsonBinaryReader(bytesDerivation)
           reader.readBsonType()
           val decoded = Either.catchNonFatal(circeCodec.decode(reader, bsonDecoderContextSingleton))
-          assert(decoded == expectedRight, ", 8) Binary BsonEncoder/CirceDecoder")
+          assert(decoded == expectedRight, ", --- 8) Binary BsonEncoder/CirceDecoder")
         }
     }
   }

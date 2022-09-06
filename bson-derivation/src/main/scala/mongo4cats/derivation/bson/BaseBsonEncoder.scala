@@ -15,6 +15,8 @@
  */
 
 package mongo4cats.derivation.bson
+import cats.data.Validated
+import cats.data.Validated.{Invalid, Valid}
 import mongo4cats.derivation.bson.BsonEncoder.fastInstance
 import org.bson.{types, BsonInt32, BsonInt64, BsonNull, BsonObjectId, BsonReader, BsonString, BsonValue, BsonWriter}
 import org.bson.codecs._
@@ -27,6 +29,9 @@ trait BaseBsonEncoder {
 
   implicit val stringBsonEncoder: BsonEncoder[String] =
     fastInstance(new StringCodec(), new BsonString(_))
+
+  implicit val charBsonEncoder: BsonEncoder[Char] =
+    fastInstance(new CharacterCodec(), (b: java.lang.Character) => new BsonString(b.toString)).asInstanceOf[BsonEncoder[Char]]
 
   implicit val byteBsonEncoder: BsonEncoder[Byte] =
     fastInstance(new ByteCodec(), (b: java.lang.Byte) => new BsonInt32(b.intValue())).asInstanceOf[BsonEncoder[Byte]]
@@ -52,6 +57,46 @@ trait BaseBsonEncoder {
 
       override def unsafeBsonEncode(writer: BsonWriter, aOpt: Option[A], encoderContext: EncoderContext): Unit =
         aOpt.fold(writer.writeNull())(encA.unsafeBsonEncode(writer, _, encoderContext))
+    }
+
+  implicit def eitherBsonEncoder[A, B](implicit
+      encA: BsonEncoder[A],
+      encB: BsonEncoder[B]
+  ): BsonEncoder[Either[A, B]] =
+    new BsonEncoder[Either[A, B]] {
+      override def unsafeBsonEncode(writer: BsonWriter, either: Either[A, B], encoderContext: EncoderContext): Unit =
+        either match {
+          case Right(r) =>
+            writer.writeStartDocument()
+            writer.writeName("Right")
+            encB.unsafeBsonEncode(writer, r, encoderContext)
+            writer.writeEndDocument()
+          case Left(l) =>
+            writer.writeStartDocument()
+            writer.writeName("Left")
+            encA.unsafeBsonEncode(writer, l, encoderContext)
+            writer.writeEndDocument()
+        }
+    }
+
+  implicit def validatedBsonEncoder[A, B](implicit
+      encA: BsonEncoder[A],
+      encB: BsonEncoder[B]
+  ): BsonEncoder[Validated[A, B]] =
+    new BsonEncoder[Validated[A, B]] {
+      override def unsafeBsonEncode(writer: BsonWriter, either: Validated[A, B], encoderContext: EncoderContext): Unit =
+        either match {
+          case Valid(r) =>
+            writer.writeStartDocument()
+            writer.writeName("Valid")
+            encB.unsafeBsonEncode(writer, r, encoderContext)
+            writer.writeEndDocument()
+          case Invalid(l) =>
+            writer.writeStartDocument()
+            writer.writeName("Invalid")
+            encA.unsafeBsonEncode(writer, l, encoderContext)
+            writer.writeEndDocument()
+        }
     }
 
   implicit def arrayBsonEncoder[A](implicit encA: BsonEncoder[A]): BsonEncoder[Array[A]] =
