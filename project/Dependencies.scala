@@ -2,19 +2,20 @@ import sbt._
 
 object Dependencies {
   private object Versions {
-    val kindProjector = "0.13.2"
-    val cats          = "2.8.0"
-    val mongodb       = "4.7.1"
-    val fs2           = "3.2.11"
-    val scalaCompat   = "2.8.1"
-    val circe         = "0.14.2"
-    val zio           = "2.0.0"
+    val kindProjector      = "0.13.2"
+    val cats               = "2.8.0"
+    val mongodb            = "4.7.1"
+    val fs2                = "3.2.12"
+    val scalaCompat        = "2.8.1"
+    val circe              = "0.14.2"
+    val zio                = "2.0.2"
+    val zioInteropReactive = "2.0.0"
 
-    val logback   = "1.2.11"
+    val logback   = "1.4.0"
     val scalaTest = "3.2.13"
 
     val embeddedMongo   = "3.4.8"
-    val immutableValue  = "2.9.0"
+    val immutableValue  = "2.9.1"
     val commonsCompress = "1.21"
   }
 
@@ -33,9 +34,9 @@ object Dependencies {
 
     val zio                = "dev.zio" %% "zio"                         % Versions.zio
     val zioStreams         = "dev.zio" %% "zio-streams"                 % Versions.zio
-    val zioInteropReactive = "dev.zio" %% "zio-interop-reactivestreams" % Versions.zio
     val zioTest            = "dev.zio" %% "zio-test"                    % Versions.zio
     val zioTestSbt         = "dev.zio" %% "zio-test-sbt"                % Versions.zio
+    val zioInteropReactive = "dev.zio" %% "zio-interop-reactivestreams" % Versions.zioInteropReactive
 
     val scalaTest = "org.scalatest" %% "scalatest"       % Versions.scalaTest
     val logback   = "ch.qos.logback" % "logback-classic" % Versions.logback
