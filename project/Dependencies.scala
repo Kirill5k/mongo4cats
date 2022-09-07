@@ -6,7 +6,6 @@ object Dependencies {
     val cats               = "2.8.0"
     val mongodb            = "4.7.1"
     val fs2                = "3.2.12"
-    val scalaCompat        = "2.8.1"
     val circe              = "0.14.2"
     val zio                = "2.0.2"
     val zioInteropReactive = "2.0.0"
@@ -26,7 +25,6 @@ object Dependencies {
 
     val cats        = "org.typelevel"          %% "cats-core"               % Versions.cats
     val fs2Core     = "co.fs2"                 %% "fs2-core"                % Versions.fs2
-    val scalaCompat = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.scalaCompat
 
     val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -52,7 +50,6 @@ object Dependencies {
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
-    Libraries.scalaCompat,
     Libraries.cats,
     Libraries.scalaTest % Test
   )
