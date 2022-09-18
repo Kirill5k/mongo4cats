@@ -71,12 +71,12 @@ private[bson] object MagnoliaBsonDecoder {
         var bsonKey: String = null
         reader.readStartDocument()
         while ({
-          if (reader.getState == State.TYPE) reader.readBsonType()
-          bsonKey = if (reader.getState == State.NAME) reader.readName() else null
+          if (reader.getState eq State.TYPE) reader.readBsonType()
+          bsonKey = if (reader.getState eq State.NAME) reader.readName() else null
           bsonKey != null
         }) {
           val param = paramByBsonKeyJava.get(bsonKey)
-          if (param == null) reader.skipValue() // For extra field.
+          if (param eq null) reader.skipValue() // For extra field.
           else {
             val index = param.index
             foundParamArray(index) = true
@@ -148,7 +148,7 @@ private[bson] object MagnoliaBsonDecoder {
       val key = reader.readName()
       val theSubtype = {
         val sub = constructorLookup.get(key)
-        if (sub == null) throw new Throwable(s"""|Can't decode coproduct type: couldn't find matching subtype.
+        if (sub eq null) throw new Throwable(s"""|Can't decode coproduct type: couldn't find matching subtype.
               |BSON: $$doc
               |Key: $key
  |
@@ -173,17 +173,17 @@ private[bson] object MagnoliaBsonDecoder {
       var bsonKey: String         = null
       reader.readStartDocument()
       while ({
-        if (reader.getState == State.TYPE) reader.readBsonType()
-        bsonKey = if (reader.getState == State.NAME) reader.readName() else null
-        constructorName == null || bsonKey != null
+        if (reader.getState eq State.TYPE) reader.readBsonType()
+        bsonKey = if (reader.getState eq State.NAME) reader.readName() else null
+        (constructorName eq null) || !(bsonKey eq null)
       })
         if (bsonKey == discriminator) constructorName = reader.readString()
-        else if (reader.getState == State.VALUE) reader.skipValue()
+        else if (reader.getState eq State.VALUE) reader.skipValue()
         else throw new Throwable(s"Discriminator '${discriminator}' not found")
       mark.reset()
 
       val subType = constructorLookup.get(constructorName)
-      if (subType == null)
+      if (subType eq null)
         throw new Throwable(
           s"""|Can't decode coproduct type: constructor name "$constructorName" not found in known constructor names
               |BSON: $$doc

@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit.SECONDS
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(1)
 @Threads(1)
-@Measurement(iterations = 3)
 @Warmup(iterations = 2)
+@Measurement(iterations = 3)
 @Timeout(time = 15)
 class DerivationWriteBench {
 
@@ -35,19 +35,19 @@ class DerivationWriteBench {
     bsonEncoder.unsafeBsonEncode(writer, cc2, encoderContext)
   }
 
-  // @Benchmark
+  @Benchmark
   def b_writeViaCirceWithSealedTrait(): Unit = {
     output.truncateToPosition(0)
     circeCodec.encode(writer, cc2, encoderContext)
   }
 
-  // @Benchmark
+  @Benchmark
   def c_writeViaDerivation(): Unit = {
     output.truncateToPosition(0)
     bsonEncoder.unsafeBsonEncode(writer, cc1, encoderContext)
   }
 
-  // @Benchmark
+  @Benchmark
   def d_writeViaCirce(): Unit = {
     output.truncateToPosition(0)
     circeCodec.encode(writer, cc1, encoderContext)
@@ -57,7 +57,7 @@ class DerivationWriteBench {
 object DerivationWriteBench {
 
   implicit val bsonConf = mongo4cats.derivation.bson.configured.Configuration.default
-    .copy(yoloWriteMode = true)
+  // .copy(yoloWriteMode = true)
   // .withDiscriminator("theDiscriminator")
 
   implicit val circeConf = io.circe.generic.extras.Configuration(

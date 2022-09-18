@@ -1,6 +1,7 @@
 package mongo4cats.bench
 
 import cats.syntax.all._
+import mongo4cats.bench.BenchST.BenchST2
 import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, JavaEncoder}
 import org.bson.{BsonDocument, BsonString, BsonWriter}
 import org.bson.codecs.EncoderContext
@@ -9,7 +10,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 final case class BenchCC(
-    st: Option[BenchST] = none,
+    st: Option[BenchST] = BenchST2().some,
     s1: String = "case class string 1",
     s2: String = "case class string 2",
     s3: String = "case class string 3",

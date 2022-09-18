@@ -77,12 +77,11 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders with TupleBsonDe
           val doc        = bson.asInstanceOf[BsonDocument]
           val rightValue = doc.get("Right")
 
-          if (rightValue != null) Right(decB.unsafeFromBsonValue(rightValue))
-          else {
+          if (rightValue eq null) {
             val leftValue = doc.get("Left")
-            if (leftValue != null) Left(decA.unsafeFromBsonValue(leftValue))
-            else throw new Throwable(s"Can't decode Either, because there is no 'Left' nor 'Right'")
-          }
+            if (leftValue eq null) throw new Throwable(s"Can't decode Either, because there is no 'Left' nor 'Right'")
+            else Left(decA.unsafeFromBsonValue(leftValue))
+          } else Right(decB.unsafeFromBsonValue(rightValue))
         } else throw new Throwable("Can't decode Either, because it's not a BsonDocument")
     }
 
@@ -115,12 +114,11 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders with TupleBsonDe
           val doc        = bson.asInstanceOf[BsonDocument]
           val rightValue = doc.get("Valid")
 
-          if (rightValue != null) Valid(decB.unsafeFromBsonValue(rightValue))
-          else {
+          if (rightValue eq null) {
             val leftValue = doc.get("Invalid")
-            if (leftValue != null) Invalid(decA.unsafeFromBsonValue(leftValue))
-            else throw new Throwable(s"Can't decode Validated, because there is no 'Valid' nor 'Invalid'")
-          }
+            if (leftValue eq null) throw new Throwable(s"Can't decode Validated, because there is no 'Valid' nor 'Invalid'")
+            else Invalid(decA.unsafeFromBsonValue(leftValue))
+          } else Valid(decB.unsafeFromBsonValue(rightValue))
         } else throw new Throwable("Can't decode Validated, because it's not a BsonDocument")
     }
 
@@ -135,7 +133,7 @@ trait AllBsonDecoders extends ScalaVersionDependentBsonDecoders with TupleBsonDe
         } else Option(decA.unsafeDecode(reader, decoderContext))
 
       override def unsafeFromBsonValue(bson: BsonValue): Option[A] =
-        if (bson == null || bson.isNull) none
+        if ((bson eq null) || bson.isNull) none
         else Option(decA.unsafeFromBsonValue(bson))
     }
 

@@ -60,7 +60,7 @@ final case class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWrite
     backpatchSize() // size of document
 
     setContext(getContext.getParentContext)
-    if (getContext != null && (getContext.getContextType eq BsonContextType.JAVASCRIPT_WITH_SCOPE)) {
+    if (!(getContext eq null) && (getContext.getContextType eq BsonContextType.JAVASCRIPT_WITH_SCOPE)) {
       backpatchSize() // size of the JavaScript with scope value
 
       setContext(getContext.getParentContext)
@@ -208,7 +208,7 @@ final case class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWrite
     markk = YoloMark()
 
   def reset(): Unit = {
-    if (markk == null) throw new IllegalStateException("Can not reset without first marking")
+    if (markk eq null) throw new IllegalStateException("Can not reset without first marking")
     markk.reset()
     markk = null
   }
@@ -229,7 +229,7 @@ final case class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWrite
 
   override def writeEndDocument(): Unit = {
     doWriteEndDocument()
-    if (getContext == null || (getContext.getContextType eq BsonContextType.TOP_LEVEL)) _state = State.DONE else _state = getNextState
+    if ((getContext eq null) || (getContext.getContextType eq BsonContextType.TOP_LEVEL)) _state = State.DONE else _state = getNextState
   }
 
   override def writeStartDocument(): Unit                            = { doWriteStartDocument(); _state = State.NAME }
@@ -248,7 +248,7 @@ final case class YoloWriter(_writer: BsonBinaryWriter) extends AbstractBsonWrite
     doWriteName(name)
     currentName = name
     // println(s"writeName(): '${name}'")
-    // if (ctx == null) setContext(Ctx(null, null, name = name))
+    // if (ctx eq null) setContext(Ctx(null, null, name = name))
     // else ctx.name = name
     _state = State.VALUE
   }

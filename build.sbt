@@ -174,7 +174,10 @@ val `mongo4cats-bson-derivation` = project
 
 lazy val bench = (project in file("bench"))
   .enablePlugins(JmhPlugin)
-  .settings(commonSettings)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
+  )
   .dependsOn(
     core,
     circe,

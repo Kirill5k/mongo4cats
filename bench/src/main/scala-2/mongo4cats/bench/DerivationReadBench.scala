@@ -60,7 +60,7 @@ class DerivationReadBench {
     ()
   }
 
-  // @Benchmark
+  @Benchmark
   def d_readViaCirce(): Unit = {
     byteBuffer2.position(0)
     val reader = new BsonBinaryReader(byteBuffer2)

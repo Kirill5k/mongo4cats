@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(1)
 @Threads(1)
-@Measurement(iterations = 3)
 @Warmup(iterations = 2)
+@Measurement(iterations = 3)
 @Timeout(time = 15)
 class BsonEncoderInstanceBench {
 

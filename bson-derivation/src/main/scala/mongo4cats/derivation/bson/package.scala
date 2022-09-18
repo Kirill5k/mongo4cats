@@ -20,7 +20,7 @@ import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
 import mongo4cats.derivation.bson.tag.@@
 import org.bson.codecs.{BsonValueCodec, Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.CodecProvider
-import org.bson.{BsonArray, BsonDocument, BsonElement, BsonReader, BsonValue, BsonWriter}
+import org.bson.{AbstractBsonReader, BsonArray, BsonDocument, BsonElement, BsonReader, BsonValue, BsonWriter}
 
 import java.util
 import scala.reflect.ClassTag
@@ -61,25 +61,24 @@ package object bson {
       encA: BsonEncoder[A],
       decA: BsonDecoder[A]
   ): MongoCodecProvider[Fast[A]] = {
-    val classA: Class[A] =
-      ctA.runtimeClass.asInstanceOf[Class[A]]
+    val classA: Class[A] = ctA.runtimeClass.asInstanceOf[Class[A]]
 
     val javaCodecSingleton: Codec[A] =
       new Codec[A] {
         override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
           encA.unsafeBsonEncode(writer, a, encoderContext)
 
-        override def getEncoderClass: Class[A] = classA
-
         override def decode(reader: BsonReader, decoderContext: DecoderContext): A =
-          decA.unsafeFromBsonValue(bsonValueCodecSingleton.decode(reader, decoderContext))
+          decA.unsafeDecode(reader.asInstanceOf[AbstractBsonReader], decoderContext)
+
+        override def getEncoderClass: Class[A] = classA
       }
 
     new MongoCodecProvider[Fast[A]] {
       override val get: CodecProvider =
         new CodecProvider {
           override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
-            if (classT == classA || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]]
+            if ((classT eq classA) || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]]
             else null
         }
     }
@@ -132,5 +131,4 @@ package object bson {
         case other => (other, false)
       }
   }
-
 }
