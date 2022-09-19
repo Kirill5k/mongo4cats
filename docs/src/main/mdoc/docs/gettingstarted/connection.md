@@ -28,7 +28,7 @@ val connection = MongoConnection("localhost", 27017, Some(MongoCredential("usern
 val clientFromConnection = MongoClient.fromConnection(connection)
 
 // By providing custom MongoClientSettings object
-val settings = MongoClientSettings.builder.build()
+val settings = MongoClientSettings.builder().applyConnectionString(ConnectionString("mongodb://localhost:27017")).build()
 val clientFromSettings = MongoClient.create[IO](settings)
 ```
 

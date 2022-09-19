@@ -19,6 +19,7 @@ package mongo4cats.models
 import java.net.InetSocketAddress
 import com.mongodb.{
   ClientSessionOptions => JClientSessionOptions,
+  ConnectionString => JConnectionString,
   MongoClientSettings => JMongoClientSettings,
   MongoDriverInformation => JMongoDriverInformation,
   ReadConcern,
@@ -36,26 +37,30 @@ package object client {
     def apply(address: InetSocketAddress): ServerAddress = apply(address.getHostName, address.getPort)
   }
 
+  type ConnectionString = JConnectionString
+  object ConnectionString {
+    def apply(connectionString: String): ConnectionString = new JConnectionString(connectionString)
+  }
+
   type MongoClientSettings = JMongoClientSettings
   object MongoClientSettings {
-    def builder: JMongoClientSettings.Builder                                = JMongoClientSettings.builder()
-    def builder(settings: MongoClientSettings): JMongoClientSettings.Builder = JMongoClientSettings.builder(settings)
+    def builderFrom(settings: MongoClientSettings): JMongoClientSettings.Builder = JMongoClientSettings.builder(settings)
 
-    def apply(
+    def builder(
         readPreference: ReadPreference = ReadPreference.primary(),
         writeConcern: WriteConcern = WriteConcern.ACKNOWLEDGED,
         retryWrites: Boolean = true,
         retryReads: Boolean = true,
         readConcern: ReadConcern = ReadConcern.DEFAULT,
         codecRegistry: CodecRegistry = CodecRegistry.Default
-    ): JMongoClientSettings = builder
+    ): JMongoClientSettings.Builder = JMongoClientSettings
+      .builder()
       .readPreference(readPreference)
       .writeConcern(writeConcern)
       .retryWrites(retryWrites)
       .retryReads(retryReads)
       .readConcern(readConcern)
       .codecRegistry(codecRegistry)
-      .build()
   }
 
   type MongoDriverInformation = JMongoDriverInformation

@@ -7,7 +7,7 @@ import pl.project13.scala.sbt.JmhPlugin
 
 val scala212               = "2.12.16"
 val scala213               = "2.13.8"
-val scala3                 = "3.1.1"
+val scala3                 = "3.2.0"
 val supportedScalaVersions = List(scala212, scala213, scala3)
 
 def priorTo2_13(scalaVersion: String): Boolean =

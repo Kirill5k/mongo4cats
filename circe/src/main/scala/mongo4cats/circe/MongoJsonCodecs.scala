@@ -85,7 +85,7 @@ trait MongoJsonCodecs {
                   .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
                 json   <- JsonMapper.fromBson(bson)
                 result <- dec.decodeJson(json).left.map(e => MongoJsonParsingException(e.getMessage, Some(json.noSpaces)))
-              } yield result).fold(e => throw e, c => c.asInstanceOf[Y])
+              } yield result).fold(throw _, _.asInstanceOf[Y])
           }
         else null // scalastyle:ignore
     }

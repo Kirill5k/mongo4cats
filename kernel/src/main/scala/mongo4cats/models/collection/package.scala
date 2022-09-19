@@ -43,7 +43,7 @@ package object collection {
   object BulkWriteOptions {
     def apply(
         ordered: Boolean = true,
-        bypassDocumentValidation: Boolean = true,
+        bypassDocumentValidation: Boolean = false,
         comment: Option[String] = None
     ): BulkWriteOptions =
       new JBulkWriteOptions().ordered(ordered).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
@@ -68,7 +68,7 @@ package object collection {
   object UpdateOptions {
     def apply(
         upsert: Boolean = false,
-        bypassDocumentValidation: Boolean = true,
+        bypassDocumentValidation: Boolean = false,
         comment: Option[String] = None
     ): UpdateOptions = new JUpdateOptions().upsert(upsert).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
@@ -77,7 +77,7 @@ package object collection {
   object ReplaceOptions {
     def apply(
         upsert: Boolean = false,
-        bypassDocumentValidation: Boolean = true,
+        bypassDocumentValidation: Boolean = false,
         comment: Option[String] = None
     ): ReplaceOptions = new JReplaceOptions().upsert(upsert).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
@@ -94,7 +94,7 @@ package object collection {
         upsert: Boolean = false,
         maxTime: FiniteDuration = Duration.Zero,
         returnDocument: ReturnDocument = ReturnDocument.BEFORE,
-        bypassDocumentValidation: Boolean = true,
+        bypassDocumentValidation: Boolean = false,
         sort: Option[Sort] = None,
         comment: Option[String] = None
     ): FindOneAndReplaceOptions = new JFindOneAndReplaceOptions()
@@ -125,7 +125,7 @@ package object collection {
   object InsertManyOptions {
     def apply(
         ordered: Boolean = true,
-        bypassDocumentValidation: Boolean = true,
+        bypassDocumentValidation: Boolean = false,
         comment: Option[String] = None
     ): InsertManyOptions =
       new JInsertManyOptions().ordered(ordered).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
@@ -133,7 +133,7 @@ package object collection {
 
   type InsertOneOptions = JInsertOneOptions
   object InsertOneOptions {
-    def apply(bypassDocumentValidation: Boolean = true, comment: Option[String] = None): InsertOneOptions =
+    def apply(bypassDocumentValidation: Boolean = false, comment: Option[String] = None): InsertOneOptions =
       new JInsertOneOptions().bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
   }
 
@@ -142,7 +142,7 @@ package object collection {
     def apply(
         upsert: Boolean = false,
         returnDocument: ReturnDocument = ReturnDocument.BEFORE,
-        bypassDocumentValidation: Boolean = true,
+        bypassDocumentValidation: Boolean = false,
         maxTime: FiniteDuration = Duration.Zero,
         sort: Option[Sort] = None,
         comment: Option[String] = None
