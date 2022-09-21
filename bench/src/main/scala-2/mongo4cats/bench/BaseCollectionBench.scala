@@ -14,7 +14,7 @@ import mongo4cats.circe._
 import mongo4cats.client.MongoClient
 import mongo4cats.collection.GenericMongoCollection
 import mongo4cats.database.GenericMongoDatabase
-import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, Fast, _}
+import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, _}
 import org.openjdk.jmh.annotations.TearDown
 import org.slf4j.LoggerFactory
 import org.slf4j.helpers.NOPLogger.NOP_LOGGER
@@ -29,12 +29,12 @@ trait BaseCollectionBench { self =>
 
   val mongoPort = 57057
 
-  var mongoProcess: MongodProcess                                            = _
-  var client: MongoClient[IO]                                                = _
-  var releaseClient: IO[Unit]                                                = _
-  var db: GenericMongoDatabase[IO, fs2.Stream[IO, *]]                        = _
-  var circeColl: GenericMongoCollection[IO, BenchCC, fs2.Stream[IO, *]]      = _
-  var bsonColl: GenericMongoCollection[IO, Fast[BenchCC], fs2.Stream[IO, *]] = _
+  var mongoProcess: MongodProcess                                       = _
+  var client: MongoClient[IO]                                           = _
+  var releaseClient: IO[Unit]                                           = _
+  var db: GenericMongoDatabase[IO, fs2.Stream[IO, *]]                   = _
+  var circeColl: GenericMongoCollection[IO, BenchCC, fs2.Stream[IO, *]] = _
+  var bsonColl: GenericMongoCollection[IO, BenchCC, fs2.Stream[IO, *]]  = _
 
   val benchDB   = "bench-db"
   val benchColl = "bench-coll"
@@ -93,7 +93,7 @@ trait BaseCollectionBench { self =>
             MongodConfig.builder
               .version(Version.Main.PRODUCTION)
               .net(new Net("localhost", mongoPort, Network.localhostIsIPv6))
-              .replication(new Storage(instanceDir, null, 16 /*MegaByte*/ ))
+              .replication(new Storage(instanceDir, null, 0 /*MegaByte*/ ))
               .build
           )
           .start()
@@ -116,7 +116,7 @@ trait BaseCollectionBench { self =>
       _ = self.circeColl = circeColl
 
       // --- BsonValue ---
-      bsonColl <- db.getCollectionWithCodec[Fast[BenchCC]](benchColl)
+      bsonColl <- db.fastCollection[BenchCC](benchColl)
       _ = self.bsonColl = bsonColl
     } yield ()).unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
   }

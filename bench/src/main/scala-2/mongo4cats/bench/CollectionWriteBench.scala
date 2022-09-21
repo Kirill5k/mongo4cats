@@ -2,14 +2,17 @@ package mongo4cats.bench
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import com.mongodb.client.result.InsertManyResult
 import io.circe.generic.auto._
 import mongo4cats.circe._
-import mongo4cats.derivation.bson.Fast
+import mongo4cats.models.collection.InsertManyOptions
 import org.bson.Document
 import org.bson.conversions.Bson
 import org.openjdk.jmh.annotations._
 
 import java.util.concurrent.TimeUnit
+import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -20,30 +23,28 @@ import java.util.concurrent.TimeUnit
 @Timeout(time = 15)
 class CollectionWriteBench extends BaseCollectionBench {
 
-  var fastWriteIO: IO[Unit]  = _
-  var circeWriteIO: IO[Unit] = _
+  val dataSize = 1_000
+  val datas    = List.tabulate(dataSize)(i => BenchCC(s1 = s"s1-$i"))
+
+  var fastWriteIO: IO[InsertManyResult]  = _
+  var circeWriteIO: IO[InsertManyResult] = _
 
   @Setup
   override def setup(): Unit = {
     super.setup()
-
-    val dataSize  = 10_000
-    val datas     = Seq.tabulate(dataSize)(i => BenchCC(s1 = s"s1-$i"))
-    val fastDatas = datas.asInstanceOf[Seq[Fast[BenchCC]]]
-    val emptyDoc  = new Document()
-
-    fastWriteIO = /* bsonColl.deleteMany(emptyDoc) *> */ bsonColl.insertMany(fastDatas).void
-    circeWriteIO = /* circeColl.deleteMany(emptyDoc) *> */ circeColl.insertMany(datas).void
+    val options = InsertManyOptions(ordered = false, bypassDocumentValidation = true)
+    fastWriteIO = bsonColl.insertMany(datas, options)
+    circeWriteIO = circeColl.insertMany(datas, options)
   }
 
   @Benchmark
-  def a_fastWrite(): Unit = {
+  def a_adtToMongoDbViaDerivationWrite(): Unit = {
     fastWriteIO.unsafeRunSync()(IORuntime.global)
     ()
   }
 
   @Benchmark
-  def b_circeWrite(): Unit = {
+  def b_adtToMongoDbViaCirceWrite(): Unit = {
     circeWriteIO.unsafeRunSync()(IORuntime.global)
     ()
   }

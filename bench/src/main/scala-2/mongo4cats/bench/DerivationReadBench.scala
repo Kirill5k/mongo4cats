@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
 class DerivationReadBench {
 
   // @Benchmark
-  def a_readViaDerivationWithSealedTrait(): Unit = {
+  def a_bytesToADTViaDerivationWithSealedTrait(): Unit = {
     byteBuffer1.position(0)
     val reader = new BsonBinaryReader(byteBuffer1)
     reader.readBsonType()
@@ -39,7 +39,7 @@ class DerivationReadBench {
   }
 
   // @Benchmark
-  def b_readViaCirceWithSealedTrait(): Unit = {
+  def b_bytesToADTViaCirceWithSealedTrait(): Unit = {
     byteBuffer1.position(0)
     val reader = new BsonBinaryReader(byteBuffer1)
     reader.readBsonType()
@@ -50,7 +50,7 @@ class DerivationReadBench {
   }
 
   @Benchmark
-  def c_readViaDerivation(): Unit = {
+  def c_bytesToADTViaDerivation(): Unit = {
     byteBuffer2.position(0)
     val reader = new BsonBinaryReader(byteBuffer2)
     reader.readBsonType()
@@ -61,7 +61,7 @@ class DerivationReadBench {
   }
 
   @Benchmark
-  def d_readViaCirce(): Unit = {
+  def d_bytesToADTViaCirce(): Unit = {
     byteBuffer2.position(0)
     val reader = new BsonBinaryReader(byteBuffer2)
     reader.readBsonType()

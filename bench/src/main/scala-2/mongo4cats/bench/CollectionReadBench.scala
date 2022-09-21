@@ -43,10 +43,10 @@ class CollectionReadBench extends BaseCollectionBench { self =>
   }
 
   @Benchmark
-  def a_fastRead(): Unit =
+  def a_mongoDbToAdtViaDerivationRead(): Unit =
     fastReadIO.unsafeRunSync()(IORuntime.global)
 
   @Benchmark
-  def b_circeRead(): Unit =
+  def b_mongoDbToAdtViaCirce(): Unit =
     circeReadIO.unsafeRunSync()(IORuntime.global)
 }

@@ -28,7 +28,13 @@ import java.util.UUID
 trait BaseBsonEncoder {
 
   implicit val stringBsonEncoder: BsonEncoder[String] =
-    fastInstance(new StringCodec(), new BsonString(_))
+    fastInstance(
+      new JavaEncoder[String] {
+        override def encode(writer: BsonWriter, str: String, encoderContext: EncoderContext): Unit =
+          writer.writeString(str)
+      },
+      new BsonString(_)
+    )
 
   implicit val charBsonEncoder: BsonEncoder[Char] =
     fastInstance(new CharacterCodec(), (b: java.lang.Character) => new BsonString(b.toString)).asInstanceOf[BsonEncoder[Char]]
@@ -48,7 +54,8 @@ trait BaseBsonEncoder {
   implicit val objectIdBsonEncoder: BsonEncoder[types.ObjectId] =
     fastInstance(new ObjectIdCodec(), new BsonObjectId(_))
 
-  implicit val instantBsonEncoder: BsonEncoder[Instant] = fastInstance(new InstantCodec())
+  implicit val instantBsonEncoder: BsonEncoder[Instant] =
+    fastInstance(new InstantCodec() /*, i => new BsonInt64(i.toEpochMilli)*/ )
 
   implicit def encodeOption[A](implicit encA: BsonEncoder[A]): BsonEncoder[Option[A]] =
     new BsonEncoder[Option[A]] {

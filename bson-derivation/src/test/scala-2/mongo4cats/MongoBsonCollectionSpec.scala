@@ -31,7 +31,6 @@ import org.scalatest.wordspec.AsyncWordSpec
 import mongo4cats.derivation.bson.AllBsonEncoders._
 import mongo4cats.derivation.bson.AllBsonDecoders._
 import mongo4cats.derivation.bson._
-import mongo4cats.derivation.bson.tag._
 import mongo4cats.derivation.bson.derivation.decoder.auto._
 import mongo4cats.derivation.bson.derivation.encoder.auto._
 import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, BsonValueOps}
@@ -76,10 +75,10 @@ class MongoBsonCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedM
           people <- coll.find.all
 
           // --- BsonValue ---
-          collBson <- db.getCollectionWithCodec[Fast[Person]]("people")
+          collBson <- db.fastCollection[Person]("people")
 
           // Parallel Inserts to check "thread safety" of `MongoCodecProvider[_]`.
-          _           <- fs2.Stream.emits(ps).covary[IO].parEvalMapUnordered(maxConcurrent = 20)(collBson.insertOne(_)).compile.drain
+          _           <- fs2.Stream.emits(ps).covary[IO].parEvalMapUnordered(maxConcurrent = 20)(collBson.insertOne).compile.drain
           peoples     <- coll.find.all.map(_.toSet)
           peoplesBson <- collBson.find.all.map(_.toSet)
           _ = assert(peoplesBson == peoples)

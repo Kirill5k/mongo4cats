@@ -16,10 +16,11 @@
 
 package mongo4cats.derivation
 
-import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
-import mongo4cats.derivation.bson.tag.@@
-import org.bson.codecs.{BsonValueCodec, Codec, DecoderContext, EncoderContext}
-import org.bson.codecs.configuration.CodecProvider
+import mongo4cats.codecs.CodecRegistry
+import mongo4cats.collection.GenericMongoCollection
+import mongo4cats.database.GenericMongoDatabase
+import org.bson.codecs.configuration.CodecRegistries
+import org.bson.codecs.{BsonValueCodec, Codec, DecoderContext, EncoderContext, ObjectIdCodec}
 import org.bson.{AbstractBsonReader, BsonArray, BsonDocument, BsonElement, BsonReader, BsonValue, BsonWriter}
 
 import java.util
@@ -27,45 +28,43 @@ import scala.reflect.ClassTag
 
 package object bson {
 
-  type Fast[A] = A @@ BsonValue
-
-  // Copied From `shapeless.tag`.
-  object tag {
-    def apply[U] = Tagger.asInstanceOf[Tagger[U]]
-
-    trait Tagged[U] extends Any
-
-    type @@[+T, U] = T with Tagged[U]
-
-    class Tagger[U] {
-      def apply[T](t: T): T @@ U = t.asInstanceOf[T @@ U]
-    }
-
-    private object Tagger extends Tagger[Nothing]
-  }
-
-  implicit def toFast[A](a: A): Fast[A] =
-    tag[BsonValue].apply[A](a)
-
-  implicit def bsonClassTag[A](implicit ctA: ClassTag[A]): ClassTag[Fast[A]] =
-    new ClassTag[Fast[A]] {
-      override val runtimeClass: Class[_] = ctA.runtimeClass
-    }
-
   private[bson] val bsonValueCodecSingleton: Codec[BsonValue]   = new BsonValueCodec()
   private[bson] val bsonEncoderContextSingleton: EncoderContext = EncoderContext.builder().build()
   private[bson] val bsonDecoderContextSingleton: DecoderContext = DecoderContext.builder().build()
+  private val objectIdCodecRegistry                             = CodecRegistries.fromCodecs(new ObjectIdCodec())
 
-  implicit def bsonMongoCodecProvider[A](implicit
+  implicit final class FastDbOps[F[_], S[_]](db: GenericMongoDatabase[F, S]) {
+
+    def fastCollection[A](name: String)(implicit
+        ctA: ClassTag[A],
+        encA: BsonEncoder[A],
+        decA: BsonDecoder[A]
+    ): F[GenericMongoCollection[F, A, S]] =
+      db.getCollection[A](name, bsonMongoCodecRegistry[A])
+  }
+
+  def bsonMongoCodecRegistry[A](implicit
       ctA: ClassTag[A],
       encA: BsonEncoder[A],
       decA: BsonDecoder[A]
-  ): MongoCodecProvider[Fast[A]] = {
+  ): CodecRegistry = {
     val classA: Class[A] = ctA.runtimeClass.asInstanceOf[Class[A]]
 
     val javaCodecSingleton: Codec[A] =
       new Codec[A] {
         override def encode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+          // println("-------------")
+          // java.lang.Thread.currentThread.getStackTrace.foreach(println)
+          // {
+          //  val w = writer.asInstanceOf[BsonWriterDecorator]
+          //  val c = classOf[BsonWriterDecorator]
+          //  val f = c.getDeclaredField("bsonWriter")
+          //  f.setAccessible(true)
+          //
+          //  val bw     = f.get(w).asInstanceOf[BsonBinaryWriter]
+          //  val output = bw.getBsonOutput
+          //  println(s"size: ${output.getSize}, pos: ${output.getPosition}, ${bw.getClass}, ${output.getClass}")
+          // }
           encA.unsafeBsonEncode(writer, a, encoderContext)
 
         override def decode(reader: BsonReader, decoderContext: DecoderContext): A =
@@ -74,14 +73,16 @@ package object bson {
         override def getEncoderClass: Class[A] = classA
       }
 
-    new MongoCodecProvider[Fast[A]] {
-      override val get: CodecProvider =
-        new CodecProvider {
-          override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
-            if ((classT eq classA) || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]]
-            else null
-        }
-    }
+    CodecRegistry.merge(
+      new CodecRegistry {
+        override def get[T](classT: Class[T]): Codec[T] =
+          if ((classT eq classA) || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]] else null
+
+        override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
+          if ((classT eq classA) || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]] else null
+      },
+      objectIdCodecRegistry
+    )
   }
 
   implicit class BsonValueOps(val bsonValue: BsonValue) extends AnyVal {

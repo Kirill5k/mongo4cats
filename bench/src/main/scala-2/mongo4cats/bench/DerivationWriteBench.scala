@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit.SECONDS
 @Timeout(time = 15)
 class DerivationWriteBench {
 
-  @Benchmark
-  def a_writeViaDerivationWithSealedTrait(): Unit = {
+  // @Benchmark
+  def a_atdToBytesViaDerivationWithSealedTrait(): Unit = {
     output.truncateToPosition(0)
     bsonEncoder.unsafeBsonEncode(writer, cc2, encoderContext)
   }
 
-  @Benchmark
-  def b_writeViaCirceWithSealedTrait(): Unit = {
+  // @Benchmark
+  def b_atdToBytesViaCirceWithSealedTrait(): Unit = {
     output.truncateToPosition(0)
     circeCodec.encode(writer, cc2, encoderContext)
   }
@@ -69,9 +69,9 @@ object DerivationWriteBench {
 
   val bsonEncoder    = BsonEncoder[BenchCC]
   val circeCodec     = deriveCirceCodecProvider[BenchCC].get.get(classOf[BenchCC], null)
-  val output         = new BasicOutputBuffer(1000)
-  val writer         = new BsonBinaryWriter(output)
   val cc1            = BenchCC()
   val cc2            = BenchCC(BenchST2().some)
   val encoderContext = EncoderContext.builder().build()
+  val output         = new BasicOutputBuffer(1000)
+  val writer         = new BsonBinaryWriter(output)
 }

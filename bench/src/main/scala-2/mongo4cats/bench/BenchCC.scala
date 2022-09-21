@@ -17,6 +17,7 @@ final case class BenchCC(
     s4: String = "case class string 4",
     s5: String = "case class string 5",
     i: Int = 10,
+    // strs: List[String] = (1 to 100).map(i => s"array string item $i").toList,
     instant: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS) // Mongo precision is Millis.
 )
 
