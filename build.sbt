@@ -3,11 +3,18 @@ import ReleaseTransformations._
 import microsites.CdnDirectives
 import sbtghactions.JavaSpec
 import Utils._
+import pl.project13.scala.sbt.JmhPlugin
 
 val scala212               = "2.12.16"
 val scala213               = "2.13.8"
 val scala3                 = "3.2.0"
 val supportedScalaVersions = List(scala212, scala213, scala3)
+
+def priorTo2_13(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+  }
 
 ThisBuild / scalaVersion           := scala213
 ThisBuild / organization           := "io.github.kirill5k"
@@ -50,12 +57,19 @@ val commonSettings = Seq(
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
-  scalafmtOnCompile  := true,
+  scalafmtOnCompile  := false, // true,
   crossScalaVersions := supportedScalaVersions,
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
-  scalacOptions ++= partialUnificationOption(scalaVersion.value)
+  scalacOptions ++= partialUnificationOption(scalaVersion.value),
+  scalacOptions ++= (if (priorTo2_13(scalaVersion.value)) Seq("-Ypartial-unification") else Nil),
+  tpolecatCiModeOptions ~= { opts =>
+    opts.filterNot(
+      ScalacOptions.privateWarnUnusedOptions ++
+        ScalacOptions.warnUnusedOptions
+    )
+  }
 )
 
 val embedded = project
@@ -129,6 +143,56 @@ val circe = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+val `mongo4cats-bson-derivation` = project
+  .in(file("bson-derivation"))
+  .dependsOn(core, embedded % "test->compile")
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-bson-derivation",
+    Compile / sourceGenerators += (Compile / sourceManaged).map(Boilerplate.gen).taskValue,
+    libraryDependencies ++= Dependencies.circe ++ Dependencies.core,
+    libraryDependencies ++=
+      Dependencies.scalacheckCats ++
+        (CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, _)) =>
+            Dependencies.circeGenericExtras ++
+              Dependencies.scalacheckShapeless ++
+              Dependencies.magnolia1_2 ++
+              Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)
+          case _ => Dependencies.magnolia1_3
+        }),
+    test / parallelExecution := false,
+    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.4.1"),
+    scalacOptions ++=
+      (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) => Seq("-Yretain-trees") // For Magnolia: https://github.com/softwaremill/magnolia#limitations
+        case _            => Nil
+      })
+  )
+  .dependsOn(circe)
+  .enablePlugins(AutomateHeaderPlugin)
+
+lazy val bench = (project in file("bench"))
+  .enablePlugins(JmhPlugin)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
+  )
+  .dependsOn(
+    core,
+    circe,
+    examples,
+    embedded,
+    `mongo4cats-bson-derivation`
+  )
+  .aggregate(
+    core,
+    circe,
+    examples,
+    embedded,
+    `mongo4cats-bson-derivation`
+  )
+
 val examples = project
   .in(file("examples"))
   .dependsOn(core, circe, embedded, zio, `zio-embedded`)
@@ -179,5 +243,7 @@ val root = project
     circe,
     examples,
     embedded,
-    `zio-embedded`
+    `zio-embedded`,
+    `mongo4cats-bson-derivation`,
+    bench
   )
