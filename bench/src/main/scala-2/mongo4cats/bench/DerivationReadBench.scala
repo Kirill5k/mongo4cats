@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 @Timeout(time = 15)
 class DerivationReadBench {
 
-  // @Benchmark
+  @Benchmark
   def a_bytesToADTViaDerivationWithSealedTrait(): Unit = {
     byteBuffer1.position(0)
     val reader = new BsonBinaryReader(byteBuffer1)
@@ -38,7 +38,7 @@ class DerivationReadBench {
     ()
   }
 
-  // @Benchmark
+  @Benchmark
   def b_bytesToADTViaCirceWithSealedTrait(): Unit = {
     byteBuffer1.position(0)
     val reader = new BsonBinaryReader(byteBuffer1)

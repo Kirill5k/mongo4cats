@@ -44,17 +44,13 @@ private[bson] object MagnoliaBsonEncoder {
     }
 
     new BsonDocumentEncoder[A] {
-      override def unsafeBsonEncode(_writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
-        val writer = config.mayOptimizeWriter(_writer)
-
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
         writer.writeStartDocument()
         unsafeFieldsBsonEncode(writer, a, encoderContext)
         writer.writeEndDocument()
       }
 
-      override def unsafeFieldsBsonEncode(_writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
-        val writer = config.mayOptimizeWriter(_writer)
-
+      override def unsafeFieldsBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
         var i = 0
         while (i < nbParams) {
           val param = paramArray(i)
@@ -84,12 +80,11 @@ private[bson] object MagnoliaBsonEncoder {
     val discriminatorOpt = config.discriminator
 
     new BsonDocumentEncoder[A] {
-      override def unsafeFieldsBsonEncode(_writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
+      override def unsafeFieldsBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
         sealedTrait.split(a) { subType =>
           val constructorName       = subTypeLabelArray(subType.index)
           val typeclass             = subType.typeclass
           val isBsonDocumentEncoder = typeclass.isInstanceOf[BsonDocumentEncoder[_]]
-          val writer                = config.mayOptimizeWriter(_writer)
 
           // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
           // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback

@@ -254,8 +254,7 @@ object AutoDerivationTest {
       transformationGen,
       transformationGen,
       Gen.oneOf(false, true).label("useDefaults"),
-      Gen.option(Gen.stringOfN(5, Gen.alphaUpperChar)).label("discriminator"),
-      Gen.oneOf(false, true).label("yoloWriterMode")
-    ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _, _))
+      Gen.option(Gen.stringOfN(5, Gen.alphaUpperChar)).label("discriminator")
+    ).mapN(mongo4cats.derivation.bson.configured.Configuration(_, _, _, _))
   }
 }

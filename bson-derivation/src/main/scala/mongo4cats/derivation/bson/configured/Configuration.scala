@@ -17,7 +17,7 @@
 package mongo4cats.derivation.bson.configured
 
 import cats.syntax.all._
-import org.bson.{BsonBinaryWriter, BsonWriter, YoloWriter}
+import org.bson.{BsonBinaryWriter, BsonWriter}
 
 import java.util.regex.Pattern
 
@@ -40,8 +40,7 @@ final case class Configuration(
     transformMemberNames: String => String = identity[String],
     transformConstructorNames: String => String = identity[String],
     useDefaults: Boolean = false,
-    discriminator: Option[String] = none,
-    yoloWriteMode: Boolean = false
+    discriminator: Option[String] = none
 ) {
   def withSnakeCaseMemberNames                 = copy(transformMemberNames = Configuration.snakeCaseTransformation)
   def withKebabCaseMemberNames                 = copy(transformMemberNames = Configuration.kebabCaseTransformation)
@@ -49,15 +48,6 @@ final case class Configuration(
   def withKebabCaseConstructorNames            = copy(transformConstructorNames = Configuration.kebabCaseTransformation)
   def withDefaults                             = copy(useDefaults = true)
   def withDiscriminator(discriminator: String) = copy(discriminator = Some(discriminator))
-
-  // def mayOptimizeWriter(writer: BsonWriter): BsonWriter =
-  //  if (yoloWriteMode && writer.isInstanceOf[BsonBinaryWriter]) YoloWriter(writer.asInstanceOf[BsonBinaryWriter])
-  //  else writer
-
-  def mayOptimizeWriter: BsonWriter => BsonWriter =
-    if (yoloWriteMode) // First `if` is resolved at compile time.
-      writer => if (writer.isInstanceOf[BsonBinaryWriter]) YoloWriter(writer.asInstanceOf[BsonBinaryWriter]) else writer
-    else identity[BsonWriter]
 }
 
 object Configuration {

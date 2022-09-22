@@ -34,15 +34,11 @@ class BsonEncoderInstanceBench {
       doc
     }
 
-    val fastDoc     = encodeToDoc(fastBsonEncoder)
-    val slowDoc     = encodeToDoc(slowBsonEncoder)
-    val yoloFastDoc = encodeToDoc(yoloFastBsonEncoder)
-    val yoloSlowDoc = encodeToDoc(yoloSlowBsonEncoder)
+    val fastDoc = encodeToDoc(fastBsonEncoder)
+    val slowDoc = encodeToDoc(slowBsonEncoder)
     val msg =
       s"""|fast    : $fastDoc
           |slow    : $slowDoc
-          |yoloFast: $yoloFastDoc
-          |yoloSlow: $yoloSlowDoc
           |""".stripMargin
     // println(fastDoc.toJson)
 
@@ -50,8 +46,6 @@ class BsonEncoderInstanceBench {
       fastDoc.toJson != """{"myCC0": {"my-cc": {"my-value": "abc"}}, "myCC1": {"my-cc": {"my-value": "abc"}}, "myCC2": {"my-cc": {"my-value": "abc"}}, "myCC3": {"my-cc": {"my-value": "abc"}}, "myCC4": {"my-cc": {"my-value": "abc"}}, "myCC5": {"my-cc": {"my-value": "abc"}}, "myCC6": {"my-cc": {"my-value": "abc"}}, "myCC7": {"my-cc": {"my-value": "abc"}}, "myCC8": {"my-cc": {"my-value": "abc"}}, "myCC9": {"my-cc": {"my-value": "abc"}}}"""
     ) throw new Throwable(s"Bad encoder\n$msg")
     if (fastDoc != slowDoc) throw new Throwable(s"Bad encoder\n$msg")
-    if (fastDoc != yoloFastDoc) throw new Throwable(s"Bad encoder\n$msg")
-    if (fastDoc != yoloSlowDoc) throw new Throwable(s"Bad encoder\n$msg")
   }
 
   @Benchmark
@@ -60,22 +54,10 @@ class BsonEncoderInstanceBench {
     fastBsonEncoder.unsafeBsonEncode(writer, tenMyCC, encoderContext)
   }
 
-  // @Benchmark
+  @Benchmark
   def b_slowEncoder(): Unit = {
     output.truncateToPosition(0)
     slowBsonEncoder.unsafeBsonEncode(writer, tenMyCC, encoderContext)
-  }
-
-  // @Benchmark
-  def c_yoloWriterModeFastEncoder(): Unit = {
-    output.truncateToPosition(0)
-    yoloFastBsonEncoder.unsafeBsonEncode(writer, tenMyCC, encoderContext)
-  }
-
-  // @Benchmark
-  def d_yoloWriterModeSlowEncoder(): Unit = {
-    output.truncateToPosition(0)
-    yoloSlowBsonEncoder.unsafeBsonEncode(writer, tenMyCC, encoderContext)
   }
 }
 
@@ -88,18 +70,6 @@ object BsonEncoderInstanceBench {
 
   val slowBsonEncoder: BsonEncoder[BenchTenMyCC] = {
     implicit val bsonConf = Configuration.default
-    implicit val encoder  = slowMyCCBsonEncoder
-    BsonEncoder[BenchTenMyCC]
-  }
-
-  val yoloFastBsonEncoder: BsonEncoder[BenchTenMyCC] = {
-    implicit val bsonConf = Configuration.default.copy(yoloWriteMode = true)
-    implicit val encoder  = fastestMyCCBsonEncoder
-    BsonEncoder[BenchTenMyCC]
-  }
-
-  val yoloSlowBsonEncoder: BsonEncoder[BenchTenMyCC] = {
-    implicit val bsonConf = Configuration.default.copy(yoloWriteMode = true)
     implicit val encoder  = slowMyCCBsonEncoder
     BsonEncoder[BenchTenMyCC]
   }
