@@ -57,7 +57,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         val result = for {
           coll <- db.getCollection("coll")
           _    <- coll.insertOne(TestData.gbpAccount)
-          _    <- coll.updateMany(Filter.empty, Update.set("props", Map("a" -> 42, "b" -> "foo")))
+          _    <- coll.updateMany(Filter.empty, Update.set("props", Map[String, Any]("a" -> 42, "b" -> "foo")))
           doc  <- coll.find.first
         } yield doc.get
 
@@ -72,7 +72,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         val result = for {
           coll <- db.getCollection("coll")
           _    <- coll.insertOne(TestData.gbpAccount)
-          _    <- coll.updateMany(Filter.empty, Update.set("tags", List("foo", "bar", 42)))
+          _    <- coll.updateMany(Filter.empty, Update.set("tags", List[Any]("foo", "bar", 42)))
           doc  <- coll.find.first
         } yield doc.get
 
