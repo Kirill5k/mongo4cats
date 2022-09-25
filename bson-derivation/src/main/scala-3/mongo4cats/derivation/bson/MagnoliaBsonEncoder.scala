@@ -22,44 +22,43 @@ import mongo4cats.derivation.bson.BsonEncoder
 import mongo4cats.derivation.bson.BsonEncoder.fastInstance
 import org.bson.BsonType._
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
-import org.bson.{
-  BsonArray,
-  BsonDocument,
-  BsonDocumentWriter,
-  BsonJavaScriptWithScope,
-  BsonReader,
-  BsonString,
-  BsonType,
-  BsonValue,
-  BsonWriter
-}
+import org.bson.BsonWriter
 
 private[bson] object MagnoliaBsonEncoder {
 
-  private[bson] def join[A](caseClass: CaseClass[BsonEncoder, A])(implicit config: Configuration): BsonEncoder[A] = {
-    val paramArray = IArray.genericWrapArray(caseClass.params).toArray
-    val nbParams   = paramArray.length
+  private[bson] def join[A](caseClass: CaseClass[BsonEncoder, A])(implicit conf: Configuration): BsonEncoder[A] = {
+    val params          = caseClass.params
+    val nbParams        = params.length
+    val paramLabelArray = Array.ofDim[String](nbParams)
 
-    val paramLabelArray = paramArray.map { p =>
-      val jsonKeyAnnotation = p.annotations.collectFirst { case ann: BsonKey => ann }
+    var i = 0
+    while (i < nbParams) {
+      val p = params(i)
 
-      jsonKeyAnnotation match {
-        case Some(ann) => ann.value
-        case _         => config.transformMemberNames(p.label)
+      var bsonKey: BsonKey = null
+      val annIt            = p.annotations.iterator
+      while (annIt.hasNext) {
+        val ann = annIt.next()
+        if (ann.isInstanceOf[BsonKey]) { bsonKey = ann.asInstanceOf[BsonKey] }
       }
-    }
+      val bsonLabel = if (bsonKey eq null) conf.transformMemberNames(p.label) else bsonKey.value
+      // TODO check label collision.
 
-    if (paramLabelArray.distinct.length != caseClass.params.length) {
-      throw new BsonDerivationError(
-        "Duplicate key detected after applying transformation function for case class parameters"
-      )
+      paramLabelArray(i) = bsonLabel
+      i += 1
     }
 
     new BsonDocumentEncoder[A] {
+      override def unsafeBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
+        writer.writeStartDocument()
+        unsafeFieldsBsonEncode(writer, a, encoderContext)
+        writer.writeEndDocument()
+      }
+
       override def unsafeFieldsBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit = {
         var i = 0
         while (i < nbParams) {
-          val param = paramArray(i)
+          val param = params(i)
           writer.writeName(paramLabelArray(i))
           param.typeclass.unsafeBsonEncode(writer, param.deref(a), encoderContext)
           i += 1
@@ -70,41 +69,45 @@ private[bson] object MagnoliaBsonEncoder {
 
   private[bson] def split[A](
       sealedTrait: SealedTrait[BsonEncoder, A]
-  )(implicit config: Configuration): BsonEncoder[A] = {
-    {
-      val origTypeNames = sealedTrait.subtypes.map(_.typeInfo.short)
-      val transformed   = origTypeNames.map(config.transformConstructorNames).distinct
-      if (transformed.length != origTypeNames.length) {
-        throw new BsonDerivationError("Duplicate key detected after applying transformation function for sealed trait child classes")
-      }
+  )(implicit conf: Configuration): BsonEncoder[A] = {
+    val subs              = sealedTrait.subtypes
+    val nbSubs            = subs.length
+    val subTypeLabelArray = Array.ofDim[String](nbSubs)
+
+    var i = 0
+    while (i < nbSubs) {
+      val subType = subs(i)
+      subTypeLabelArray(i) = conf.transformConstructorNames(subType.typeInfo.short)
+      // TODO check label collision.
+      i += 1
     }
 
-    val subTypeLabelArray = IArray
-      .genericWrapArray(sealedTrait.subtypes.map { subType =>
-        config.transformConstructorNames(subType.typeInfo.short)
-      })
-      .toArray
-
-    val discriminatorOpt = config.discriminator
+    val discriminator    = conf.discriminator.orNull
+    val useDiscriminator = discriminator eq null
 
     new BsonDocumentEncoder[A] {
       override def unsafeFieldsBsonEncode(writer: BsonWriter, a: A, encoderContext: EncoderContext): Unit =
         sealedTrait.choose(a) { subType =>
-          val constructorName: String = subTypeLabelArray(subType.subtype.index)
-          val typeclass               = subType.typeclass
-          val isBsonDocumentEncoder   = typeclass.isInstanceOf[BsonDocumentEncoder[_]]
+          val constructorName = subTypeLabelArray(subType.subtype.index)
+          val typeclass       = subType.typeclass
 
           // Note: Here we handle the edge case where a subtype of a sealed trait has a custom encoder which does not encode
           // encode into a JSON object and thus we cannot insert the discriminator key. In this case we fallback
           // to the non-discriminator case for this subtype. This is same as the behavior of circe-generic-extras
-          if (discriminatorOpt.isDefined && isBsonDocumentEncoder) {
-            val discriminator = discriminatorOpt.get
-            writer.writeName(discriminator)
-            writer.writeString(constructorName)
-            typeclass.asInstanceOf[BsonDocumentEncoder[A]].unsafeFieldsBsonEncode(writer, a, encoderContext)
-          } else {
+          if (useDiscriminator) {
             writer.writeName(constructorName)
             typeclass.unsafeBsonEncode(writer, subType.cast(a), encoderContext)
+          } else {
+            val isBsonDocumentEncoder = typeclass.isInstanceOf[BsonDocumentEncoder[_]]
+
+            if (isBsonDocumentEncoder) {
+              writer.writeName(discriminator)
+              writer.writeString(constructorName)
+              typeclass.asInstanceOf[BsonDocumentEncoder[A]].unsafeFieldsBsonEncode(writer, a, encoderContext)
+            } else {
+              writer.writeName(constructorName)
+              typeclass.unsafeBsonEncode(writer, subType.cast(a), encoderContext)
+            }
           }
         }
     }

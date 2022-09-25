@@ -31,7 +31,7 @@ package object bson {
   private[bson] val bsonValueCodecSingleton: Codec[BsonValue]   = new BsonValueCodec()
   private[bson] val bsonEncoderContextSingleton: EncoderContext = EncoderContext.builder().build()
   private[bson] val bsonDecoderContextSingleton: DecoderContext = DecoderContext.builder().build()
-  private val objectIdCodecRegistry                             = CodecRegistries.fromCodecs(new ObjectIdCodec())
+  // private val objectIdCodecRegistry                             = CodecRegistries.fromCodecs(new ObjectIdCodec())
 
   implicit final class FastDbOps[F[_], S[_]](db: GenericMongoDatabase[F, S]) {
 
@@ -73,15 +73,16 @@ package object bson {
         override def getEncoderClass: Class[A] = classA
       }
 
-    CodecRegistry.merge(
+    CodecRegistry.mergeWithDefault(
       new CodecRegistry {
         override def get[T](classT: Class[T]): Codec[T] =
           if ((classT eq classA) || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]] else null
 
         override def get[T](classT: Class[T], registry: CodecRegistry): Codec[T] =
           if ((classT eq classA) || classA.isAssignableFrom(classT)) javaCodecSingleton.asInstanceOf[Codec[T]] else null
-      },
-      objectIdCodecRegistry
+      }
+      // ,
+      // objectIdCodecRegistry
     )
   }
 

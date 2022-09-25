@@ -5,6 +5,11 @@ import cats.syntax.all._
 import cats.effect.syntax.all._
 import cats.effect.implicits._
 import cats.effect.unsafe.IORuntime
+import io.circe.disjunctionCodecs.encodeEither
+import io.circe.disjunctionCodecs.decoderEither
+import io.circe.disjunctionCodecs.encodeValidated
+import io.circe.disjunctionCodecs.decodeValidated
+import mongo4cats.bench.BenchData.data
 import org.openjdk.jmh.annotations._
 
 import java.time.Instant
@@ -19,26 +24,25 @@ import java.util.concurrent.TimeUnit
 @Timeout(time = 15)
 class CollectionReadBench extends BaseCollectionBench { self =>
 
-  val dataSize = 10_000
-  val datas    = Set.tabulate(dataSize)(i => BenchCC(s1 = s"s1-$i"))
-
   var fastReadIO: IO[Unit]  = _
   var circeReadIO: IO[Unit] = _
 
   @Setup
   override def setup(): Unit = {
     super.setup()
-    fastReadIO = bsonColl.find.all.map(_.size).map(readSize => assert(readSize == dataSize))
-    circeReadIO = circeColl.find.all.map(_.size).map(readSize => assert(readSize == dataSize))
+    fastReadIO = bsonColl.find.first
+      // .map(read => assert(read == data, "Bson read != data"))
+      .void
+    circeReadIO = circeColl.find.first
+      // .map(read => assert(read == data, "Circe read != data"))
+      .void
 
     (for {
-      _ <- circeColl.insertMany(datas.toSeq)
-
-      readCirce <- circeColl.find.all.map(_.toSet)
-      readBson  <- bsonColl.find.all.map(_.toSet)
-      _ = assert(readCirce == datas)
-      _ = assert(readBson == datas)
-
+      _         <- circeColl.insertOne(data)
+      readCirce <- circeColl.find.first
+      readBson  <- bsonColl.find.first
+      _ = assert(readCirce == data.some)
+      _ = assert(readBson == data.some)
     } yield ()).unsafeRunSync()(IORuntime.global)
   }
 
@@ -47,6 +51,6 @@ class CollectionReadBench extends BaseCollectionBench { self =>
     fastReadIO.unsafeRunSync()(IORuntime.global)
 
   @Benchmark
-  def b_mongoDbToAdtViaCirce(): Unit =
+  def b_mongoDbToAdtViaCirceRead(): Unit =
     circeReadIO.unsafeRunSync()(IORuntime.global)
 }

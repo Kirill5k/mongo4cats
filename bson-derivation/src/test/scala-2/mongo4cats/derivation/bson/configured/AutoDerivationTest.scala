@@ -93,10 +93,8 @@ object TestSealedTrait {
 
   final case class CC2(
       uuid: UUID,
-      int: Option[Int] = 3.some,
-      long: Long,
-      eitherIntString: Either[Int, String],
-      validatedLongChar: Either[Long, Char]
+      int: Option[Int],
+      long: Long
   ) extends TestSealedTrait
 
   final case class CC3(
@@ -108,6 +106,12 @@ object TestSealedTrait {
       tuple2Opt: Option[(String, Int)],
       tuple2OptWithDefault: Option[(String, Int)] = ("ten", 10).some
   ) extends TestSealedTrait
+
+  final case class CC4(
+      eitherIntString: Either[Int, String],
+      validatedLongChar: Validated[Long, Char]
+  ) extends TestSealedTrait
+
 }
 
 // $ sbt "~+mongo4cats-bson-derivation/testOnly mongo4cats.derivation.bson.configured.AutoDerivationTest"
@@ -125,8 +129,9 @@ class AutoDerivationTest extends AnyWordSpec with ScalaCheckDrivenPropertyChecks
   val rootTestDataGen: Gen[RootTestData] = Arbitrary.arbitrary[RootTestData]
 
   "Derived direct Encode/Decode ADT to org.bson.BsonValue with same result as using mongo4cats.circe with io.circe.generic.extras.auto" in {
-    val outputBufferCirce      = new BasicOutputBuffer(10 * 1000 * 1000)
-    val outputBufferDerivation = new BasicOutputBuffer(10 * 1000 * 1000)
+    val bufferSize             = 10 * 1000 * 1000
+    val outputBufferCirce      = new BasicOutputBuffer(bufferSize)
+    val outputBufferDerivation = new BasicOutputBuffer(bufferSize)
 
     forAll(rootTestDataGen, bsonConfigurationGen, Gen.oneOf(false, true).label("dropNulls")) {
       case (testData, bsonConfiguration, dropNulls) =>

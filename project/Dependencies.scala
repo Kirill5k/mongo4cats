@@ -130,7 +130,7 @@ object Dependencies {
   )
 
   lazy val scalacheckShapeless = Seq(
-    Libraries.scalacheckShapeless % Test
+    Libraries.scalacheckShapeless
   )
 
   lazy val scalacheckCats = Seq(

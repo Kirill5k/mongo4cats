@@ -152,11 +152,11 @@ val `mongo4cats-bson-derivation` = project
     Compile / sourceGenerators += (Compile / sourceManaged).map(Boilerplate.gen).taskValue,
     libraryDependencies ++= Dependencies.circe ++ Dependencies.core,
     libraryDependencies ++=
-      Dependencies.scalacheckCats ++
+      Dependencies.scalacheckCats.map(_ % Test) ++
         (CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, _)) =>
             Dependencies.circeGenericExtras ++
-              Dependencies.scalacheckShapeless ++
+              Dependencies.scalacheckShapeless.map(_ % Test) ++
               Dependencies.magnolia1_2 ++
               Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)
           case _ => Dependencies.magnolia1_3
@@ -176,7 +176,8 @@ lazy val bench = (project in file("bench"))
   .enablePlugins(JmhPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value),
+    libraryDependencies ++= Dependencies.scalacheckCats ++ Dependencies.scalacheckShapeless
   )
   .dependsOn(
     core,

@@ -44,7 +44,9 @@ object KeyBsonDecoder {
 
   def instance[A](f: String => Option[A]): KeyBsonDecoder[A] = f(_)
 
-  implicit val decodeKeyString: KeyBsonDecoder[String] =
-    instance(_.some)
-
+  implicit val decodeKeyString: KeyBsonDecoder[String] = instance(_.some)
+  implicit val decodeKeyInt: KeyBsonDecoder[Int] = instance { s =>
+    try s.toInt.some
+    catch { case _: Throwable => none }
+  }
 }

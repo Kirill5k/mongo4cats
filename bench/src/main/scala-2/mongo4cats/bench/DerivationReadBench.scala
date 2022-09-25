@@ -2,7 +2,11 @@ package mongo4cats.bench
 
 import cats.syntax.all._
 import io.circe.generic.extras.auto._
-import mongo4cats.bench.BenchST.BenchST2
+import io.circe.disjunctionCodecs.encodeEither
+import io.circe.disjunctionCodecs.decoderEither
+import io.circe.disjunctionCodecs.encodeValidated
+import io.circe.disjunctionCodecs.decodeValidated
+import mongo4cats.bench.BenchData.data
 import mongo4cats.bench.DerivationReadBench._
 import mongo4cats.bench.DerivationWriteBench.encoderContext
 import mongo4cats.circe._
@@ -13,13 +17,13 @@ import mongo4cats.derivation.bson.configured.decoder.auto._
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.io.BasicOutputBuffer
 import org.bson.{BsonBinaryReader, BsonBinaryWriter}
-
 import org.openjdk.jmh.annotations._
+
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 @State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(1)
 @Threads(1)
 @Warmup(iterations = 3)
@@ -28,46 +32,24 @@ import java.util.concurrent.TimeUnit
 class DerivationReadBench {
 
   @Benchmark
-  def a_bytesToADTViaDerivationWithSealedTrait(): Unit = {
-    byteBuffer1.position(0)
-    val reader = new BsonBinaryReader(byteBuffer1)
+  def a_bytesToADTViaDerivationRead(): Unit = {
+    byteBuffer.position(0)
+    val reader = new BsonBinaryReader(byteBuffer)
     reader.readBsonType()
     // val decoded = //
     bsonDecoder.unsafeDecode(reader, decoderContext)
-    // if (decoded != cc1) throw new Throwable(s"${decoded} != $cc1")
+    // if (decoded != benchCCs) throw new Throwable(s"${decoded} != $benchCCs")
     ()
   }
 
   @Benchmark
-  def b_bytesToADTViaCirceWithSealedTrait(): Unit = {
-    byteBuffer1.position(0)
-    val reader = new BsonBinaryReader(byteBuffer1)
+  def b_bytesToADTViaCirceRead(): Unit = {
+    byteBuffer.position(0)
+    val reader = new BsonBinaryReader(byteBuffer)
     reader.readBsonType()
     // val decoded = //
     circeCodec.decode(reader, decoderContext)
-    // if (decoded != cc1) throw new Throwable(s"${decoded} != $cc1")
-    ()
-  }
-
-  @Benchmark
-  def c_bytesToADTViaDerivation(): Unit = {
-    byteBuffer2.position(0)
-    val reader = new BsonBinaryReader(byteBuffer2)
-    reader.readBsonType()
-    // val decoded = //
-    bsonDecoder.unsafeDecode(reader, decoderContext)
-    // if (decoded != cc2) throw new Throwable(s"${decoded} != $cc2")
-    ()
-  }
-
-  @Benchmark
-  def d_bytesToADTViaCirce(): Unit = {
-    byteBuffer2.position(0)
-    val reader = new BsonBinaryReader(byteBuffer2)
-    reader.readBsonType()
-    // val decoded = //
-    circeCodec.decode(reader, decoderContext)
-    // if (decoded != cc2) throw new Throwable(s"${decoded} != $cc2")
+    // if (decoded != benchCCs) throw new Throwable(s"${decoded} != $benchCCs")
     ()
   }
 }
@@ -77,8 +59,6 @@ object DerivationReadBench {
   implicit val bsonConf = mongo4cats.derivation.bson.configured.Configuration.default
   // .withDiscriminator("theDiscriminator")
 
-  // println(bsonConf)
-
   implicit val circeConf = io.circe.generic.extras.Configuration(
     transformMemberNames = bsonConf.transformMemberNames,
     transformConstructorNames = bsonConf.transformConstructorNames,
@@ -86,18 +66,13 @@ object DerivationReadBench {
     discriminator = bsonConf.discriminator
   )
 
-  val decoderContext: DecoderContext  = DecoderContext.builder().build()
-  val bsonDecoder: Typeclass[BenchCC] = BsonDecoder[BenchCC]
-  val circeCodec: Codec[BenchCC]      = deriveCirceCodecProvider[BenchCC].get.get(classOf[BenchCC], null)
-  val cc1: BenchCC                    = BenchCC(BenchST2().some)
-  val cc2: BenchCC                    = BenchCC()
-
-  def enc(a: BenchCC): ByteBuffer = {
-    val buffer = new BasicOutputBuffer(1000)
-    circeCodec.encode(new BsonBinaryWriter(buffer), a, encoderContext)
+  val decoderContext: DecoderContext      = DecoderContext.builder().build()
+  val bsonDecoder: BsonDecoder[BenchData] = BsonDecoder[BenchData]
+  val circeCodec: Codec[BenchData]        = deriveCirceCodecProvider[BenchData].get.get(classOf[BenchData], null)
+  val byteBuffer: ByteBuffer = {
+    val buffer = new BasicOutputBuffer(7_000_000)
+    circeCodec.encode(new BsonBinaryWriter(buffer), data, encoderContext)
+    println(s"Buffer position: ${buffer.getPosition}, data.toString.length: ${data.toString.length}")
     ByteBuffer.wrap(buffer.toByteArray)
   }
-
-  val byteBuffer1: ByteBuffer = enc(cc1)
-  val byteBuffer2: ByteBuffer = enc(cc2)
 }

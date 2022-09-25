@@ -28,39 +28,36 @@ import org.bson.codecs.DecoderContext
 import org.bson.{AbstractBsonReader, BsonDocument, BsonDocumentReader, BsonNull, BsonReader, BsonType, BsonValue}
 
 import java.util
+import scala.collection.mutable
 
 private[bson] object MagnoliaBsonDecoder {
 
   private[bson] def join[A](caseClass: CaseClass[BsonDecoder, A])(implicit conf: Configuration): BsonDecoder[A] = {
-    val paramArray = IArray.genericWrapArray(caseClass.params).toArray
-    val nbParams   = paramArray.length
-
-    val paramBsonKeyLookup: Map[String, String] =
-      caseClass.params.map { p =>
-        val bsonKeyAnnotation = p.annotations.collectFirst { case ann: BsonKey => ann }
-
-        bsonKeyAnnotation match {
-          case Some(ann) => p.label -> ann.value
-          case None      => p.label -> conf.transformMemberNames(p.label)
-        }
-      }.toMap
-
-    if (paramBsonKeyLookup.values.toList.distinct.length != nbParams) {
-      throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
-    }
+    val useDefaults = conf.useDefaults
+    val params      = caseClass.params
+    val nbParams    = params.length
 
     // Java HashMap for perfs (minimum allocations).
     val paramByBsonKeyJava = new util.HashMap[String, CaseClass.Param[BsonDecoder, A]](nbParams)
 
-    paramArray.foreach(p =>
-      paramByBsonKeyJava.put(
-        paramBsonKeyLookup.getOrElse(
-          p.label,
-          throw new IllegalStateException(s"Looking up the parameter label '${p.label}' should always yield a value. This is a bug")
-        ),
-        p
-      )
-    )
+    var i = 0
+    while (i < nbParams) {
+      val p = params(i)
+
+      var bsonKey: BsonKey = null
+      val annIt            = p.annotations.iterator
+      while (annIt.hasNext) {
+        val ann = annIt.next()
+        if (ann.isInstanceOf[BsonKey]) { bsonKey = ann.asInstanceOf[BsonKey] }
+      }
+      val bsonLabel = if (bsonKey eq null) conf.transformMemberNames(p.label) else bsonKey.value
+
+      if (paramByBsonKeyJava.size() != i) {
+        throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
+      }
+      paramByBsonKeyJava.put(bsonLabel, p)
+      i += 1
+    }
 
     new BsonDecoder[A] {
 
@@ -91,10 +88,10 @@ private[bson] object MagnoliaBsonDecoder {
 
         // For missing fields.
         var i = 0
-        if (conf.useDefaults) {
+        if (useDefaults) {
           while (i < nbParams) {
             if (!foundParamArray(i)) {
-              val missingParam = paramArray(i)
+              val missingParam = params(i)
               val default      = missingParam.default
               rawValuesArray(i) =
                 if (default.isDefined) default.get
@@ -105,7 +102,7 @@ private[bson] object MagnoliaBsonDecoder {
           }
         } else {
           while (i < nbParams) {
-            if (!foundParamArray(i)) rawValuesArray(i) = paramArray(i).typeclass.unsafeFromBsonValue(BsonNull.VALUE)
+            if (!foundParamArray(i)) rawValuesArray(i) = params(i).typeclass.unsafeFromBsonValue(BsonNull.VALUE)
             i += 1
           }
         }
@@ -122,25 +119,30 @@ private[bson] object MagnoliaBsonDecoder {
 
   private[bson] def split[A](
       sealedTrait: SealedTrait[BsonDecoder, A]
-  )(implicit configuration: Configuration): BsonDecoder[A] = {
-    val subTypes              = sealedTrait.subtypes.map(s => configuration.transformConstructorNames(s.typeInfo.short) -> s).toMap
-    val knownSubTypes: String = subTypes.keys.toSeq.sorted.mkString(", ")
-    val constructorLookup: util.Map[String, SealedTrait.Subtype[BsonDecoder, A, ?]] = asJava(subTypes)
+  )(implicit conf: Configuration): BsonDecoder[A] = {
+    val subs              = sealedTrait.subtypes
+    val nbSubs            = subs.length
+    val constructorLookup = new util.HashMap[String, SealedTrait.Subtype[BsonDecoder, A, ?]](nbSubs)
 
-    if (constructorLookup.size != sealedTrait.subtypes.length) {
-      throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
+    var i = 0
+    while (i < nbSubs) {
+      val sub = subs(i)
+      if (constructorLookup.size != i) {
+        throw new BsonDerivationError("Duplicate key detected after applying transformation function for case class parameters")
+      }
+      constructorLookup.put(conf.transformConstructorNames(sub.typeInfo.short), sub)
+      i += 1
     }
 
-    val discriminatorOpt = configuration.discriminator
-    if (discriminatorOpt.isDefined)
-      new DiscriminatedDecoder[A](discriminatorOpt.get, constructorLookup, knownSubTypes)
-    else
-      new NonDiscriminatedDecoder[A](constructorLookup, knownSubTypes)
+    conf.discriminator.fold[BsonDecoder[A]](
+      new NonDiscriminatedDecoder[A](constructorLookup)
+    )(d => //
+      new DiscriminatedDecoder[A](d, constructorLookup)
+    )
   }
 
   private[bson] class NonDiscriminatedDecoder[A](
-      constructorLookup: util.Map[String, SealedTrait.Subtype[BsonDecoder, A, ?]],
-      knownSubTypes: String
+      constructorLookup: util.Map[String, SealedTrait.Subtype[BsonDecoder, A, ?]]
   ) extends BsonDecoder[A] {
 
     override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
@@ -148,12 +150,16 @@ private[bson] object MagnoliaBsonDecoder {
       val key = reader.readName()
       val theSubtype = {
         val sub = constructorLookup.get(key)
-        if (sub eq null) throw new Throwable(s"""|Can't decode coproduct type: couldn't find matching subtype.
-              |BSON: $$doc
-              |Key: $key
- |
-              |Known subtypes: $knownSubTypes\n""".stripMargin)
-        else sub
+        if (sub eq null) {
+          val knownSubTypes = mutable.ListBuffer.empty[String]
+          constructorLookup.keySet.forEach(knownSubTypes.append(_))
+
+          throw new Throwable(s"""|Can't decode coproduct type: couldn't find matching subtype.
+                                  |BSON: $$doc
+                                  |Key: $key
+                                  |
+                                  |Known subtypes: ${knownSubTypes.sorted.mkString(", ")}\n""".stripMargin)
+        } else sub
       }
       val result = theSubtype.typeclass.unsafeDecode(reader, decoderContext)
       reader.readEndDocument()
@@ -163,8 +169,7 @@ private[bson] object MagnoliaBsonDecoder {
 
   private[bson] class DiscriminatedDecoder[A](
       discriminator: String,
-      constructorLookup: util.Map[String, SealedTrait.Subtype[BsonDecoder, A, ?]],
-      knownSubTypes: String
+      constructorLookup: util.Map[String, SealedTrait.Subtype[BsonDecoder, A, ?]]
   ) extends BsonDecoder[A] {
 
     override def unsafeDecode(reader: AbstractBsonReader, decoderContext: DecoderContext): A = {
@@ -183,14 +188,17 @@ private[bson] object MagnoliaBsonDecoder {
       mark.reset()
 
       val subType = constructorLookup.get(constructorName)
-      if (subType eq null)
+      if (subType eq null) {
+        val knownSubTypes = mutable.ListBuffer.empty[String]
+        constructorLookup.keySet.forEach(knownSubTypes.append(_))
+
         throw new Throwable(
           s"""|Can't decode coproduct type: constructor name "$constructorName" not found in known constructor names
               |BSON: $$doc
               |
-              |Allowed discriminators: $knownSubTypes""".stripMargin
+              |Allowed discriminators: ${knownSubTypes.sorted.mkString(", ")}""".stripMargin
         )
-      else subType.typeclass.unsafeDecode(reader, decoderContext)
+      } else subType.typeclass.unsafeDecode(reader, decoderContext)
     }
   }
 }

@@ -1,38 +1,13 @@
 package mongo4cats.bench
 
 import cats.syntax.all._
-import mongo4cats.bench.BenchST.BenchST2
+import mongo4cats.bench.ItemST.ItemST2
 import mongo4cats.derivation.bson.{BsonDecoder, BsonEncoder, JavaEncoder}
 import org.bson.{BsonDocument, BsonString, BsonWriter}
 import org.bson.codecs.EncoderContext
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-
-final case class BenchCC(
-    st: Option[BenchST] = BenchST2().some,
-    s1: String = "case class string 1",
-    s2: String = "case class string 2",
-    s3: String = "case class string 3",
-    s4: String = "case class string 4",
-    s5: String = "case class string 5",
-    i: Int = 10,
-    // strs: List[String] = (1 to 100).map(i => s"array string item $i").toList,
-    instant: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS) // Mongo precision is Millis.
-)
-
-sealed trait BenchST
-object BenchST {
-  final case class BenchST1(st2Short: Short) extends BenchST
-  final case class BenchST2(
-      st1S1: String = "sealed trait string 1",
-      st1S2: String = "sealed trait string 2",
-      st1S3: String = "sealed trait string 3",
-      st1S4: String = "sealed trait string 4",
-      st1S5: String = "sealed trait string 5",
-      st1I: Int = 20
-  ) extends BenchST
-}
 
 final case class BenchTenMyCC(
     myCC0: BenchMyCC = BenchMyCC(),
@@ -49,7 +24,7 @@ final case class BenchTenMyCC(
 
 final case class BenchMyCC(myValue: String = "abc")
 
-object BenchMyCC {
+object BenchMyCC extends BaseGen {
 
   val fastestMyCCBsonEncoder: BsonEncoder[BenchMyCC] =
     BsonEncoder.fastInstance { (writer, value) =>
