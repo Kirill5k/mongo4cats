@@ -25,14 +25,15 @@ trait BsonValueDecoder[A] {
 }
 
 object BsonValueDecoder {
-  implicit val objectIdDecoder: BsonValueDecoder[ObjectId] = _.asObjectId
-  implicit val intDecoder: BsonValueDecoder[Int]           = _.asInt
-  implicit val longDecoder: BsonValueDecoder[Long]         = _.asLong
-  implicit val stringDecoder: BsonValueDecoder[String]     = _.asString
-  implicit val dateTimeDecoder: BsonValueDecoder[Instant]  = _.asInstant
-  implicit val doubleDecoder: BsonValueDecoder[Double]     = _.asDouble
-  implicit val booleanDecoder: BsonValueDecoder[Boolean]   = _.asBoolean
-  implicit val documentDecoder: BsonValueDecoder[Document] = _.asDocument
+  implicit val objectIdDecoder: BsonValueDecoder[ObjectId]     = _.asObjectId
+  implicit val intDecoder: BsonValueDecoder[Int]               = _.asInt
+  implicit val longDecoder: BsonValueDecoder[Long]             = _.asLong
+  implicit val stringDecoder: BsonValueDecoder[String]         = _.asString
+  implicit val dateTimeDecoder: BsonValueDecoder[Instant]      = _.asInstant
+  implicit val doubleDecoder: BsonValueDecoder[Double]         = _.asDouble
+  implicit val booleanDecoder: BsonValueDecoder[Boolean]       = _.asBoolean
+  implicit val documentDecoder: BsonValueDecoder[Document]     = _.asDocument
+  implicit val bigDecimalDecoder: BsonValueDecoder[BigDecimal] = _.asBigDecimal
 
   implicit def arrayListDecoder[A](implicit d: BsonValueDecoder[A]): BsonValueDecoder[List[A]] =
     _.asList.flatMap(_.traverse(d.decode))

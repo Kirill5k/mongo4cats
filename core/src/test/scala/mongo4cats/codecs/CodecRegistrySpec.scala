@@ -97,6 +97,21 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         }
       }
     }
+
+    "be able to handle scala bigdecimal" in {
+      withEmbeddedMongoDatabase { db =>
+        val result = for {
+          coll <- db.getCollection("coll")
+          _    <- coll.insertOne(TestData.transaction(TestData.gbpAccount))
+          _    <- coll.updateMany(Filter.empty, Update.set("amount", BigDecimal(42)))
+          doc  <- coll.find.first
+        } yield doc.get
+
+        result.map { doc =>
+          doc.getAs[BigDecimal]("amount") mustBe Some(BigDecimal(42))
+        }
+      }
+    }
   }
 
   def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =

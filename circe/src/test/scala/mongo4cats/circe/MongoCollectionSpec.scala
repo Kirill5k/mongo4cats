@@ -64,6 +64,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
         gender: Gender,
         firstName: String,
         lastName: String,
+        aliases: List[String],
         dob: LocalDate,
         address: Address,
         registrationDate: Instant
@@ -112,6 +113,23 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
         result.map { res =>
           res mustBe List(Address(611, "5th Ave", "New York", "NY 10022"))
+        }
+      }
+    }
+
+    "find by items in array" in {
+      withEmbeddedMongoClient { client =>
+        val newPerson = person()
+        val result = for {
+          db   <- client.getDatabase("test")
+          _    <- db.createCollection("people")
+          coll <- db.getCollectionWithCodec[Person]("people")
+          _    <- coll.insertOne(newPerson)
+          res  <- coll.find(Filter.in("aliases", List("Bob"))).all
+        } yield res
+
+        result.map { res =>
+          res mustBe List(newPerson)
         }
       }
     }
@@ -199,6 +217,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
         gender,
         firstName,
         lastName,
+        List("Bob", "Doe"),
         LocalDate.parse("1970-12-01"),
         Address(611, "5th Ave", "New York", "NY 10022"),
         Instant.now().`with`(MILLI_OF_SECOND, 0)
