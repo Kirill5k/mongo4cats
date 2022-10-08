@@ -74,7 +74,7 @@ trait EmbeddedMongo {
           .builder()
           .withUsername(username)
           .withPassword(password)
-          .version(Version.Main.PRODUCTION)
+          .version(Version.Main.V5_0)
           .net(new Net(host, port, Network.localhostIsIPv6))
           .build
       ) *> test
