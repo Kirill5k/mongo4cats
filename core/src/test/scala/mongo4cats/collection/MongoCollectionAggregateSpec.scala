@@ -100,7 +100,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         result.map { expl =>
           expl.getDouble("ok") mustBe Some(1.0)
           expl.getNestedAs[Int]("serverInfo.port") mustBe Some(mongoPort)
-          expl.getList("stages").get must have size 4
+          expl.getList("stages").get must have size 3
         }
       }
 
