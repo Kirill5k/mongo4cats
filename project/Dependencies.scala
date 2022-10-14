@@ -10,7 +10,7 @@ object Dependencies {
     val zio                = "2.0.2"
     val zioInteropReactive = "2.0.0"
 
-    val logback   = "1.4.3"
+    val logback   = "1.4.4"
     val scalaTest = "3.2.14"
 
     val embeddedMongo   = "3.4.11"
