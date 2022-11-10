@@ -32,6 +32,7 @@ import com.mongodb.reactivestreams.client.{
 import fs2.Stream
 import mongo4cats.helpers._
 import mongo4cats.bson.BsonDecoder
+import mongo4cats.bson.BsonDecodeError
 import mongo4cats.bson.syntax._
 import mongo4cats.client.ClientSession
 import mongo4cats.collection.operations.Aggregate
@@ -59,7 +60,7 @@ trait WatchQueryBuilder[F[_]] {
 
   //
   def stream: Stream[F, ChangeStreamDocument[BsonValue]]
-  def updateStream[A: BsonDecoder]: Stream[F, A]
+  def updateStream[A: BsonDecoder]: Stream[F, Either[BsonDecodeError, A]]
 
   def mapK[G[_]](f: F ~> G): WatchQueryBuilder[G]
 }
@@ -121,7 +122,7 @@ object WatchQueryBuilder {
       boundedStreamF(1).translate(transform)
 
     def updateStream[A: BsonDecoder] =
-      boundedStreamF(1).map(_.getFullDocument).evalMap(_.as[A].liftTo[F]).translate(transform)
+      boundedStreamF(1).map(_.getFullDocument).map(_.as[A]).translate(transform)
 
     //
     def mapK[H[_]](f: G ~> H) =
