@@ -60,7 +60,8 @@ trait WatchQueryBuilder[F[_]] {
 
   //
   def stream: Stream[F, ChangeStreamDocument[BsonValue]]
-  def updateStream[A: BsonDecoder]: Stream[F, Either[BsonDecodeError, A]]
+  def updateStreamAttempt[A: BsonDecoder](onError: BsonDecodeError => F[Unit]): Stream[F, A]
+  def updateStream[A: BsonDecoder]: Stream[F, A]
 
   def mapK[G[_]](f: F ~> G): WatchQueryBuilder[G]
 }
@@ -121,8 +122,20 @@ object WatchQueryBuilder {
     def stream =
       boundedStreamF(1).translate(transform)
 
+    def updateStreamAttempt[A: BsonDecoder](onError: BsonDecodeError => F[Unit]) =
+      boundedStreamF(1)
+        .map(_.getFullDocument)
+        .map(_.as[A])
+        .flatMap {
+          case Left(decodeError) =>
+            Stream.exec(onError(decodeError))
+          case Right(elem) =>
+            Stream(elem)
+        }
+        .translate(transform)
+
     def updateStream[A: BsonDecoder] =
-      boundedStreamF(1).map(_.getFullDocument).map(_.as[A]).translate(transform)
+      boundedStreamF(1).map(_.getFullDocument).map(_.as[A].liftTo[F]).translate(transform)
 
     //
     def mapK[H[_]](f: G ~> H) =
