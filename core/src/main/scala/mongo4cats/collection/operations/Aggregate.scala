@@ -85,6 +85,9 @@ final case class Aggregate private (private val aggs: List[Bson]) {
   def replaceWith[T: BsonEncoder](value: T): Aggregate =
     add(Aggregates.replaceWith(value.asBson))
 
+  def replaceRoot[T: BsonEncoder](value: T): Aggregate =
+    add(Aggregates.replaceRoot(value.asBson))
+
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
     add(Aggregates.lookup(from, pipeline.toBsons.asJava, as))
 
