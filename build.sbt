@@ -6,7 +6,7 @@ import Utils._
 
 val scala212               = "2.12.17"
 val scala213               = "2.13.10"
-val scala3                 = "3.1.1"
+val scala3                 = "3.2.1"
 val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion           := scala213
@@ -19,7 +19,7 @@ ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
-ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("18"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("19"))
 ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
 
 releaseProcess := Seq[ReleaseStep](
