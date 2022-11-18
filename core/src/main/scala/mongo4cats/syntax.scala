@@ -72,7 +72,7 @@ private[mongo4cats] object syntax {
       for {
         safeGuard  <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
         queue      <- Stream.eval(mkQueue)
-        dispatcher <- Stream.resource(Dispatcher[F])
+        dispatcher <- Stream.resource(Dispatcher.parallel[F])
         _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get.void))
         _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
           override def onNext(el: T): Unit                = dispatcher.unsafeRunSync(queue.offer(el.asRight))
