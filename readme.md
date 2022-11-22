@@ -1,7 +1,7 @@
 mongo4cats
 ==========
 
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/precog/mongo4cats?label=gh&sort=semver)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/precog/mongo4cats?label=github%20packages&sort=semver)
 
 MongoDB Java client wrapper compatible with [Cats-Effect](https://typelevel.org/cats-effect/) ans [Fs2](http://fs2.io/).
 Available for Scala 2.12, 2.13 and 3.1.
