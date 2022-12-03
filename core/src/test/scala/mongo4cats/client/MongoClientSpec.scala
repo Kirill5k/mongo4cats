@@ -44,9 +44,8 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
     }.unsafeToFuture()
 
     "connect to a db via connection object" in withRunningEmbeddedMongo {
-      val connection = MongoConnection(mongoHost, mongoPort)
       MongoClient
-        .fromConnection[IO](connection)
+        .fromConnection[IO](MongoConnection.classic(mongoHost, mongoPort))
         .use { client =>
           val cluster = client.clusterDescription
           IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
@@ -54,7 +53,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
     }.unsafeToFuture()
 
     "connect to a db via connection object with authentication" in withRunningEmbeddedMongo(mongoHost, mongoPort, username, password) {
-      val connection = MongoConnection(mongoHost, mongoPort, Some(MongoCredential(username, password)))
+      val connection = MongoConnection.classic(mongoHost, mongoPort, Some(MongoCredential(username, password)))
       MongoClient
         .fromConnection[IO](connection)
         .use { client =>

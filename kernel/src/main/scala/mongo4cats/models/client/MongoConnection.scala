@@ -39,25 +39,35 @@ final case class MongoCredential(username: String, password: String)
   */
 sealed abstract class MongoConnection(
     host: String,
-    port: Int,
+    port: Option[Int],
     credential: Option[MongoCredential],
     connectionType: MongoConnectionType
 ) {
   override def toString: String = {
-    val credentialString = credential.map(cred => s"${cred.username}:${cred.password}@").getOrElse("")
-    s"${connectionType.`type`}://$credentialString$host:$port"
+    val credentialString = credential.fold("")(cred => s"${cred.username}:${cred.password}@")
+    val portString       = port.fold("")(p => s":$p")
+    s"${connectionType.`type`}://$credentialString$host$portString"
   }
 }
 
 object MongoConnection {
 
-  import MongoConnectionType.Classic
+  def classic(
+      host: String,
+      port: Int = 27017,
+      credential: Option[MongoCredential] = None
+  ): MongoConnection = apply(host, Some(port), credential, MongoConnectionType.Classic)
+
+  def srv(
+      host: String,
+      credential: Option[MongoCredential] = None
+  ): MongoConnection = apply(host, None, credential, MongoConnectionType.Srv)
 
   def apply(
       host: String,
-      port: Int = 27017,
+      port: Option[Int] = Some(27017),
       credential: Option[MongoCredential] = None,
-      connectionType: MongoConnectionType = Classic
+      connectionType: MongoConnectionType = MongoConnectionType.Classic
   ): MongoConnection =
     new MongoConnection(host = host, port = port, credential = credential, connectionType = connectionType) {}
 }
