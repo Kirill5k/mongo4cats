@@ -18,16 +18,18 @@ package mongo4cats
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import io.circe.Json
 import org.bson.BsonString
 import io.circe.Decoder
 import org.scalatest.EitherValues
+import io.circe.DecodingFailure
 
 class CirceSpec extends AnyWordSpec with Matchers with EitherValues {
 
   "circe conversions" should {
-    "not explode when faced with null" in {
-      circe.implicits.circeDecoderToDecoder[Json].apply(null) should matchPattern { case Left(_) => }
+    "decode null as if it was Json.null" in {
+      circe.implicits.circeDecoderToDecoder[Unit](Decoder.instance { c => 
+        c.value.asNull.toRight(DecodingFailure("wasn't null!", Nil))
+      }).apply(null) shouldBe Right(())
     }
 
     "remove not report the internal root tag in history when reporting errors" in {

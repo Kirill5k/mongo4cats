@@ -49,22 +49,19 @@ object circe extends JsonCodecs {
     }
 
     implicit def circeDecoderToDecoder[A: Decoder] = new BsonDecoder[A] {
-      def apply(b: BsonValue) =
-        if (b == null) {
-          Left(BsonDecodeError("Null cannot be decoded"))
-        } else {
-          val doc = BsonDocument(RootTag -> b).toJson()
-          val json = parser.parse(doc)
-          val jsonWithoutRoot = json.flatMap(_.hcursor.get[Json](RootTag))
-          val decoder = Decoder.instance[A](_.as[A])
-          jsonWithoutRoot
-            .flatMap(decoder.decodeJson(_))
-            .leftMap(x =>
-              BsonDecodeError {
-                s"An error occured during decoding BsonValue ${b}: $x"
-              }
-            )
-        }
+      def apply(b: BsonValue) = {
+        val doc = BsonDocument(RootTag -> (if (b == null) new BsonNull else b)).toJson()
+        val json = parser.parse(doc)
+        val jsonWithoutRoot = json.flatMap(_.hcursor.get[Json](RootTag))
+        val decoder = Decoder.instance[A](_.as[A])
+        jsonWithoutRoot
+          .flatMap(decoder.decodeJson(_))
+          .leftMap(x =>
+            BsonDecodeError {
+              s"An error occured during decoding BsonValue ${b}: $x"
+            }
+          )
+      }
     }
   }
 
