@@ -50,10 +50,11 @@ object circe extends JsonCodecs {
 
     implicit def circeDecoderToDecoder[A: Decoder] = new BsonDecoder[A] {
       def apply(b: BsonValue) = {
-        val doc = BsonDocument(RootTag -> b).toJson()
+        val doc = BsonDocument(RootTag -> (if (b == null) new BsonNull else b)).toJson()
         val json = parser.parse(doc)
-        val decoder = Decoder.instance[A](_.get[A](RootTag))
-        json
+        val jsonWithoutRoot = json.flatMap(_.hcursor.get[Json](RootTag))
+        val decoder = Decoder.instance[A](_.as[A])
+        jsonWithoutRoot
           .flatMap(decoder.decodeJson(_))
           .leftMap(x =>
             BsonDecodeError {
