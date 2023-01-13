@@ -66,7 +66,7 @@ private[mongo4cats] object ContainerValueWriter {
       case BsonValue.BInt32(value)     => writer.writeInt32(value)
       case BsonValue.BInt64(value)     => writer.writeInt64(value)
       case BsonValue.BDouble(value)    => writer.writeDouble(value)
-      case BsonValue.BTimestamp(value) => writer.writeTimestamp(new BsonTimestamp(value))
+      case BsonValue.BTimestamp(value) => writer.writeTimestamp(new BsonTimestamp(value.toInt, 1))
       case BsonValue.BDateTime(value)  => writer.writeDateTime(value.toEpochMilli)
       case BsonValue.BBinary(value)    => writer.writeBinaryData(new BsonBinary(value))
       case BsonValue.BBoolean(value)   => writer.writeBoolean(value)

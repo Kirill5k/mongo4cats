@@ -19,7 +19,7 @@ package mongo4cats.codecs
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import mongo4cats.TestData
-import mongo4cats.bson.Document
+import mongo4cats.bson.{BsonValue, Document}
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.operations.{Filter, Update}
@@ -28,6 +28,7 @@ import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.time.Instant
 import scala.concurrent.Future
 
 class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
@@ -111,6 +112,22 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
         result.map { doc =>
           doc.getAs[BigDecimal]("amount") mustBe Some(BigDecimal(42))
+        }
+      }
+    }
+
+    "be able to handle timestamps" in {
+      withEmbeddedMongoDatabase { db =>
+        val ts = Instant.now.getEpochSecond
+        val result = for {
+          coll <- db.getCollection("coll")
+          _    <- coll.insertOne(TestData.transaction(TestData.gbpAccount).add("timestamp" -> BsonValue.timestamp(ts)))
+          doc  <- coll.find.first
+        } yield doc.get
+
+        result.map { doc =>
+          doc.getAs[Instant]("timestamp") mustBe Some(Instant.ofEpochSecond(ts))
+          doc.getAs[Long]("timestamp") mustBe Some(ts)
         }
       }
     }
