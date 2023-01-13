@@ -133,6 +133,20 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
   }
+  final case class BTimestamp(value: Long) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = Some(value)
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = Some(Instant.ofEpochSecond(value))
+    override def asString: Option[String]         = None
+  }
   final case class BDateTime(value: Instant) extends BsonValue {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
@@ -282,4 +296,5 @@ object BsonValue {
   def binary(value: Array[Byte]): BsonValue    = BBinary(value)
   def instant(value: Instant): BsonValue       = BDateTime(value)
   def regex(value: Regex): BsonValue           = BRegex(value)
+  def timestamp(value: Long): BsonValue        = BTimestamp(value)
 }

@@ -76,6 +76,14 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         doc.getString("propB") mustBe None
       }
 
+      "handle timestamp" in {
+        val doc = Document.parse("""{"timestamp":{"$timestamp": {"t": 1673600231, "i": 1}}}""")
+
+        doc.get("timestamp") mustBe Some(BsonValue.timestamp(1673600231L))
+        doc.getAs[Instant]("timestamp") mustBe Some(Instant.parse("2023-01-13T08:57:11Z"))
+        doc.getAs[Long]("timestamp") mustBe Some(1673600231L)
+      }
+
       "handle date-time" in {
         val doc = Document.parse("""{"time":{"$date":1640995200000}}""")
 

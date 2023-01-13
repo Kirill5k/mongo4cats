@@ -81,6 +81,7 @@ private[mongo4cats] object ContainerValueReader {
       case BsonType.BINARY             => Some(BsonValue.binary(reader.readBinaryData().getData))
       case BsonType.OBJECT_ID          => Some(BsonValue.objectId(reader.readObjectId()))
       case BsonType.BOOLEAN            => Some(BsonValue.boolean(reader.readBoolean()))
+      case BsonType.TIMESTAMP          => Some(BsonValue.timestamp(reader.readTimestamp().getTime.toLong))
       case BsonType.DATE_TIME          => Some(BsonValue.instant(Instant.ofEpochMilli(reader.readDateTime())))
       case BsonType.REGULAR_EXPRESSION => Some(BsonValue.regex(reader.readRegularExpression().asRegularExpression().getPattern.r))
       case _                           => None
@@ -89,7 +90,6 @@ private[mongo4cats] object ContainerValueReader {
       case BsonType.JAVASCRIPT_WITH_SCOPE => ??? // deprecated
       case BsonType.DB_POINTER            => ??? // deprecated
       case BsonType.SYMBOL                => ??? // deprecated
-      case BsonType.TIMESTAMP             => ???
       case BsonType.JAVASCRIPT            => ???
       case BsonType.END_OF_DOCUMENT       => ???
        */

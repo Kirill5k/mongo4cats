@@ -41,13 +41,15 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         val result = for {
           coll <- db.getCollection("coll")
           _    <- coll.insertOne(TestData.gbpAccount)
-          _    <- coll.updateMany(Filter.empty, Update.set("currency", None).set("name", Some("updated-acc")))
-          doc  <- coll.find.first
+          update = Update.set("currency", None).set("name", Some("updated-acc")).currentTimestamp("updatedAt")
+          _   <- coll.updateMany(Filter.empty, update)
+          doc <- coll.find.first
         } yield doc.get
 
         result.map { doc =>
           doc.getString("currency") mustBe None
           doc.getString("name") mustBe Some("updated-acc")
+          doc.get("updatedAt") mustBe defined
         }
       }
     }

@@ -35,7 +35,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
   val updateQuery = Update
     .set("dob", "2020-01-01")
     .rename("firstName", "name")
-    .currentTimestamp("updatedAt")
+    .currentDate("updatedAt")
     .unset("lastName")
 
   val run: IO[Unit] =
@@ -46,7 +46,7 @@ object JsonDocumentFindAndUpdate extends IOApp.Simple {
         _       <- coll.insertOne(Document.parse(json))
         old     <- coll.findOneAndUpdate(filterQuery, updateQuery)
         updated <- coll.find.first
-        _       <- IO.println(s"old: ${old.get.toJson}\nupdated: ${updated.get.toJson}")
+        _       <- IO.println(s"Retrieved documents:\nold: ${old.get.toJson}\nupdated: ${updated.get.toJson}")
       } yield ()
     }
 }
