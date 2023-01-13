@@ -32,7 +32,7 @@ class CirceSpec extends AnyWordSpec with Matchers with EitherValues {
       }).apply(null) shouldBe Right(())
     }
 
-    "remove not report the internal root tag in history when reporting errors" in {
+    "not report the internal root tag in history when reporting errors" in {
 
       val deco = Decoder.instance(h => {
         h.get[String]("hek")(Decoder.failedWithMessage("Bad!"))
