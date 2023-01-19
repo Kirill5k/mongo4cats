@@ -55,7 +55,8 @@ val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
-  scalacOptions ++= partialUnificationOption(scalaVersion.value)
+  scalacOptions ++= partialUnificationOption(scalaVersion.value),
+  scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wnonunit-statement")) }
 )
 
 val embedded = project
