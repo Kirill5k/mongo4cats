@@ -38,10 +38,10 @@ final case class MongoCredential(username: String, password: String)
   *   For switching between different MongoDB connection types, see [[MongoConnectionType]] for possible options
   */
 sealed abstract class MongoConnection(
-    host: String,
-    port: Option[Int],
-    credential: Option[MongoCredential],
-    connectionType: MongoConnectionType
+    val host: String,
+    val port: Option[Int],
+    val credential: Option[MongoCredential],
+    val connectionType: MongoConnectionType
 ) {
   override def toString: String = {
     val credentialString = credential.fold("")(cred => s"${cred.username}:${cred.password}@")
