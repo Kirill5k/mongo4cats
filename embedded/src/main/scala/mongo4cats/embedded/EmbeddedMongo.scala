@@ -17,68 +17,91 @@
 package mongo4cats.embedded
 
 import cats.effect.{Async, Resource}
-import cats.syntax.apply._
-import cats.syntax.applicativeError._
-import de.flapdoodle.embed.mongo.config.{ImmutableMongodConfig, MongodConfig, Net}
+import cats.syntax.functor._
+import com.mongodb.client.MongoClients
+import de.flapdoodle.embed.mongo.commands.MongodArguments
+import de.flapdoodle.embed.mongo.config.Net
 import de.flapdoodle.embed.mongo.distribution.Version
-import de.flapdoodle.embed.mongo.{MongodProcess, MongodStarter}
-import de.flapdoodle.embed.process.runtime.Network
-
-import scala.concurrent.duration._
-
-object EmbeddedMongo {
-
-  private lazy val defaultStarter: MongodStarter = MongodStarter.getDefaultInstance
-
-  def start[F[_]](
-      config: MongodConfig,
-      starter: MongodStarter = defaultStarter,
-      maxAttempts: Int = 10,
-      attempt: Int = 0,
-      lastError: Option[Throwable] = None
-  )(implicit F: Async[F]): Resource[F, MongodProcess] =
-    if (attempt >= maxAttempts) {
-      val error = lastError.getOrElse(new RuntimeException("Failed to start embedded mongo too many times"))
-      Resource.eval(error.raiseError[F, MongodProcess])
-    } else
-      Resource
-        .make(F.delay(starter.prepare(config)))(ex => F.delay(ex.stop()))
-        .flatMap(ex => Resource.make(F.delay(ex.start()))(p => F.delay(p.stop())))
-        .handleErrorWith[MongodProcess, Throwable] { e =>
-          Resource.eval(F.sleep(attempt.seconds)) *> start[F](config, starter, maxAttempts, attempt + 1, Some(e))
-        }
-}
+import de.flapdoodle.embed.mongo.transitions.{Mongod, RunningMongodProcess}
+import de.flapdoodle.reverse.transitions.Start
+import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
+import org.bson.Document
 
 trait EmbeddedMongo {
-  protected val mongoHost: String             = "localhost"
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
 
   def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] =
-    runMongo(mongoHost, mongoPort, mongoUsername, mongoPassword)(test)
+    EmbeddedMongo.start[F](mongoPort, mongoUsername, mongoPassword).use(_ => test)
 
-  def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int)(test: => F[A]): F[A] =
-    runMongo(host, port, None, None)(test)
+  def withRunningEmbeddedMongo[F[_]: Async, A](
+      mongoUsername: String,
+      mongoPassword: String
+  )(
+      test: => F[A]
+  ): F[A] =
+    EmbeddedMongo.start[F](mongoPort, Some(mongoUsername), Some(mongoPassword)).use(_ => test)
 
-  def withRunningEmbeddedMongo[F[_]: Async, A](host: String, port: Int, username: String, password: String)(test: => F[A]): F[A] =
-    runMongo(host, port, Some(username), Some(password))(test)
+  def withRunningEmbeddedMongo[F[_]: Async, A](
+      mongoPort: Int
+  )(
+      test: => F[A]
+  ): F[A] =
+    EmbeddedMongo.start[F](mongoPort, mongoUsername, mongoPassword).use(_ => test)
 
-  private def runMongo[F[_]: Async, A](host: String, port: Int, username: Option[String], password: Option[String])(test: => F[A]): F[A] =
-    EmbeddedMongo
-      .start[F](
-        MongodConfig
-          .builder()
-          .withUsername(username)
-          .withPassword(password)
-          .version(Version.Main.V5_0)
-          .net(new Net(host, port, Network.localhostIsIPv6))
-          .build
-      )
-      .use(_ => test)
+  def withRunningEmbeddedMongo[F[_]: Async, A](
+      mongoPort: Int,
+      mongoUsername: String,
+      mongoPassword: String
+  )(
+      test: => F[A]
+  ): F[A] =
+    EmbeddedMongo.start[F](mongoPort, Some(mongoUsername), Some(mongoPassword)).use(_ => test)
+}
 
-  implicit final private class BuilderSyntax(private val builder: ImmutableMongodConfig.Builder) {
-    def withUsername(username: Option[String]): ImmutableMongodConfig.Builder = username.fold(builder)(builder.userName)
-    def withPassword(password: Option[String]): ImmutableMongodConfig.Builder = password.fold(builder)(builder.password)
+object EmbeddedMongo {
+
+  def start[F[_]](
+      port: Int,
+      username: Option[String],
+      password: Option[String]
+  )(implicit F: Async[F]): Resource[F, Unit] =
+    Resource.fromAutoCloseable(F.delay(startMongod(port, username, password))).void
+
+  private def startMongod(
+      port: Int,
+      username: Option[String],
+      password: Option[String]
+  ): TransitionWalker.ReachedState[RunningMongodProcess] = {
+    val withAuth = username.isDefined && password.isDefined
+    val listener = if (withAuth) Some(insertUserListener(username.get, password.get)) else None
+    Mongod
+      .builder()
+      .net(Start.to(classOf[Net]).initializedWith(Net.defaults().withPort(port)))
+      .mongodArguments(Start.to(classOf[MongodArguments]).initializedWith(MongodArguments.defaults().withAuth(withAuth)))
+      .build()
+      .start(Version.Main.V5_0, listener.toList: _*)
   }
+
+  private def insertUserListener(username: String, password: String): Listener =
+    Listener
+      .typedBuilder()
+      .onStateReached[RunningMongodProcess](
+        StateID.of(classOf[RunningMongodProcess]),
+        { runningProcess =>
+          val createUser = new Document("createUser", username)
+            .append("pwd", password)
+            .append("roles", java.util.Arrays.asList("userAdminAnyDatabase", "dbAdminAnyDatabase", "readWriteAnyDatabase"))
+
+          val address = runningProcess.getServerAddress
+          val client  = MongoClients.create(s"mongodb://${address.getHost}:${address.getPort}")
+          try {
+            val db = client.getDatabase("admin")
+            db.runCommand(createUser)
+            ()
+          } finally client.close()
+        }
+      )
+      .build()
 }

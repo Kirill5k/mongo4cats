@@ -16,71 +16,91 @@
 
 package mongo4cats.zio.embedded
 
-import de.flapdoodle.embed.mongo.config.{ImmutableMongodConfig, MongodConfig, Net}
+import com.mongodb.client.MongoClients
+import de.flapdoodle.embed.mongo.commands.MongodArguments
+import de.flapdoodle.embed.mongo.config.Net
 import de.flapdoodle.embed.mongo.distribution.Version
-import de.flapdoodle.embed.mongo.{MongodProcess, MongodStarter}
-import de.flapdoodle.embed.process.runtime.Network
-import zio._
-
-object EmbeddedMongo {
-
-  private val defaultStarter = ZIO.attempt(MongodStarter.getDefaultInstance)
-
-  def start(config: MongodConfig): ZIO[Scope, Nothing, MongodProcess] =
-    defaultStarter.orDie.flatMap(s => attemptStart(config, s))
-
-  private def attemptStart(
-      config: MongodConfig,
-      starter: MongodStarter,
-      maxAttempts: Int = 10,
-      attempt: Int = 0,
-      lastError: Option[Throwable] = None
-  ): ZIO[Scope, Nothing, MongodProcess] =
-    if (attempt >= maxAttempts) {
-      ZIO.die(lastError.getOrElse(new RuntimeException("Failed to start embedded mongo too many times")))
-    } else {
-      ZIO
-        .acquireRelease(ZIO.attemptBlocking(starter.prepare(config)))(ex => ZIO.attemptBlocking(ex.stop()).orDie)
-        .flatMap(ex => ZIO.acquireRelease(ZIO.attemptBlocking(ex.start()))(p => ZIO.attemptBlocking(p.stop()).orDie))
-        .catchAll { e =>
-          attemptStart(config, starter, maxAttempts, attempt + 1, Some(e))
-        }
-    }
-}
+import de.flapdoodle.embed.mongo.transitions.{Mongod, RunningMongodProcess}
+import de.flapdoodle.reverse.transitions.Start
+import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
+import org.bson.Document
+import zio.{Scope, ZIO}
 
 trait EmbeddedMongo {
-  protected val mongoHost: String             = "localhost"
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
 
   def withRunningEmbeddedMongo[R, E, A](test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
-    runMongo(mongoHost, mongoPort, mongoUsername, mongoPassword)(test)
+    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword) *> test
 
-  def withRunningEmbeddedMongo[R, E, A](host: String, port: Int)(test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
-    runMongo(host, port, None, None)(test)
-
-  def withRunningEmbeddedMongo[R, E, A](host: String, port: Int, username: String, password: String)(
+  def withRunningEmbeddedMongo[R, E, A](
+      mongoUsername: String,
+      mongoPassword: String
+  )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    runMongo(host, port, Some(username), Some(password))(test)
+    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword)) *> test
 
-  private def runMongo[R, E, A](host: String, port: Int, username: Option[String], password: Option[String])(
+  def withRunningEmbeddedMongo[R, E, A](
+      mongoPort: Int
+  )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo
-      .start(
-        MongodConfig
-          .builder()
-          .withUsername(username)
-          .withPassword(password)
-          .version(Version.Main.V5_0)
-          .net(new Net(host, port, Network.localhostIsIPv6))
-          .build
-      ) *> test
+    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword) *> test
 
-  implicit final private class BuilderSyntax(private val builder: ImmutableMongodConfig.Builder) {
-    def withUsername(username: Option[String]): ImmutableMongodConfig.Builder = username.fold(builder)(builder.userName)
-    def withPassword(password: Option[String]): ImmutableMongodConfig.Builder = password.fold(builder)(builder.password)
+  def withRunningEmbeddedMongo[R, E, A](
+      mongoPort: Int,
+      mongoUsername: String,
+      mongoPassword: String
+  )(
+      test: => ZIO[R, E, A]
+  ): ZIO[R with Scope, E, A] =
+    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword)) *> test
+}
+
+object EmbeddedMongo {
+
+  def start(
+      port: Int,
+      username: Option[String],
+      password: Option[String]
+  ): ZIO[Scope, Nothing, Unit] =
+    ZIO.acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password)))(p => ZIO.attempt(p.close()).orDie).unit.orDie
+
+  private def startMongod(
+      port: Int,
+      username: Option[String],
+      password: Option[String]
+  ): TransitionWalker.ReachedState[RunningMongodProcess] = {
+    val withAuth = username.isDefined && password.isDefined
+    val listener = if (withAuth) Some(insertUserListener(username.get, password.get)) else None
+    Mongod
+      .builder()
+      .net(Start.to(classOf[Net]).initializedWith(Net.defaults().withPort(port)))
+      .mongodArguments(Start.to(classOf[MongodArguments]).initializedWith(MongodArguments.defaults().withAuth(withAuth)))
+      .build()
+      .start(Version.Main.V5_0, listener.toList: _*)
   }
+
+  private def insertUserListener(username: String, password: String): Listener =
+    Listener
+      .typedBuilder()
+      .onStateReached[RunningMongodProcess](
+        StateID.of(classOf[RunningMongodProcess]),
+        { runningProcess =>
+          val createUser = new Document("createUser", username)
+            .append("pwd", password)
+            .append("roles", java.util.Arrays.asList("userAdminAnyDatabase", "dbAdminAnyDatabase", "readWriteAnyDatabase"))
+
+          val address = runningProcess.getServerAddress
+          val client  = MongoClients.create(s"mongodb://${address.getHost}:${address.getPort}")
+          try {
+            val db = client.getDatabase("admin")
+            db.runCommand(createUser)
+            ()
+          } finally client.close()
+        }
+      )
+      .build()
 }

@@ -42,7 +42,7 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
       }
     }.unsafeToFuture()
 
-    "start instance on different port" in withRunningEmbeddedMongo("localhost", 12355) {
+    "start instance on different port" in withRunningEmbeddedMongo(12355) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
         for {
           db   <- client.getDatabase("my-db")

@@ -26,7 +26,7 @@ import mongo4cats.embedded.EmbeddedMongo
 object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
 
   val run: IO[Unit] =
-    withRunningEmbeddedMongo("localhost", 27017) {
+    withRunningEmbeddedMongo(27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
           db   <- client.getDatabase("my-db")
