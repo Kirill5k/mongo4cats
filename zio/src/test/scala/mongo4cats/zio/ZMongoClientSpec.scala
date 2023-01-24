@@ -45,16 +45,16 @@ object ZMongoClientSpec extends ZIOSpecDefault with EmbeddedMongo {
     test("connect to a db via connection object") {
       withRunningEmbeddedMongo {
         ZMongoClient
-          .fromConnection(MongoConnection.classic("localhost", mongoPort))
+          .fromConnection(MongoConnection.classic(mongoHost, mongoPort))
           .map { client =>
             assert(client.clusterDescription.getConnectionMode)(equalTo(ClusterConnectionMode.SINGLE))
           }
       }
     },
     test("connect to a db via connection object with authentication") {
-      withRunningEmbeddedMongo(mongoPort, username, password) {
+      withRunningEmbeddedMongo(mongoHost, mongoPort, username, password) {
         ZMongoClient
-          .fromConnection(MongoConnection.classic("localhost", mongoPort, Some(MongoCredential(username, password))))
+          .fromConnection(MongoConnection.classic(mongoHost, mongoPort, Some(MongoCredential(username, password))))
           .map { client =>
             assert(client.clusterDescription.getConnectionMode)(equalTo(ClusterConnectionMode.SINGLE))
           }

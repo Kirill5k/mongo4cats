@@ -30,7 +30,7 @@ object DistinctNestedClassesWithCirceCodecs extends IOApp.Simple with EmbeddedMo
   final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
 
   override val run: IO[Unit] =
-    withRunningEmbeddedMongo(27017) {
+    withRunningEmbeddedMongo("localhost", 27017) {
       MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
         for {
           db   <- client.getDatabase("my-db")
