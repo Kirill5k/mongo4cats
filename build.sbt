@@ -55,6 +55,9 @@ val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
+  parallelExecution := false,
+  test / parallelExecution := false,
+  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "0.5.0"),
   scalacOptions ++= partialUnificationOption(scalaVersion.value),
   scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wnonunit-statement")) }
 )
@@ -64,9 +67,7 @@ val embedded = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-embedded",
-    libraryDependencies ++= Dependencies.embedded,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    libraryDependencies ++= Dependencies.embedded
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -75,9 +76,7 @@ val `zio-embedded` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio-embedded",
-    libraryDependencies ++= Dependencies.zioEmbedded,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    libraryDependencies ++= Dependencies.zioEmbedded
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -86,9 +85,7 @@ val kernel = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-kernel",
-    libraryDependencies ++= Dependencies.kernel,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    libraryDependencies ++= Dependencies.kernel
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -99,8 +96,6 @@ val core = project
   .settings(
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
     libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
   )
   .enablePlugins(AutomateHeaderPlugin)
@@ -112,8 +107,6 @@ val zio = project
   .settings(
     name := "mongo4cats-zio",
     libraryDependencies ++= Dependencies.zio,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
     libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
   )
   .enablePlugins(AutomateHeaderPlugin)
@@ -124,9 +117,7 @@ val circe = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
-    libraryDependencies ++= Dependencies.circe,
-    test / parallelExecution := false,
-    mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0")
+    libraryDependencies ++= Dependencies.circe
   )
   .enablePlugins(AutomateHeaderPlugin)
 
