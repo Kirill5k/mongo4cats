@@ -18,6 +18,7 @@ package mongo4cats.zio
 
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
+import mongo4cats.models.client.MongoConnection
 import mongo4cats.models.collection.MongoNamespace
 import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.zio.embedded.EmbeddedMongo
@@ -118,8 +119,6 @@ object ZMongoDatabaseSpec extends ZIOSpecDefault with EmbeddedMongo {
     withRunningEmbeddedMongo {
       ZIO
         .serviceWithZIO[ZMongoClient](test(_))
-        .provide(
-          ZLayer.scoped(ZMongoClient.fromConnectionString(s"mongodb://localhost:$mongoPort"))
-        )
+        .provide(ZLayer.scoped(ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))))
     }
 }

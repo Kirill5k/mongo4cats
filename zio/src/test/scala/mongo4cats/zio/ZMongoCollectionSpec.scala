@@ -19,6 +19,7 @@ package mongo4cats.zio
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
+import mongo4cats.models.client.MongoConnection
 import mongo4cats.models.collection._
 import mongo4cats.operations.{Filter, Index, Sort, Update}
 import mongo4cats.zio.embedded.EmbeddedMongo
@@ -436,7 +437,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
       ZIO
         .serviceWithZIO[ZMongoDatabase](test(_))
         .provide(
-          ZLayer.scoped(ZMongoClient.fromConnectionString(s"mongodb://localhost:$mongoPort")),
+          ZLayer.scoped(ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))),
           ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("test-db")))
         )
     }
