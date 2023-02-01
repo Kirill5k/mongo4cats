@@ -44,7 +44,7 @@ final private class LiveMongoDatabase[F[_]](
   def withWriteConcern(writeConcert: WriteConcern): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withWriteConcern(writeConcert))
 
-  def witReadConcern(readConcern: ReadConcern): MongoDatabase[F] =
+  def withReadConcern(readConcern: ReadConcern): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withReadConcern(readConcern))
 
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =

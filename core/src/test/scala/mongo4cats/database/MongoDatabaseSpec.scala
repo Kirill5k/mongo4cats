@@ -54,7 +54,7 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       "set read concern" in withEmbeddedMongoClient { client =>
         val result = for {
           db <- client.getDatabase("test")
-          updDb = db.witReadConcern(ReadConcern.MAJORITY)
+          updDb = db.withReadConcern(ReadConcern.MAJORITY)
           rc    = updDb.readConcern
         } yield rc
 

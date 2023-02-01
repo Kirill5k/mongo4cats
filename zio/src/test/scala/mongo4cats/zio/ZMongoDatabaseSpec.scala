@@ -53,7 +53,7 @@ object ZMongoDatabaseSpec extends ZIOSpecDefault with EmbeddedMongo {
         withEmbeddedMongoClient { client =>
           for {
             db <- client.getDatabase("test")
-            updDb = db.witReadConcern(ReadConcern.MAJORITY)
+            updDb = db.withReadConcern(ReadConcern.MAJORITY)
             rc    = updDb.readConcern
           } yield assert(rc)(equalTo(ReadConcern.MAJORITY))
         }

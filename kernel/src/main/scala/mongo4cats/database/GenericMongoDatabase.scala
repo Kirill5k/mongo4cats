@@ -40,7 +40,7 @@ abstract class GenericMongoDatabase[F[_], S[_]] {
 
   def withReadPreference(readPreference: ReadPreference): GenericMongoDatabase[F, S]
   def withWriteConcern(writeConcert: WriteConcern): GenericMongoDatabase[F, S]
-  def witReadConcern(readConcern: ReadConcern): GenericMongoDatabase[F, S]
+  def withReadConcern(readConcern: ReadConcern): GenericMongoDatabase[F, S]
   def withAddedCodec(codecRegistry: CodecRegistry): GenericMongoDatabase[F, S]
   def withAddedCodec[T: ClassTag](implicit cp: MongoCodecProvider[T]): GenericMongoDatabase[F, S] =
     Try(codecs.get(Clazz.tag[T])).fold(_ => withAddedCodec(CodecRegistry.from(cp.get)), _ => this)

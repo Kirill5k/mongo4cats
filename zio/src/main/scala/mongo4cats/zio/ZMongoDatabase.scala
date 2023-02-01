@@ -37,7 +37,7 @@ final private class ZMongoDatabaseLive(
   def withWriteConcern(writeConcert: WriteConcern): ZMongoDatabase =
     new ZMongoDatabaseLive(underlying.withWriteConcern(writeConcert))
 
-  def witReadConcern(readConcern: ReadConcern): ZMongoDatabase =
+  def withReadConcern(readConcern: ReadConcern): ZMongoDatabase =
     new ZMongoDatabaseLive(underlying.withReadConcern(readConcern))
 
   def withAddedCodec(codecRegistry: CodecRegistry): ZMongoDatabase =
