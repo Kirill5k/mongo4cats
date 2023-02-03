@@ -27,12 +27,13 @@ import org.bson.Document
 import zio.{Scope, ZIO}
 
 trait EmbeddedMongo {
+  protected val version: Version              = Version.V5_0_14
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
 
   def withRunningEmbeddedMongo[R, E, A](test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword) *> test
+    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, version) *> test
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoUsername: String,
@@ -40,14 +41,14 @@ trait EmbeddedMongo {
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword)) *> test
+    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), version) *> test
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoPort: Int
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword) *> test
+    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, version) *> test
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoPort: Int,
@@ -56,7 +57,7 @@ trait EmbeddedMongo {
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword)) *> test
+    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), version) *> test
 }
 
 object EmbeddedMongo {
@@ -65,21 +66,23 @@ object EmbeddedMongo {
       port: Int,
       username: Option[String],
       password: Option[String],
+      version: Version,
       remainingAttempts: Int = 10
   ): ZIO[Scope, Nothing, Unit] =
     ZIO
-      .acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password)))(p => ZIO.attempt(p.close()).orDie)
+      .acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password, version)))(p => ZIO.attempt(p.close()).orDie)
       .unit
       .catchAll { error =>
         if (remainingAttempts <= 0) ZIO.fail(error)
-        else start(port, username, password, remainingAttempts - 1)
+        else start(port, username, password, version, remainingAttempts - 1)
       }
       .orDie
 
   private def startMongod(
       port: Int,
       username: Option[String],
-      password: Option[String]
+      password: Option[String],
+      version: Version
   ): TransitionWalker.ReachedState[RunningMongodProcess] = {
     val withAuth = username.isDefined && password.isDefined
     val listener = if (withAuth) Some(insertUserListener(username.get, password.get)) else None
@@ -88,7 +91,7 @@ object EmbeddedMongo {
       .net(Start.to(classOf[Net]).initializedWith(Net.defaults().withPort(port)))
       .mongodArguments(Start.to(classOf[MongodArguments]).initializedWith(MongodArguments.defaults().withAuth(withAuth)))
       .build()
-      .start(Version.Main.V5_0, listener.toList: _*)
+      .start(version, listener.toList: _*)
   }
 
   private def insertUserListener(username: String, password: String): Listener =

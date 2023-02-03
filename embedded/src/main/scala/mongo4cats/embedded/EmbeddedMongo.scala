@@ -28,12 +28,13 @@ import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
 import org.bson.Document
 
 trait EmbeddedMongo {
+  protected val version: Version              = Version.V5_0_14
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
 
   def withRunningEmbeddedMongo[F[_]: Async, A](test: => F[A]): F[A] =
-    EmbeddedMongo.start[F](mongoPort, mongoUsername, mongoPassword).use(_ => test)
+    EmbeddedMongo.start[F](mongoPort, mongoUsername, mongoPassword, version).use(_ => test)
 
   def withRunningEmbeddedMongo[F[_]: Async, A](
       mongoUsername: String,
@@ -41,14 +42,14 @@ trait EmbeddedMongo {
   )(
       test: => F[A]
   ): F[A] =
-    EmbeddedMongo.start[F](mongoPort, Some(mongoUsername), Some(mongoPassword)).use(_ => test)
+    EmbeddedMongo.start[F](mongoPort, Some(mongoUsername), Some(mongoPassword), version).use(_ => test)
 
   def withRunningEmbeddedMongo[F[_]: Async, A](
       mongoPort: Int
   )(
       test: => F[A]
   ): F[A] =
-    EmbeddedMongo.start[F](mongoPort, mongoUsername, mongoPassword).use(_ => test)
+    EmbeddedMongo.start[F](mongoPort, mongoUsername, mongoPassword, version).use(_ => test)
 
   def withRunningEmbeddedMongo[F[_]: Async, A](
       mongoPort: Int,
@@ -57,7 +58,7 @@ trait EmbeddedMongo {
   )(
       test: => F[A]
   ): F[A] =
-    EmbeddedMongo.start[F](mongoPort, Some(mongoUsername), Some(mongoPassword)).use(_ => test)
+    EmbeddedMongo.start[F](mongoPort, Some(mongoUsername), Some(mongoPassword), version).use(_ => test)
 }
 
 object EmbeddedMongo {
@@ -66,20 +67,22 @@ object EmbeddedMongo {
       port: Int,
       username: Option[String],
       password: Option[String],
+      version: Version,
       remainingAttempts: Int = 10
   )(implicit F: Async[F]): Resource[F, Unit] =
     Resource
-      .fromAutoCloseable(F.delay(startMongod(port, username, password)))
+      .fromAutoCloseable(F.delay(startMongod(port, username, password, version)))
       .void
       .handleErrorWith[Unit, Throwable] { error =>
         if (remainingAttempts <= 0) Resource.raiseError(error)
-        else start[F](port, username, password, remainingAttempts - 1)
+        else start[F](port, username, password, version, remainingAttempts - 1)
       }
 
   private def startMongod(
       port: Int,
       username: Option[String],
-      password: Option[String]
+      password: Option[String],
+      version: Version
   ): TransitionWalker.ReachedState[RunningMongodProcess] = {
     val withAuth = username.isDefined && password.isDefined
     val listener = if (withAuth) Some(insertUserListener(username.get, password.get)) else None
@@ -88,7 +91,7 @@ object EmbeddedMongo {
       .net(Start.to(classOf[Net]).initializedWith(Net.defaults().withPort(port)))
       .mongodArguments(Start.to(classOf[MongodArguments]).initializedWith(MongodArguments.defaults().withAuth(withAuth)))
       .build()
-      .start(Version.Main.V5_0, listener.toList: _*)
+      .start(version, listener.toList: _*)
   }
 
   private def insertUserListener(username: String, password: String): Listener =
