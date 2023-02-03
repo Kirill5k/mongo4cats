@@ -17,6 +17,7 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
+import de.flapdoodle.embed.mongo.distribution.Version
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
@@ -24,10 +25,12 @@ import mongo4cats.operations.Projection
 import mongo4cats.embedded.EmbeddedMongo
 
 object WithEmbeddedMongo extends IOApp.Simple with EmbeddedMongo {
+  override protected val mongoVersion: Version = Version.V4_4_18
+  override protected val mongoPort: Int        = 27016
 
   val run: IO[Unit] =
-    withRunningEmbeddedMongo(27017) {
-      MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+    withRunningEmbeddedMongo {
+      MongoClient.fromConnectionString[IO](s"mongodb://localhost:$mongoPort").use { client =>
         for {
           db   <- client.getDatabase("my-db")
           coll <- db.getCollection("docs")

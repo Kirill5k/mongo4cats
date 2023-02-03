@@ -27,13 +27,13 @@ import org.bson.Document
 import zio.{Scope, ZIO}
 
 trait EmbeddedMongo {
-  protected val version: Version              = Version.V5_0_14
+  protected val mongoVersion: Version         = Version.V5_0_14
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
 
   def withRunningEmbeddedMongo[R, E, A](test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, version) *> test
+    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, mongoVersion) *> test
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoUsername: String,
@@ -41,14 +41,14 @@ trait EmbeddedMongo {
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), version) *> test
+    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), mongoVersion) *> test
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoPort: Int
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, version) *> test
+    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, mongoVersion) *> test
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoPort: Int,
@@ -57,7 +57,7 @@ trait EmbeddedMongo {
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), version) *> test
+    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), mongoVersion) *> test
 }
 
 object EmbeddedMongo {
