@@ -4,17 +4,17 @@ object Dependencies {
   private object Versions {
     val kindProjector      = "0.13.2"
     val cats               = "2.9.0"
-    val catsEffect         = "3.4.5"
-    val mongodb            = "4.8.2"
-    val fs2                = "3.5.0"
-    val circe              = "0.14.3"
-    val zio                = "2.0.6"
+    val catsEffect         = "3.4.7"
+    val mongodb            = "4.9.0"
+    val fs2                = "3.6.1"
+    val circe              = "0.14.4"
+    val zio                = "2.0.9"
     val zioInteropReactive = "2.0.0"
 
     val logback   = "1.4.5"
     val scalaTest = "3.2.15"
 
-    val embeddedMongo   = "4.4.0"
+    val embeddedMongo   = "4.5.1"
     val immutableValue  = "2.9.3"
     val commonsCompress = "1.22"
   }
