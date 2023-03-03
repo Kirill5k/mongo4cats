@@ -30,6 +30,7 @@ import com.mongodb.client.model.{
   RenameCollectionOptions => JRenameCollectionOptions,
   ReplaceOptions => JReplaceOptions,
   ReturnDocument,
+  UnwindOptions => JUnwindOptions,
   UpdateOptions => JUpdateOptions
 }
 import mongo4cats.operations.Sort
@@ -71,6 +72,11 @@ package object collection {
         bypassDocumentValidation: Boolean = false,
         comment: Option[String] = None
     ): UpdateOptions = new JUpdateOptions().upsert(upsert).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
+  }
+
+  type UnwindOptions = JUnwindOptions
+  object UnwindOptions {
+    def apply(): UnwindOptions = new JUnwindOptions()
   }
 
   type ReplaceOptions = JReplaceOptions

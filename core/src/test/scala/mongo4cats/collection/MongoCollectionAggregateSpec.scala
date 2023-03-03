@@ -22,9 +22,10 @@ import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
-import mongo4cats.operations._
 import mongo4cats.database.MongoDatabase
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.models.collection.UnwindOptions
+import mongo4cats.operations._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -107,11 +108,11 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
       "processes multiple aggregation pipelines within a single stage on the same set of input documents" in {
         withEmbeddedMongoDatabase { db =>
           val result = for {
-            accs <- db.getCollection("transactions")
+            txs <- db.getCollection("transactions")
             accumulator = Accumulator
               .sum("count", 1)
               .sum("totalAmount", "$amount")
-            res <- accs
+            res <- txs
               .aggregate[Document] {
                 Aggregate.facet(
                   Aggregate.Facet("transactionsByCategory", Aggregate.group("$category", accumulator)),
@@ -124,6 +125,27 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
           result.map(_.get).map { res =>
             res.getList("transactionsByCategory").get must have size 10
             res.getList("transactionsByAccount").get must have size 1
+          }
+        }
+      }
+
+      "collect all unique account currencies" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            accs <- db.getCollection("accounts")
+            res <- accs.aggregate[Document](
+              Aggregate
+                .project(Projection.excludeId)
+                .unwind("$name", UnwindOptions().preserveNullAndEmptyArrays(false))
+                .group("$_id", Accumulator.addToSet("uniqueNames", "$name"))
+                .project(Projection.slice("uniqueNames", 1, 1))
+            ).all
+          } yield res
+
+          result.map { res =>
+            val accounts = res.flatMap(_.getAs[List[String]]("uniqueNames")).flatten
+            accounts must have size 1
+            accounts must contain oneOf("usd-acc", "eur-acc", "gbp-acc")
           }
         }
       }

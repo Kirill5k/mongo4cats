@@ -17,6 +17,8 @@
 package mongo4cats.operations
 
 import com.mongodb.client.model.Projections
+import mongo4cats.bson.{BsonValue, Document}
+import mongo4cats.bson.syntax._
 import org.bson.conversions.Bson
 
 trait Projection {
@@ -221,11 +223,17 @@ final private case class ProjectionBuilder(
   override def metaTextScore(fieldName: String): Projection =
     ProjectionBuilder(Projections.metaTextScore(fieldName) :: projections)
 
-  override def slice(fieldName: String, limit: Int): Projection =
-    ProjectionBuilder(Projections.slice(fieldName, limit) :: projections)
+  override def slice(fieldName: String, limit: Int): Projection = {
+    val sliceCommand = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(limit)))
+    val sliceProjection = Document(fieldName := sliceCommand)
+    ProjectionBuilder(sliceProjection.toBsonDocument :: projections)
+  }
 
-  override def slice(fieldName: String, skip: Int, limit: Int): Projection =
-    ProjectionBuilder(Projections.slice(fieldName, skip, limit) :: projections)
+  override def slice(fieldName: String, skip: Int, limit: Int): Projection = {
+    val sliceCommand = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(skip), BsonValue.int(limit)))
+    val sliceProjection = Document(fieldName := sliceCommand)
+    ProjectionBuilder(sliceProjection.toBsonDocument :: projections)
+  }
 
   override def combinedWith(anotherProjection: Projection): Projection =
     ProjectionBuilder(anotherProjection.projections ::: projections)
