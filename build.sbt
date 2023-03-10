@@ -54,9 +54,9 @@ val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
-  parallelExecution := false,
+  parallelExecution        := false,
   test / parallelExecution := false,
-  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "0.5.0"),
+  mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
   scalacOptions ++= partialUnificationOption(scalaVersion.value),
   scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wnonunit-statement")) }
 )
@@ -120,6 +120,17 @@ val circe = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+val zioJson = project
+  .in(file("zio-json"))
+  .dependsOn(kernel, core % "test->compile", embedded % "test->compile")
+  .settings(commonSettings)
+  .settings(
+    name := "mongo4cats-zio-json",
+    libraryDependencies ++= Dependencies.zioJson,
+    resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+  )
+  .enablePlugins(AutomateHeaderPlugin)
+
 val examples = project
   .in(file("examples"))
   .dependsOn(core, circe, embedded, zio, `zio-embedded`)
@@ -168,6 +179,7 @@ val root = project
     core,
     zio,
     circe,
+    zioJson,
     examples,
     embedded,
     `zio-embedded`
