@@ -60,7 +60,7 @@ trait MongoJsonCodecs {
     }
 
   implicit val instantEncoder: JsonEncoder[Instant] =
-    Json.encoder.contramap[Instant](i => Json.Obj(JsonMapper.dateTag -> Json.decoder.decodeJson(i.toString).toOption.get))
+    Json.encoder.contramap[Instant](i => Json.Obj(JsonMapper.dateTag -> Json.Str(i.toString)))
 
   implicit val instantDecoder: JsonDecoder[Instant] =
     Json.decoder.mapOrFail[Instant] { dateObj =>
@@ -72,7 +72,7 @@ trait MongoJsonCodecs {
     }
 
   implicit val localDateEncoder: JsonEncoder[LocalDate] =
-    Json.encoder.contramap[LocalDate](i => Json.Obj(JsonMapper.dateTag -> Json.decoder.decodeJson(i.toString).toOption.get))
+    Json.encoder.contramap[LocalDate](i => Json.Obj(JsonMapper.dateTag -> Json.Str(i.toString)))
 
   implicit val localDateDecoder: JsonDecoder[LocalDate] =
     Json.decoder.mapOrFail[LocalDate] { dateObj =>
