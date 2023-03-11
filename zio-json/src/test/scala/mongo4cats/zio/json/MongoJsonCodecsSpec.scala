@@ -31,7 +31,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
       val oid  = ObjectId.gen
       val json = s"""{"${JsonMapper.idTag}":"${oid.toHexString}"}"""
 
-      objectIdEncoder.encodeJson(oid) mustBe json
+      objectIdEncoder.encodeJson(oid).toString mustBe json
       objectIdDecoder.decodeJson(json) mustBe Right(oid)
     }
   }
@@ -41,8 +41,8 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
       val inst = Instant.now()
       val json = s"""{"${JsonMapper.dateTag}":"$inst"}"""
 
-      JsonEncoder.instant.encodeJson(inst) mustBe json
-      JsonDecoder.instant.decodeJson(json) mustBe Right(inst)
+      instantEncoder.encodeJson(inst).toString mustBe json
+      instantDecoder.decodeJson(json) mustBe Right(inst)
     }
   }
 
@@ -51,8 +51,8 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
       val date = LocalDate.now()
       val json = s"""{"${JsonMapper.dateTag}":"${date}"}"""
 
-      JsonEncoder.localDate.encodeJson(date) mustBe json
-      JsonDecoder.localDate.decodeJson(json) mustBe Right(date)
+      localDateEncoder.encodeJson(date).toString mustBe json
+      localDateDecoder.decodeJson(json) mustBe Right(date)
     }
   }
 
