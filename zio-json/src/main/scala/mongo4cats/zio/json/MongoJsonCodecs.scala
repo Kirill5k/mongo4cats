@@ -26,6 +26,8 @@ import org.bson.{BsonReader, BsonWriter}
 import zio.json.{JsonDecoder, JsonEncoder}
 import zio.json.ast.Json
 
+import java.time.{Instant, LocalDate}
+
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -47,13 +49,37 @@ trait MongoJsonCodecs {
     Json.decoder.mapOrFail(j => JsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: JsonEncoder[ObjectId] =
-    Json.encoder.contramap[ObjectId](i => Json.Obj(JsonMapper.idTag -> Json.decoder.decodeJson(i.toHexString).toOption.get))
+    Json.encoder.contramap[ObjectId](i => Json.Obj(JsonMapper.idTag -> Json.Str(i.toHexString)))
 
   implicit val objectIdDecoder: JsonDecoder[ObjectId] =
     Json.decoder.mapOrFail[ObjectId](id =>
       Try(id.asObject.flatMap(_.get(JsonMapper.idTag)).map(j => ObjectId(j.asString.get)).get).toOption
         .toRight(s"$id is not a valid object id")
     )
+
+  implicit val instantEncoder: JsonEncoder[Instant] =
+    Json.encoder.contramap[Instant](i => Json.Obj(JsonMapper.dateTag -> Json.decoder.decodeJson(i.toString).toOption.get))
+
+  implicit val instantDecoder: JsonDecoder[Instant] =
+    Json.decoder.mapOrFail[Instant] { dateObj =>
+      (for {
+        obj  <- dateObj.asObject
+        date <- obj.get(JsonMapper.dateTag)
+        ts   <- date.asString
+      } yield Instant.parse(ts)).toRight(s"$dateObj is not a valid instant object")
+    }
+
+  implicit val localDateEncoder: JsonEncoder[LocalDate] =
+    Json.encoder.contramap[LocalDate](i => Json.Obj(JsonMapper.dateTag -> Json.decoder.decodeJson(i.toString).toOption.get))
+
+  implicit val localDateDecoder: JsonDecoder[LocalDate] =
+    Json.decoder.mapOrFail[LocalDate] { dateObj =>
+      (for {
+        obj  <- dateObj.asObject
+        date <- obj.get(JsonMapper.dateTag)
+        ld   <- date.asString
+      } yield LocalDate.parse(ld.slice(0, 10))).toRight(s"$dateObj is not a valid local date object")
+    }
 
   implicit def deriveZioJsonCodecProvider[A: JsonEncoder: JsonDecoder: ClassTag]: MongoCodecProvider[A] =
     new MongoCodecProvider[A] {
