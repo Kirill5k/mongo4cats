@@ -51,7 +51,7 @@ trait MongoJsonCodecs {
 
   implicit val objectIdDecoder: JsonDecoder[ObjectId] =
     Json.decoder.mapOrFail[ObjectId](id =>
-      Try(id.asObject.flatMap(_.fields.toMap.get(JsonMapper.idTag)).map(j => ObjectId(j.toString)).get).toOption
+      Try(id.asObject.flatMap(_.get(JsonMapper.idTag)).map(j => ObjectId(j.asString.get)).get).toOption
         .toRight(s"$id is not a valid object id")
     )
 

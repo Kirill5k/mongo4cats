@@ -18,20 +18,20 @@ package mongo4cats.zio.json
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
-import io.circe.generic.auto._
-import io.circe.{Decoder, Encoder}
 import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
 import mongo4cats.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import zio.json._
 
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate}
 import scala.concurrent.Future
 
+@scala.annotation.nowarn("msg=never used")
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   override val mongoPort: Int = 12348
@@ -48,8 +48,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       def from(value: String): Either[String, Gender] =
         all.find(_.value == value).toRight(s"unexpected item kind $value")
 
-      implicit val decode: Decoder[Gender] = Decoder[String].emap(Gender.from)
-      implicit val encode: Encoder[Gender] = Encoder[String].contramap(_.value)
+      implicit val decode: JsonDecoder[Gender] = JsonDecoder.string.mapOrFail(Gender.from)
+      implicit val encode: JsonEncoder[Gender] = JsonEncoder.string.contramap(_.value)
     }
 
     final case class Address(
@@ -58,6 +58,11 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
         city: String,
         postcode: String
     )
+
+    object Address {
+      implicit val decode: JsonDecoder[Address] = DeriveJsonDecoder.gen[Address]
+      implicit val encode: JsonEncoder[Address] = DeriveJsonEncoder.gen[Address]
+    }
 
     final case class Person(
         _id: ObjectId,
@@ -70,7 +75,12 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
         registrationDate: Instant
     )
 
-    "use circe codecs for encoding and decoding data" in {
+    object Person {
+      implicit val decode: JsonDecoder[Person] = DeriveJsonDecoder.gen[Person]
+      implicit val encode: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
+    }
+
+    "use zio json codecs for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
@@ -86,7 +96,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
-    "use circe-codec-provider for encoding and decoding data" in {
+    "use zio-json-codec-provider for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
@@ -186,12 +196,22 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     final case class CreditCard(name: String, number: String, expiry: String, cvv: Int) extends PaymentMethod
     final case class Paypal(email: String)                                              extends PaymentMethod
 
+    object PaymentMethod {
+      implicit val decode: JsonDecoder[PaymentMethod] = DeriveJsonDecoder.gen[PaymentMethod]
+      implicit val encode: JsonEncoder[PaymentMethod] = DeriveJsonEncoder.gen[PaymentMethod]
+    }
+
     final case class Payment(
         id: ObjectId,
         amount: BigDecimal,
         method: PaymentMethod,
         date: Instant
     )
+
+    object Payment {
+      implicit val decode: JsonDecoder[Payment] = DeriveJsonDecoder.gen[Payment]
+      implicit val encode: JsonEncoder[Payment] = DeriveJsonEncoder.gen[Payment]
+    }
 
     "encode and decode case classes that extend sealed traits" in {
       val ts = Instant.parse("2020-01-01T00:00:00Z")
