@@ -80,10 +80,10 @@ private[json] object JsonMapper {
     def isDecimal: Boolean = jNumber.toString.contains(".")
     def toBsonValue: BsonValue =
       jNumber.value match {
-        case n if n.isDecimalDouble => BsonValue.double(n.toDouble)
-        case n if n.isValidInt      => BsonValue.int(n.toInt)
-        case n if n.isValidLong     => BsonValue.long(n.toLong)
-        case n                      => BsonValue.bigDecimal(n)
+        case n if n.isValidLong   => BsonValue.long(n.toLong)
+        case n if n.isValidInt    => BsonValue.int(n.toInt)
+        case n if n.isExactDouble => BsonValue.double(n.toDouble)
+        case n                    => BsonValue.bigDecimal(n)
       }
   }
 
