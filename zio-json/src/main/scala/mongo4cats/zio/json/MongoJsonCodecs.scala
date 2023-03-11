@@ -52,10 +52,13 @@ trait MongoJsonCodecs {
     Json.encoder.contramap[ObjectId](i => Json.Obj(JsonMapper.idTag -> Json.Str(i.toHexString)))
 
   implicit val objectIdDecoder: JsonDecoder[ObjectId] =
-    Json.decoder.mapOrFail[ObjectId](id =>
-      Try(id.asObject.flatMap(_.get(JsonMapper.idTag)).map(j => ObjectId(j.asString.get)).get).toOption
-        .toRight(s"$id is not a valid object id")
-    )
+    Json.decoder.mapOrFail[ObjectId] { id =>
+      (for {
+        obj  <- id.asObject
+        json <- obj.get(JsonMapper.idTag)
+        str  <- json.asString
+      } yield ObjectId(str)).toRight(s"$id is not a valid object id")
+    }
 
   implicit val instantEncoder: JsonEncoder[Instant] =
     Json.encoder.contramap[Instant](i => Json.Obj(JsonMapper.dateTag -> Json.decoder.decodeJson(i.toString).toOption.get))
