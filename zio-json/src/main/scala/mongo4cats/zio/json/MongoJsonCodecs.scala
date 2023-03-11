@@ -29,7 +29,6 @@ import zio.json.ast.Json
 import java.time.{Instant, LocalDate}
 
 import scala.reflect.ClassTag
-import scala.util.Try
 
 final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
