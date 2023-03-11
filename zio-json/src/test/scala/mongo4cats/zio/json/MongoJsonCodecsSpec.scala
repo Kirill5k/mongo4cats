@@ -20,6 +20,7 @@ import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import zio.json._
+import zio.json.ast.Json
 
 import java.time.{Instant, LocalDate}
 
@@ -102,9 +103,9 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
           |    "field1" : "1",
           |    "field2" : 2
           |  }
-          |}""".stripMargin.replaceAll(" ", "").replaceAll("\n", "")
+          |}""".stripMargin
 
-      documentEncoder.encodeJson(document) mustBe json
+      Json.decoder.decodeJson(documentEncoder.encodeJson(document)).toOption.get.toJsonPretty mustBe json
       documentDecoder.decodeJson(json) mustBe Right(document)
     }
   }
