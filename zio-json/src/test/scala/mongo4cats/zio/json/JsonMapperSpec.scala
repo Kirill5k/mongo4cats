@@ -50,7 +50,7 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
   def jsonBool(b: Boolean): Json           = JsonEncoder.boolean.toJsonAST(b).toOption.get
   def jsonInt(i: Int): Json                = JsonEncoder.int.toJsonAST(i).toOption.get
   def jsonLong(l: Long): Json              = JsonEncoder.long.toJsonAST(l).toOption.get
-  def jsonBigDecimal(bd: BigDecimal): Json = JsonEncoder.bigDecimal.toJsonAST(bd.bigDecimal).toOption.get
+  def jsonBigDecimal(bd: BigDecimal): Json = JsonEncoder.scalaBigDecimal.toJsonAST(bd).toOption.get
 
   "A ZioJsonMapper" when {
     "toBson" should {

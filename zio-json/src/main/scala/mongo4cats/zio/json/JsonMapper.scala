@@ -79,11 +79,11 @@ private[json] object JsonMapper {
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {
     def isDecimal: Boolean = jNumber.toString.contains(".")
     def toBsonValue: BsonValue =
-      jNumber.value match {
-        case n if n.isValidLong   => BsonValue.long(n.toLong)
-        case n if n.isValidInt    => BsonValue.int(n.toInt)
-        case n if n.isExactDouble => BsonValue.double(n.toDouble)
-        case n                    => BsonValue.bigDecimal(n)
+      (isDecimal, jNumber.value) match {
+        case (true, n)                   => BsonValue.bigDecimal(n)
+        case (false, n) if n.isValidInt  => BsonValue.int(n.toInt)
+        case (false, n) if n.isValidLong => BsonValue.long(n.toLong)
+        case (_, n)                      => BsonValue.bigDecimal(n)
       }
   }
 
