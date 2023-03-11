@@ -54,9 +54,28 @@ private[json] object JsonMapper {
         o.fields.toMap.get(dateTag).exists(_.isString) && o.fields.toMap.get(dateTag).exists(_.asString.get.length == 10)
       )
 
-    def asEpochMillis: Long     = json.asObject.flatMap(_.fields.toMap.get(dateTag)).flatMap(_.asString).flatMap(_.toLongOption).get
-    def asIsoDateString: String = json.asObject.flatMap(_.fields.toMap.get(dateTag)).flatMap(_.asString).get
-    def asObjectId: ObjectId    = json.asObject.flatMap(_.get(idTag)).flatMap(_.asString).map(s => ObjectId(s)).get
+    def asEpochMillis: Long =
+      (for {
+        obj  <- json.asObject
+        date <- obj.get(dateTag)
+        num  <- date.asNumber
+        ts = num.value.toLong
+      } yield ts).get
+
+    def asIsoDateString: String =
+      (for {
+        obj  <- json.asObject
+        date <- obj.get(dateTag)
+        str  <- date.asString
+      } yield str).get
+
+    def asObjectId: ObjectId =
+      (for {
+        obj   <- json.asObject
+        id    <- obj.get(idTag)
+        hex   <- id.asString
+        objId <- ObjectId.from(hex).toOption
+      } yield objId).get
   }
 
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {

@@ -56,11 +56,11 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
     "toBson" should {
       "accurately convert json to bson" in {
         val jsonObject = Json.Obj(
-          "_id"           -> Json.Obj("$oid" -> Json.decoder.decodeJson(id.toHexString).toOption.get),
+          "_id"           -> Json.Obj("$oid" -> Json.Str(id.toHexString)),
           "string"        -> jsonString("string"),
           "null"          -> Json.Null,
           "boolean"       -> jsonBool(true),
-          "long"          -> jsonLong(ts.toEpochMilli),
+          "long2"         -> jsonLong(ts.toEpochMilli),
           "int"           -> jsonInt(1),
           "bigDecimal"    -> jsonBigDecimal(BigDecimal(100.0)),
           "array"         -> Json.Arr(jsonString("a"), jsonString("b")),
