@@ -120,7 +120,7 @@ val circe = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val zioJson = project
+val `zio-json` = project
   .in(file("zio-json"))
   .dependsOn(kernel, core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
@@ -179,7 +179,7 @@ val root = project
     core,
     zio,
     circe,
-    zioJson,
+    `zio-json`,
     examples,
     embedded,
     `zio-embedded`
