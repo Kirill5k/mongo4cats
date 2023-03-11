@@ -48,11 +48,9 @@ private[json] object JsonMapper {
     def isNumber: Boolean      = json.asNumber.nonEmpty
     def isId: Boolean          = json.asObject.nonEmpty && json.asObject.exists(_.contains(idTag))
     def isDate: Boolean        = json.asObject.nonEmpty && json.asObject.exists(_.contains(dateTag))
-    def isEpochMillis: Boolean = isDate && json.asObject.exists(_.fields.toMap.get(dateTag).exists(_.isNumber))
+    def isEpochMillis: Boolean = isDate && json.asObject.exists(_.get(dateTag).exists(_.isNumber))
     def isLocalDate: Boolean =
-      isDate && json.asObject.exists(o =>
-        o.fields.toMap.get(dateTag).exists(_.isString) && o.fields.toMap.get(dateTag).exists(_.asString.get.length == 10)
-      )
+      isDate && json.asObject.exists(o => o.get(dateTag).exists(_.isString) && o.get(dateTag).exists(_.asString.get.length == 10))
 
     def asEpochMillis: Long =
       (for {
@@ -82,10 +80,10 @@ private[json] object JsonMapper {
     def isDecimal: Boolean = jNumber.toString.contains(".")
     def toBsonValue: BsonValue =
       jNumber.value match {
-        case n if n.isExactDouble => BsonValue.double(n.toDouble)
-        case n if n.isValidInt    => BsonValue.int(n.toInt)
-        case n if n.isValidLong   => BsonValue.long(n.toLong)
-        case n                    => BsonValue.bigDecimal(n)
+        case n if n.isDecimalDouble => BsonValue.double(n.toDouble)
+        case n if n.isValidInt      => BsonValue.int(n.toInt)
+        case n if n.isValidLong     => BsonValue.long(n.toLong)
+        case n                      => BsonValue.bigDecimal(n)
       }
   }
 
