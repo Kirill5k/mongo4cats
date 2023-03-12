@@ -18,6 +18,7 @@ package mongo4cats.zio.json
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import mongo4cats.test.{Address, Gender, Payment, PaymentMethod, Person}
 import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
 import mongo4cats.operations.Filter
@@ -31,54 +32,22 @@ import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate}
 import scala.concurrent.Future
 
-@scala.annotation.nowarn("msg=never used")
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort: Int = 12351
+  override val mongoPort: Int = 12355
+
+  implicit val gendDec: JsonDecoder[Gender]      = JsonDecoder.string.mapOrFail(Gender.from)
+  implicit val gendEnc: JsonEncoder[Gender]      = JsonEncoder.string.contramap(_.value)
+  implicit val pmDec: JsonDecoder[PaymentMethod] = DeriveJsonDecoder.gen[PaymentMethod]
+  implicit val pmEnc: JsonEncoder[PaymentMethod] = DeriveJsonEncoder.gen[PaymentMethod]
+  implicit val payDec: JsonDecoder[Payment]      = DeriveJsonDecoder.gen[Payment]
+  implicit val payEnc: JsonEncoder[Payment]      = DeriveJsonEncoder.gen[Payment]
+  implicit val aDec: JsonDecoder[Address]        = DeriveJsonDecoder.gen[Address]
+  implicit val aEnc: JsonEncoder[Address]        = DeriveJsonEncoder.gen[Address]
+  implicit val perDec: JsonDecoder[Person]       = DeriveJsonDecoder.gen[Person]
+  implicit val perEnc: JsonEncoder[Person]       = DeriveJsonEncoder.gen[Person]
 
   "A MongoCollection" should {
-
-    abstract class Gender(val value: String)
-    object Gender {
-      case object Male   extends Gender("male")
-      case object Female extends Gender("female")
-
-      val all = List(Male, Female)
-
-      def from(value: String): Either[String, Gender] =
-        all.find(_.value == value).toRight(s"unexpected item kind $value")
-
-      implicit val decode: JsonDecoder[Gender] = JsonDecoder.string.mapOrFail(Gender.from)
-      implicit val encode: JsonEncoder[Gender] = JsonEncoder.string.contramap(_.value)
-    }
-
-    final case class Address(
-        streetNumber: Int,
-        streetName: String,
-        city: String,
-        postcode: String
-    )
-
-    object Address {
-      implicit val decode: JsonDecoder[Address] = DeriveJsonDecoder.gen[Address]
-      implicit val encode: JsonEncoder[Address] = DeriveJsonEncoder.gen[Address]
-    }
-
-    final case class Person(
-        _id: ObjectId,
-        gender: Gender,
-        firstName: String,
-        lastName: String,
-        aliases: List[String],
-        dob: LocalDate,
-        address: Address,
-        registrationDate: Instant
-    )
-
-    object Person {
-      implicit val decode: JsonDecoder[Person] = DeriveJsonDecoder.gen[Person]
-      implicit val encode: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
-    }
 
     "use zio json codecs for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
@@ -192,31 +161,10 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
-    sealed trait PaymentMethod
-    final case class CreditCard(name: String, number: String, expiry: String, cvv: Int) extends PaymentMethod
-    final case class Paypal(email: String)                                              extends PaymentMethod
-
-    object PaymentMethod {
-      implicit val decode: JsonDecoder[PaymentMethod] = DeriveJsonDecoder.gen[PaymentMethod]
-      implicit val encode: JsonEncoder[PaymentMethod] = DeriveJsonEncoder.gen[PaymentMethod]
-    }
-
-    final case class Payment(
-        id: ObjectId,
-        amount: BigDecimal,
-        method: PaymentMethod,
-        date: Instant
-    )
-
-    object Payment {
-      implicit val decode: JsonDecoder[Payment] = DeriveJsonDecoder.gen[Payment]
-      implicit val encode: JsonEncoder[Payment] = DeriveJsonEncoder.gen[Payment]
-    }
-
     "encode and decode case classes that extend sealed traits" in {
       val ts = Instant.parse("2020-01-01T00:00:00Z")
-      val p1 = Payment(ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
-      val p2 = Payment(ObjectId(), BigDecimal(25), CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
+      val p1 = Payment(ObjectId(), 10, PaymentMethod.Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
+      val p2 = Payment(ObjectId(), 25, PaymentMethod.CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
 
       withEmbeddedMongoClient { client =>
         val result = for {

@@ -112,7 +112,7 @@ val zio = project
 
 val circe = project
   .in(file("circe"))
-  .dependsOn(kernel, core % "test->compile", embedded % "test->compile")
+  .dependsOn(kernel % "test->test;compile->compile", core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
@@ -122,7 +122,7 @@ val circe = project
 
 val `zio-json` = project
   .in(file("zio-json"))
-  .dependsOn(kernel, core % "test->compile", embedded % "test->compile")
+  .dependsOn(kernel % "test->test;compile->compile", core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio-json",

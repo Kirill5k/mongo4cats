@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import io.circe.generic.auto._
 import io.circe.{Decoder, Encoder}
+import mongo4cats.test.{Address, Gender, Payment, PaymentMethod, Person}
 import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
 import mongo4cats.operations.Filter
@@ -36,39 +37,10 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
   override val mongoPort: Int = 12352
 
+  implicit val genDec: Decoder[Gender] = Decoder[String].emap(Gender.from)
+  implicit val genEnc: Encoder[Gender] = Encoder[String].contramap(_.value)
+
   "A MongoCollection" should {
-
-    abstract class Gender(val value: String)
-    object Gender {
-      case object Male   extends Gender("male")
-      case object Female extends Gender("female")
-
-      val all = List(Male, Female)
-
-      def from(value: String): Either[String, Gender] =
-        all.find(_.value == value).toRight(s"unexpected item kind $value")
-
-      implicit val decode: Decoder[Gender] = Decoder[String].emap(Gender.from)
-      implicit val encode: Encoder[Gender] = Encoder[String].contramap(_.value)
-    }
-
-    final case class Address(
-        streetNumber: Int,
-        streetName: String,
-        city: String,
-        postcode: String
-    )
-
-    final case class Person(
-        _id: ObjectId,
-        gender: Gender,
-        firstName: String,
-        lastName: String,
-        aliases: List[String],
-        dob: LocalDate,
-        address: Address,
-        registrationDate: Instant
-    )
 
     "use circe codecs for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
@@ -182,21 +154,10 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
-    sealed trait PaymentMethod
-    final case class CreditCard(name: String, number: String, expiry: String, cvv: Int) extends PaymentMethod
-    final case class Paypal(email: String)                                              extends PaymentMethod
-
-    final case class Payment(
-        id: ObjectId,
-        amount: BigDecimal,
-        method: PaymentMethod,
-        date: Instant
-    )
-
     "encode and decode case classes that extend sealed traits" in {
       val ts = Instant.parse("2020-01-01T00:00:00Z")
-      val p1 = Payment(ObjectId(), BigDecimal(10), Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
-      val p2 = Payment(ObjectId(), BigDecimal(25), CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
+      val p1 = Payment(ObjectId(), 10, PaymentMethod.Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))
+      val p2 = Payment(ObjectId(), 25, PaymentMethod.CreditCard("John Bloggs", "1234", "1021", 123), ts.plus(2, ChronoUnit.DAYS))
 
       withEmbeddedMongoClient { client =>
         val result = for {
