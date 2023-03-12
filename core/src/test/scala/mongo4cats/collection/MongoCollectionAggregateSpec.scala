@@ -32,7 +32,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-  override val mongoPort = 12349
+  override val mongoPort = 12350
 
   "A MongoCollection" when {
     "aggregate" should {
@@ -133,19 +133,21 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         withEmbeddedMongoDatabase { db =>
           val result = for {
             accs <- db.getCollection("accounts")
-            res <- accs.aggregate[Document](
-              Aggregate
-                .project(Projection.excludeId)
-                .unwind("$name", UnwindOptions().preserveNullAndEmptyArrays(false))
-                .group("$_id", Accumulator.addToSet("uniqueNames", "$name"))
-                .project(Projection.slice("uniqueNames", 1, 1))
-            ).all
+            res <- accs
+              .aggregate[Document](
+                Aggregate
+                  .project(Projection.excludeId)
+                  .unwind("$name", UnwindOptions().preserveNullAndEmptyArrays(false))
+                  .group("$_id", Accumulator.addToSet("uniqueNames", "$name"))
+                  .project(Projection.slice("uniqueNames", 1, 1))
+              )
+              .all
           } yield res
 
           result.map { res =>
             val accounts = res.flatMap(_.getAs[List[String]]("uniqueNames")).flatten
             accounts must have size 1
-            accounts must contain oneOf("usd-acc", "eur-acc", "gbp-acc")
+            accounts must contain oneOf ("usd-acc", "eur-acc", "gbp-acc")
           }
         }
       }

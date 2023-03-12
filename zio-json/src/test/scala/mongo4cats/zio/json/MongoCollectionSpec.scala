@@ -34,7 +34,7 @@ import scala.concurrent.Future
 @scala.annotation.nowarn("msg=never used")
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort: Int = 12349
+  override val mongoPort: Int = 12351
 
   "A MongoCollection" should {
 

@@ -34,7 +34,7 @@ import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort: Int = 12348
+  override val mongoPort: Int = 12352
 
   "A MongoCollection" should {
 
