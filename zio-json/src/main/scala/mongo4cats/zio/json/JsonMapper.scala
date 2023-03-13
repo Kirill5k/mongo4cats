@@ -16,6 +16,7 @@
 
 package mongo4cats.zio.json
 
+import cats.syntax.apply._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import zio.json.ast.Json
 
@@ -88,7 +89,7 @@ private[json] object JsonMapper {
   }
 
   def fromBson(bson: BsonValue): Either[MongoJsonParsingException, Json] = {
-    def right[A](a: A): Either[MongoJsonParsingException, A] = Right(a)
+    def rightEmptyList[A]: Either[MongoJsonParsingException, List[A]] = Right(List.empty[A])
 
     bson match {
       case BsonValue.BNull            => Right(Json.Null)
@@ -102,23 +103,12 @@ private[json] object JsonMapper {
       case BsonValue.BDouble(value)   => Right(Json.Num(value))
       case BsonValue.BArray(value) =>
         value.toList
-          .foldRight(right(List.empty[Json])) { case (a: BsonValue, acc: Either[MongoJsonParsingException, List[Json]]) =>
-            for {
-              x  <- fromBson(a)
-              xs <- acc
-            } yield x :: xs
-          }
+          .foldRight(rightEmptyList[Json]) { case (a, acc) => (fromBson(a), acc).mapN(_ :: _) }
           .map(xs => Json.Arr(xs: _*))
       case BsonValue.BDocument(value) =>
         value.toList
           .filterNot { case (_, v) => v.isUndefined }
-          .foldRight(right(List.empty[(String, Json)])) {
-            case (a: (String, BsonValue), acc: Either[MongoJsonParsingException, List[(String, Json)]]) =>
-              for {
-                x  <- fromBson(a._2)
-                xs <- acc
-              } yield (a._1, x) :: xs
-          }
+          .foldRight(rightEmptyList[(String, Json)]) { case (a, acc) => (fromBson(a._2), acc).mapN((x, xs) => (a._1, x) :: xs) }
           .map(xs => Json.Obj(xs: _*))
       case value => Left(MongoJsonParsingException(s"Cannot map $value bson value to json"))
     }

@@ -34,10 +34,13 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio" % "<version>"
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "<version>" % Test
 ```
 
-Optional support for `circe` can be enabled with:
+Optional support for `circe` or `zio-json` can be enabled with:
 
 ```scala
+// circe
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"
+// zio-json
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "<version>"
 ```
 
 ### Quick start with Cats Effect

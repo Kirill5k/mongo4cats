@@ -55,9 +55,8 @@ private[circe] object JsonMapper {
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
     def isDecimal: Boolean = jNumber.toString.contains(".")
     def toBsonValue: BsonValue =
-      if (isDecimal) jNumber.toBigDecimal.map(BsonValue.bigDecimal).getOrElse(BsonValue.double(jNumber.toDouble))
+      if (isDecimal) jNumber.toBigDecimal.fold(BsonValue.double(jNumber.toDouble))(BsonValue.bigDecimal)
       else jNumber.toInt.map(BsonValue.int).orElse(jNumber.toLong.map(BsonValue.long)).get
-
   }
 
   def fromBson(bson: BsonValue): Either[MongoJsonParsingException, Json] =
