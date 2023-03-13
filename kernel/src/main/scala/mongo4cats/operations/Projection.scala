@@ -224,7 +224,7 @@ final private case class ProjectionBuilder(
     ProjectionBuilder(Projections.metaTextScore(fieldName) :: projections)
 
   override def slice(fieldName: String, limit: Int): Projection = {
-    val sliceCommand = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(limit)))
+    val sliceCommand    = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(limit)))
     val sliceProjection = Document(fieldName := sliceCommand)
     ProjectionBuilder(sliceProjection.toBsonDocument :: projections)
   }

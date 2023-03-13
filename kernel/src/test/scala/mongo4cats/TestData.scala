@@ -22,23 +22,6 @@ import mongo4cats.bson.syntax._
 import java.time.Instant
 import scala.util.Random
 
-final case class Account(
-    id: ObjectId
-)
-
-final case class Category(
-    id: ObjectId,
-    name: String
-)
-
-final case class Transaction(
-    id: ObjectId,
-    amount: BigDecimal,
-    account: ObjectId,
-    category: ObjectId,
-    date: Instant
-)
-
 object TestData {
   implicit private val random: Random = Random
 

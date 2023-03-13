@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package mongo4cats.circe
+package mongo4cats.zio.json
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
-import io.circe.generic.auto._
-import io.circe.{Decoder, Encoder}
 import mongo4cats.test.{Address, Gender, Payment, PaymentMethod, Person}
 import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
@@ -27,6 +25,7 @@ import mongo4cats.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import zio.json._
 
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
@@ -35,14 +34,22 @@ import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort: Int = 12352
+  override val mongoPort: Int = 12355
 
-  implicit val genDec: Decoder[Gender] = Decoder[String].emap(Gender.from)
-  implicit val genEnc: Encoder[Gender] = Encoder[String].contramap(_.value)
+  implicit val gendDec: JsonDecoder[Gender]      = JsonDecoder.string.mapOrFail(Gender.from)
+  implicit val gendEnc: JsonEncoder[Gender]      = JsonEncoder.string.contramap(_.value)
+  implicit val pmDec: JsonDecoder[PaymentMethod] = DeriveJsonDecoder.gen[PaymentMethod]
+  implicit val pmEnc: JsonEncoder[PaymentMethod] = DeriveJsonEncoder.gen[PaymentMethod]
+  implicit val payDec: JsonDecoder[Payment]      = DeriveJsonDecoder.gen[Payment]
+  implicit val payEnc: JsonEncoder[Payment]      = DeriveJsonEncoder.gen[Payment]
+  implicit val aDec: JsonDecoder[Address]        = DeriveJsonDecoder.gen[Address]
+  implicit val aEnc: JsonEncoder[Address]        = DeriveJsonEncoder.gen[Address]
+  implicit val perDec: JsonDecoder[Person]       = DeriveJsonDecoder.gen[Person]
+  implicit val perEnc: JsonEncoder[Person]       = DeriveJsonEncoder.gen[Person]
 
   "A MongoCollection" should {
 
-    "use circe codecs for encoding and decoding data" in {
+    "use zio json codecs for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
@@ -58,7 +65,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
-    "use circe-codec-provider for encoding and decoding data" in {
+    "use zio-json-codec-provider for encoding and decoding data" in {
       withEmbeddedMongoClient { client =>
         val p = person()
         val result = for {
