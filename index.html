@@ -22,9 +22,12 @@ Available for Scala 2.12, 2.13 and 3.2.</p>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio-embedded"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span> <span class="o">%</span> <span class="nc">Test</span>
 </code></pre></div></div>
 
-<p>Optional support for <code class="language-plaintext highlighter-rouge">circe</code> can be enabled with:</p>
+<p>Optional support for <code class="language-plaintext highlighter-rouge">circe</code> or <code class="language-plaintext highlighter-rouge">zio-json</code> can be enabled with:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-circe"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// circe</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-circe"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+<span class="c1">// zio-json</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio-json"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
 </code></pre></div></div>
 
 <h3 id="quick-start-with-cats-effect">Quick start with Cats Effect</h3>
