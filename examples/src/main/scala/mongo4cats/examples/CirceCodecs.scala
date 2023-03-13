@@ -23,20 +23,35 @@ import mongo4cats.circe._
 
 import java.time.Instant
 
-object CaseClassesWithCirceCodecs extends IOApp.Simple {
+object CirceCodecs extends IOApp.Simple {
 
-  final case class Address(city: String, country: String)
-  final case class Person(firstName: String, lastName: String, address: Address, registrationDate: Instant)
+  final case class Address(
+      city: String,
+      country: String
+  )
+
+  final case class Person(
+      firstName: String,
+      lastName: String,
+      address: Address,
+      registrationDate: Instant
+  )
 
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
       for {
         db   <- client.getDatabase("my-db")
         coll <- db.getCollectionWithCodec[Person]("people")
-        person = Person("John", "Bloggs", Address("New-York", "USA"), Instant.now())
-        _    <- coll.insertOne(person)
-        docs <- coll.find.stream.compile.toList
-        _    <- IO.println(docs)
+        people = List(
+          Person("John", "Bloggs", Address("New-York", "USA"), Instant.now()),
+          Person("John", "Doe", Address("Los-Angeles", "USA"), Instant.now()),
+          Person("John", "Smith", Address("Chicago", "USA"), Instant.now())
+        )
+        _                 <- coll.insertMany(people)
+        allPeople         <- coll.find.stream.compile.toList
+        _                 <- IO.println(allPeople)
+        distinctAddresses <- coll.distinctWithCodec[Address]("address").all
+        _                 <- IO.println(distinctAddresses)
       } yield ()
     }
 }
