@@ -18,14 +18,12 @@ package mongo4cats.zio.json
 
 import mongo4cats.Clazz
 import mongo4cats.bson.json.JsonMapper
-import mongo4cats.bson.{BsonValue, BsonValueDecoder, BsonValueEncoder, Document, MongoJsonParsingException, ObjectId}
 import mongo4cats.bson.syntax._
-import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
-import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
-import org.bson.{BsonReader, BsonWriter}
-import zio.json.{JsonDecoder, JsonEncoder}
+import mongo4cats.bson._
+import mongo4cats.codecs.MongoCodecProvider
+import org.bson.codecs.configuration.CodecProvider
 import zio.json.ast.Json
+import zio.json.{JsonDecoder, JsonEncoder}
 
 import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
@@ -81,30 +79,12 @@ trait MongoJsonCodecs {
       } yield LocalDate.parse(ld.slice(0, 10))).toRight(s"$dateObj is not a valid local date object")
     }
 
-  implicit def deriveZioJsonCodecProvider[A: JsonEncoder: JsonDecoder: ClassTag]: MongoCodecProvider[A] =
-    new MongoCodecProvider[A] {
-      implicit val classT: Class[A]   = Clazz.tag[A]
-      override def get: CodecProvider = zioJsonBasedCodecProvider[A]
-    }
-
-  private def zioJsonBasedCodecProvider[A](implicit enc: JsonEncoder[A], dec: JsonDecoder[A], classT: Class[A]): CodecProvider =
-    new CodecProvider {
-      override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
-        if (classY == classT || classT.isAssignableFrom(classY)) {
-          new Codec[Y] {
-            override def getEncoderClass: Class[Y] = classY
-            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
-              ContainerValueWriter.writeBsonValue(t.asInstanceOf[A].toBson, writer)
-
-            override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
-              (for {
-                bson <- ContainerValueReader
-                  .readBsonValue(reader)
-                  .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
-                json   <- ZioJsonMapper.fromBson(bson)
-                result <- dec.fromJsonAST(json).left.map(e => MongoJsonParsingException(e, Some(json.toString)))
-              } yield result).fold(throw _, _.asInstanceOf[Y])
-          }
-        } else null // scalastyle:ignore
+  implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
+    new MongoCodecProvider[T] {
+      override def get: CodecProvider = JsonMapper.codecProvider(
+        t => t.asInstanceOf[T].toBson,
+        b => ZioJsonMapper.fromBson(b).flatMap(j => dec.fromJsonAST(j).left.map(e => MongoJsonParsingException(e, Some(j.toString)))),
+        Clazz.tag[T]
+      )
     }
 }

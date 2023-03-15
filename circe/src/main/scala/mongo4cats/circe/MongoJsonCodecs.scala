@@ -19,12 +19,10 @@ package mongo4cats.circe
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.Clazz
 import mongo4cats.bson.json.JsonMapper
-import mongo4cats.bson.{BsonValue, BsonValueDecoder, BsonValueEncoder, Document, MongoJsonParsingException, ObjectId}
 import mongo4cats.bson.syntax._
-import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
-import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
-import org.bson.{BsonReader, BsonWriter}
+import mongo4cats.bson._
+import mongo4cats.codecs.MongoCodecProvider
+import org.bson.codecs.configuration.CodecProvider
 
 import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
@@ -61,30 +59,12 @@ trait MongoJsonCodecs {
       Try(LocalDate.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
     )
 
-  implicit def deriveCirceCodecProvider[T: Encoder: Decoder: ClassTag]: MongoCodecProvider[T] =
+  implicit def deriveCirceCodecProvider[T: ClassTag](implicit enc: Encoder[T], dec: Decoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
-      implicit val classT: Class[T]   = Clazz.tag[T]
-      override def get: CodecProvider = circeBasedCodecProvider[T]
-    }
-
-  private def circeBasedCodecProvider[T](implicit enc: Encoder[T], dec: Decoder[T], classT: Class[T]): CodecProvider =
-    new CodecProvider {
-      override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
-        if (classY == classT || classT.isAssignableFrom(classY))
-          new Codec[Y] {
-            override def getEncoderClass: Class[Y] = classY
-            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
-              ContainerValueWriter.writeBsonValue(t.asInstanceOf[T].toBson, writer)
-
-            override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
-              (for {
-                bson <- ContainerValueReader
-                  .readBsonValue(reader)
-                  .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
-                json   <- CirceJsonMapper.fromBson(bson)
-                result <- dec.decodeJson(json).left.map(e => MongoJsonParsingException(e.getMessage, Some(json.noSpaces)))
-              } yield result).fold(throw _, _.asInstanceOf[Y])
-          }
-        else null // scalastyle:ignore
+      override def get: CodecProvider = JsonMapper.codecProvider(
+        t => t.asInstanceOf[T].toBson,
+        b => CirceJsonMapper.fromBson(b).flatMap(j => dec.decodeJson(j).left.map(e => MongoJsonParsingException(e.getMessage, Some(j.noSpaces)))),
+        Clazz.tag[T]
+      )
     }
 }
