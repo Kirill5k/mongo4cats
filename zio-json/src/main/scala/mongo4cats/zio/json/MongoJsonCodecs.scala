@@ -27,6 +27,7 @@ import zio.json.{JsonDecoder, JsonEncoder}
 
 import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
+import scala.util.Try
 
 trait MongoJsonCodecs {
   private val emptyJsonObject = Json.Obj()
@@ -61,10 +62,11 @@ trait MongoJsonCodecs {
   implicit val instantDecoder: JsonDecoder[Instant] =
     Json.decoder.mapOrFail[Instant] { dateObj =>
       (for {
-        obj  <- dateObj.asObject
-        date <- obj.get(Tag.date)
-        ts   <- date.asString
-      } yield Instant.parse(ts)).toRight(s"$dateObj is not a valid instant object")
+        obj   <- dateObj.asObject
+        date  <- obj.get(Tag.date)
+        tsStr <- date.asString
+        ts    <- Try(Instant.parse(tsStr)).toOption
+      } yield ts).toRight(s"$dateObj is not a valid instant object")
     }
 
   implicit val localDateEncoder: JsonEncoder[LocalDate] =
@@ -73,10 +75,11 @@ trait MongoJsonCodecs {
   implicit val localDateDecoder: JsonDecoder[LocalDate] =
     Json.decoder.mapOrFail[LocalDate] { dateObj =>
       (for {
-        obj  <- dateObj.asObject
-        date <- obj.get(Tag.date)
-        ld   <- date.asString
-      } yield LocalDate.parse(ld.slice(0, 10))).toRight(s"$dateObj is not a valid local date object")
+        obj   <- dateObj.asObject
+        date  <- obj.get(Tag.date)
+        ldStr <- date.asString
+        ld    <- Try(LocalDate.parse(ldStr.slice(0, 10))).toOption
+      } yield ld).toRight(s"$dateObj is not a valid local date object")
     }
 
   implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
