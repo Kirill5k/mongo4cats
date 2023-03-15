@@ -18,9 +18,9 @@ package mongo4cats.bson
 
 import com.mongodb.MongoClientException
 import mongo4cats.codecs.{CodecRegistry, ContainerValueReader, ContainerValueWriter}
-import org.bson.{BsonReader, BsonWriter}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.CodecProvider
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonReader, BsonWriter}
 
 final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
@@ -51,12 +51,11 @@ private[mongo4cats] object json {
                 ContainerValueWriter.writeBsonValue(toBson(t.asInstanceOf[T]), writer)
 
               override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
-                (for {
-                  bson <- ContainerValueReader
-                    .readBsonValue(reader)
-                    .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
-                  result <- fromBson(bson)
-                } yield result).fold(throw _, _.asInstanceOf[Y])
+                ContainerValueReader
+                  .readBsonValue(reader)
+                  .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
+                  .flatMap(fromBson)
+                  .fold(throw _, _.asInstanceOf[Y])
             }
           else null // scalastyle:ignore
       }
