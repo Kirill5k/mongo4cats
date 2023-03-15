@@ -18,7 +18,7 @@ package mongo4cats.circe
 
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.Clazz
-import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
 import mongo4cats.bson._
 import mongo4cats.codecs.MongoCodecProvider
@@ -43,27 +43,44 @@ trait MongoJsonCodecs {
     Decoder.decodeJson.emap(j => CirceJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: Encoder[ObjectId] =
-    Encoder.encodeJsonObject.contramap[ObjectId](i => JsonObject(JsonMapper.idTag -> Json.fromString(i.toHexString)))
+    Encoder.encodeJsonObject.contramap[ObjectId](id => JsonObject(Tag.id -> Json.fromString(id.toHexString)))
   implicit val objectIdDecoder: Decoder[ObjectId] =
-    Decoder.decodeJsonObject.emapTry(id => Try(ObjectId(id(JsonMapper.idTag).flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emap { idObj =>
+      idObj(Tag.id)
+        .flatMap(_.asString)
+        .toRight(s"$idObj is not a valid id")
+        .flatMap(ObjectId.from)
+    }
 
   implicit val instantEncoder: Encoder[Instant] =
-    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
+    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(Tag.date -> Json.fromString(i.toString)))
   implicit val instantDecoder: Decoder[Instant] =
-    Decoder.decodeJsonObject.emapTry(dateObj => Try(Instant.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).get)))
+    Decoder.decodeJsonObject.emap { instantObj =>
+      instantObj(Tag.date)
+        .flatMap(_.asString)
+        .flatMap(s => Try(Instant.parse(s)).toOption)
+        .toRight(s"$instantObj is not a valid instant object")
+    }
 
   implicit val localDateEncoder: Encoder[LocalDate] =
-    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(JsonMapper.dateTag -> Json.fromString(i.toString)))
+    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(Tag.date -> Json.fromString(i.toString)))
   implicit val localDateDecoder: Decoder[LocalDate] =
-    Decoder.decodeJsonObject.emapTry(dateObj =>
-      Try(LocalDate.parse(dateObj(JsonMapper.dateTag).flatMap(_.asString).map(_.slice(0, 10)).get))
-    )
+    Decoder.decodeJsonObject.emap { dateObj =>
+      dateObj(Tag.date)
+        .flatMap(_.asString)
+        .map(_.slice(0, 10))
+        .flatMap(s => Try(LocalDate.parse(s)).toOption)
+        .toRight(s"$dateObj is not a valid date object")
+    }
 
   implicit def deriveCirceCodecProvider[T: ClassTag](implicit enc: Encoder[T], dec: Decoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
-      override def get: CodecProvider = JsonMapper.codecProvider(
-        t => t.asInstanceOf[T].toBson,
-        b => CirceJsonMapper.fromBson(b).flatMap(j => dec.decodeJson(j).left.map(e => MongoJsonParsingException(e.getMessage, Some(j.noSpaces)))),
+      override def get: CodecProvider = codecProvider[T](
+        t => t.toBson,
+        b =>
+          CirceJsonMapper
+            .fromBson(b)
+            .flatMap(j => dec.decodeJson(j).left.map(e => MongoJsonParsingException(e.getMessage, Some(j.noSpaces)))),
         Clazz.tag[T]
       )
     }

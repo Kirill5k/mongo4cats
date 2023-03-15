@@ -26,38 +26,36 @@ final case class MongoJsonParsingException(message: String, json: Option[String]
 
 private[mongo4cats] object json {
 
+  object Tag {
+    val id   = "$" + "oid"
+    val date = "$" + "date"
+  }
+
   trait JsonMapper[J] {
     def toBson(json: J): BsonValue
 
     def fromBson(bson: BsonValue): Either[MongoJsonParsingException, J]
   }
 
-  object JsonMapper {
-    val idTag   = "$oid"
-    val dateTag = "$date"
-
-    def codecProvider[T](
-        toBson: Any => BsonValue,
-        fromBson: BsonValue => Either[MongoJsonParsingException, T],
-        classT: Class[T]
-    ): CodecProvider =
-      new CodecProvider {
-        override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
-          if (classY == classT || classT.isAssignableFrom(classY))
-            new Codec[Y] {
-              override def getEncoderClass: Class[Y] = classY
-
-              override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
-                ContainerValueWriter.writeBsonValue(toBson(t.asInstanceOf[T]), writer)
-
-              override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
-                ContainerValueReader
-                  .readBsonValue(reader)
-                  .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
-                  .flatMap(fromBson)
-                  .fold(throw _, _.asInstanceOf[Y])
-            }
-          else null // scalastyle:ignore
-      }
-  }
+  def codecProvider[T](
+      toBson: T => BsonValue,
+      fromBson: BsonValue => Either[MongoJsonParsingException, T],
+      classT: Class[T]
+  ): CodecProvider =
+    new CodecProvider {
+      override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
+        if (classY == classT || classT.isAssignableFrom(classY))
+          new Codec[Y] {
+            override def getEncoderClass: Class[Y] = classY
+            override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
+              ContainerValueWriter.writeBsonValue(toBson(t.asInstanceOf[T]), writer)
+            override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =
+              ContainerValueReader
+                .readBsonValue(reader)
+                .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
+                .flatMap(fromBson)
+                .fold(throw _, _.asInstanceOf[Y])
+          }
+        else null // scalastyle:ignore
+    }
 }

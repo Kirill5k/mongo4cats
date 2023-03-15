@@ -17,7 +17,7 @@
 package mongo4cats.zio.json
 
 import mongo4cats.Clazz
-import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
 import mongo4cats.bson._
 import mongo4cats.codecs.MongoCodecProvider
@@ -44,45 +44,45 @@ trait MongoJsonCodecs {
     Json.decoder.mapOrFail(j => ZioJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: JsonEncoder[ObjectId] =
-    Json.encoder.contramap[ObjectId](i => Json.Obj(JsonMapper.idTag -> Json.Str(i.toHexString)))
+    Json.encoder.contramap[ObjectId](i => Json.Obj(Tag.id -> Json.Str(i.toHexString)))
 
   implicit val objectIdDecoder: JsonDecoder[ObjectId] =
     Json.decoder.mapOrFail[ObjectId] { id =>
       (for {
         obj  <- id.asObject
-        json <- obj.get(JsonMapper.idTag)
+        json <- obj.get(Tag.id)
         str  <- json.asString
       } yield ObjectId(str)).toRight(s"$id is not a valid object id")
     }
 
   implicit val instantEncoder: JsonEncoder[Instant] =
-    Json.encoder.contramap[Instant](i => Json.Obj(JsonMapper.dateTag -> Json.Str(i.toString)))
+    Json.encoder.contramap[Instant](i => Json.Obj(Tag.date -> Json.Str(i.toString)))
 
   implicit val instantDecoder: JsonDecoder[Instant] =
     Json.decoder.mapOrFail[Instant] { dateObj =>
       (for {
         obj  <- dateObj.asObject
-        date <- obj.get(JsonMapper.dateTag)
+        date <- obj.get(Tag.date)
         ts   <- date.asString
       } yield Instant.parse(ts)).toRight(s"$dateObj is not a valid instant object")
     }
 
   implicit val localDateEncoder: JsonEncoder[LocalDate] =
-    Json.encoder.contramap[LocalDate](i => Json.Obj(JsonMapper.dateTag -> Json.Str(i.toString)))
+    Json.encoder.contramap[LocalDate](i => Json.Obj(Tag.date -> Json.Str(i.toString)))
 
   implicit val localDateDecoder: JsonDecoder[LocalDate] =
     Json.decoder.mapOrFail[LocalDate] { dateObj =>
       (for {
         obj  <- dateObj.asObject
-        date <- obj.get(JsonMapper.dateTag)
+        date <- obj.get(Tag.date)
         ld   <- date.asString
       } yield LocalDate.parse(ld.slice(0, 10))).toRight(s"$dateObj is not a valid local date object")
     }
 
   implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
-      override def get: CodecProvider = JsonMapper.codecProvider(
-        t => t.asInstanceOf[T].toBson,
+      override def get: CodecProvider = codecProvider[T](
+        t => t.toBson,
         b => ZioJsonMapper.fromBson(b).flatMap(j => dec.fromJsonAST(j).left.map(e => MongoJsonParsingException(e, Some(j.toString)))),
         Clazz.tag[T]
       )

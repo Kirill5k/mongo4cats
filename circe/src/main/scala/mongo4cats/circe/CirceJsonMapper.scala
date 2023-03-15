@@ -18,13 +18,12 @@ package mongo4cats.circe
 
 import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
-import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, MongoJsonParsingException, ObjectId}
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 
 private[circe] object CirceJsonMapper extends JsonMapper[Json] {
-  import JsonMapper._
 
   def toBson(json: Json): BsonValue =
     json match {
@@ -41,15 +40,15 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
-    def isId: Boolean          = json.isObject && json.asObject.exists(_.contains(idTag))
-    def isDate: Boolean        = json.isObject && json.asObject.exists(_.contains(dateTag))
-    def isEpochMillis: Boolean = isDate && json.asObject.exists(_(dateTag).exists(_.isNumber))
+    def isId: Boolean          = json.isObject && json.asObject.exists(_.contains(Tag.id))
+    def isDate: Boolean        = json.isObject && json.asObject.exists(_.contains(Tag.date))
+    def isEpochMillis: Boolean = isDate && json.asObject.exists(_(Tag.date).exists(_.isNumber))
     def isLocalDate: Boolean =
-      isDate && json.asObject.exists(o => o(dateTag).exists(_.isString) && o(dateTag).exists(_.asString.get.length == 10))
+      isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
 
-    def asEpochMillis: Long     = json.asObject.flatMap(_(dateTag)).flatMap(_.asNumber).flatMap(_.toLong).get
-    def asIsoDateString: String = json.asObject.flatMap(_(dateTag)).flatMap(_.asString).get
-    def asObjectId: ObjectId    = json.asObject.get(idTag).flatMap(_.asString).map(ObjectId(_)).get
+    def asEpochMillis: Long     = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
+    def asIsoDateString: String = json.asObject.flatMap(_(Tag.date)).flatMap(_.asString).get
+    def asObjectId: ObjectId    = json.asObject.get(Tag.id).flatMap(_.asString).map(ObjectId(_)).get
   }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
@@ -62,8 +61,8 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   def fromBson(bson: BsonValue): Either[MongoJsonParsingException, Json] =
     bson match {
       case BsonValue.BNull            => Right(Json.Null)
-      case BsonValue.BObjectId(value) => Right(Json.obj(idTag -> Json.fromString(value.toHexString)))
-      case BsonValue.BDateTime(value) => Right(Json.obj(dateTag -> Json.fromString(value.toString)))
+      case BsonValue.BObjectId(value) => Right(Json.obj(Tag.id -> Json.fromString(value.toHexString)))
+      case BsonValue.BDateTime(value) => Right(Json.obj(Tag.date -> Json.fromString(value.toString)))
       case BsonValue.BInt32(value)    => Right(Json.fromInt(value))
       case BsonValue.BInt64(value)    => Right(Json.fromLong(value))
       case BsonValue.BBoolean(value)  => Right(Json.fromBoolean(value))
@@ -82,8 +81,8 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   def fromBsonOpt(bson: BsonValue): Option[Json] =
     bson match {
       case BsonValue.BNull            => Some(Json.Null)
-      case BsonValue.BObjectId(value) => Some(Json.obj(idTag -> Json.fromString(value.toHexString)))
-      case BsonValue.BDateTime(value) => Some(Json.obj(dateTag -> Json.fromString(value.toString)))
+      case BsonValue.BObjectId(value) => Some(Json.obj(Tag.id -> Json.fromString(value.toHexString)))
+      case BsonValue.BDateTime(value) => Some(Json.obj(Tag.date -> Json.fromString(value.toString)))
       case BsonValue.BInt32(value)    => Some(Json.fromInt(value))
       case BsonValue.BInt64(value)    => Some(Json.fromLong(value))
       case BsonValue.BBoolean(value)  => Some(Json.fromBoolean(value))

@@ -16,7 +16,7 @@
 
 package mongo4cats.zio.json
 
-import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,7 +30,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   "ObjectId codec" should {
     "encode and decode ObjectId to json and back" in {
       val oid  = ObjectId.gen
-      val json = s"""{"${JsonMapper.idTag}":"${oid.toHexString}"}"""
+      val json = s"""{"${Tag.id}":"${oid.toHexString}"}"""
 
       objectIdEncoder.encodeJson(oid).toString mustBe json
       objectIdDecoder.decodeJson(json) mustBe Right(oid)
@@ -40,7 +40,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   "Instant codec" should {
     "encode and decode Instant to json and back" in {
       val inst = Instant.now()
-      val json = s"""{"${JsonMapper.dateTag}":"$inst"}"""
+      val json = s"""{"${Tag.date}":"$inst"}"""
 
       instantEncoder.encodeJson(inst).toString mustBe json
       instantDecoder.decodeJson(json) mustBe Right(inst)
@@ -50,7 +50,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   "LocalDate codec" should {
     "encode and decode LocalDate to json and back" in {
       val date = LocalDate.now()
-      val json = s"""{"${JsonMapper.dateTag}":"${date}"}"""
+      val json = s"""{"${Tag.date}":"${date}"}"""
 
       localDateEncoder.encodeJson(date).toString mustBe json
       localDateDecoder.decodeJson(json) mustBe Right(date)
@@ -79,7 +79,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
       val json =
         s"""{
           |  "_id" : {
-          |    "${JsonMapper.idTag}" : "${id.toHexString}"
+          |    "${Tag.id}" : "${id.toHexString}"
           |  },
           |  "string" : "string",
           |  "null" : null,
@@ -92,13 +92,13 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
           |    "b"
           |  ],
           |  "dateInstant" : {
-          |    "${JsonMapper.dateTag}" : "$ts"
+          |    "${Tag.date}" : "$ts"
           |  },
           |  "dateEpoch" : {
-          |    "${JsonMapper.dateTag}" : "$ts"
+          |    "${Tag.date}" : "$ts"
           |  },
           |  "dateLocalDate" : {
-          |    "${JsonMapper.dateTag}" : "2022-01-01T00:00:00Z"
+          |    "${Tag.date}" : "2022-01-01T00:00:00Z"
           |  },
           |  "document" : {
           |    "field1" : "1",
