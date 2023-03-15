@@ -24,7 +24,7 @@ import zio.json.JsonEncoder
 
 import java.time.Instant
 
-class JsonMapperSpec extends AnyWordSpec with Matchers {
+class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
 
   val ts = Instant.now()
   val id = ObjectId.gen
@@ -70,11 +70,11 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
           "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2))
         )
 
-        JsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
+        ZioJsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
       }
 
       "accurately convert bson to json" in {
-        JsonMapper.fromBson(bsonDocument) mustBe Right(
+        ZioJsonMapper.fromBson(bsonDocument) mustBe Right(
           Json.Obj(
             "_id"           -> Json.Obj("$oid" -> jsonString(id.toHexString)),
             "string"        -> jsonString("string"),

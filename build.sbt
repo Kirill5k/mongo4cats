@@ -133,7 +133,7 @@ val `zio-json` = project
 
 val examples = project
   .in(file("examples"))
-  .dependsOn(core, circe, embedded, zio, `zio-embedded`,  `zio-json`)
+  .dependsOn(core, circe, embedded, zio, `zio-embedded`, `zio-json`)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(

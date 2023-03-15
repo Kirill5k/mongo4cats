@@ -17,15 +17,15 @@
 package mongo4cats.zio.json
 
 import cats.syntax.apply._
-import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.{BsonValue, Document, MongoJsonParsingException, ObjectId}
 import zio.json.ast.Json
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 import scala.math.BigDecimal._
 
-private[json] object JsonMapper {
-  val idTag   = "$oid"
-  val dateTag = "$date"
+private[json] object ZioJsonMapper extends JsonMapper[Json] {
+  import JsonMapper._
 
   def toBson(json: Json): BsonValue =
     json match {

@@ -16,6 +16,7 @@
 
 package mongo4cats.zio.json
 
+import mongo4cats.bson.json.JsonMapper
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec

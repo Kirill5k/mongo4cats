@@ -8,14 +8,14 @@ object Dependencies {
     val mongodb            = "4.9.0"
     val fs2                = "3.6.1"
     val circe              = "0.14.5"
-    val zio                = "2.0.9"
+    val zio                = "2.0.10"
     val zioInteropReactive = "2.0.1"
     val zioJson            = "0.4.2+48-706bdbae-SNAPSHOT"
 
-    val logback   = "1.4.5"
+    val logback   = "1.4.6"
     val scalaTest = "3.2.15"
 
-    val embeddedMongo   = "4.6.0"
+    val embeddedMongo   = "4.6.1"
     val immutableValue  = "2.9.3"
     val commonsCompress = "1.22"
   }

@@ -18,13 +18,13 @@ package mongo4cats.circe
 
 import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
-import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.{BsonValue, Document, MongoJsonParsingException, ObjectId}
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 
-private[circe] object JsonMapper {
-  val idTag   = "$oid"
-  val dateTag = "$date"
+private[circe] object CirceJsonMapper extends JsonMapper[Json] {
+  import JsonMapper._
 
   def toBson(json: Json): BsonValue =
     json match {

@@ -18,6 +18,7 @@ package mongo4cats.circe
 
 import io.circe.syntax._
 import io.circe.parser._
+import mongo4cats.bson.json.JsonMapper
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec

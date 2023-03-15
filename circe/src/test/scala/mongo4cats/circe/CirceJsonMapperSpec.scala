@@ -23,7 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
 
-class JsonMapperSpec extends AnyWordSpec with Matchers {
+class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
 
   val ts = Instant.now()
   val id = ObjectId.gen
@@ -63,11 +63,11 @@ class JsonMapperSpec extends AnyWordSpec with Matchers {
           "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
         )
 
-        JsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
+        CirceJsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
       }
 
       "accurately convert bson to json" in {
-        JsonMapper.fromBson(bsonDocument) mustBe Right(
+        CirceJsonMapper.fromBson(bsonDocument) mustBe Right(
           Json.obj(
             "_id"           -> Json.obj("$oid" -> Json.fromString(id.toHexString)),
             "string"        -> Json.fromString("string"),

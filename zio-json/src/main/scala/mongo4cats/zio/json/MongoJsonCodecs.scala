@@ -16,9 +16,9 @@
 
 package mongo4cats.zio.json
 
-import com.mongodb.MongoClientException
 import mongo4cats.Clazz
-import mongo4cats.bson.{BsonValue, BsonValueDecoder, BsonValueEncoder, Document, ObjectId}
+import mongo4cats.bson.json.JsonMapper
+import mongo4cats.bson.{BsonValue, BsonValueDecoder, BsonValueEncoder, Document, MongoJsonParsingException, ObjectId}
 import mongo4cats.bson.syntax._
 import mongo4cats.codecs.{ContainerValueReader, ContainerValueWriter, MongoCodecProvider}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
@@ -30,22 +30,20 @@ import zio.json.ast.Json
 import java.time.{Instant, LocalDate}
 import scala.reflect.ClassTag
 
-final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
-
 trait MongoJsonCodecs {
   private val emptyJsonObject = Json.Obj()
 
   implicit def deriveJsonBsonValueEncoder[A](implicit e: JsonEncoder[A]): BsonValueEncoder[A] =
-    value => JsonMapper.toBson(e.toJsonAST(value).toOption.get)
+    value => ZioJsonMapper.toBson(e.toJsonAST(value).toOption.get)
 
   implicit def deriveJsonBsonValueDecoder[A](implicit d: JsonDecoder[A]): BsonValueDecoder[A] =
-    bson => JsonMapper.fromBson(bson).flatMap(d.fromJsonAST).toOption
+    bson => ZioJsonMapper.fromBson(bson).flatMap(d.fromJsonAST).toOption
 
   implicit val documentEncoder: JsonEncoder[Document] =
-    Json.encoder.contramap[Document](d => JsonMapper.fromBsonOpt(BsonValue.document(d)).getOrElse(emptyJsonObject))
+    Json.encoder.contramap[Document](d => ZioJsonMapper.fromBsonOpt(BsonValue.document(d)).getOrElse(emptyJsonObject))
 
   implicit val documentDecoder: JsonDecoder[Document] =
-    Json.decoder.mapOrFail(j => JsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
+    Json.decoder.mapOrFail(j => ZioJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: JsonEncoder[ObjectId] =
     Json.encoder.contramap[ObjectId](i => Json.Obj(JsonMapper.idTag -> Json.Str(i.toHexString)))
@@ -103,7 +101,7 @@ trait MongoJsonCodecs {
                 bson <- ContainerValueReader
                   .readBsonValue(reader)
                   .toRight(MongoJsonParsingException(s"Unable to read bson value for ${classY.getName} class"))
-                json   <- JsonMapper.fromBson(bson)
+                json   <- ZioJsonMapper.fromBson(bson)
                 result <- dec.fromJsonAST(json).left.map(e => MongoJsonParsingException(e, Some(json.toString)))
               } yield result).fold(throw _, _.asInstanceOf[Y])
           }
