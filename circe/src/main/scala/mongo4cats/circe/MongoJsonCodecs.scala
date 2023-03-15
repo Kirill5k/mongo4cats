@@ -17,7 +17,6 @@
 package mongo4cats.circe
 
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import mongo4cats.Clazz
 import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
 import mongo4cats.bson._
@@ -80,12 +79,10 @@ trait MongoJsonCodecs {
   implicit def deriveCirceCodecProvider[T: ClassTag](implicit enc: Encoder[T], dec: Decoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
       override def get: CodecProvider = codecProvider[T](
-        t => t.toBson,
-        b =>
-          CirceJsonMapper
-            .fromBson(b)
-            .flatMap(j => dec.decodeJson(j).left.map(e => MongoJsonParsingException(e.getMessage, Some(j.noSpaces)))),
-        Clazz.tag[T]
+        _.toBson,
+        CirceJsonMapper
+          .fromBson(_)
+          .flatMap(j => dec.decodeJson(j).left.map(e => MongoJsonParsingException(e.getMessage, Some(j.noSpaces))))
       )
     }
 }

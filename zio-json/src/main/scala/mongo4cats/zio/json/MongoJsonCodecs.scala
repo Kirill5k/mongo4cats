@@ -16,7 +16,6 @@
 
 package mongo4cats.zio.json
 
-import mongo4cats.Clazz
 import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
 import mongo4cats.bson._
@@ -85,9 +84,8 @@ trait MongoJsonCodecs {
   implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
       override def get: CodecProvider = codecProvider[T](
-        t => t.toBson,
-        b => ZioJsonMapper.fromBson(b).flatMap(j => dec.fromJsonAST(j).left.map(e => MongoJsonParsingException(e, Some(j.toString)))),
-        Clazz.tag[T]
+        _.toBson,
+        ZioJsonMapper.fromBson(_).flatMap(j => dec.fromJsonAST(j).left.map(e => MongoJsonParsingException(e, Some(j.toString))))
       )
     }
 }

@@ -17,10 +17,13 @@
 package mongo4cats.bson
 
 import com.mongodb.MongoClientException
+import mongo4cats.Clazz
 import mongo4cats.codecs.{CodecRegistry, ContainerValueReader, ContainerValueWriter}
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
+
+import scala.reflect.ClassTag
 
 final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
@@ -37,12 +40,12 @@ private[mongo4cats] object json {
     def fromBson(bson: BsonValue): Either[MongoJsonParsingException, J]
   }
 
-  def codecProvider[T](
+  def codecProvider[T: ClassTag](
       toBson: T => BsonValue,
-      fromBson: BsonValue => Either[MongoJsonParsingException, T],
-      classT: Class[T]
+      fromBson: BsonValue => Either[MongoJsonParsingException, T]
   ): CodecProvider =
     new CodecProvider {
+      private val classT = Clazz.tag[T]
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
         if (classY == classT || classT.isAssignableFrom(classY))
           new Codec[Y] {
