@@ -11,8 +11,18 @@
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-circe"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
 </code></pre></div></div>
 
+<p>For automatic derivation of Bson codecs via ZIO Json, add this:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio-json"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+</code></pre></div></div>
+
 <p>For the ability to use embedded MongoDB in your tests, add this:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-embedded"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span> <span class="o">%</span> <span class="nc">Test</span>
+</code></pre></div></div>
+
+<p>For ZIO 2 integration, add this:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
+
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.kirill5k"</span> <span class="o">%%</span> <span class="s">"mongo4cats-zio-embedded"</span> <span class="o">%</span> <span class="s">"&lt;version&gt;"</span>
 </code></pre></div></div>
 
 <h3 id="next-steps">Next steps</h3>
