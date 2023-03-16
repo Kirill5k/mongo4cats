@@ -20,9 +20,21 @@ For automatic derivation of Bson codecs via Circe, add this:
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"
 ```
 
+For automatic derivation of Bson codecs via ZIO Json, add this:
+```scala
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "<version>"
+```
+
 For the ability to use embedded MongoDB in your tests, add this:
 ```scala
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version>" % Test
+```
+
+For ZIO 2 integration, add this:
+```scala
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio" % "<version>"
+
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "<version>"
 ```
 
 ### Next steps
