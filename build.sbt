@@ -126,8 +126,7 @@ val `zio-json` = project
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio-json",
-    libraryDependencies ++= Dependencies.zioJson,
-    resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+    libraryDependencies ++= Dependencies.zioJson
   )
   .enablePlugins(AutomateHeaderPlugin)
 

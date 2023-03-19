@@ -10,7 +10,7 @@ object Dependencies {
     val circe              = "0.14.5"
     val zio                = "2.0.10"
     val zioInteropReactive = "2.0.1"
-    val zioJson            = "0.4.2+48-706bdbae-SNAPSHOT"
+    val zioJson            = "0.5.0"
 
     val logback   = "1.4.6"
     val scalaTest = "3.2.15"
@@ -39,8 +39,7 @@ object Dependencies {
     val zioTest            = "dev.zio" %% "zio-test"                    % Versions.zio
     val zioTestSbt         = "dev.zio" %% "zio-test-sbt"                % Versions.zio
     val zioInteropReactive = "dev.zio" %% "zio-interop-reactivestreams" % Versions.zioInteropReactive
-
-    lazy val zioJson = "dev.zio" %% "zio-json" % Versions.zioJson
+    val zioJson            = "dev.zio" %% "zio-json"                    % Versions.zioJson
 
     val scalaTest = "org.scalatest" %% "scalatest"       % Versions.scalaTest
     val logback   = "ch.qos.logback" % "logback-classic" % Versions.logback
