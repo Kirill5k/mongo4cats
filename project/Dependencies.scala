@@ -15,7 +15,7 @@ object Dependencies {
     val logback   = "1.4.6"
     val scalaTest = "3.2.15"
 
-    val embeddedMongo   = "4.6.1"
+    val embeddedMongo   = "4.6.2"
     val immutableValue  = "2.9.3"
     val commonsCompress = "1.22"
   }
