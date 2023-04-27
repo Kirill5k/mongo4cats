@@ -27,8 +27,8 @@ final private class ZClientSessionLive(
     val underlying: ClientSession
 ) extends ZClientSession {
   def startTransaction(options: TransactionOptions): Task[Unit] = ZIO.attempt(underlying.startTransaction(options)).unit
-  def abortTransaction: Task[Unit]                              = ZIO.attempt(underlying.abortTransaction()).unit
-  def commitTransaction: Task[Unit]                             = ZIO.attempt(underlying.commitTransaction()).unit
+  def abortTransaction: Task[Unit]                              = underlying.abortTransaction().asyncVoid
+  def commitTransaction: Task[Unit]                             = underlying.commitTransaction().asyncVoid
 }
 
 final private class ZMongoClientLive(
