@@ -20,6 +20,7 @@ import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
 import mongo4cats.bson._
+import mongo4cats.errors.MongoJsonParsingException
 import mongo4cats.codecs.MongoCodecProvider
 import org.bson.codecs.configuration.CodecProvider
 

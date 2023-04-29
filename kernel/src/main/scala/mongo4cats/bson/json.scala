@@ -16,16 +16,14 @@
 
 package mongo4cats.bson
 
-import com.mongodb.MongoClientException
 import mongo4cats.Clazz
 import mongo4cats.codecs.{CodecRegistry, ContainerValueReader, ContainerValueWriter}
+import mongo4cats.errors.MongoJsonParsingException
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
 
 import scala.reflect.ClassTag
-
-final case class MongoJsonParsingException(message: String, json: Option[String] = None) extends MongoClientException(message)
 
 private[mongo4cats] object json {
 
