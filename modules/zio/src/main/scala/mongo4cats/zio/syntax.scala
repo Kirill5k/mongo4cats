@@ -16,7 +16,7 @@
 
 package mongo4cats.zio
 
-import com.mongodb.MongoClientException
+import mongo4cats.errors.MongoEmptyStreamException
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import zio.interop.reactivestreams._
 import zio.stream.Stream
@@ -26,10 +26,8 @@ import scala.collection.mutable.ListBuffer
 
 private[zio] object syntax {
 
-  case object MongoEmptyStreamException extends MongoClientException("Stream did not return any elements")
-
   implicit final class TaskOptionSyntax[T](private val task: Task[Option[T]]) extends AnyVal {
-    def unNone: Task[T] = task.flatMap(v => ZIO.fromEither(v.toRight(MongoEmptyStreamException)))
+    def unNone: Task[T] = task.map(_.toRight(MongoEmptyStreamException)).flatMap(ZIO.fromEither(_))
   }
 
   implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {

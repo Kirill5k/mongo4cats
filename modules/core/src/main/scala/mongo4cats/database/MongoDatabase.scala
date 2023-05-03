@@ -69,10 +69,10 @@ final private class LiveMongoDatabase[F[_]](
     underlying.createCollection(name, options).asyncVoid[F]
 
   def runCommand(cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[Document] =
-    underlying.runCommand(cs.underlying, command, readPreference).asyncSingle[F].map(Document.fromJava)
+    underlying.runCommand(cs.underlying, command, readPreference).asyncSingle[F].unNone.map(Document.fromJava)
 
   def runCommand(command: Bson, readPreference: ReadPreference): F[Document] =
-    underlying.runCommand(command, readPreference).asyncSingle[F].map(Document.fromJava)
+    underlying.runCommand(command, readPreference).asyncSingle[F].unNone.map(Document.fromJava)
 
   def drop: F[Unit]                       = underlying.drop().asyncVoid[F]
   def drop(cs: ClientSession[F]): F[Unit] = underlying.drop(cs.underlying).asyncVoid[F]

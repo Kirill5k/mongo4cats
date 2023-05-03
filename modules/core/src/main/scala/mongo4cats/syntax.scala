@@ -22,19 +22,26 @@ import cats.syntax.applicative._
 import cats.syntax.either._
 import cats.syntax.functor._
 import cats.syntax.option._
+import cats.syntax.flatMap._
 import fs2.Stream
+import mongo4cats.errors.MongoEmptyStreamException
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
 import scala.collection.mutable.ListBuffer
 
 private[mongo4cats] object syntax {
 
+  implicit final class OptionSyntax[F[_], T](private val fo: F[Option[T]]) extends AnyVal {
+    def unNone(implicit F: Async[F]): F[T] =
+      fo.map(_.toRight(MongoEmptyStreamException)).flatMap(F.fromEither(_))
+  }
+
   implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {
-    def asyncSingle[F[_]: Async]: F[T] =
+    def asyncSingle[F[_]: Async]: F[Option[T]] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
-          private var result: T                           = _
-          override def onNext(res: T): Unit               = result = res
+          private var result: Option[T]                   = None
+          override def onNext(res: T): Unit               = result = Option(res)
           override def onError(e: Throwable): Unit        = k(Left(e))
           override def onComplete(): Unit                 = k(Right(result))
           override def onSubscribe(s: Subscription): Unit = s.request(1)

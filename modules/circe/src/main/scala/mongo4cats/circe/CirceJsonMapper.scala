@@ -19,7 +19,8 @@ package mongo4cats.circe
 import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
 import mongo4cats.bson.json._
-import mongo4cats.bson.{BsonValue, Document, MongoJsonParsingException, ObjectId}
+import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.errors.MongoJsonParsingException
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 

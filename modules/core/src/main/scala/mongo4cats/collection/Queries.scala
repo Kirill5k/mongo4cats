@@ -62,12 +62,12 @@ private[collection] object Queries {
       protected val queries: List[QueryCommand]
   ) extends FindQueryBuilder[F, T, Stream[F, *]] {
 
-    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F].map(Option.apply)
+    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F]
     def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
     def stream: Stream[F, T]                              = applyQueries().stream[F]
     def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
-    def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
-    def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
+    def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].unNone.map(Document.fromJava)
+    def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].unNone.map(Document.fromJava)
 
     override protected def withQuery(command: QueryCommand): Find[F, T] = Fs2FindQueryBuilder[F, T](observable, command :: queries)
   }
@@ -77,7 +77,7 @@ private[collection] object Queries {
       protected val queries: List[QueryCommand]
   ) extends DistinctQueryBuilder[F, T, Stream[F, *]] {
 
-    def first: F[Option[T]]                        = applyQueries().first().asyncSingle[F].map(Option.apply)
+    def first: F[Option[T]]                        = applyQueries().first().asyncSingle[F]
     def all: F[Iterable[T]]                        = applyQueries().asyncIterable[F]
     def stream: Stream[F, T]                       = applyQueries().stream[F]
     def boundedStream(capacity: Int): Stream[F, T] = applyQueries().boundedStream[F](capacity)
@@ -91,12 +91,12 @@ private[collection] object Queries {
   ) extends AggregateQueryBuilder[F, T, Stream[F, *]] {
 
     def toCollection: F[Unit]                             = applyQueries().toCollection.asyncVoid[F]
-    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F].map(Option.apply)
+    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F].unNone.map(Option.apply)
     def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
     def stream: Stream[F, T]                              = applyQueries().stream[F]
     def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
-    def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].map(Document.fromJava)
-    def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].map(Document.fromJava)
+    def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].unNone.map(Document.fromJava)
+    def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].unNone.map(Document.fromJava)
 
     override protected def withQuery(command: QueryCommand): Aggregate[F, T] = Fs2AggregateQueryBuilder(observable, command :: queries)
   }

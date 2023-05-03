@@ -70,7 +70,7 @@ final private class LiveMongoClient[F[_]](
     underlying.listDatabases(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
 
   def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
-    underlying.startSession(options).asyncSingle[F].map(new LiveClientSession(_))
+    underlying.startSession(options).asyncSingle[F].unNone.map(new LiveClientSession(_))
 }
 
 object MongoClient extends AsJava {

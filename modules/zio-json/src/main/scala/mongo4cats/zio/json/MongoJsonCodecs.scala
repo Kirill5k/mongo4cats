@@ -20,6 +20,7 @@ import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
 import mongo4cats.bson._
 import mongo4cats.codecs.MongoCodecProvider
+import mongo4cats.errors.MongoJsonParsingException
 import org.bson.codecs.configuration.CodecProvider
 import zio.json.ast.Json
 import zio.json.{JsonDecoder, JsonEncoder}
