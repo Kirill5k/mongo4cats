@@ -1,8 +1,8 @@
 import xerial.sbt.Sonatype.GitHubHosting
-import ReleaseTransformations._
+import ReleaseTransformations.*
 import microsites.CdnDirectives
 import sbtghactions.JavaSpec
-import Utils._
+import Utils.*
 
 val scala212               = "2.12.17"
 val scala213               = "2.13.10"
@@ -62,7 +62,7 @@ val commonSettings = Seq(
 )
 
 val embedded = project
-  .in(file("embedded"))
+  .in(file("modules/embedded"))
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-embedded",
@@ -71,7 +71,7 @@ val embedded = project
   .enablePlugins(AutomateHeaderPlugin)
 
 val `zio-embedded` = project
-  .in(file("zio-embedded"))
+  .in(file("modules/zio-embedded"))
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio-embedded",
@@ -80,7 +80,7 @@ val `zio-embedded` = project
   .enablePlugins(AutomateHeaderPlugin)
 
 val kernel = project
-  .in(file("kernel"))
+  .in(file("modules/kernel"))
   .settings(commonSettings)
   .settings(
     name := "mongo4cats-kernel",
@@ -89,7 +89,7 @@ val kernel = project
   .enablePlugins(AutomateHeaderPlugin)
 
 val core = project
-  .in(file("core"))
+  .in(file("modules/core"))
   .dependsOn(kernel % "test->test;compile->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
@@ -100,7 +100,7 @@ val core = project
   .enablePlugins(AutomateHeaderPlugin)
 
 val zio = project
-  .in(file("zio"))
+  .in(file("modules/zio"))
   .dependsOn(kernel % "test->test;compile->compile", `zio-embedded` % "test->compile")
   .settings(commonSettings)
   .settings(
@@ -111,7 +111,7 @@ val zio = project
   .enablePlugins(AutomateHeaderPlugin)
 
 val circe = project
-  .in(file("circe"))
+  .in(file("modules/circe"))
   .dependsOn(kernel % "test->test;compile->compile", core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
@@ -121,7 +121,7 @@ val circe = project
   .enablePlugins(AutomateHeaderPlugin)
 
 val `zio-json` = project
-  .in(file("zio-json"))
+  .in(file("modules/zio-json"))
   .dependsOn(kernel % "test->test;compile->compile", core % "test->compile", embedded % "test->compile")
   .settings(commonSettings)
   .settings(
