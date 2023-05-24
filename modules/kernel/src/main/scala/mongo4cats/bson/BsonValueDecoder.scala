@@ -16,8 +16,6 @@
 
 package mongo4cats.bson
 
-import cats.syntax.traverse._
-
 import java.time.Instant
 
 trait BsonValueDecoder[A] {
@@ -36,5 +34,18 @@ object BsonValueDecoder {
   implicit val bigDecimalDecoder: BsonValueDecoder[BigDecimal] = _.asBigDecimal
 
   implicit def arrayListDecoder[A](implicit d: BsonValueDecoder[A]): BsonValueDecoder[List[A]] =
-    _.asList.flatMap(_.traverse(d.decode))
+    _.asList
+      .flatMap { bsonValueList =>
+        bsonValueList.foldLeft(Option(List.empty[A])) { (result, bv) =>
+          result match {
+            case Some(res) =>
+              d.decode(bv) match {
+                case Some(value) => Some(value :: res)
+                case None        => None
+              }
+            case None => None
+          }
+        }
+      }
+      .map(_.reverse)
 }

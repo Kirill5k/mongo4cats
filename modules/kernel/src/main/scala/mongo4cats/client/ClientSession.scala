@@ -16,8 +16,6 @@
 
 package mongo4cats.client
 
-import cats.syntax.alternative._
-import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
 import mongo4cats.models.client.TransactionOptions
 
@@ -37,7 +35,7 @@ abstract class ClientSession[F[_]] {
     *   the transaction options
     */
   def transactionOptions: Option[TransactionOptions] =
-    hasActiveTransaction.guard[Option].as(underlying.getTransactionOptions)
+    if (hasActiveTransaction) Some(underlying.getTransactionOptions) else None
 
   /** Start a transaction in the context of this session with the given transaction options. A transaction can not be started if there is
     * already an active transaction on this session.

@@ -16,8 +16,6 @@
 
 package mongo4cats.operations
 
-import cats.syntax.alternative._
-import cats.syntax.functor._
 import com.mongodb.client.model.{Accumulators, BsonField}
 import mongo4cats.AsJava
 
@@ -201,9 +199,9 @@ object Accumulator extends AsJava {
       Accumulators.accumulator(
         fieldName,
         initFunction,
-        initArgs.nonEmpty.guard[Option].as(asJava(initArgs)).orNull,
+        if (initArgs.nonEmpty) asJava(initArgs) else null,
         accumulateFunction,
-        accumulateArgs.nonEmpty.guard[Option].as(asJava(accumulateArgs)).orNull,
+        if (accumulateArgs.nonEmpty) asJava(accumulateArgs) else null,
         mergeFunction,
         finalizeFunction.orNull,
         lang

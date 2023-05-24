@@ -3,7 +3,6 @@ import sbt._
 object Dependencies {
   private object Versions {
     val kindProjector      = "0.13.2"
-    val cats               = "2.9.0"
     val catsEffect         = "3.4.9"
     val mongodb            = "4.9.1"
     val fs2                = "3.6.1"
@@ -26,7 +25,6 @@ object Dependencies {
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
     val mongodbDriverSync    = "org.mongodb" % "mongodb-driver-sync"            % Versions.mongodb
 
-    val cats       = "org.typelevel" %% "cats-core"   % Versions.cats
     val catsEffect = "org.typelevel" %% "cats-effect" % Versions.catsEffect
     val fs2Core    = "co.fs2"        %% "fs2-core"    % Versions.fs2
 
@@ -55,7 +53,6 @@ object Dependencies {
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
-    Libraries.cats,
     Libraries.scalaTest % Test
   )
 

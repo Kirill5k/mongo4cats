@@ -16,7 +16,6 @@
 
 package mongo4cats.zio.json
 
-import cats.syntax.apply._
 import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
@@ -42,14 +41,22 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
-    def isNull: Boolean        = json.asNull.nonEmpty
-    def isArray: Boolean       = json.asArray.nonEmpty
-    def isBoolean: Boolean     = json.asBoolean.nonEmpty
-    def isString: Boolean      = json.asString.nonEmpty
-    def isNumber: Boolean      = json.asNumber.nonEmpty
-    def isId: Boolean          = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
-    def isDate: Boolean        = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
+    def isNull: Boolean = json.asNull.nonEmpty
+
+    def isArray: Boolean = json.asArray.nonEmpty
+
+    def isBoolean: Boolean = json.asBoolean.nonEmpty
+
+    def isString: Boolean = json.asString.nonEmpty
+
+    def isNumber: Boolean = json.asNumber.nonEmpty
+
+    def isId: Boolean = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
+
+    def isDate: Boolean = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
+
     def isEpochMillis: Boolean = isDate && json.asObject.exists(_.get(Tag.date).exists(_.isNumber))
+
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o.get(Tag.date).exists(_.isString) && o.get(Tag.date).exists(_.asString.get.length == 10))
 
@@ -79,6 +86,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {
     def isDecimal: Boolean = jNumber.toString.contains(".")
+
     def toBsonValue: BsonValue =
       (isDecimal, jNumber.value) match {
         case (true, n)                   => BsonValue.bigDecimal(n)
@@ -129,4 +137,14 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BDocument(value) => Some(Json.Obj(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }: _*))
       case _                          => None
     }
+
+  implicit final private class EitherSyntax[A, B](
+      private val eitherTuple: (Either[MongoJsonParsingException, A], Either[MongoJsonParsingException, B])
+  ) extends AnyVal {
+    def mapN[C](f: (A, B) => C): Either[MongoJsonParsingException, C] =
+      for {
+        v1 <- eitherTuple._1
+        v2 <- eitherTuple._2
+      } yield f(v1, v2)
+  }
 }
