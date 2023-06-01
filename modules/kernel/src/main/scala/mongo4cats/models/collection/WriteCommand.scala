@@ -25,7 +25,9 @@ import com.mongodb.client.model.{
   UpdateOneModel,
   WriteModel
 }
+import mongo4cats.AsJava
 import mongo4cats.operations.{Filter, Update}
+import org.bson.conversions.Bson
 
 sealed trait WriteCommand[+T] {
   private[mongo4cats] def writeModel[T1 >: T]: WriteModel[T1]
@@ -57,8 +59,20 @@ object WriteCommand {
       new UpdateManyModel[T1](filter.toBson, update.toBson, options)
   }
 
+  final case class PipelinedUpdateMany(filter: Filter, update: Seq[Bson], options: UpdateOptions = UpdateOptions())
+      extends WriteCommand[Nothing] with AsJava {
+    override private[mongo4cats] def writeModel[T1 >: Nothing]: WriteModel[T1] =
+      new UpdateManyModel[T1](filter.toBson, asJava(update), options)
+  }
+
   final case class UpdateOne(filter: Filter, update: Update, options: UpdateOptions = UpdateOptions()) extends WriteCommand[Nothing] {
     override private[mongo4cats] def writeModel[T1 >: Nothing]: WriteModel[T1] =
       new UpdateOneModel[T1](filter.toBson, update.toBson, options)
+  }
+
+  final case class PipelinedUpdateOne(filter: Filter, update: Seq[Bson], options: UpdateOptions = UpdateOptions())
+      extends WriteCommand[Nothing] with AsJava {
+    override private[mongo4cats] def writeModel[T1 >: Nothing]: WriteModel[T1] =
+      new UpdateOneModel[T1](filter.toBson, asJava(update), options)
   }
 }
