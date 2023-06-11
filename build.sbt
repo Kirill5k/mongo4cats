@@ -6,7 +6,7 @@ import Utils.*
 
 val scala212               = "2.12.18"
 val scala213               = "2.13.11"
-val scala3                 = "3.2.2"
+val scala3                 = "3.3.0"
 val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion           := scala213
