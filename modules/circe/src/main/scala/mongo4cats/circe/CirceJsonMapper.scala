@@ -51,7 +51,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
     def isUuid: Boolean = json.isObject && json.asObject.exists { o =>
       o(Tag.binary).exists(_.isObject) && o(Tag.binary).get.asObject.exists { b =>
-        b("base64").exists(_.isString) && b("subType").exists(_.isString)
+        b("base64").exists(_.isString) && b("subType").exists(_.isString) && b("subType").get.asString.get.matches("0[0-4]")
       }
     }
 

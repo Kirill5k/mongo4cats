@@ -36,7 +36,7 @@ import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort: Int = 12354
+  override val mongoPort: Int = 12352
 
   implicit val genDec: Decoder[Gender] = Decoder[String].emap(Gender.from)
   implicit val genEnc: Encoder[Gender] = Encoder[String].contramap(_.value)
