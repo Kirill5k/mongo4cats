@@ -19,6 +19,7 @@ package mongo4cats.zio.json
 import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
+import zio.json._
 import zio.json.ast.Json
 
 import java.time.{Instant, LocalDate, ZoneOffset}
@@ -37,28 +38,27 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
+      case j if j.isUuid        => Document.parse(s"""{"uuid": ${j.toJsonPretty}}""").get("uuid").get
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
-    def isNull: Boolean = json.asNull.nonEmpty
-
-    def isArray: Boolean = json.asArray.nonEmpty
-
-    def isBoolean: Boolean = json.asBoolean.nonEmpty
-
-    def isString: Boolean = json.asString.nonEmpty
-
-    def isNumber: Boolean = json.asNumber.nonEmpty
-
-    def isId: Boolean = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
-
-    def isDate: Boolean = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
-
+    def isNull: Boolean        = json.asNull.nonEmpty
+    def isArray: Boolean       = json.asArray.nonEmpty
+    def isBoolean: Boolean     = json.asBoolean.nonEmpty
+    def isString: Boolean      = json.asString.nonEmpty
+    def isNumber: Boolean      = json.asNumber.nonEmpty
+    def isId: Boolean          = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
+    def isDate: Boolean        = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
     def isEpochMillis: Boolean = isDate && json.asObject.exists(_.get(Tag.date).exists(_.isNumber))
-
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o.get(Tag.date).exists(_.isString) && o.get(Tag.date).exists(_.asString.get.length == 10))
+
+    def isUuid: Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
+      o.asObject.exists(_.contains(Tag.binary)) && o.asObject.get.get(Tag.binary).get.asObject.exists { b =>
+        b.contains("base64") && b.contains("subType")
+      }
+    }
 
     def asEpochMillis: Long =
       (for {
@@ -109,6 +109,12 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BDecimal(value)  => Right(Json.Num(value))
       case BsonValue.BString(value)   => Right(Json.Str(value))
       case BsonValue.BDouble(value)   => Right(Json.Num(value))
+      case BsonValue.BUuid(value) =>
+        Document("uuid" -> BsonValue.uuid(value)).toJson
+          .fromJson[Json]
+          .map(j => j.asObject.get.get("uuid").get)
+          .left
+          .map(error => MongoJsonParsingException(s"Cannot map uuid to json: ${error}"))
       case BsonValue.BArray(value) =>
         value.toList
           .foldRight(rightEmptyList[Json]) { case (a, acc) => (fromBson(a), acc).mapN(_ :: _) }
@@ -134,6 +140,11 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BString(value)   => Some(Json.Str(value))
       case BsonValue.BDouble(value)   => Some(Json.Num(value))
       case BsonValue.BArray(value)    => Some(Json.Arr(value.toList.flatMap(fromBsonOpt): _*))
+      case BsonValue.BUuid(value) =>
+        Document("uuid" -> BsonValue.uuid(value)).toJson
+          .fromJson[Json]
+          .map(j => j.asObject.get.get("uuid").get)
+          .toOption
       case BsonValue.BDocument(value) => Some(Json.Obj(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }: _*))
       case _                          => None
     }

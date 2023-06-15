@@ -19,6 +19,7 @@ package mongo4cats.codecs
 import mongo4cats.bson.{BsonValue, Document}
 import org.bson._
 import org.bson.codecs.{Encoder, EncoderContext}
+import org.bson.internal.UuidHelper
 import org.bson.types.Decimal128
 
 private[mongo4cats] object ContainerValueWriter {
@@ -68,14 +69,16 @@ private[mongo4cats] object ContainerValueWriter {
       case BsonValue.BDouble(value)    => writer.writeDouble(value)
       case BsonValue.BTimestamp(value) => writer.writeTimestamp(new BsonTimestamp(value.toInt, 1))
       case BsonValue.BDateTime(value)  => writer.writeDateTime(value.toEpochMilli)
-      case BsonValue.BBinary(value)    => writer.writeBinaryData(new BsonBinary(value))
-      case BsonValue.BBoolean(value)   => writer.writeBoolean(value)
-      case BsonValue.BDecimal(value)   => writer.writeDecimal128(new Decimal128(value.bigDecimal))
-      case BsonValue.BString(value)    => writer.writeString(value)
-      case BsonValue.BObjectId(value)  => writer.writeObjectId(value)
-      case BsonValue.BDocument(value)  => writeBsonDocument(value, writer, None)
-      case BsonValue.BArray(value)     => writeBsonArray(value, writer)
-      case BsonValue.BRegex(value)     => writer.writeRegularExpression(new BsonRegularExpression(value.pattern.pattern()))
+      case BsonValue.BUuid(value) =>
+        writer.writeBinaryData(new BsonBinary(UuidHelper.encodeUuidToBinary(value, UuidRepresentation.STANDARD)))
+      case BsonValue.BBinary(value)   => writer.writeBinaryData(new BsonBinary(value))
+      case BsonValue.BBoolean(value)  => writer.writeBoolean(value)
+      case BsonValue.BDecimal(value)  => writer.writeDecimal128(new Decimal128(value.bigDecimal))
+      case BsonValue.BString(value)   => writer.writeString(value)
+      case BsonValue.BObjectId(value) => writer.writeObjectId(value)
+      case BsonValue.BDocument(value) => writeBsonDocument(value, writer, None)
+      case BsonValue.BArray(value)    => writeBsonArray(value, writer)
+      case BsonValue.BRegex(value)    => writer.writeRegularExpression(new BsonRegularExpression(value.pattern.pattern()))
     }
 
   def write(

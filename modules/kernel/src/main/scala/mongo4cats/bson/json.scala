@@ -28,8 +28,9 @@ import scala.reflect.ClassTag
 private[mongo4cats] object json {
 
   object Tag {
-    val id   = "$" + "oid"
-    val date = "$" + "date"
+    val id     = "$" + "oid"
+    val date   = "$" + "date"
+    val binary = "$" + "binary"
   }
 
   trait JsonMapper[J] {

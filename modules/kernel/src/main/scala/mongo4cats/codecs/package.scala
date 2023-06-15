@@ -17,6 +17,8 @@
 package mongo4cats
 
 import com.mongodb.MongoClientSettings
+import org.bson.UuidRepresentation
+import org.bson.codecs.UuidCodecProvider
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry => JCodecRegistry}
 
@@ -31,7 +33,8 @@ package object codecs {
       from(BigDecimalCodecProvider),
       from(OptionCodecProvider),
       from(MapCodecProvider),
-      from(IterableCodecProvider)
+      from(IterableCodecProvider),
+      from(new UuidCodecProvider(UuidRepresentation.STANDARD))
     )
 
     def from(provides: CodecProvider*): CodecRegistry = fromProviders(provides: _*)

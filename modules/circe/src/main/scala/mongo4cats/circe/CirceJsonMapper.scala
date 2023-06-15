@@ -16,8 +16,10 @@
 
 package mongo4cats.circe
 
+import cats.syntax.either._
 import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
+import io.circe.parser._
 import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
@@ -37,6 +39,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
+      case j if j.isUuid        => Document.parse(s"""{"uuid": ${j.noSpaces}}""").get("uuid").get
       case j                    => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
@@ -46,6 +49,11 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     def isEpochMillis: Boolean = isDate && json.asObject.exists(_(Tag.date).exists(_.isNumber))
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
+    def isUuid: Boolean = json.isObject && json.asObject.exists { o =>
+      o(Tag.binary).exists(_.isObject) && o(Tag.binary).get.asObject.exists { b =>
+        b("base64").exists(_.isString) && b("subType").exists(_.isString)
+      }
+    }
 
     def asEpochMillis: Long     = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
     def asIsoDateString: String = json.asObject.flatMap(_(Tag.date)).flatMap(_.asString).get
@@ -71,6 +79,10 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case BsonValue.BString(value)   => Right(Json.fromString(value))
       case BsonValue.BDouble(value)   => Json.fromDouble(value).toRight(MongoJsonParsingException(s"$value is not a valid double"))
       case BsonValue.BArray(value)    => value.toList.traverse(fromBson).map(Json.fromValues)
+      case BsonValue.BUuid(value) =>
+        parse(Document("uuid" -> BsonValue.uuid(value)).toJson)
+          .map(_.asObject.get("uuid").get)
+          .leftMap(e => MongoJsonParsingException(s"Cannot map uuid to json: ${e.getMessage()}"))
       case BsonValue.BDocument(value) =>
         value.toList
           .filterNot { case (_, v) => v.isUndefined }
@@ -91,6 +103,10 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case BsonValue.BString(value)   => Some(Json.fromString(value))
       case BsonValue.BDouble(value)   => Json.fromDouble(value)
       case BsonValue.BArray(value)    => Some(Json.fromValues(value.toList.flatMap(fromBsonOpt)))
+      case BsonValue.BUuid(value) =>
+        parse(Document("uuid" -> BsonValue.uuid(value)).toJson)
+          .map(_.asObject.get("uuid").get)
+          .toOption
       case BsonValue.BDocument(value) => Some(Json.fromFields(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }))
       case _                          => None
     }

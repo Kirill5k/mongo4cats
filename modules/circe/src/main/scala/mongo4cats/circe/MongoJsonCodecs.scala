@@ -16,6 +16,7 @@
 
 package mongo4cats.circe
 
+import io.circe.parser.parse
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
@@ -25,6 +26,7 @@ import mongo4cats.codecs.MongoCodecProvider
 import org.bson.codecs.configuration.CodecProvider
 
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -75,6 +77,23 @@ trait MongoJsonCodecs {
         .map(_.slice(0, 10))
         .flatMap(s => Try(LocalDate.parse(s)).toOption)
         .toRight(s"$dateObj is not a valid date object")
+    }
+
+  implicit val uuidEncoder: Encoder[UUID] =
+    Encoder.encodeJsonObject.contramap[UUID] { uuid =>
+      parse(Document("uuid" -> BsonValue.uuid(uuid)).toJson)
+        .map(_.asObject.get("uuid").get.asObject.get)
+        .getOrElse(JsonObject.empty)
+    }
+
+  implicit val uuidDecoder: Decoder[UUID] =
+    Decoder.decodeJson.emap { uuidObj =>
+      Document
+        .parse(s"""{"uuid": ${uuidObj.noSpaces}}""")
+        .get("uuid") match {
+        case Some(BsonValue.BUuid(uuid)) => Right(uuid)
+        case _                           => Left(s"$uuidObj is not a valid uuid object")
+      }
     }
 
   implicit def deriveCirceCodecProvider[T: ClassTag](implicit enc: Encoder[T], dec: Decoder[T]): MongoCodecProvider[T] =

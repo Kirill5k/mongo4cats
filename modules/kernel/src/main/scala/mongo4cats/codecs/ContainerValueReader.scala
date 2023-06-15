@@ -18,6 +18,7 @@ package mongo4cats.codecs
 
 import mongo4cats.bson.{BsonValue, Document}
 import org.bson.codecs.{BsonTypeCodecMap, DecoderContext}
+import org.bson.internal.UuidHelper
 import org.bson.{BsonReader, BsonType, Transformer, UuidRepresentation}
 
 import java.time.Instant
@@ -71,13 +72,17 @@ private[mongo4cats] object ContainerValueReader {
       case BsonType.UNDEFINED =>
         reader.readUndefined()
         Some(BsonValue.Undefined)
-      case BsonType.DOCUMENT           => Some(BsonValue.document(readBsonDocument(reader)))
-      case BsonType.ARRAY              => Some(BsonValue.array(readBsonArray(reader)))
-      case BsonType.DOUBLE             => Some(BsonValue.double(reader.readDouble()))
-      case BsonType.STRING             => Some(BsonValue.string(reader.readString()))
-      case BsonType.INT32              => Some(BsonValue.int(reader.readInt32()))
-      case BsonType.INT64              => Some(BsonValue.long(reader.readInt64()))
-      case BsonType.DECIMAL128         => Some(BsonValue.bigDecimal(reader.readDecimal128().bigDecimalValue()))
+      case BsonType.DOCUMENT   => Some(BsonValue.document(readBsonDocument(reader)))
+      case BsonType.ARRAY      => Some(BsonValue.array(readBsonArray(reader)))
+      case BsonType.DOUBLE     => Some(BsonValue.double(reader.readDouble()))
+      case BsonType.STRING     => Some(BsonValue.string(reader.readString()))
+      case BsonType.INT32      => Some(BsonValue.int(reader.readInt32()))
+      case BsonType.INT64      => Some(BsonValue.long(reader.readInt64()))
+      case BsonType.DECIMAL128 => Some(BsonValue.bigDecimal(reader.readDecimal128().bigDecimalValue()))
+      case BsonType.BINARY if isUuid(reader, UuidRepresentation.STANDARD) =>
+        val subtype = reader.peekBinarySubType()
+        val binary  = reader.readBinaryData().getData
+        Some(BsonValue.uuid(UuidHelper.decodeBinaryToUuid(binary, subtype, UuidRepresentation.STANDARD)))
       case BsonType.BINARY             => Some(BsonValue.binary(reader.readBinaryData().getData))
       case BsonType.OBJECT_ID          => Some(BsonValue.objectId(reader.readObjectId()))
       case BsonType.BOOLEAN            => Some(BsonValue.boolean(reader.readBoolean()))
@@ -129,7 +134,7 @@ private[mongo4cats] object ContainerValueReader {
         uuidRepresentation == UuidRepresentation.PYTHON_LEGACY)
 
   private def isStandardUuid(reader: BsonReader, uuidRepresentation: UuidRepresentation): Boolean =
-    reader.peekBinarySubType == 4 &&
+    (reader.peekBinarySubType == 4 || reader.peekBinarySubType == 0) &&
       reader.peekBinarySize() == 16 &&
       uuidRepresentation == UuidRepresentation.STANDARD
 }

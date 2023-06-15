@@ -21,6 +21,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
+import java.util.UUID
 
 class DocumentSpec extends AnyWordSpec with Matchers {
 
@@ -57,6 +58,12 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         val document = Document("time" := Instant.parse("2022-01-01T00:00:00Z"))
 
         document.toJson mustBe """{"time": {"$date": "2022-01-01T00:00:00Z"}}"""
+      }
+
+      "convert uuid to json accurately" in {
+        val document = Document("uuid" := UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
+
+        document.toJson mustBe """{"uuid": {"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "00"}}}"""
       }
     }
 
@@ -95,6 +102,12 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         val doc = Document.parse("""{"time":{"$date":"2020-01-01"}}""")
 
         doc.toJson mustBe """{"time": {"$date": "2020-01-01T00:00:00Z"}}"""
+      }
+
+      "handle uuid" in {
+        val doc = Document.parse("""{"uuid": {"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "00"}}}""")
+
+        doc.getAs[UUID]("uuid") mustBe Some(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
       }
 
       "retrieve nested fields" in {

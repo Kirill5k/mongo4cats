@@ -22,6 +22,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
+import java.util.UUID
 
 class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
 
@@ -41,7 +42,8 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
       "dateInstant"   -> BsonValue.instant(ts),
       "dateEpoch"     -> BsonValue.instant(ts),
       "dateLocalDate" -> BsonValue.instant(Instant.parse("2022-01-01T00:00:00Z")),
-      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2)))
+      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2))),
+      "uuid"          -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
     )
   )
 
@@ -60,7 +62,10 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
           "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
           "dateEpoch"     -> Json.obj("$date" -> Json.fromLong(ts.toEpochMilli)),
           "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01")),
-          "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
+          "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2)),
+          "uuid" -> Json.obj(
+            "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("00"))
+          )
         )
 
         CirceJsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
@@ -80,7 +85,10 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
             "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateEpoch"     -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01T00:00:00Z")),
-            "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
+            "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2)),
+            "uuid" -> Json.obj(
+              "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("00"))
+            )
           )
         )
       }

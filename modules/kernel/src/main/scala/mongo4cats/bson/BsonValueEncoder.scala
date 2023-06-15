@@ -17,6 +17,7 @@
 package mongo4cats.bson
 
 import java.time.Instant
+import java.util.UUID
 
 trait BsonValueEncoder[A] {
   def encode(value: A): BsonValue
@@ -33,6 +34,7 @@ object BsonValueEncoder {
   implicit val booleanEncoder: BsonValueEncoder[Boolean]       = value => BsonValue.boolean(value)
   implicit val documentEncoder: BsonValueEncoder[Document]     = value => BsonValue.document(value)
   implicit val bigDecimalEncoder: BsonValueEncoder[BigDecimal] = value => BsonValue.bigDecimal(value)
+  implicit val uuidEncoder: BsonValueEncoder[UUID]             = value => BsonValue.uuid(value)
 
   implicit def arrayVectorEncoder[A](implicit e: BsonValueEncoder[A]): BsonValueEncoder[Vector[A]] =
     value => BsonValue.array(value.map(e.encode))

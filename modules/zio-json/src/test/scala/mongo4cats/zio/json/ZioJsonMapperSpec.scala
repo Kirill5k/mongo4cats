@@ -23,6 +23,7 @@ import zio.json.ast.Json
 import zio.json.JsonEncoder
 
 import java.time.Instant
+import java.util.UUID
 
 class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
 
@@ -42,7 +43,8 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
       "dateInstant"   -> BsonValue.instant(ts),
       "dateEpoch"     -> BsonValue.instant(ts),
       "dateLocalDate" -> BsonValue.instant(Instant.parse("2022-01-01T00:00:00Z")),
-      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2)))
+      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2))),
+      "uuid"          -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
     )
   )
 
@@ -67,7 +69,8 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
           "dateInstant"   -> Json.Obj("$date" -> jsonString(ts.toString)),
           "dateEpoch"     -> Json.Obj("$date" -> jsonLong(ts.toEpochMilli)),
           "dateLocalDate" -> Json.Obj("$date" -> jsonString("2022-01-01")),
-          "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2))
+          "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2)),
+          "uuid" -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> jsonString("00")))
         )
 
         ZioJsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
@@ -87,7 +90,8 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
             "dateInstant"   -> Json.Obj("$date" -> jsonString(ts.toString)),
             "dateEpoch"     -> Json.Obj("$date" -> jsonString(ts.toString)),
             "dateLocalDate" -> Json.Obj("$date" -> jsonString("2022-01-01T00:00:00Z")),
-            "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2))
+            "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2)),
+            "uuid" -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> jsonString("00")))
           )
         )
       }

@@ -17,6 +17,7 @@
 package mongo4cats.bson
 
 import java.time.Instant
+import java.util.UUID
 import scala.util.matching.Regex
 
 sealed abstract class BsonValue {
@@ -32,6 +33,7 @@ sealed abstract class BsonValue {
   def asObjectId: Option[ObjectId]
   def asList: Option[List[BsonValue]]
   def asInstant: Option[Instant]
+  def asUuid: Option[UUID]
 }
 
 object BsonValue {
@@ -48,6 +50,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   case object BUndefined extends BsonValue {
     override def isNull: Boolean                  = false
@@ -62,6 +65,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   case object BMaxKey extends BsonValue {
     override def isNull: Boolean                  = false
@@ -76,6 +80,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   case object BMinKey extends BsonValue {
     override def isNull: Boolean                  = false
@@ -90,6 +95,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BInt32(value: Int) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -104,6 +110,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BInt64(value: Long) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -118,6 +125,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BDouble(value: Double) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -132,6 +140,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BTimestamp(value: Long) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -146,6 +155,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = Some(Instant.ofEpochSecond(value))
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BDateTime(value: Instant) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -160,6 +170,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = Some(value)
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BBinary(value: Array[Byte]) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -174,6 +185,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BBoolean(value: Boolean) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -188,6 +200,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BDecimal(value: BigDecimal) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -202,6 +215,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BString(value: String) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -216,6 +230,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = Some(value)
+    override def asUuid: Option[UUID]             = None
   }
   final case class BObjectId(value: ObjectId) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -230,6 +245,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BDocument(value: Document) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -244,6 +260,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BArray(value: Iterable[BsonValue]) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -258,6 +275,7 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = Some(value.toList)
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
   }
   final case class BRegex(regex: Regex) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -272,6 +290,23 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = None
+  }
+
+  final case class BUuid(uuid: UUID) extends BsonValue {
+    override def isNull: Boolean                  = false
+    override def isUndefined: Boolean             = false
+    override def asInt: Option[Int]               = None
+    override def asLong: Option[Long]             = None
+    override def asDouble: Option[Double]         = None
+    override def asBigDecimal: Option[BigDecimal] = None
+    override def asBoolean: Option[Boolean]       = None
+    override def asDocument: Option[Document]     = None
+    override def asObjectId: Option[ObjectId]     = None
+    override def asList: Option[List[BsonValue]]  = None
+    override def asInstant: Option[Instant]       = None
+    override def asString: Option[String]         = None
+    override def asUuid: Option[UUID]             = Some(uuid)
   }
 
   val Null: BsonValue      = BNull
@@ -297,4 +332,5 @@ object BsonValue {
   def instant(value: Instant): BsonValue       = BDateTime(value)
   def regex(value: Regex): BsonValue           = BRegex(value)
   def timestamp(value: Long): BsonValue        = BTimestamp(value)
+  def uuid(value: UUID): BsonValue             = BUuid(value)
 }

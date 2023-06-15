@@ -30,6 +30,7 @@ import zio.json._
 import java.time.temporal.ChronoField.MILLI_OF_SECOND
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
@@ -182,6 +183,7 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
     def person(firstName: String = "John", lastName: String = "Bloggs", gender: Gender = Gender.Male): Person =
       Person(
         ObjectId(),
+        UUID.randomUUID(),
         gender,
         firstName,
         lastName,

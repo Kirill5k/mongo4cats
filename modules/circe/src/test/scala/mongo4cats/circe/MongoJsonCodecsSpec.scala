@@ -24,6 +24,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 
 class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs {
 
@@ -57,6 +58,16 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
     }
   }
 
+  "UUID codec" should {
+    "encode and decode UUID to json and back" in {
+      val uuid = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
+      val json = s"""{"${Tag.binary}":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"00"}}""".stripMargin
+
+      uuid.asJson.noSpaces mustBe json
+      decode[UUID](json) mustBe Right(uuid)
+    }
+  }
+
   "Document codec" should {
     "encode and decode Document to json and back" in {
       val id = ObjectId.gen
@@ -73,7 +84,8 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
         "dateInstant"   -> BsonValue.instant(ts),
         "dateEpoch"     -> BsonValue.instant(ts),
         "dateLocalDate" -> BsonValue.instant(Instant.parse("2022-01-01T00:00:00Z")),
-        "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2)))
+        "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2))),
+        "uuid"          -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
       )
 
       val json =
@@ -103,6 +115,12 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
           |  "document" : {
           |    "field1" : "1",
           |    "field2" : 2
+          |  },
+          |  "uuid" : {
+          |    "${Tag.binary}" : {
+          |      "base64" : "z7ynKE45RhOWvPkgtcN+Fg==",
+          |      "subType" : "00"
+          |    }
           |  }
           |}""".stripMargin
 

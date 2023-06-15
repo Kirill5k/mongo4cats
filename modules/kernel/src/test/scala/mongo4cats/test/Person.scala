@@ -19,6 +19,7 @@ package mongo4cats.test
 import mongo4cats.bson.ObjectId
 
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 
 abstract class Gender(val value: String)
 object Gender {
@@ -40,6 +41,7 @@ final case class Address(
 
 final case class Person(
     _id: ObjectId,
+    anotherId: UUID,
     gender: Gender,
     firstName: String,
     lastName: String,
