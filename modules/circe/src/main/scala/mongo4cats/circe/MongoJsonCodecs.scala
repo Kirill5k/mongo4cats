@@ -16,13 +16,12 @@
 
 package mongo4cats.circe
 
-import io.circe.parser.parse
 import io.circe.{Decoder, Encoder, Json, JsonObject}
+import mongo4cats.bson._
 import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
-import mongo4cats.bson._
-import mongo4cats.errors.MongoJsonParsingException
 import mongo4cats.codecs.MongoCodecProvider
+import mongo4cats.errors.MongoJsonParsingException
 import org.bson.codecs.configuration.CodecProvider
 
 import java.time.{Instant, LocalDate}
@@ -80,21 +79,10 @@ trait MongoJsonCodecs {
     }
 
   implicit val uuidEncoder: Encoder[UUID] =
-    Encoder.encodeJsonObject.contramap[UUID] { uuid =>
-      parse(Document("uuid" -> BsonValue.uuid(uuid)).toJson)
-        .map(_.asObject.get("uuid").get.asObject.get)
-        .getOrElse(JsonObject.empty)
-    }
+    Encoder.encodeJson.contramap[UUID](CirceJsonMapper.uuidToJson)
 
   implicit val uuidDecoder: Decoder[UUID] =
-    Decoder.decodeJson.emap { uuidObj =>
-      Document
-        .parse(s"""{"uuid": ${uuidObj.noSpaces}}""")
-        .get("uuid") match {
-        case Some(BsonValue.BUuid(uuid)) => Right(uuid)
-        case _                           => Left(s"$uuidObj is not a valid uuid object")
-      }
-    }
+    Decoder.decodeJson.emapTry(uuidObj => Try(CirceJsonMapper.jsonToUuid(uuidObj)))
 
   implicit def deriveCirceCodecProvider[T: ClassTag](implicit enc: Encoder[T], dec: Decoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {

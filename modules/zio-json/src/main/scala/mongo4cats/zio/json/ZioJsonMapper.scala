@@ -16,13 +16,14 @@
 
 package mongo4cats.zio.json
 
+import mongo4cats.Uuid
 import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
-import zio.json._
 import zio.json.ast.Json
 
 import java.time.{Instant, LocalDate, ZoneOffset}
+import java.util.UUID
 import scala.math.BigDecimal._
 
 private[json] object ZioJsonMapper extends JsonMapper[Json] {
@@ -38,7 +39,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
-      case j if j.isUuid        => Document.parse(s"""{"uuid": ${j.toJsonPretty}}""").get("uuid").get
+      case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
@@ -109,12 +110,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BDecimal(value)  => Right(Json.Num(value))
       case BsonValue.BString(value)   => Right(Json.Str(value))
       case BsonValue.BDouble(value)   => Right(Json.Num(value))
-      case BsonValue.BUuid(value) =>
-        Document("uuid" -> BsonValue.uuid(value)).toJson
-          .fromJson[Json]
-          .map(j => j.asObject.get.get("uuid").get)
-          .left
-          .map(error => MongoJsonParsingException(s"Cannot map uuid to json: ${error}"))
+      case BsonValue.BUuid(value)     => Right(uuidToJson(value))
       case BsonValue.BArray(value) =>
         value.toList
           .foldRight(rightEmptyList[Json]) { case (a, acc) => (fromBson(a), acc).mapN(_ :: _) }
@@ -140,11 +136,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BString(value)   => Some(Json.Str(value))
       case BsonValue.BDouble(value)   => Some(Json.Num(value))
       case BsonValue.BArray(value)    => Some(Json.Arr(value.toList.flatMap(fromBsonOpt): _*))
-      case BsonValue.BUuid(value) =>
-        Document("uuid" -> BsonValue.uuid(value)).toJson
-          .fromJson[Json]
-          .map(j => j.asObject.get.get("uuid").get)
-          .toOption
+      case BsonValue.BUuid(value)     => Some(uuidToJson(value))
       case BsonValue.BDocument(value) => Some(Json.Obj(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }: _*))
       case _                          => None
     }
@@ -158,4 +150,10 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
         v2 <- eitherTuple._2
       } yield f(v1, v2)
   }
+
+  def uuidToJson(uuid: UUID): Json =
+    Json.Obj(Tag.binary -> Json.Obj("base64" -> Json.Str(Uuid.toBase64(uuid)), "subType" -> Json.Str("00")))
+
+  def jsonToUuid(json: Json): UUID =
+    Uuid.fromBase64(json.asObject.get.get(Tag.binary).get.asObject.get.get("base64").get.asString.get)
 }

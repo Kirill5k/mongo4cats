@@ -23,7 +23,6 @@ import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.errors.MongoJsonParsingException
 import org.bson.codecs.configuration.CodecProvider
 import zio.json.ast.Json
-import zio.json._
 import zio.json.{JsonDecoder, JsonEncoder}
 
 import java.time.{Instant, LocalDate}
@@ -85,21 +84,11 @@ trait MongoJsonCodecs {
     }
 
   implicit val uuidEncoder: JsonEncoder[UUID] =
-    Json.encoder.contramap[UUID] { uuid =>
-      Document("uuid" -> BsonValue.uuid(uuid)).toJson
-        .fromJson[Json]
-        .map(_.asObject.get.get("uuid").get)
-        .getOrElse(emptyJsonObject)
-    }
+    Json.encoder.contramap[UUID](ZioJsonMapper.uuidToJson)
 
   implicit val uuidDecoder: JsonDecoder[UUID] =
     Json.decoder.mapOrFail[UUID] { uuidObj =>
-      Document
-        .parse(s"""{"uuid": ${uuidObj.toJsonPretty}}""")
-        .get("uuid") match {
-        case Some(BsonValue.BUuid(uuid)) => Right(uuid)
-        case _                           => Left(s"$uuidObj is not a valid uuid object")
-      }
+      Try(ZioJsonMapper.jsonToUuid(uuidObj)).toEither.left.map(_.getMessage)
     }
 
   implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
