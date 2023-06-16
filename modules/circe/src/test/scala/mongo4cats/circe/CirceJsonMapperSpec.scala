@@ -64,7 +64,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
           "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01")),
           "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2)),
           "uuid" -> Json.obj(
-            "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("00"))
+            "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("04"))
           )
         )
 
@@ -87,7 +87,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
             "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01T00:00:00Z")),
             "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2)),
             "uuid" -> Json.obj(
-              "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("00"))
+              "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("04"))
             )
           )
         )

@@ -70,7 +70,9 @@ private[mongo4cats] object ContainerValueWriter {
       case BsonValue.BTimestamp(value) => writer.writeTimestamp(new BsonTimestamp(value.toInt, 1))
       case BsonValue.BDateTime(value)  => writer.writeDateTime(value.toEpochMilli)
       case BsonValue.BUuid(value) =>
-        writer.writeBinaryData(new BsonBinary(UuidHelper.encodeUuidToBinary(value, UuidRepresentation.STANDARD)))
+        writer.writeBinaryData(
+          new BsonBinary(BsonBinarySubType.UUID_STANDARD, UuidHelper.encodeUuidToBinary(value, UuidRepresentation.STANDARD))
+        )
       case BsonValue.BBinary(value)   => writer.writeBinaryData(new BsonBinary(value))
       case BsonValue.BBoolean(value)  => writer.writeBoolean(value)
       case BsonValue.BDecimal(value)  => writer.writeDecimal128(new Decimal128(value.bigDecimal))

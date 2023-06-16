@@ -152,7 +152,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
   }
 
   def uuidToJson(uuid: UUID): Json =
-    Json.Obj(Tag.binary -> Json.Obj("base64" -> Json.Str(Uuid.toBase64(uuid)), "subType" -> Json.Str("00")))
+    Json.Obj(Tag.binary -> Json.Obj("base64" -> Json.Str(Uuid.toBase64(uuid)), "subType" -> Json.Str("04")))
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(json.asObject.get.get(Tag.binary).get.asObject.get.get("base64").get.asString.get)

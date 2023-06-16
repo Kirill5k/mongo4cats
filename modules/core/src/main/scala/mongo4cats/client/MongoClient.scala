@@ -33,6 +33,7 @@ import mongo4cats.models.client.{
   ServerAddress,
   TransactionOptions
 }
+import org.bson.UuidRepresentation
 
 import scala.util.Try
 
@@ -79,12 +80,21 @@ object MongoClient extends AsJava {
     fromConnectionString(connection.toString)
 
   def fromConnectionString[F[_]: Async](connectionString: String): Resource[F, MongoClient[F]] =
-    clientResource[F](MongoClients.create(MongoClientSettings.builder().applyConnectionString(ConnectionString(connectionString)).build()))
+    clientResource[F](
+      MongoClients.create(
+        MongoClientSettings
+          .builder()
+          .uuidRepresentation(UuidRepresentation.STANDARD)
+          .applyConnectionString(ConnectionString(connectionString))
+          .build()
+      )
+    )
 
   def fromServerAddress[F[_]: Async](serverAddresses: ServerAddress*): Resource[F, MongoClient[F]] =
     create {
       MongoClientSettings
         .builder()
+        .uuidRepresentation(UuidRepresentation.STANDARD)
         .applyToClusterSettings { builder =>
           val _ = builder.hosts(asJava(serverAddresses.toList))
         }

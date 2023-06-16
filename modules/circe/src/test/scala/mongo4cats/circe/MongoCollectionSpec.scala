@@ -155,6 +155,25 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       }
     }
 
+    "work with uuids" in {
+      final case class UuidPerson(_id: UUID, anotherId: UUID, name: String)
+
+      withEmbeddedMongoClient { client =>
+        val id     = UUID.randomUUID()
+        val person = UuidPerson(id, id, "John Bloggs")
+        val result = for {
+          db   <- client.getDatabase("test")
+          coll <- db.getCollectionWithCodec[UuidPerson]("people")
+          _    <- coll.insertOne(person)
+          res  <- coll.find.filter(Filter.idEq(id)).first
+        } yield res
+
+        result.map { res =>
+          res mustBe Some(person)
+        }
+      }
+    }
+
     "encode and decode case classes that extend sealed traits" in {
       val ts = Instant.parse("2020-01-01T00:00:00Z")
       val p1 = Payment(ObjectId(), 10, PaymentMethod.Paypal("foo@bar.com"), ts.plus(1, ChronoUnit.DAYS))

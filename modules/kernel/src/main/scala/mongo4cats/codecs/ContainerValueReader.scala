@@ -134,7 +134,7 @@ private[mongo4cats] object ContainerValueReader {
         uuidRepresentation == UuidRepresentation.PYTHON_LEGACY)
 
   private def isStandardUuid(reader: BsonReader, uuidRepresentation: UuidRepresentation): Boolean =
-    (reader.peekBinarySubType == 4 || reader.peekBinarySubType == 0) &&
+    reader.peekBinarySubType == 4 &&
       reader.peekBinarySize() == 16 &&
       uuidRepresentation == UuidRepresentation.STANDARD
 }

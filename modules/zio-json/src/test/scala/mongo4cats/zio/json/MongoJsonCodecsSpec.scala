@@ -61,7 +61,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   "UUID codec" should {
     "encode and decode UUID to json and back" in {
       val uuid = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
-      val json = s"""{"${Tag.binary}":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"00"}}"""
+      val json = s"""{"${Tag.binary}":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"04"}}"""
 
       uuidEncoder.encodeJson(uuid).toString mustBe json
       uuidDecoder.decodeJson(json) mustBe Right(uuid)
@@ -119,7 +119,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
           |  "uuid" : {
           |    "${Tag.binary}" : {
           |      "base64" : "z7ynKE45RhOWvPkgtcN+Fg==",
-          |      "subType" : "00"
+          |      "subType" : "04"
           |    }
           |  }
           |}""".stripMargin

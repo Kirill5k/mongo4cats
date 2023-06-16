@@ -63,7 +63,7 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       "convert uuid to json accurately" in {
         val document = Document("uuid" := UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
 
-        document.toJson mustBe """{"uuid": {"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "00"}}}"""
+        document.toJson mustBe """{"uuid": {"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "04"}}}"""
       }
     }
 
@@ -105,7 +105,7 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       }
 
       "handle uuid" in {
-        val doc = Document.parse("""{"uuid": {"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "00"}}}""")
+        val doc = Document.parse("""{"uuid": {"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "04"}}}""")
 
         doc.getAs[UUID]("uuid") mustBe Some(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
       }
