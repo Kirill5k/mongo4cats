@@ -57,7 +57,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
     def isUuid: Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
       o.asObject.exists(_.contains(Tag.binary)) && o.asObject.get.get(Tag.binary).get.asObject.exists { b =>
-        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches("0[0-4]"))
+        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches("0[1-4]"))
       }
     }
 
