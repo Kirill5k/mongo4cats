@@ -17,7 +17,7 @@
 package mongo4cats.zio.json
 
 import mongo4cats.Uuid
-import mongo4cats.bson.json._
+import mongo4cats.bson.json.{Tag, _}
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 import zio.json.ast.Json
@@ -35,7 +35,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
       case j if j.isString      => BsonValue.string(j.asString.get)
       case j if j.isNumber      => j.asNumber.get.toBsonValue
-      case j if j.isId          => BsonValue.objectId(j.asObjectId)
+      case j if j.isId          => BsonValue.objectId(jsonToObjectId(json).get)
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
@@ -75,14 +75,6 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
         date <- obj.get(Tag.date)
         str  <- date.asString
       } yield str).get
-
-    def asObjectId: ObjectId =
-      (for {
-        obj   <- json.asObject
-        id    <- obj.get(Tag.id)
-        hex   <- id.asString
-        objId <- ObjectId.from(hex).toOption
-      } yield objId).get
   }
 
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {
@@ -102,8 +94,8 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
     bson match {
       case BsonValue.BNull            => Right(Json.Null)
-      case BsonValue.BObjectId(value) => Right(Json.Obj(Tag.id -> Json.Str(value.toHexString)))
-      case BsonValue.BDateTime(value) => Right(Json.Obj(Tag.date -> Json.Str(value.toString)))
+      case BsonValue.BObjectId(value) => Right(objectIdToJson(value))
+      case BsonValue.BDateTime(value) => Right(instantToJson(value))
       case BsonValue.BInt32(value)    => Right(Json.Num(value))
       case BsonValue.BInt64(value)    => Right(Json.Num(value))
       case BsonValue.BBoolean(value)  => Right(Json.Bool(value))
@@ -127,8 +119,8 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
   def fromBsonOpt(bson: BsonValue): Option[Json] =
     bson match {
       case BsonValue.BNull            => Some(Json.Null)
-      case BsonValue.BObjectId(value) => Some(Json.Obj(Tag.id -> Json.Str(value.toHexString)))
-      case BsonValue.BDateTime(value) => Some(Json.Obj(Tag.date -> Json.Str(value.toString)))
+      case BsonValue.BObjectId(value) => Some(objectIdToJson(value))
+      case BsonValue.BDateTime(value) => Some(instantToJson(value))
       case BsonValue.BInt32(value)    => Some(Json.Num(value))
       case BsonValue.BInt64(value)    => Some(Json.Num(value))
       case BsonValue.BBoolean(value)  => Some(Json.Bool(value))
@@ -156,4 +148,21 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(json.asObject.get.get(Tag.binary).get.asObject.get.get("base64").get.asString.get)
+
+  def objectIdToJson(id: ObjectId): Json =
+    Json.Obj(Tag.id -> Json.Str(id.toHexString))
+
+  def jsonToObjectId(json: Json): Option[ObjectId] =
+    for {
+      obj   <- json.asObject
+      id    <- obj.get(Tag.id)
+      hex   <- id.asString
+      objId <- ObjectId.from(hex).toOption
+    } yield objId
+
+  def instantToJson(instant: Instant): Json =
+    Json.Obj(Tag.date -> Json.Str(instant.toString))
+
+  def localDateToJson(ld: LocalDate): Json =
+    Json.Obj(Tag.date -> Json.Str(ld.toString))
 }

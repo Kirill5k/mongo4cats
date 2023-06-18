@@ -70,8 +70,8 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   def fromBson(bson: BsonValue): Either[MongoJsonParsingException, Json] =
     bson match {
       case BsonValue.BNull            => Right(Json.Null)
-      case BsonValue.BObjectId(value) => Right(Json.obj(Tag.id -> Json.fromString(value.toHexString)))
-      case BsonValue.BDateTime(value) => Right(Json.obj(Tag.date -> Json.fromString(value.toString)))
+      case BsonValue.BObjectId(value) => Right(objectIdToJson(value))
+      case BsonValue.BDateTime(value) => Right(instantToJson(value))
       case BsonValue.BInt32(value)    => Right(Json.fromInt(value))
       case BsonValue.BInt64(value)    => Right(Json.fromLong(value))
       case BsonValue.BBoolean(value)  => Right(Json.fromBoolean(value))
@@ -91,8 +91,8 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   def fromBsonOpt(bson: BsonValue): Option[Json] =
     bson match {
       case BsonValue.BNull            => Some(Json.Null)
-      case BsonValue.BObjectId(value) => Some(Json.obj(Tag.id -> Json.fromString(value.toHexString)))
-      case BsonValue.BDateTime(value) => Some(Json.obj(Tag.date -> Json.fromString(value.toString)))
+      case BsonValue.BObjectId(value) => Some(objectIdToJson(value))
+      case BsonValue.BDateTime(value) => Some(instantToJson(value))
       case BsonValue.BInt32(value)    => Some(Json.fromInt(value))
       case BsonValue.BInt64(value)    => Some(Json.fromLong(value))
       case BsonValue.BBoolean(value)  => Some(Json.fromBoolean(value))
@@ -110,4 +110,13 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(json.asObject.get(Tag.binary).flatMap(_.asObject).get("base64").flatMap(_.asString).get)
+
+  def objectIdToJson(id: ObjectId): Json =
+    Json.obj(Tag.id -> Json.fromString(id.toHexString))
+
+  def instantToJson(instant: Instant): Json =
+    Json.obj(Tag.date -> Json.fromString(instant.toString))
+
+  def localDateToJson(ld: LocalDate): Json =
+    Json.obj(Tag.date -> Json.fromString(ld.toString))
 }

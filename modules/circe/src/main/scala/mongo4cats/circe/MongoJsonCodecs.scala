@@ -45,7 +45,7 @@ trait MongoJsonCodecs {
     Decoder.decodeJson.emap(j => CirceJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: Encoder[ObjectId] =
-    Encoder.encodeJsonObject.contramap[ObjectId](id => JsonObject(Tag.id -> Json.fromString(id.toHexString)))
+    Encoder.encodeJson.contramap[ObjectId](CirceJsonMapper.objectIdToJson)
 
   implicit val objectIdDecoder: Decoder[ObjectId] =
     Decoder.decodeJsonObject.emap { idObj =>
@@ -56,7 +56,7 @@ trait MongoJsonCodecs {
     }
 
   implicit val instantEncoder: Encoder[Instant] =
-    Encoder.encodeJsonObject.contramap[Instant](i => JsonObject(Tag.date -> Json.fromString(i.toString)))
+    Encoder.encodeJson.contramap[Instant](CirceJsonMapper.instantToJson)
 
   implicit val instantDecoder: Decoder[Instant] =
     Decoder.decodeJsonObject.emap { instantObj =>
@@ -67,7 +67,7 @@ trait MongoJsonCodecs {
     }
 
   implicit val localDateEncoder: Encoder[LocalDate] =
-    Encoder.encodeJsonObject.contramap[LocalDate](i => JsonObject(Tag.date -> Json.fromString(i.toString)))
+    Encoder.encodeJson.contramap[LocalDate](CirceJsonMapper.localDateToJson)
 
   implicit val localDateDecoder: Decoder[LocalDate] =
     Decoder.decodeJsonObject.emap { dateObj =>

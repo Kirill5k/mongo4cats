@@ -46,19 +46,13 @@ trait MongoJsonCodecs {
     Json.decoder.mapOrFail(j => ZioJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
 
   implicit val objectIdEncoder: JsonEncoder[ObjectId] =
-    Json.encoder.contramap[ObjectId](i => Json.Obj(Tag.id -> Json.Str(i.toHexString)))
+    Json.encoder.contramap[ObjectId](ZioJsonMapper.objectIdToJson)
 
   implicit val objectIdDecoder: JsonDecoder[ObjectId] =
-    Json.decoder.mapOrFail[ObjectId] { id =>
-      (for {
-        obj  <- id.asObject
-        json <- obj.get(Tag.id)
-        str  <- json.asString
-      } yield ObjectId(str)).toRight(s"$id is not a valid object id")
-    }
+    Json.decoder.mapOrFail[ObjectId](id => ZioJsonMapper.jsonToObjectId(id).toRight(s"$id is not a valid object id"))
 
   implicit val instantEncoder: JsonEncoder[Instant] =
-    Json.encoder.contramap[Instant](i => Json.Obj(Tag.date -> Json.Str(i.toString)))
+    Json.encoder.contramap[Instant](ZioJsonMapper.instantToJson)
 
   implicit val instantDecoder: JsonDecoder[Instant] =
     Json.decoder.mapOrFail[Instant] { dateObj =>
@@ -71,7 +65,7 @@ trait MongoJsonCodecs {
     }
 
   implicit val localDateEncoder: JsonEncoder[LocalDate] =
-    Json.encoder.contramap[LocalDate](i => Json.Obj(Tag.date -> Json.Str(i.toString)))
+    Json.encoder.contramap[LocalDate](ZioJsonMapper.localDateToJson)
 
   implicit val localDateDecoder: JsonDecoder[LocalDate] =
     Json.decoder.mapOrFail[LocalDate] { dateObj =>
