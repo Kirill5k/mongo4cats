@@ -186,13 +186,13 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       implicit val uuidPerEnc: JsonEncoder[UuidPerson] = DeriveJsonEncoder.gen[UuidPerson]
 
       withEmbeddedMongoClient { client =>
-        val id = UUID.randomUUID()
+        val id     = UUID.randomUUID()
         val person = UuidPerson(id, id, "John Bloggs")
         val result = for {
-          db <- client.getDatabase("test")
+          db   <- client.getDatabase("test")
           coll <- db.getCollectionWithCodec[UuidPerson]("people")
-          _ <- coll.insertOne(person)
-          res <- coll.find.filter(Filter.idEq(id)).first
+          _    <- coll.insertOne(person)
+          res  <- coll.find.filter(Filter.idEq(id)).first
         } yield res
 
         result.map { res =>
