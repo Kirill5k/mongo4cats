@@ -35,10 +35,10 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
       case j if j.isString      => BsonValue.string(j.asString.get)
       case j if j.isNumber      => j.asNumber.get.toBsonValue
-      case j if j.isId          => BsonValue.objectId(j.asObjectId)
+      case j if j.isId          => BsonValue.objectId(ObjectId(jsonToObjectIdString(j).get))
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
-      case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
-      case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
+      case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
+      case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(json))
       case j                    => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
     }
@@ -56,8 +56,6 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     }
 
     def asEpochMillis: Long     = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
-    def asIsoDateString: String = json.asObject.flatMap(_(Tag.date)).flatMap(_.asString).get
-    def asObjectId: ObjectId    = json.asObject.get(Tag.id).flatMap(_.asString).map(ObjectId(_)).get
   }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
@@ -114,9 +112,15 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   def objectIdToJson(id: ObjectId): Json =
     Json.obj(Tag.id -> Json.fromString(id.toHexString))
 
+  def jsonToObjectIdString(json: Json): Option[String] =
+    json.asObject.get(Tag.id).flatMap(_.asString)
+
   def instantToJson(instant: Instant): Json =
     Json.obj(Tag.date -> Json.fromString(instant.toString))
 
   def localDateToJson(ld: LocalDate): Json =
     Json.obj(Tag.date -> Json.fromString(ld.toString))
+
+  def jsonToDateString(json: Json): Option[String] =
+    json.asObject.flatMap(_(Tag.date)).flatMap(_.asString)
 }

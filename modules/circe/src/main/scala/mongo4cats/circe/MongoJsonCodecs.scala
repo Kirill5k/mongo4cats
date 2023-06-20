@@ -48,20 +48,15 @@ trait MongoJsonCodecs {
     Encoder.encodeJson.contramap[ObjectId](CirceJsonMapper.objectIdToJson)
 
   implicit val objectIdDecoder: Decoder[ObjectId] =
-    Decoder.decodeJsonObject.emap { idObj =>
-      idObj(Tag.id)
-        .flatMap(_.asString)
-        .toRight(s"$idObj is not a valid id")
-        .flatMap(ObjectId.from)
-    }
+    Decoder.decodeJson.emap(id => CirceJsonMapper.jsonToObjectIdString(id).toRight(s"$id is not a valid id").flatMap(ObjectId.from))
 
   implicit val instantEncoder: Encoder[Instant] =
     Encoder.encodeJson.contramap[Instant](CirceJsonMapper.instantToJson)
 
   implicit val instantDecoder: Decoder[Instant] =
-    Decoder.decodeJsonObject.emap { instantObj =>
-      instantObj(Tag.date)
-        .flatMap(_.asString)
+    Decoder.decodeJson.emap { instantObj =>
+      CirceJsonMapper
+        .jsonToDateString(instantObj)
         .flatMap(s => Try(Instant.parse(s)).toOption)
         .toRight(s"$instantObj is not a valid instant object")
     }
@@ -70,9 +65,9 @@ trait MongoJsonCodecs {
     Encoder.encodeJson.contramap[LocalDate](CirceJsonMapper.localDateToJson)
 
   implicit val localDateDecoder: Decoder[LocalDate] =
-    Decoder.decodeJsonObject.emap { dateObj =>
-      dateObj(Tag.date)
-        .flatMap(_.asString)
+    Decoder.decodeJson.emap { dateObj =>
+      CirceJsonMapper
+        .jsonToDateString(dateObj)
         .map(_.slice(0, 10))
         .flatMap(s => Try(LocalDate.parse(s)).toOption)
         .toRight(s"$dateObj is not a valid date object")

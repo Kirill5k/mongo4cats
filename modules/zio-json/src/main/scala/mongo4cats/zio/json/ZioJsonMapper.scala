@@ -35,10 +35,10 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
       case j if j.isString      => BsonValue.string(j.asString.get)
       case j if j.isNumber      => j.asNumber.get.toBsonValue
-      case j if j.isId          => BsonValue.objectId(jsonToObjectId(json).get)
+      case j if j.isId          => BsonValue.objectId(ObjectId(jsonToObjectIdString(json).get))
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
-      case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(j.asIsoDateString).atStartOfDay().toInstant(ZoneOffset.UTC))
-      case j if j.isDate        => BsonValue.instant(Instant.parse(j.asIsoDateString))
+      case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
+      case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
@@ -68,13 +68,6 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
         num  <- date.asNumber
         ts = num.value.toLong
       } yield ts).get
-
-    def asIsoDateString: String =
-      (for {
-        obj  <- json.asObject
-        date <- obj.get(Tag.date)
-        str  <- date.asString
-      } yield str).get
   }
 
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {
@@ -152,17 +145,23 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
   def objectIdToJson(id: ObjectId): Json =
     Json.Obj(Tag.id -> Json.Str(id.toHexString))
 
-  def jsonToObjectId(json: Json): Option[ObjectId] =
+  def jsonToObjectIdString(json: Json): Option[String] =
     for {
-      obj   <- json.asObject
-      id    <- obj.get(Tag.id)
-      hex   <- id.asString
-      objId <- ObjectId.from(hex).toOption
-    } yield objId
+      obj <- json.asObject
+      id  <- obj.get(Tag.id)
+      hex <- id.asString
+    } yield hex
 
   def instantToJson(instant: Instant): Json =
     Json.Obj(Tag.date -> Json.Str(instant.toString))
 
   def localDateToJson(ld: LocalDate): Json =
     Json.Obj(Tag.date -> Json.Str(ld.toString))
+
+  def jsonToDateString(json: Json): Option[String] =
+    for {
+      obj  <- json.asObject
+      date <- obj.get(Tag.date)
+      str  <- date.asString
+    } yield str
 }
