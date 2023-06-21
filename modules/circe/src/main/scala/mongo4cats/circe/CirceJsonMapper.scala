@@ -19,7 +19,7 @@ package mongo4cats.circe
 import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
 import mongo4cats.Uuid
-import mongo4cats.bson.json._
+import mongo4cats.bson.json.{JsonMapper, Tag}
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 
@@ -49,13 +49,17 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     def isEpochMillis: Boolean = isDate && json.asObject.exists(_(Tag.date).exists(_.isNumber))
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
-    def isUuid: Boolean = json.isObject && json.asObject.exists { o =>
+
+    private def isBinary(typeMatch: String): Boolean = json.isObject && json.asObject.exists { o =>
       o(Tag.binary).exists(_.isObject) && o(Tag.binary).get.asObject.exists { b =>
-        b("base64").exists(_.isString) && b("subType").exists(_.isString) && b("subType").get.asString.get.matches("0[1-4]")
+        b("base64").exists(_.isString) && b("subType").exists(_.isString) && b("subType").get.asString.get.matches(typeMatch)
       }
     }
 
-    def asEpochMillis: Long     = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
+    def isBinaryArray: Boolean = isBinary("00")
+    def isUuid: Boolean        = isBinary("0[1-4]")
+
+    def asEpochMillis: Long = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
   }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
@@ -106,8 +110,11 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   def uuidToJson(uuid: UUID): Json =
     Json.obj(Tag.binary -> Json.obj("base64" -> Json.fromString(Uuid.toBase64(uuid)), "subType" -> Json.fromString("04")))
 
+  def jsonToBinaryBase64(json: Json): Option[String] =
+    json.asObject.get(Tag.binary).flatMap(_.asObject).get("base64").flatMap(_.asString)
+
   def jsonToUuid(json: Json): UUID =
-    Uuid.fromBase64(json.asObject.get(Tag.binary).flatMap(_.asObject).get("base64").flatMap(_.asString).get)
+    Uuid.fromBase64(jsonToBinaryBase64(json).get)
 
   def objectIdToJson(id: ObjectId): Json =
     Json.obj(Tag.id -> Json.fromString(id.toHexString))

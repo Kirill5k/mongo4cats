@@ -17,7 +17,7 @@
 package mongo4cats.zio.json
 
 import mongo4cats.Uuid
-import mongo4cats.bson.json.{Tag, _}
+import mongo4cats.bson.json.{JsonMapper, Tag}
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 import zio.json.ast.Json
@@ -55,11 +55,14 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o.get(Tag.date).exists(_.isString) && o.get(Tag.date).exists(_.asString.get.length == 10))
 
-    def isUuid: Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
+    private def isBinary(typeMatch: String): Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
       o.asObject.exists(_.contains(Tag.binary)) && o.asObject.get.get(Tag.binary).get.asObject.exists { b =>
-        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches("0[1-4]"))
+        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches(typeMatch))
       }
     }
+
+    def isBinaryArray: Boolean = isBinary("00")
+    def isUuid: Boolean        = isBinary("0[1-4]")
 
     def asEpochMillis: Long =
       (for {
@@ -139,8 +142,11 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
   def uuidToJson(uuid: UUID): Json =
     Json.Obj(Tag.binary -> Json.Obj("base64" -> Json.Str(Uuid.toBase64(uuid)), "subType" -> Json.Str("04")))
 
+  def jsonToBinaryBase64(json: Json): Option[String] =
+    json.asObject.get.get(Tag.binary).flatMap(_.asObject).flatMap(_.get("base64")).flatMap(_.asString)
+
   def jsonToUuid(json: Json): UUID =
-    Uuid.fromBase64(json.asObject.get.get(Tag.binary).get.asObject.get.get("base64").get.asString.get)
+    Uuid.fromBase64(jsonToBinaryBase64(json).get)
 
   def objectIdToJson(id: ObjectId): Json =
     Json.Obj(Tag.id -> Json.Str(id.toHexString))
@@ -164,4 +170,5 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       date <- obj.get(Tag.date)
       str  <- date.asString
     } yield str
+
 }
