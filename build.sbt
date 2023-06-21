@@ -19,7 +19,7 @@ ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
-ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("19"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("17"))
 ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
 
 releaseProcess := Seq[ReleaseStep](
