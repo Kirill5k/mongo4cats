@@ -39,7 +39,7 @@ trait MongoJsonCodecs {
     value => CirceJsonMapper.toBson(e(value))
 
   implicit val documentEncoder: Encoder[Document] =
-    Encoder.encodeJson.contramap[Document](d => CirceJsonMapper.fromBsonOpt(BsonValue.document(d)).getOrElse(emptyJsonObject))
+    Encoder.encodeJson.contramap[Document](d => CirceJsonMapper.fromBson(BsonValue.document(d)).getOrElse(emptyJsonObject))
 
   implicit val documentDecoder: Decoder[Document] =
     Decoder.decodeJson.emap(j => CirceJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))

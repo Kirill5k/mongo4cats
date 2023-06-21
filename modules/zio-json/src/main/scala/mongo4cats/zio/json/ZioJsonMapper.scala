@@ -114,24 +114,6 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     }
   }
 
-  def fromBsonOpt(bson: BsonValue): Option[Json] =
-    bson match {
-      case BsonValue.BNull            => Some(Json.Null)
-      case BsonValue.BObjectId(value) => Some(objectIdToJson(value))
-      case BsonValue.BDateTime(value) => Some(instantToJson(value))
-      case BsonValue.BInt32(value)    => Some(Json.Num(value))
-      case BsonValue.BInt64(value)    => Some(Json.Num(value))
-      case BsonValue.BBoolean(value)  => Some(Json.Bool(value))
-      case BsonValue.BDecimal(value)  => Some(Json.Num(value))
-      case BsonValue.BString(value)   => Some(Json.Str(value))
-      case BsonValue.BDouble(value)   => Some(Json.Num(value))
-      case BsonValue.BArray(value)    => Some(Json.Arr(value.toList.flatMap(fromBsonOpt): _*))
-      case BsonValue.BUuid(value)     => Some(uuidToJson(value))
-      case BsonValue.BBinary(value)   => Some(binaryArrayToJson(value))
-      case BsonValue.BDocument(value) => Some(Json.Obj(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }: _*))
-      case _                          => None
-    }
-
   implicit final private class EitherSyntax[A, B](
       private val eitherTuple: (Either[MongoJsonParsingException, A], Either[MongoJsonParsingException, B])
   ) extends AnyVal {

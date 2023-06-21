@@ -40,7 +40,7 @@ trait MongoJsonCodecs {
     bson => ZioJsonMapper.fromBson(bson).flatMap(d.fromJsonAST).toOption
 
   implicit val documentEncoder: JsonEncoder[Document] =
-    Json.encoder.contramap[Document](d => ZioJsonMapper.fromBsonOpt(BsonValue.document(d)).getOrElse(emptyJsonObject))
+    Json.encoder.contramap[Document](d => ZioJsonMapper.fromBson(BsonValue.document(d)).getOrElse(emptyJsonObject))
 
   implicit val documentDecoder: JsonDecoder[Document] =
     Json.decoder.mapOrFail(j => ZioJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))

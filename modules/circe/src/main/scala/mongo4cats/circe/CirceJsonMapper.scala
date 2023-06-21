@@ -92,24 +92,6 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case value => Left(MongoJsonParsingException(s"Cannot map $value bson value to json"))
     }
 
-  def fromBsonOpt(bson: BsonValue): Option[Json] =
-    bson match {
-      case BsonValue.BNull            => Some(Json.Null)
-      case BsonValue.BObjectId(value) => Some(objectIdToJson(value))
-      case BsonValue.BDateTime(value) => Some(instantToJson(value))
-      case BsonValue.BInt32(value)    => Some(Json.fromInt(value))
-      case BsonValue.BInt64(value)    => Some(Json.fromLong(value))
-      case BsonValue.BBoolean(value)  => Some(Json.fromBoolean(value))
-      case BsonValue.BDecimal(value)  => Some(Json.fromBigDecimal(value))
-      case BsonValue.BString(value)   => Some(Json.fromString(value))
-      case BsonValue.BDouble(value)   => Json.fromDouble(value)
-      case BsonValue.BArray(value)    => Some(Json.fromValues(value.toList.flatMap(fromBsonOpt)))
-      case BsonValue.BUuid(value)     => Some(uuidToJson(value))
-      case BsonValue.BBinary(value)   => Some(binaryArrayToJson(value))
-      case BsonValue.BDocument(value) => Some(Json.fromFields(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }))
-      case _                          => None
-    }
-
   def binaryBase64ToJson(base64: String, subType: String): Json =
     Json.obj(Tag.binary -> Json.obj("base64" -> Json.fromString(base64), "subType" -> Json.fromString(subType)))
 
