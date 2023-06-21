@@ -24,7 +24,7 @@ import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 
 import java.time.{Instant, LocalDate, ZoneOffset}
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 private[circe] object CirceJsonMapper extends JsonMapper[Json] {
 
@@ -39,6 +39,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
+      case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(json))
       case j                    => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
     }
@@ -50,14 +51,14 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
 
-    private def isBinary(typeMatch: String): Boolean = json.isObject && json.asObject.exists { o =>
+    private def isBinary(subTypeMatch: String): Boolean = json.isObject && json.asObject.exists { o =>
       o(Tag.binary).exists(_.isObject) && o(Tag.binary).get.asObject.exists { b =>
-        b("base64").exists(_.isString) && b("subType").exists(_.isString) && b("subType").get.asString.get.matches(typeMatch)
+        b("base64").exists(_.isString) && b("subType").exists(_.isString) && b("subType").get.asString.get.matches(subTypeMatch)
       }
     }
 
     def isBinaryArray: Boolean = isBinary("00")
-    def isUuid: Boolean        = isBinary("0[1-4]")
+    def isUuid: Boolean        = isBinary("0(3|4)")
 
     def asEpochMillis: Long = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
   }
@@ -81,6 +82,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case BsonValue.BString(value)   => Right(Json.fromString(value))
       case BsonValue.BDouble(value)   => Json.fromDouble(value).toRight(MongoJsonParsingException(s"$value is not a valid double"))
       case BsonValue.BArray(value)    => value.toList.traverse(fromBson).map(Json.fromValues)
+      case BsonValue.BBinary(value)   => Right(binaryArrayToJson(value))
       case BsonValue.BUuid(value)     => Right(uuidToJson(value))
       case BsonValue.BDocument(value) =>
         value.toList
@@ -103,12 +105,19 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       case BsonValue.BDouble(value)   => Json.fromDouble(value)
       case BsonValue.BArray(value)    => Some(Json.fromValues(value.toList.flatMap(fromBsonOpt)))
       case BsonValue.BUuid(value)     => Some(uuidToJson(value))
+      case BsonValue.BBinary(value)   => Some(binaryArrayToJson(value))
       case BsonValue.BDocument(value) => Some(Json.fromFields(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }))
       case _                          => None
     }
 
+  def binaryBase64ToJson(base64: String, subType: String): Json =
+    Json.obj(Tag.binary -> Json.obj("base64" -> Json.fromString(base64), "subType" -> Json.fromString(subType)))
+
+  def binaryArrayToJson(binary: Array[Byte]): Json =
+    binaryBase64ToJson(Base64.getEncoder.encodeToString(binary), "00")
+
   def uuidToJson(uuid: UUID): Json =
-    Json.obj(Tag.binary -> Json.obj("base64" -> Json.fromString(Uuid.toBase64(uuid)), "subType" -> Json.fromString("04")))
+    binaryBase64ToJson(Uuid.toBase64(uuid), "04")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
     json.asObject.get(Tag.binary).flatMap(_.asObject).get("base64").flatMap(_.asString)

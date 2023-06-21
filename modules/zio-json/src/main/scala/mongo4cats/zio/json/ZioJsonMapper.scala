@@ -23,7 +23,7 @@ import mongo4cats.errors.MongoJsonParsingException
 import zio.json.ast.Json
 
 import java.time.{Instant, LocalDate, ZoneOffset}
-import java.util.UUID
+import java.util.{Base64, UUID}
 import scala.math.BigDecimal._
 
 private[json] object ZioJsonMapper extends JsonMapper[Json] {
@@ -39,6 +39,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
+      case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
@@ -55,14 +56,14 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     def isLocalDate: Boolean =
       isDate && json.asObject.exists(o => o.get(Tag.date).exists(_.isString) && o.get(Tag.date).exists(_.asString.get.length == 10))
 
-    private def isBinary(typeMatch: String): Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
+    private def isBinary(subTypeMatch: String): Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
       o.asObject.exists(_.contains(Tag.binary)) && o.asObject.get.get(Tag.binary).get.asObject.exists { b =>
-        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches(typeMatch))
+        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches(subTypeMatch))
       }
     }
 
     def isBinaryArray: Boolean = isBinary("00")
-    def isUuid: Boolean        = isBinary("0[1-4]")
+    def isUuid: Boolean        = isBinary("0(3|4)")
 
     def asEpochMillis: Long =
       (for {
@@ -99,6 +100,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BString(value)   => Right(Json.Str(value))
       case BsonValue.BDouble(value)   => Right(Json.Num(value))
       case BsonValue.BUuid(value)     => Right(uuidToJson(value))
+      case BsonValue.BBinary(value)   => Right(binaryArrayToJson(value))
       case BsonValue.BArray(value) =>
         value.toList
           .foldRight(rightEmptyList[Json]) { case (a, acc) => (fromBson(a), acc).mapN(_ :: _) }
@@ -125,6 +127,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BDouble(value)   => Some(Json.Num(value))
       case BsonValue.BArray(value)    => Some(Json.Arr(value.toList.flatMap(fromBsonOpt): _*))
       case BsonValue.BUuid(value)     => Some(uuidToJson(value))
+      case BsonValue.BBinary(value)   => Some(binaryArrayToJson(value))
       case BsonValue.BDocument(value) => Some(Json.Obj(value.toList.flatMap { case (k, v) => fromBsonOpt(v).map(k -> _) }: _*))
       case _                          => None
     }
@@ -139,11 +142,17 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       } yield f(v1, v2)
   }
 
+  def binaryBase64ToJson(base64: String, subType: String): Json =
+    Json.Obj(Tag.binary -> Json.Obj("base64" -> Json.Str(base64), "subType" -> Json.Str(subType)))
+
   def uuidToJson(uuid: UUID): Json =
-    Json.Obj(Tag.binary -> Json.Obj("base64" -> Json.Str(Uuid.toBase64(uuid)), "subType" -> Json.Str("04")))
+    binaryBase64ToJson(Uuid.toBase64(uuid), "04")
+
+  def binaryArrayToJson(binary: Array[Byte]): Json =
+    binaryBase64ToJson(Base64.getEncoder.encodeToString(binary), "00")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
-    json.asObject.get.get(Tag.binary).flatMap(_.asObject).flatMap(_.get("base64")).flatMap(_.asString)
+    json.asObject.flatMap(_.get(Tag.binary)).flatMap(_.asObject).flatMap(_.get("base64")).flatMap(_.asString)
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(jsonToBinaryBase64(json).get)
