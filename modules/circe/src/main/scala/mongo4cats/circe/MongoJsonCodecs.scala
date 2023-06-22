@@ -25,7 +25,7 @@ import mongo4cats.errors.MongoJsonParsingException
 import org.bson.codecs.configuration.CodecProvider
 
 import java.time.{Instant, LocalDate}
-import java.util.UUID
+import java.util.{Base64, UUID}
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -78,6 +78,17 @@ trait MongoJsonCodecs {
 
   implicit val uuidDecoder: Decoder[UUID] =
     Decoder.decodeJson.emapTry(uuidObj => Try(CirceJsonMapper.jsonToUuid(uuidObj)))
+
+  implicit val binaryEncoder: Encoder[Array[Byte]] =
+    Encoder.encodeJson.contramap[Array[Byte]](CirceJsonMapper.binaryArrayToJson)
+
+  implicit val binaryDecoder: Decoder[Array[Byte]] =
+    Decoder.decodeJson.emap[Array[Byte]] { json =>
+      CirceJsonMapper
+        .jsonToBinaryBase64(json)
+        .toRight(s"$json is not a valid binary object")
+        .flatMap(base64 => Try(Base64.getDecoder.decode(base64)).toEither.left.map(_.getMessage))
+    }
 
   implicit def deriveCirceCodecProvider[T: ClassTag](implicit enc: Encoder[T], dec: Decoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {

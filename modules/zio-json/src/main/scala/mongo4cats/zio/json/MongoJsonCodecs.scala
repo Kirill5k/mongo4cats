@@ -26,7 +26,7 @@ import zio.json.ast.Json
 import zio.json.{JsonDecoder, JsonEncoder}
 
 import java.time.{Instant, LocalDate}
-import java.util.UUID
+import java.util.{Base64, UUID}
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -81,6 +81,17 @@ trait MongoJsonCodecs {
   implicit val uuidDecoder: JsonDecoder[UUID] =
     Json.decoder.mapOrFail[UUID] { uuidObj =>
       Try(ZioJsonMapper.jsonToUuid(uuidObj)).toEither.left.map(_.getMessage)
+    }
+
+  implicit val binaryEncoder: JsonEncoder[Array[Byte]] =
+    Json.encoder.contramap[Array[Byte]](ZioJsonMapper.binaryArrayToJson)
+
+  implicit val binaryDecoder: JsonDecoder[Array[Byte]] =
+    Json.decoder.mapOrFail[Array[Byte]] { json =>
+      ZioJsonMapper
+        .jsonToBinaryBase64(json)
+        .toRight(s"$json is not a valid binary object")
+        .flatMap(base64 => Try(Base64.getDecoder.decode(base64)).toEither.left.map(_.getMessage))
     }
 
   implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
