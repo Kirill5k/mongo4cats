@@ -25,16 +25,17 @@ trait BsonValueEncoder[A] {
 
 object BsonValueEncoder {
   implicit val bsonValueEncoder: BsonValueEncoder[BsonValue]   = identity(_)
-  implicit val objectIdEncoder: BsonValueEncoder[ObjectId]     = value => BsonValue.objectId(value)
-  implicit val intEncoder: BsonValueEncoder[Int]               = value => BsonValue.int(value)
-  implicit val longEncoder: BsonValueEncoder[Long]             = value => BsonValue.long(value)
-  implicit val stringEncoder: BsonValueEncoder[String]         = value => BsonValue.string(value)
-  implicit val dateTimeEncoder: BsonValueEncoder[Instant]      = value => BsonValue.instant(value)
-  implicit val doubleEncoder: BsonValueEncoder[Double]         = value => BsonValue.double(value)
-  implicit val booleanEncoder: BsonValueEncoder[Boolean]       = value => BsonValue.boolean(value)
-  implicit val documentEncoder: BsonValueEncoder[Document]     = value => BsonValue.document(value)
-  implicit val bigDecimalEncoder: BsonValueEncoder[BigDecimal] = value => BsonValue.bigDecimal(value)
-  implicit val uuidEncoder: BsonValueEncoder[UUID]             = value => BsonValue.uuid(value)
+  implicit val objectIdEncoder: BsonValueEncoder[ObjectId]     = BsonValue.objectId(_)
+  implicit val intEncoder: BsonValueEncoder[Int]               = BsonValue.int(_)
+  implicit val longEncoder: BsonValueEncoder[Long]             = BsonValue.long(_)
+  implicit val stringEncoder: BsonValueEncoder[String]         = BsonValue.string(_)
+  implicit val dateTimeEncoder: BsonValueEncoder[Instant]      = BsonValue.instant(_)
+  implicit val doubleEncoder: BsonValueEncoder[Double]         = BsonValue.double(_)
+  implicit val booleanEncoder: BsonValueEncoder[Boolean]       = BsonValue.boolean(_)
+  implicit val documentEncoder: BsonValueEncoder[Document]     = BsonValue.document(_)
+  implicit val bigDecimalEncoder: BsonValueEncoder[BigDecimal] = BsonValue.bigDecimal(_)
+  implicit val uuidEncoder: BsonValueEncoder[UUID]             = BsonValue.uuid(_)
+  implicit val binaryEncoder: BsonValueEncoder[Array[Byte]]    = BsonValue.binary(_)
 
   implicit def arrayVectorEncoder[A](implicit e: BsonValueEncoder[A]): BsonValueEncoder[Vector[A]] =
     value => BsonValue.array(value.map(e.encode))
