@@ -31,10 +31,12 @@ private[mongo4cats] object ContainerValueWriter {
   ): Unit = {
     writer.writeStartDocument()
 
-    idFieldName.flatMap(idName => value.getObjectId(idName).map(idName -> _)).foreach { case (idName, idValue) =>
-      writer.writeName(idName)
-      writer.writeObjectId(idValue)
-    }
+    idFieldName
+      .flatMap(idName => value.get(idName).map(idName -> _))
+      .foreach { case (idName, idValue) =>
+        writer.writeName(idName)
+        writeBsonValue(idValue, writer)
+      }
 
     value.toMap
       .filterNot { case (key, _) => idFieldName.contains(key) }

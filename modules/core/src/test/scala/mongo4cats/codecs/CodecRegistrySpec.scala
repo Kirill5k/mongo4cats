@@ -85,7 +85,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       }
     }
 
-    "be able to handle my document" in {
+    "be able to handle documents" in {
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollectionWithCodec[Document]("coll")
@@ -97,6 +97,21 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getString("foo") mustBe Some("bar")
           doc.getAs[List[String]]("tags") mustBe Some(List("my", "doc"))
           doc.getObjectId("_id") mustBe defined
+        }
+      }
+    }
+
+    "be able to handle documents with different ids" in {
+      withEmbeddedMongoDatabase { db =>
+        val result = for {
+          coll <- db.getCollectionWithCodec[Document]("coll")
+          _ <- coll.insertOne(Document("_id":= 1,"foo" := "bar"))
+          doc <- coll.find.first
+        } yield doc.get
+
+        result.map { doc =>
+          doc.getAs[Int]("_id") mustBe Some(1)
+          doc.getString("foo") mustBe Some("bar")
         }
       }
     }
