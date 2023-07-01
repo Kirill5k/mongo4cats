@@ -16,9 +16,34 @@
 
 package mongo4cats.bson
 
+import mongo4cats.AsJava
+import org.bson.internal.UuidHelper
+import org.bson.types.Decimal128
+
 import java.time.Instant
 import java.util.UUID
 import scala.util.matching.Regex
+import org.bson.{
+  BsonArray,
+  BsonBinary,
+  BsonBinarySubType,
+  BsonBoolean,
+  BsonDateTime,
+  BsonDecimal128,
+  BsonDouble,
+  BsonInt32,
+  BsonInt64,
+  BsonMaxKey,
+  BsonMinKey,
+  BsonNull,
+  BsonObjectId,
+  BsonRegularExpression,
+  BsonString,
+  BsonTimestamp,
+  BsonUndefined,
+  BsonValue => JBsonValue,
+  UuidRepresentation
+}
 
 sealed abstract class BsonValue {
   def isNull: Boolean
@@ -34,6 +59,8 @@ sealed abstract class BsonValue {
   def asList: Option[List[BsonValue]]
   def asInstant: Option[Instant]
   def asUuid: Option[UUID]
+
+  def asJava: JBsonValue
 }
 
 object BsonValue {
@@ -51,6 +78,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonNull()
   }
   case object BUndefined extends BsonValue {
     override def isNull: Boolean                  = false
@@ -66,6 +95,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonUndefined()
   }
   case object BMaxKey extends BsonValue {
     override def isNull: Boolean                  = false
@@ -81,6 +112,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonMaxKey()
   }
   case object BMinKey extends BsonValue {
     override def isNull: Boolean                  = false
@@ -96,6 +129,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonMinKey()
   }
   final case class BInt32(value: Int) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -111,6 +146,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonInt32(value)
   }
   final case class BInt64(value: Long) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -126,6 +163,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonInt64(value)
   }
   final case class BDouble(value: Double) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -141,6 +180,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonDouble(value)
   }
   final case class BTimestamp(value: Long) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -156,6 +197,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = Some(Instant.ofEpochSecond(value))
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonTimestamp(value)
   }
   final case class BDateTime(value: Instant) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -171,6 +214,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = Some(value)
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonDateTime(value.toEpochMilli)
   }
   final case class BBinary(value: Array[Byte]) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -186,6 +231,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonBinary(value)
   }
   final case class BBoolean(value: Boolean) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -201,6 +248,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonBoolean(value)
   }
   final case class BDecimal(value: BigDecimal) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -216,6 +265,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonDecimal128(new Decimal128(value.bigDecimal))
   }
   final case class BString(value: String) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -231,6 +282,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = Some(value)
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonString(value)
   }
   final case class BObjectId(value: ObjectId) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -246,6 +299,8 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonObjectId(value)
   }
   final case class BDocument(value: Document) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -261,8 +316,10 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = value.toBsonDocument
   }
-  final case class BArray(value: Iterable[BsonValue]) extends BsonValue {
+  final case class BArray(value: Iterable[BsonValue]) extends BsonValue with AsJava {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
@@ -276,8 +333,10 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonArray(asJava(value.map(_.asJava).toList))
   }
-  final case class BRegex(regex: Regex) extends BsonValue {
+  final case class BRegex(value: Regex) extends BsonValue {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
@@ -291,9 +350,11 @@ object BsonValue {
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
+
+    override def asJava: JBsonValue = new BsonRegularExpression(value.pattern.pattern())
   }
 
-  final case class BUuid(uuid: UUID) extends BsonValue {
+  final case class BUuid(value: UUID) extends BsonValue {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
@@ -306,7 +367,10 @@ object BsonValue {
     override def asList: Option[List[BsonValue]]  = None
     override def asInstant: Option[Instant]       = None
     override def asString: Option[String]         = None
-    override def asUuid: Option[UUID]             = Some(uuid)
+    override def asUuid: Option[UUID]             = Some(value)
+
+    override def asJava: JBsonValue =
+      new BsonBinary(BsonBinarySubType.UUID_STANDARD, UuidHelper.encodeUuidToBinary(value, UuidRepresentation.STANDARD))
   }
 
   val Null: BsonValue      = BNull

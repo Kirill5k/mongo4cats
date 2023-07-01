@@ -18,9 +18,9 @@ package mongo4cats.codecs
 
 import mongo4cats.Clazz
 import mongo4cats.bson.{Document, ObjectId}
-import org.bson.codecs.{Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator}
 import org.bson.codecs.configuration.CodecProvider
-import org.bson.{BsonObjectId, BsonReader, BsonValue => JBsonValue, BsonWriter}
+import org.bson.codecs._
+import org.bson.{BsonReader, BsonValue => JBsonValue, BsonWriter}
 
 final private class DocumentCodec(
     private val idGenerator: IdGenerator
@@ -43,9 +43,9 @@ final private class DocumentCodec(
     document.contains(idFieldName)
 
   override def getDocumentId(document: Document): JBsonValue =
-    document.getObjectId(idFieldName) match {
+    document.get(idFieldName) match {
       case None     => throw new IllegalStateException(s"The document does not contain an $idFieldName")
-      case Some(id) => new BsonObjectId(id)
+      case Some(id) => id.asJava
     }
 }
 
