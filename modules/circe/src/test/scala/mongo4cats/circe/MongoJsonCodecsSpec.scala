@@ -71,7 +71,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   "Binary array codec" should {
     "encode and decode binary array to json and back" in {
       val binaryArray = Array[Byte](192.toByte, 168.toByte, 1.toByte, 9.toByte)
-      val json = s"""{"${Tag.binary}":{"base64":"wKgBCQ==","subType":"00"}}""".stripMargin
+      val json        = s"""{"${Tag.binary}":{"base64":"wKgBCQ==","subType":"00"}}""".stripMargin
 
       binaryArray.asJson.noSpaces mustBe json
       decode[Array[Byte]](json).map(_.toList) mustBe Right(binaryArray.toList)

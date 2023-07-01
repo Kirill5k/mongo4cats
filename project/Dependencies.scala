@@ -3,18 +3,18 @@ import sbt._
 object Dependencies {
   private object Versions {
     val kindProjector      = "0.13.2"
-    val catsEffect         = "3.4.9"
-    val mongodb            = "4.9.1"
-    val fs2                = "3.6.1"
+    val catsEffect         = "3.5.1"
+    val mongodb            = "4.10.1"
+    val fs2                = "3.7.0"
     val circe              = "0.14.5"
-    val zio                = "2.0.13"
-    val zioInteropReactive = "2.0.1"
+    val zio                = "2.0.15"
+    val zioInteropReactive = "2.0.2"
     val zioJson            = "0.5.0"
 
-    val logback   = "1.4.7"
-    val scalaTest = "3.2.15"
+    val logback   = "1.4.8"
+    val scalaTest = "3.2.16"
 
-    val embeddedMongo   = "4.6.3"
+    val embeddedMongo   = "4.7.0"
     val immutableValue  = "2.9.3"
     val commonsCompress = "1.23.0"
   }

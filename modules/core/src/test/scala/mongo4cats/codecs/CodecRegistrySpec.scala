@@ -101,12 +101,12 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       }
     }
 
-    "be able to handle documents with different ids" in {
+    "be able to handle documents with different id types" in {
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollectionWithCodec[Document]("coll")
-          _ <- coll.insertOne(Document("_id":= 1,"foo" := "bar"))
-          doc <- coll.find.first
+          _    <- coll.insertOne(Document("_id" := 1, "foo" := "bar"))
+          doc  <- coll.find.first
         } yield doc.get
 
         result.map { doc =>
