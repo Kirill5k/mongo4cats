@@ -16,13 +16,8 @@
 
 package mongo4cats.bson
 
-import mongo4cats.AsJava
-import org.bson.internal.UuidHelper
+import mongo4cats.{AsJava, Uuid}
 import org.bson.types.Decimal128
-
-import java.time.Instant
-import java.util.UUID
-import scala.util.matching.Regex
 import org.bson.{
   BsonArray,
   BsonBinary,
@@ -41,9 +36,12 @@ import org.bson.{
   BsonString,
   BsonTimestamp,
   BsonUndefined,
-  BsonValue => JBsonValue,
-  UuidRepresentation
+  BsonValue => JBsonValue
 }
+
+import java.time.Instant
+import java.util.UUID
+import scala.util.matching.Regex
 
 sealed abstract class BsonValue {
   def isNull: Boolean
@@ -198,7 +196,7 @@ object BsonValue {
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
 
-    override def asJava: JBsonValue = new BsonTimestamp(value)
+    override def asJava: JBsonValue = new BsonTimestamp(value.toInt, 1)
   }
   final case class BDateTime(value: Instant) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -369,8 +367,7 @@ object BsonValue {
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = Some(value)
 
-    override def asJava: JBsonValue =
-      new BsonBinary(BsonBinarySubType.UUID_STANDARD, UuidHelper.encodeUuidToBinary(value, UuidRepresentation.STANDARD))
+    override def asJava: JBsonValue = new BsonBinary(BsonBinarySubType.UUID_STANDARD, Uuid.toBinary(value))
   }
 
   val Null: BsonValue      = BNull

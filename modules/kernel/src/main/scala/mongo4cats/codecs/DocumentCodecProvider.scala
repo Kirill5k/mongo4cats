@@ -19,7 +19,7 @@ package mongo4cats.codecs
 import mongo4cats.Clazz
 import mongo4cats.bson.{Document, ObjectId}
 import org.bson.codecs.configuration.CodecProvider
-import org.bson.codecs._
+import org.bson.codecs.{Codec, CollectibleCodec, DecoderContext, EncoderContext, IdGenerator, ObjectIdGenerator}
 import org.bson.{BsonReader, BsonValue => JBsonValue, BsonWriter}
 
 final private class DocumentCodec(

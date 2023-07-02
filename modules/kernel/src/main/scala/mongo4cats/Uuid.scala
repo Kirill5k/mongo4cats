@@ -16,6 +16,9 @@
 
 package mongo4cats
 
+import org.bson.UuidRepresentation
+import org.bson.internal.UuidHelper
+
 import java.nio.ByteBuffer
 import java.util.{Base64, UUID}
 
@@ -27,6 +30,9 @@ private[mongo4cats] object Uuid {
     bb.putLong(uuid.getLeastSignificantBits)
     Base64.getEncoder.encodeToString(bb.array())
   }
+
+  def toBinary(uuid: UUID): Array[Byte] =
+    UuidHelper.encodeUuidToBinary(uuid, UuidRepresentation.STANDARD)
 
   def fromBase64(base64Str: String): UUID = {
     val bytes = Base64.getDecoder.decode(base64Str)

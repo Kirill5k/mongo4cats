@@ -17,8 +17,8 @@
 package mongo4cats.client
 
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.either._
-import cats.effect.unsafe.implicits.global
 import com.mongodb.MongoTimeoutException
 import com.mongodb.connection.ClusterConnectionMode
 import mongo4cats.models.client._
@@ -41,7 +41,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
           IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
     "connect to a db via connection object" in withRunningEmbeddedMongo {
       MongoClient
@@ -50,7 +50,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           val cluster = client.clusterDescription
           IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
     "connect to a db via connection object with authentication" in withRunningEmbeddedMongo(mongoPort, username, password) {
       val connection = MongoConnection.classic("localhost", mongoPort, Some(MongoCredential(username, password)))
@@ -60,7 +60,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           val cluster = client.clusterDescription
           IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
     "return current database names" in withRunningEmbeddedMongo {
       MongoClient
@@ -75,7 +75,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           } yield names
         }
         .map(_ mustBe List("admin", "config", "db1", "db2", "local"))
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
     "return current databases" in withRunningEmbeddedMongo {
       MongoClient
@@ -93,7 +93,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           adminDb.getString("name") must contain("admin")
           adminDb.getBoolean("empty") must contain(false)
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
     "connect to a db via server address class" in withRunningEmbeddedMongo {
       MongoClient
@@ -105,7 +105,7 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           } yield names
         }
         .map(_ mustBe Nil)
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
 
     "return error when port is invalid" in withRunningEmbeddedMongo {
       MongoClient
@@ -121,6 +121,6 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           res.isLeft mustBe true
           res.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe (Left(-3))
         }
-    }.unsafeToFuture()
+    }.unsafeToFuture()(IORuntime.global)
   }
 }
