@@ -119,7 +119,7 @@ final case class Aggregate private (private val aggs: List[Bson]) {
   def toBsons: List[Bson] =
     aggs.reverse
 
-  private def add(doc: Bson): Aggregate =
+  def add(doc: Bson): Aggregate =
     copy(aggs = doc :: aggs)
 
 }
@@ -197,4 +197,5 @@ object Aggregate {
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     empty.unionWith(collection, pipeline)
+
 }
