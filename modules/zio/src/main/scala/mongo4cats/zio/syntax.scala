@@ -30,6 +30,8 @@ private[zio] object syntax {
     def unNone: Task[T] = task.map(_.toRight(MongoEmptyStreamException)).flatMap(ZIO.fromEither(_))
   }
 
+  // TODO: Replace ZIO.async call with ZIO.greenThreadOrElse in ZIO 2.1
+
   implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {
     def asyncVoid: Task[Unit] = ZIO.async { callback =>
       publisher.subscribe(new Subscriber[T] {
