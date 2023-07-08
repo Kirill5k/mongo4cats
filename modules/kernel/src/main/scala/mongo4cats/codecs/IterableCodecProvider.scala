@@ -22,8 +22,6 @@ import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{BsonTypeClassMap, BsonTypeCodecMap, Codec, DecoderContext, EncoderContext, OverridableUuidRepresentationCodec}
 import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
 
-import scala.annotation.tailrec
-
 final private class IterableCodec(
     private val registry: CodecRegistry,
     private val valueTransformer: Transformer,
@@ -38,25 +36,23 @@ final private class IterableCodec(
 
   override def encode(writer: BsonWriter, iterable: Iterable[Any], encoderContext: EncoderContext): Unit = {
     writer.writeStartArray()
-    iterable.foreach(value => ContainerValueWriter.write(value, writer, encoderContext, registry))
+    for (value <- iterable) {
+      ContainerValueWriter.write(value, writer, encoderContext, registry)
+    }
     writer.writeEndArray()
   }
 
   override def getEncoderClass: Class[Iterable[Any]] = Clazz.tag[Iterable[Any]]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Iterable[Any] = {
-    @tailrec
-    def go(result: List[Any]): List[Any] =
-      if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-        val value = ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
-        go(value :: result)
-      } else {
-        result.reverse
-      }
+    val result = scala.collection.mutable.ListBuffer.empty[Any]
     reader.readStartArray()
-    val result = go(Nil)
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+      val value = ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+      result.addOne(value)
+    }
     reader.readEndArray()
-    result
+    result.toList
   }
 }
 

@@ -23,39 +23,33 @@ import org.bson.{BsonReader, BsonType, Transformer, UuidRepresentation}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.tailrec
 
 private[mongo4cats] object ContainerValueReader {
 
   def readBsonDocument(reader: BsonReader): Document = {
-    @tailrec
-    def go(fields: Vector[Option[(String, BsonValue)]]): Document =
-      if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-        val key = reader.readName
-        go(fields :+ ContainerValueReader.readBsonValue(reader).map(key -> _))
-      } else {
-        Document(fields.flatten)
-      }
-
+    val fields = scala.collection.mutable.Map.empty[String, BsonValue]
     reader.readStartDocument()
-    val result = go(Vector.empty)
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+      val key = reader.readName
+      ContainerValueReader
+        .readBsonValue(reader)
+        .map(key -> _)
+        .foreach(fields.addOne)
+    }
     reader.readEndDocument()
-    result
+    Document(fields)
   }
 
-  def readBsonArray(reader: BsonReader): Iterable[BsonValue] = {
-    @tailrec
-    def go(result: Vector[Option[BsonValue]]): Vector[BsonValue] =
-      if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-        go(result :+ ContainerValueReader.readBsonValue(reader))
-      } else {
-        result.flatten
-      }
-
+  private def readBsonArray(reader: BsonReader): Iterable[BsonValue] = {
+    val result = scala.collection.mutable.ListBuffer.empty[BsonValue]
     reader.readStartArray()
-    val result = go(Vector.empty)
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+      ContainerValueReader
+        .readBsonValue(reader)
+        .foreach(result.addOne)
+    }
     reader.readEndArray()
-    result
+    result.toList
   }
 
   def readBsonValue(reader: BsonReader): Option[BsonValue] =

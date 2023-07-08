@@ -22,8 +22,6 @@ import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{BsonTypeClassMap, BsonTypeCodecMap, Codec, DecoderContext, EncoderContext, OverridableUuidRepresentationCodec}
 import org.bson.{BsonReader, BsonType, BsonWriter, Transformer, UuidRepresentation}
 
-import scala.annotation.tailrec
-
 final private class MapCodec(
     private val registry: CodecRegistry,
     private val valueTransformer: Transformer,
@@ -38,7 +36,7 @@ final private class MapCodec(
 
   override def encode(writer: BsonWriter, map: Map[String, Any], encoderContext: EncoderContext): Unit = {
     writer.writeStartDocument()
-    map.foreach { case (key, value) =>
+    for ((key, value) <- map) {
       writer.writeName(key)
       ContainerValueWriter.write(value, writer, encoderContext, registry)
     }
@@ -48,19 +46,15 @@ final private class MapCodec(
   override def getEncoderClass: Class[Map[String, Any]] = Clazz.tag[Map[String, Any]]
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Map[String, Any] = {
-    @tailrec
-    def go(result: Map[String, Any]): Map[String, Any] =
-      if (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-        val key   = reader.readName()
-        val value = ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
-        go(result + (key -> value))
-      } else {
-        result
-      }
+    val result = scala.collection.mutable.Map.empty[String, Any]
     reader.readStartDocument()
-    val result = go(Map.empty)
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+      val key = reader.readName()
+      val value = ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+      result.addOne(key -> value)
+    }
     reader.readEndDocument()
-    result
+    result.toMap
   }
 }
 
