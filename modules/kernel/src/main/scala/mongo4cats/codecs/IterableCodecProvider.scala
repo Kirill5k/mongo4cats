@@ -60,7 +60,7 @@ object IterableCodecProvider extends CodecProvider {
         registry,
         new DocumentToDBRefTransformer,
         new BsonTypeClassMap(),
-        UuidRepresentation.UNSPECIFIED
+        UuidRepresentation.STANDARD
       ).asInstanceOf[Codec[T]]
     } else null
 }
