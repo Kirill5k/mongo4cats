@@ -47,7 +47,7 @@ final private class IterableCodec(
     val result = scala.collection.mutable.ListBuffer.empty[Any]
     reader.readStartArray()
     while (reader.readBsonType() != BsonType.END_OF_DOCUMENT)
-      result :+ ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
+      result += ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
     reader.readEndArray()
     result.toList
   }

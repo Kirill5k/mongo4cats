@@ -46,7 +46,7 @@ private[mongo4cats] object ContainerValueReader {
     while (reader.readBsonType() != BsonType.END_OF_DOCUMENT)
       ContainerValueReader
         .readBsonValue(reader)
-        .foreach(result :+ _)
+        .foreach(result += _)
     reader.readEndArray()
     result.toList
   }
