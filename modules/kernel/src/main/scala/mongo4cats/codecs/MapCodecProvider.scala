@@ -49,9 +49,9 @@ final private class MapCodec(
     val result = scala.collection.mutable.Map.empty[String, Any]
     reader.readStartDocument()
     while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      val key = reader.readName()
+      val key   = reader.readName()
       val value = ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
-      result.addOne(key -> value)
+      result += (key -> value)
     }
     reader.readEndDocument()
     result.toMap

@@ -34,7 +34,7 @@ private[mongo4cats] object ContainerValueReader {
       ContainerValueReader
         .readBsonValue(reader)
         .map(key -> _)
-        .foreach(fields.addOne)
+        .foreach(fields += _)
     }
     reader.readEndDocument()
     Document(fields)
@@ -43,11 +43,10 @@ private[mongo4cats] object ContainerValueReader {
   private def readBsonArray(reader: BsonReader): Iterable[BsonValue] = {
     val result = scala.collection.mutable.ListBuffer.empty[BsonValue]
     reader.readStartArray()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT)
       ContainerValueReader
         .readBsonValue(reader)
-        .foreach(result.addOne)
-    }
+        .foreach(result :+ _)
     reader.readEndArray()
     result.toList
   }

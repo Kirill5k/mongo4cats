@@ -36,9 +36,8 @@ final private class IterableCodec(
 
   override def encode(writer: BsonWriter, iterable: Iterable[Any], encoderContext: EncoderContext): Unit = {
     writer.writeStartArray()
-    for (value <- iterable) {
+    for (value <- iterable)
       ContainerValueWriter.write(value, writer, encoderContext, registry)
-    }
     writer.writeEndArray()
   }
 
@@ -47,10 +46,8 @@ final private class IterableCodec(
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Iterable[Any] = {
     val result = scala.collection.mutable.ListBuffer.empty[Any]
     reader.readStartArray()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      val value = ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
-      result.addOne(value)
-    }
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT)
+      result :+ ContainerValueReader.read(reader, decoderContext, bsonTypeCodecMap, uuidRepresentation, registry, valueTransformer)
     reader.readEndArray()
     result.toList
   }
