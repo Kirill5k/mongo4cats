@@ -27,7 +27,7 @@ import java.util.UUID
 private[mongo4cats] object ContainerValueReader {
 
   def readBsonDocument(reader: BsonReader): Document = {
-    val fields = scala.collection.mutable.Map.empty[String, BsonValue]
+    val fields = scala.collection.mutable.ListBuffer.empty[(String, BsonValue)]
     reader.readStartDocument()
     while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
       val key = reader.readName
