@@ -33,7 +33,7 @@ private[mongo4cats] object syntax {
 
   implicit final class OptionSyntax[F[_], T](private val fo: F[Option[T]]) extends AnyVal {
     def unNone(implicit F: Async[F]): F[T] =
-      fo.map(_.toRight(MongoEmptyStreamException)).flatMap(F.fromEither(_))
+      fo.flatMap(F.fromOption(_, MongoEmptyStreamException))
   }
 
   implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {
