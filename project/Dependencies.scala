@@ -5,16 +5,16 @@ object Dependencies {
     val kindProjector      = "0.13.2"
     val catsEffect         = "3.5.1"
     val mongodb            = "4.10.2"
-    val fs2                = "3.7.0"
+    val fs2                = "3.8.0"
     val circe              = "0.14.5"
     val zio                = "2.0.15"
     val zioInteropReactive = "2.0.2"
-    val zioJson            = "0.5.0"
+    val zioJson            = "0.6.0"
 
-    val logback   = "1.4.8"
+    val logback   = "1.4.11"
     val scalaTest = "3.2.16"
 
-    val embeddedMongo   = "4.7.1"
+    val embeddedMongo   = "4.8.0"
     val immutableValue  = "2.9.3"
     val commonsCompress = "1.23.0"
   }
