@@ -4,7 +4,7 @@ object Dependencies {
   private object Versions {
     val kindProjector      = "0.13.2"
     val catsEffect         = "3.5.2"
-    val mongodb            = "4.10.2"
+    val mongodb            = "4.11.0"
     val fs2                = "3.9.2"
     val circe              = "0.14.6"
     val zio                = "2.0.18"
@@ -15,7 +15,7 @@ object Dependencies {
     val scalaTest = "3.2.17"
 
     val embeddedMongo   = "4.9.2"
-    val immutableValue  = "2.9.3"
+    val immutableValue  = "2.10.0"
     val commonsCompress = "1.24.0"
   }
 
