@@ -91,7 +91,7 @@ private[collection] object Queries {
   ) extends AggregateQueryBuilder[F, T, Stream[F, *]] {
 
     def toCollection: F[Unit]                             = applyQueries().toCollection.asyncVoid[F]
-    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F].unNone.map(Option.apply)
+    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F]
     def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
     def stream: Stream[F, T]                              = applyQueries().stream[F]
     def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
