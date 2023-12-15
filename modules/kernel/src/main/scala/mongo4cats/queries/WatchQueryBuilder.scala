@@ -75,13 +75,13 @@ private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamP
     */
   def resumeAfter(resumeToken: BsonDocument): QB = withQuery(QueryCommand.ResumeAfter(resumeToken))
 
-  /** Similar to {@@coderesumeAfter} , this option takes a resume token and starts a new change stream returning the first notification
+  /** Similar to {@@@coderesumeAfter} , this option takes a resume token and starts a new change stream returning the first notification
     * after the token.
     *
     * <p>This will allow users to watch collections that have been dropped and recreated or newly renamed collections without missing any
     * notifications.</p>
     *
-    * <p>Note: The server will report an error if both {@@codestartAfter} and {@@coderesumeAfter} are specified.</p>
+    * <p>Note: The server will report an error if both {@@@codestartAfter} and {@@@coderesumeAfter} are specified.</p>
     *
     * @param startAfter
     *   the startAfter resumeToken
