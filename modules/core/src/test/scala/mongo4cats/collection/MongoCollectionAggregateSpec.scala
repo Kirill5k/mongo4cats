@@ -151,6 +151,24 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
           }
         }
       }
+
+      "using first, return none if no result is found" in {
+        withEmbeddedMongoDatabase { db =>
+          val result = for {
+            accs <- db.getCollection("accounts")
+            res <- accs
+              .aggregate[Document](
+                Aggregate
+                  .matchBy(Filter.eq("currency", TestData.LVL))
+              )
+              .first
+          } yield res
+
+          result.map { res =>
+            res mustBe empty
+          }
+        }
+      }
     }
   }
 
