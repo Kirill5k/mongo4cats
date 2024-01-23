@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: aggregate
 title:  "Aggregate"
-number: 6
+tags: ["Aggregate"]
 ---
 
 ## Aggregate

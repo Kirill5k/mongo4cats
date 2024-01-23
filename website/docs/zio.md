@@ -1,8 +1,7 @@
 ---
-layout: docs
+id: zio
 title: ZIO
-number: 5
-position: 5
+tags: ["ZIO"]
 ---
 
 ## ZIO

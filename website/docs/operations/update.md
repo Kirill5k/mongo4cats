@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: update
 title:  "Update"
-number: 4
+tags: ["update"]
 ---
 
 ## Update

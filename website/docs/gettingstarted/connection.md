@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: connection
 title:  "Making a connection"
-number: 2
+tags: ["MongoClient", "MongoDatabase"]
 ---
 
 ## Making a connection

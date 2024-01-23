@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: find
 title:  "Find"
-number: 3
+tags: ["Filter", "find"]
 ---
 
 ## Find

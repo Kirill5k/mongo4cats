@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: distinct
 title:  "Distinct"
-number: 5
+tags: ["distinct"]
 ---
 
 ## Distinct

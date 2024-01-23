@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: indexes
 title:  "Index"
-number: 2
+tags: ["Index"]
 ---
 
 ## Index

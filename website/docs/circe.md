@@ -1,8 +1,7 @@
 ---
-layout: docs
+id: circe
 title: Circe
-number: 4
-position: 4
+tags: ["Circe", "JSON"]
 ---
 
 ## Circe

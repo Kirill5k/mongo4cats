@@ -1,8 +1,6 @@
 ---
-layout: docs
+id: operations
 title: Operations
-number: 2
-position: 2
 ---
 
 ## Operations

@@ -1,8 +1,7 @@
 ---
-layout: docs
+id: index
 title: Getting started
-number: 1
-position: 1
+tags: ["Getting Started"]
 ---
 
 ## Getting Started

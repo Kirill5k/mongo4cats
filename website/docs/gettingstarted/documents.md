@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: document
 title:  "Working with documents"
-number: 3
+tags: ["Document"]
 ---
 
 ## Working with documents

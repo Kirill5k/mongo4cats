@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: watch
 title:  "Watch"
-number: 7
+tags: ["watch"]
 ---
 
 ## Watch

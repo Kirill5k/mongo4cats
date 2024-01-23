@@ -1,7 +1,7 @@
 ---
-layout: docs
+id: collection
 title:  "Getting a collection"
-number: 3
+tags: ["MongoCollection"]
 ---
 
 ## Getting a collection

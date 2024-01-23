@@ -1,8 +1,7 @@
 ---
-layout: docs
+id: embedded
 title: Embedded MongoDB
-number: 3
-position: 3
+tags: ["Embedded MongoDB", "Testing", "Unit Tests"]
 ---
 
 ## Embedded MongoDB
