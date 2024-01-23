@@ -1,5 +1,5 @@
 ---
-id: document
+id: documents
 title:  "Working with documents"
 tags: ["Document"]
 ---

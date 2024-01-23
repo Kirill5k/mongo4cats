@@ -1,10 +1,8 @@
 ---
 id: embedded
 title: Embedded MongoDB
-tags: ["Embedded MongoDB", "Testing", "Unit Tests"]
+tags: ["Embedded MongoDB", "Testing"]
 ---
-
-## Embedded MongoDB
 
 The main goal of `mongo4cats-embedded` module is to provide a way of making quick and easy connections to a database instance that will be disposed afterwards.
 One of the use-cases for such scenarios is unit testing where you would just need to make 1 or 2 connections to a fresh database instance to test your queries and be done with it.

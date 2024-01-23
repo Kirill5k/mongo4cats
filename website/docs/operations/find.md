@@ -4,8 +4,6 @@ title:  "Find"
 tags: ["Filter", "find"]
 ---
 
-## Find
-
 Find operation can be used for retrieving a subset of the existing data from a MongoDB collection 
 with the option for specifying what data to return, the number of documents to return and in what order. 
 

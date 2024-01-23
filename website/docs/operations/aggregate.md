@@ -1,10 +1,8 @@
 ---
 id: aggregate
 title:  "Aggregate"
-tags: ["Aggregate"]
+tags: ["Aggregate", "Accumulator"]
 ---
-
-## Aggregate
 
 Aggregation operations can be used for processing data from multiple MongoDB collections and returning combined results.
 In MongoDB aggregations are represented in a form of data processing pipelines where documents go through multiple transformations defined in each step.

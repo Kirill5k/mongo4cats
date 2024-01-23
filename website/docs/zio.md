@@ -4,8 +4,6 @@ title: ZIO
 tags: ["ZIO"]
 ---
 
-## ZIO
-
 The `mongo4cats-zio` module defines type aliases and constructors which replace Cats Effect and FS2 with ZIO and
 ZIO-Streams, respectively.
 Similarly, `mongo4cats-zio-embedded` brings in embedded MongoDB runner implemented with ZIO effects. This provides more

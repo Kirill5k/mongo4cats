@@ -4,8 +4,6 @@ title:  "Making a connection"
 tags: ["MongoClient", "MongoDatabase"]
 ---
 
-## Making a connection
-
 In order to create a connection to a MongoDB database, an instance of `MongoClient[F]` class needs to be instantiated. 
 The `MongoClient[F]` instance represents a pool of connections for a given MongoDB server deployment and typically
 only one instance of this class is required per application (even with multiple operations executed concurrently).

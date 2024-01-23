@@ -4,8 +4,6 @@ title: Circe
 tags: ["Circe", "JSON"]
 ---
 
-## Circe
-
 Given that MongoDB stores data records as BSON documents, which bear a lot of similarities to a traditional JSON objects, [Circe](https://circe.github.io/circe/) (and other JSON libraries) can be used for deriving codecs for converting Scala case class into documents.
 
 To enable Circe support, a dependency has to be added in the `build.sbt`:

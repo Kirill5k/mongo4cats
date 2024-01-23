@@ -4,8 +4,6 @@ title:  "Distinct"
 tags: ["distinct"]
 ---
 
-## Distinct
-
 Distinct operation returns all distinct values for a field across all documents in a collection.
 The operation can be executed by calling `distinct` method on a `MongoCollection[F, T]` class and passing a name of a field:
 ```scala

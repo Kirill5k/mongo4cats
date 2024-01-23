@@ -4,8 +4,6 @@ title:  "Getting a collection"
 tags: ["MongoCollection"]
 ---
 
-## Getting a collection
-
 An instance of `MongoCollection[F, T]` can be obtained from an existing database instance by specifying collection's name:
 
 ```scala

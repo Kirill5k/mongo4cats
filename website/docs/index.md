@@ -4,8 +4,6 @@ title: Getting started
 tags: ["Getting Started"]
 ---
 
-## Getting Started
-
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kirill5k/mongo4cats-core_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%mongo4cats-core)
 
 ### Dependencies

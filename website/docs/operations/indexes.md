@@ -4,8 +4,6 @@ title:  "Index"
 tags: ["Index"]
 ---
 
-## Index
-
 Indexes support efficient execution of queries in MongoDB as well as allow efficient sorting, some additional capabilities like unique constraints and geospatial search, and [more](https://docs.mongodb.com/manual/indexes/). 
 
 `MongoCollection[F, T]` supports several ways of creating an index on a field (or multiple fields).
