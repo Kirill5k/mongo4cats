@@ -8,3 +8,6 @@ addSbtPlugin("com.jsuereth"      % "sbt-pgp"            % "2.1.1")
 addSbtPlugin("com.47deg"         % "sbt-microsites"     % "1.4.4")
 addSbtPlugin("com.typesafe"      % "sbt-mima-plugin"    % "1.1.3")
 addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.6.4")
+
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.5.2")
+addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
