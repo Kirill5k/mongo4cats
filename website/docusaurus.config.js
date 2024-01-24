@@ -8,7 +8,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Mongo4cats',
+  title: 'mongo4cats',
   tagline: 'MongoDB Java client wrapper for Cats-Effect & FS2',
   favicon: 'img/favicon.ico',
 
@@ -61,7 +61,7 @@ const config = {
       },
       navbar: {
         style: 'dark',
-        title: 'Mongo4cats',
+        title: 'mongo4cats',
         logo: {
           alt: 'My Site Logo',
           src: 'img/logo.svg',
