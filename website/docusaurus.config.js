@@ -92,6 +92,7 @@ const config = {
       },
       prism: {
         additionalLanguages: ['java', 'scala'],
+        theme: prismThemes.nord
       },
     },
 };

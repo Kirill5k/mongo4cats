@@ -1,40 +1,43 @@
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { nord as style } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kirill5k/mongo4cats-core_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%mongo4cats-core)
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
-MongoDB Java client wrapper compatible with [Cats-Effect](https://typelevel.org/cats-effect/)/[FS2](http://fs2.io/) and ZIO.
+MongoDB Java client wrapper compatible with [Cats-Effect](https://typelevel.org/cats-effect/)/[FS2](http://fs2.io/) and [ZIO](http://zio.dev/).
 Available for Scala 2.12, 2.13 and 3.3.
 
-Documentation is available in the [documentation](https://kirill5k.github.io/mongo4cats/docs/) section.
+Documentation is available in the [docs](https://kirill5k.github.io/mongo4cats/docs/) section.
 
 ### Dependencies
 
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
-```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "<version>"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version>" % Test
-```
+<SyntaxHighlighter language="scala" style={style}>
+{`libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "<version>"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version>" % Test`}
+</SyntaxHighlighter>
 
 Alternatively, for `ZIO 2`, add this:
 
-```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio" % "<version>"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "<version>" % Test
-```
+<SyntaxHighlighter language="scala" style={style}>
+{`libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio" % "<version>"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "<version>" % Test`}
+</SyntaxHighlighter>
 
 Optional support for `circe` or `zio-json` can be enabled with:
 
-```scala
-// circe
+<SyntaxHighlighter language="scala" style={style}>
+{`// circe
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"
 // zio-json
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "<version>"
-```
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "<version>"`}
+</SyntaxHighlighter>
 
 ### Quick start with Cats Effect
 
-```scala
-import cats.effect.{IO, IOApp}
+<SyntaxHighlighter language="scala" style={style}>
+{`import cats.effect.{IO, IOApp}
 import mongo4cats.client.MongoClient
 import mongo4cats.operations.{Filter, Projection}
 import mongo4cats.bson.Document
@@ -54,16 +57,16 @@ object Quickstart extends IOApp.Simple {
           .sortByDesc("name")
           .limit(5)
           .all
-        _ <- IO.println(docs.mkString("[\n", ",\n", "\n]"))
+        _ <- IO.println(docs.mkString("[", ", ", "]"))
       } yield ()
     }
-}
-```
+}`}
+</SyntaxHighlighter>
 
 ### Quick start with ZIO
 
-```scala
-import mongo4cats.bson.Document
+<SyntaxHighlighter language="scala" style={style}>
+{`import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.operations.{Filter, Projection}
 import mongo4cats.zio.{ZMongoClient, ZMongoCollection, ZMongoDatabase}
@@ -84,11 +87,11 @@ object Zio extends ZIOAppDefault {
       .sortByDesc("name")
       .limit(5)
       .all
-    _ <- Console.printLine(docs.mkString("[\n", ",\n", "\n]"))
+    _ <- Console.printLine(docs.mkString("[", ", ", "]"))
   } yield ()
 
   override def run = program.provide(client, database, collection)
-}
-```
+}`}
+</SyntaxHighlighter>
 
 If you find this library useful, consider giving it a ⭐!
