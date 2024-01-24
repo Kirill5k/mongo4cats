@@ -168,12 +168,12 @@ val docs = project
 
 val website = project
   .in(file("website"))
-  .dependsOn(core, circe, embedded, zio, `zio-embedded`)
+  .dependsOn(kernel, core, circe, embedded, zio, `zio-embedded`, `zio-json`)
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
-    name                      := "mongo4cats-website",
+    name := "mongo4cats-website",
     mdocVariables := Map(
       "VERSION" -> version.value
     )

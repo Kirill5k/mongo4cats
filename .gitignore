@@ -104,7 +104,7 @@ Temporary Items
 node_modules/
 /.pnp
 .pnp.js
-/build
+build/
 .docusaurus
 .cache-loader
 npm-debug.log*

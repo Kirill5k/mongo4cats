@@ -37,6 +37,6 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "<ver
 ### Next steps
 
 Once everything is in place, you can start accessing your data:
-- *[Making a connection](./gettingstarted/connection.html)*
-- *[Getting a collection](./gettingstarted/collection.html)*
-- *[Working with documents](./gettingstarted/documents.html)*
+- *[Making a connection](gettingstarted/connection)*
+- *[Getting a collection](gettingstarted/collection)*
+- *[Working with documents](gettingstarted/documents)*
