@@ -1,6 +1,5 @@
 import xerial.sbt.Sonatype.GitHubHosting
 import ReleaseTransformations.*
-import microsites.CdnDirectives
 import sbtghactions.JavaSpec
 import Utils.*
 
