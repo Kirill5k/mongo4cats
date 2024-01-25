@@ -141,31 +141,6 @@ val examples = project
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-val docs = project
-  .in(file("docs"))
-  .dependsOn(core, circe, embedded, zio, `zio-embedded`)
-  .enablePlugins(MicrositesPlugin)
-  .settings(noPublish)
-  .settings(commonSettings)
-  .settings(
-    name                      := "mongo4cats-docs",
-    micrositeName             := "mongo4cats",
-    micrositeAuthor           := "Kirill",
-    micrositeDescription      := "MongoDB Java client wrapper for Cats-Effect & FS2",
-    micrositeBaseUrl          := "/mongo4cats",
-    micrositeDocumentationUrl := "/mongo4cats/docs",
-    micrositeHomepage         := "https://github.com/kirill5k/mongo4cats",
-    micrositeGithubOwner      := "kirill5k",
-    micrositeGithubRepo       := "mongo4cats",
-    micrositeHighlightTheme   := "docco",
-    micrositeGitterChannel    := false,
-    micrositeShareOnSocial    := false,
-    mdocIn                    := (Compile / sourceDirectory).value / "mdoc",
-    micrositeCDNDirectives := CdnDirectives(
-      cssList = List("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/docco.min.css")
-    )
-  )
-
 val website = project
   .in(file("website"))
   .dependsOn(kernel, core, circe, embedded, zio, `zio-embedded`, `zio-json`)
