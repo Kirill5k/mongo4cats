@@ -173,7 +173,7 @@ val website = project
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
-    name := "mongo4cats-website",
+    moduleName := "mongo4cats",
     mdocVariables := Map(
       "VERSION" -> version.value
     )
