@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkwebsite=self.webpackChunkwebsite||[]).push([[6735],{9244:t=>{t.exports=JSON.parse('{"label":"Getting Started","permalink":"/mongo4cats/docs/tags/getting-started","allTagsPath":"/mongo4cats/docs/tags","count":1,"items":[{"id":"index","title":"Getting started","description":"Maven Central","permalink":"/mongo4cats/docs/"}],"unlisted":false}')}}]);
