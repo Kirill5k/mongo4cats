@@ -59,7 +59,7 @@ const config = {
         title: 'mongo4cats',
         logo: {
           alt: 'My Site Logo',
-          src: 'img/logo.svg',
+          src: 'img/mongodb.svg',
         },
         items: [
           {
