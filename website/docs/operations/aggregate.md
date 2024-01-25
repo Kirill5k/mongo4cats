@@ -6,7 +6,7 @@ tags: ["Aggregate", "Accumulator"]
 
 Aggregation operations can be used for processing data from multiple MongoDB collections and returning combined results.
 In MongoDB aggregations are represented in a form of data processing pipelines where documents go through multiple transformations defined in each step.
-More detailed explanation of the aggregation process can be found in the official [documentation](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/aggregation/).
+More detailed explanation of the aggregation process can be found in the [official documentation](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/aggregation/).
 
 To create such aggregation pipeline, `Aggregate` constructor can be used:
 
