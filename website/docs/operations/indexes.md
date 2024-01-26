@@ -1,7 +1,7 @@
 ---
 id: indexes
 title:  "Index"
-tags: ["Index"]
+tags: ["Index", "createIndex"]
 ---
 
 Indexes support efficient execution of queries in MongoDB as well as allow efficient sorting, some additional capabilities like unique constraints and geospatial search, and [more](https://docs.mongodb.com/manual/indexes/). 

@@ -4,7 +4,7 @@ mongo4cats
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kirill5k/mongo4cats-core_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%mongo4cats-core)
 <a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
-MongoDB Java client wrapper compatible with [Cats-Effect](https://typelevel.org/cats-effect/) and [Fs2](http://fs2.io/).
+MongoDB Java client wrapper compatible with [Cats-Effect](https://typelevel.org/cats-effect/)/[FS2](http://fs2.io/) and [ZIO](http://zio.dev/).
 Available for Scala 2.12, 2.13 and 3.3.
 
 Documentation is available on the [mongo4cats microsite](https://kirill5k.github.io/mongo4cats/docs/).

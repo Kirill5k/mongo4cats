@@ -1,7 +1,7 @@
 ---
 id: find
 title:  "Find"
-tags: ["Filter", "find"]
+tags: ["Filter", "find", "sort", "skip", "limit"]
 ---
 
 Find operation can be used for retrieving a subset of the existing data from a MongoDB collection 

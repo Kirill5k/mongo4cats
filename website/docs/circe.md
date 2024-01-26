@@ -89,7 +89,7 @@ import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.circe._
 
 object MyClass {
-  implicit val myClassCodecProvided: MongoCodecProvider[MyClass] = deriveCirceCodecProvider
+  implicit val myClassCodecProvider: MongoCodecProvider[MyClass] = deriveCirceCodecProvider
 }
 ```
 
