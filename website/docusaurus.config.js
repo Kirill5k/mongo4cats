@@ -13,7 +13,7 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://kirill5k.github.io',
+  url: 'https://kirill5k.github.io/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/mongo4cats/',
@@ -52,44 +52,49 @@ const config = {
   ],
 
   themeConfig: {
-      // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
-      navbar: {
-        style: 'dark',
-        title: 'mongo4cats',
-        logo: {
-          alt: 'My Site Logo',
-          src: 'img/mongodb.svg',
-        },
-        items: [
-          {
-            type: 'docSidebar',
-            sidebarId: 'docsSidebar',
-            position: 'left',
-            label: 'Docs',
-          },
-          {
-            href: 'https://github.com/kirill5k/mongo4cats',
-            label: 'GitHub',
-            position: 'right',
-          },
-        ],
-      },
-      footer: {
-        style: 'dark',
-        links: [
-          {
-            label: "GitHub",
-            href: 'https://github.com/Kirill5k/mongo4cats',
-          }
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} Kirill. Built with Docusaurus.`,
-      },
-      prism: {
-        additionalLanguages: ['java', 'scala'],
-        theme: prismThemes.nord
-      },
+    // Replace with your project's social card
+    image: 'img/docusaurus-social-card.jpg',
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
     },
+    navbar: {
+      style: 'dark',
+      title: 'mongo4cats',
+      logo: {
+        alt: 'My Site Logo',
+        src: 'img/mongodb.svg',
+      },
+      items: [
+        {
+          type: 'docSidebar',
+          sidebarId: 'docsSidebar',
+          position: 'left',
+          label: 'Docs',
+        },
+        {
+          href: 'https://github.com/kirill5k/mongo4cats',
+          label: 'GitHub',
+          position: 'right',
+        },
+      ],
+    },
+    footer: {
+      style: 'dark',
+      links: [
+        {
+          label: "GitHub",
+          href: 'https://github.com/Kirill5k/mongo4cats',
+        }
+      ],
+      copyright: `Copyright © ${new Date().getFullYear()} Kirill. Built with Docusaurus.`,
+    },
+    prism: {
+      additionalLanguages: ['java', 'scala'],
+      theme: prismThemes.nord
+    },
+  },
 };
 
 export default config;

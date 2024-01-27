@@ -3,7 +3,7 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import Layout from '@theme/Layout'
 import Heading from '@theme/Heading'
 import styles from './index.module.css'
-import Home from './home.mdx'
+import HomepageContent from './home.mdx'
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext()
@@ -28,8 +28,8 @@ export default function Home() {
       <HomepageHeader />
       <main>
         <section>
-          <div className={clsx('container', styles.home)}>
-            <Home />
+          <div className={clsx('container', styles.section)}>
+            <HomepageContent />
           </div>
         </section>
       </main>
