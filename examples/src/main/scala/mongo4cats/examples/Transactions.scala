@@ -27,19 +27,22 @@ object Transactions extends IOApp.Simple {
   override val run: IO[Unit] =
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
       for {
-        db      <- client.getDatabase("my-db")
-        coll    <- db.getCollection("docs")
-        session <- client.startSession
-        _       <- session.startTransaction
-        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" := s"doc-$i")))
-        _       <- session.abortTransaction
-        count1  <- coll.count
-        _       <- IO.println(s"should be 0 since transaction was aborted: $count1")
-        _       <- session.startTransaction
-        _       <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" := s"doc-$i")))
-        _       <- session.commitTransaction
-        count2  <- coll.count
-        _       <- IO.println(s"should be 100 since transaction was committed: $count2")
+        db <- client.getDatabase("my-db")
+        _ <- client.startSession.use { session =>
+          for {
+            coll   <- db.getCollection("docs")
+            _      <- session.startTransaction
+            _      <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" := s"doc-$i")))
+            _      <- session.abortTransaction
+            count1 <- coll.count
+            _      <- IO.println(s"should be 0 since transaction was aborted: $count1")
+            _      <- session.startTransaction
+            _      <- (0 to 99).toList.traverse_(i => coll.insertOne(session, Document("name" := s"doc-$i")))
+            _      <- session.commitTransaction
+            count2 <- coll.count
+            _      <- IO.println(s"should be 100 since transaction was committed: $count2")
+          } yield ()
+        }
       } yield ()
     }
 }

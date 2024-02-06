@@ -22,13 +22,13 @@ import mongo4cats.bson.Document
 import mongo4cats.models.client.ClientSessionOptions
 import mongo4cats.database.GenericMongoDatabase
 
-abstract class GenericMongoClient[F[_], S[_]] {
+abstract class GenericMongoClient[F[_], S[_], R[_]] {
   def underlying: JMongoClient
   def clusterDescription: ClusterDescription = underlying.getClusterDescription
   def getDatabase(name: String): F[GenericMongoDatabase[F, S]]
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
-  def startSession(options: ClientSessionOptions): F[ClientSession[F]]
-  def startSession: F[ClientSession[F]] = startSession(ClientSessionOptions.apply())
+  def startSession(options: ClientSessionOptions): R[ClientSession[F]]
+  def startSession: R[ClientSession[F]] = startSession(ClientSessionOptions.apply())
 }

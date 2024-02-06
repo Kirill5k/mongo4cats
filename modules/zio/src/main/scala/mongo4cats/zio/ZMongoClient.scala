@@ -29,7 +29,6 @@ final private class ZClientSessionLive(
   def startTransaction(options: TransactionOptions): Task[Unit] = ZIO.attempt(underlying.startTransaction(options)).unit
   def abortTransaction: Task[Unit]                              = underlying.abortTransaction().asyncVoid
   def commitTransaction: Task[Unit]                             = underlying.commitTransaction().asyncVoid
-  def close: Task[Unit]                                         = ZIO.attempt(underlying.close())
 }
 
 final private class ZMongoClientLive(
@@ -47,8 +46,8 @@ final private class ZMongoClientLive(
   def listDatabases(session: ZClientSession): Task[Iterable[Document]] =
     underlying.listDatabases(session.underlying).asyncIterableF(Document.fromJava)
 
-  def startSession(options: ClientSessionOptions): Task[ZClientSession] =
-    underlying.startSession(options).asyncSingle.unNone.map(new ZClientSessionLive(_))
+  def startSession(options: ClientSessionOptions): RIO[Scope, ZClientSession] =
+    ZIO.fromAutoCloseable(underlying.startSession(options).asyncSingle.unNone).map(new ZClientSessionLive(_))
 }
 
 object ZMongoClient extends AsJava {
