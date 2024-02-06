@@ -23,7 +23,7 @@ import org.bson.codecs.configuration.{CodecProvider, CodecRegistry => JCodecRegi
 package object codecs {
 
   type CodecRegistry = JCodecRegistry
-  object CodecRegistry {
+  object CodecRegistry extends AsJava {
     val Default: CodecRegistry = merge(
       from(DocumentCodecProvider),
       from(BsonValueCodecProvider),
@@ -34,9 +34,9 @@ package object codecs {
       from(IterableCodecProvider)
     )
 
-    def from(provides: CodecProvider*): CodecRegistry = fromProviders(provides: _*)
+    def from(provider: CodecProvider, providers: CodecProvider*): CodecRegistry = fromProviders(asJava(provider :: providers.toList))
 
-    def merge(registries: CodecRegistry*): CodecRegistry         = fromRegistries(registries: _*)
-    def mergeWithDefault(registry: CodecRegistry): CodecRegistry = merge(registry, Default)
+    def merge(registry: CodecRegistry, registries: CodecRegistry*): CodecRegistry = fromRegistries(asJava(registry :: registries.toList))
+    def mergeWithDefault(registry: CodecRegistry): CodecRegistry                  = merge(registry, Default)
   }
 }
