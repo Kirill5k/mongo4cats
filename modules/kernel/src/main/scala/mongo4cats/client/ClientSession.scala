@@ -23,16 +23,10 @@ abstract class ClientSession[F[_]] {
   def underlying: JClientSession
 
   /** Returns true if there is an active transaction on this session, and false otherwise
-    *
-    * @return
-    *   true if there is an active transaction on this session
     */
   def hasActiveTransaction: Boolean = underlying.hasActiveTransaction
 
   /** Gets the transaction options. If session has no active transaction, then None is returned
-    *
-    * @return
-    *   the transaction options
     */
   def transactionOptions: Option[TransactionOptions] =
     if (hasActiveTransaction) Some(underlying.getTransactionOptions) else None
