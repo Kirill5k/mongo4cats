@@ -17,7 +17,7 @@
 package mongo4cats.client
 
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
-import mongo4cats.models.client.TransactionOptions
+import mongo4cats.models.client.{ClientSessionOptions, TransactionOptions}
 
 abstract class ClientSession[F[_]] {
   def underlying: JClientSession
@@ -53,4 +53,14 @@ abstract class ClientSession[F[_]] {
   /** Commit a transaction in the context of this session. A transaction can only be commmited if one has first been started.
     */
   def commitTransaction: F[Unit]
+
+  /** Get the options for this session.
+    */
+  def options: ClientSessionOptions = underlying.getOptions
+
+  /** Returns true if operations in this session must be causally consistent
+    */
+  def isCausallyConsistent: Boolean = underlying.isCausallyConsistent
+
+  def close: F[Unit]
 }

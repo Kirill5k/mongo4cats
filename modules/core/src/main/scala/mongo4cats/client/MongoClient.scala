@@ -42,15 +42,10 @@ final private class LiveClientSession[F[_]](
 )(implicit
     F: Async[F]
 ) extends ClientSession[F] {
-
-  override def startTransaction(options: TransactionOptions): F[Unit] =
-    F.fromTry(Try(underlying.startTransaction(options)))
-
-  override def commitTransaction: F[Unit] =
-    underlying.commitTransaction().asyncVoid[F]
-
-  override def abortTransaction: F[Unit] =
-    underlying.abortTransaction().asyncVoid[F]
+  def startTransaction(options: TransactionOptions): F[Unit] = F.fromTry(Try(underlying.startTransaction(options)))
+  def commitTransaction: F[Unit]                             = underlying.commitTransaction().asyncVoid[F]
+  def abortTransaction: F[Unit]                              = underlying.abortTransaction().asyncVoid[F]
+  def close: F[Unit]                                         = F.delay(underlying.close())
 }
 
 final private class LiveMongoClient[F[_]](
