@@ -84,13 +84,13 @@ object MongoClient extends AsJava {
       )
     )
 
-  def fromServerAddress[F[_]: Async](serverAddresses: ServerAddress*): Resource[F, MongoClient[F]] =
+  def fromServerAddress[F[_]: Async](serverAddress: ServerAddress, serverAddresses: ServerAddress*): Resource[F, MongoClient[F]] =
     create {
       MongoClientSettings
         .builder()
         .uuidRepresentation(UuidRepresentation.STANDARD)
         .applyToClusterSettings { builder =>
-          val _ = builder.hosts(asJava(serverAddresses.toList))
+          val _ = builder.hosts(asJava(serverAddress :: serverAddresses.toList))
         }
         .build()
     }
