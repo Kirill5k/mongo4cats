@@ -43,9 +43,7 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
       "dateInstant"   -> BsonValue.instant(ts),
       "dateEpoch"     -> BsonValue.instant(ts),
       "dateLocalDate" -> BsonValue.instant(Instant.parse("2022-01-01T00:00:00Z")),
-      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2))),
-      "uuid"          -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")),
-      "binary"        -> BsonValue.binary(Array[Byte](192.toByte, 168.toByte, 1, 9))
+      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2)))
     )
   )
 
@@ -54,6 +52,7 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
   def jsonInt(i: Int): Json                = JsonEncoder.int.toJsonAST(i).toOption.get
   def jsonLong(l: Long): Json              = JsonEncoder.long.toJsonAST(l).toOption.get
   def jsonBigDecimal(bd: BigDecimal): Json = JsonEncoder.scalaBigDecimal.toJsonAST(bd).toOption.get
+  def jsonBigInt(bi: BigInt): Json         = JsonEncoder.scalaBigInt.toJsonAST(bi).toOption.get
 
   "A ZioJsonMapper" when {
     "toBson" should {
@@ -70,9 +69,7 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
           "dateInstant"   -> Json.Obj("$date" -> jsonString(ts.toString)),
           "dateEpoch"     -> Json.Obj("$date" -> jsonLong(ts.toEpochMilli)),
           "dateLocalDate" -> Json.Obj("$date" -> jsonString("2022-01-01")),
-          "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2)),
-          "uuid"   -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> jsonString("04"))),
-          "binary" -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("wKgBCQ=="), "subType" -> jsonString("00")))
+          "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2))
         )
 
         ZioJsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
@@ -92,11 +89,41 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
             "dateInstant"   -> Json.Obj("$date" -> jsonString(ts.toString)),
             "dateEpoch"     -> Json.Obj("$date" -> jsonString(ts.toString)),
             "dateLocalDate" -> Json.Obj("$date" -> jsonString("2022-01-01T00:00:00Z")),
-            "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2)),
-            "uuid"   -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> jsonString("04"))),
-            "binary" -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("wKgBCQ=="), "subType" -> jsonString("00")))
+            "document"      -> Json.Obj("field1" -> jsonString("1"), "field2" -> jsonInt(2))
           )
         )
+      }
+
+      "handle binary conversions" in {
+        val bson = BsonValue.document(
+          "uuid"   -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")),
+          "binary" -> BsonValue.binary(Array[Byte](192.toByte, 168.toByte, 1, 9))
+        )
+        val json = Json.Obj(
+          "uuid"   -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> jsonString("04"))),
+          "binary" -> Json.Obj("$binary" -> Json.Obj("base64" -> jsonString("wKgBCQ=="), "subType" -> jsonString("00")))
+        )
+
+        ZioJsonMapper.fromBson(bson) mustBe Right(json)
+        ZioJsonMapper.toBson(json).toString mustBe bson.toString
+      }
+
+      "handle numeric conversions" in {
+        val bson = BsonValue.document(
+          "long"       -> BsonValue.long(ts.toEpochMilli),
+          "int"        -> BsonValue.int(1),
+          "bigDecimal" -> BsonValue.bigDecimal(BigDecimal(100.0)),
+          "bigInt"     -> BsonValue.bigDecimal(BigDecimal(BigInt(Long.MaxValue) + 3))
+        )
+        val json = Json.Obj(
+          "long"       -> jsonLong(ts.toEpochMilli),
+          "int"        -> jsonInt(1),
+          "bigDecimal" -> jsonBigDecimal(BigDecimal(100.0)),
+          "bigInt"     -> jsonBigInt(BigInt(Long.MaxValue) + 3)
+        )
+
+        ZioJsonMapper.fromBson(bson) mustBe Right(json)
+        ZioJsonMapper.toBson(json).toString mustBe bson.toString
       }
     }
   }

@@ -64,10 +64,12 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
   }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
-    def isDecimal: Boolean = jNumber.toString.contains(".")
     def toBsonValue: BsonValue =
-      if (isDecimal) jNumber.toBigDecimal.fold(BsonValue.double(jNumber.toDouble))(BsonValue.bigDecimal)
-      else jNumber.toInt.map(BsonValue.int).orElse(jNumber.toLong.map(BsonValue.long)).get
+      jNumber.getClass.getName match {
+        case "io.circe.JsonDouble" | "io.circe.JsonFloat" => BsonValue.double(jNumber.toDouble)
+        case "io.circe.JsonLong"                          => BsonValue.long(jNumber.toLong.get)
+        case _                                            => BsonValue.bigDecimal(jNumber.toBigDecimal.get)
+      }
   }
 
   def fromBson(bson: BsonValue): Either[MongoJsonParsingException, Json] =

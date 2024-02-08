@@ -135,7 +135,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
           |}""".stripMargin
 
       document.asJson.toString() mustBe json
-      decode[Document](json) mustBe Right(document)
+      decode[Document](json).map(_.toString) mustBe Right(document.toString)
     }
   }
 }

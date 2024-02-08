@@ -35,16 +35,11 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
       "string"        -> BsonValue.string("string"),
       "null"          -> BsonValue.Null,
       "boolean"       -> BsonValue.True,
-      "long"          -> BsonValue.long(ts.toEpochMilli),
-      "int"           -> BsonValue.int(1),
-      "bigDecimal"    -> BsonValue.bigDecimal(BigDecimal(100.0)),
       "array"         -> BsonValue.array(BsonValue.string("a"), BsonValue.string("b")),
       "dateInstant"   -> BsonValue.instant(ts),
       "dateEpoch"     -> BsonValue.instant(ts),
       "dateLocalDate" -> BsonValue.instant(Instant.parse("2022-01-01T00:00:00Z")),
-      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2))),
-      "uuid"          -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")),
-      "binary"        -> BsonValue.binary(Array[Byte](192.toByte, 168.toByte, 1, 9))
+      "document"      -> BsonValue.document(Document("field1" -> BsonValue.string("1"), "field2" -> BsonValue.int(2)))
     )
   )
 
@@ -56,18 +51,11 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
           "string"        -> Json.fromString("string"),
           "null"          -> Json.Null,
           "boolean"       -> Json.fromBoolean(true),
-          "long"          -> Json.fromLong(ts.toEpochMilli),
-          "int"           -> Json.fromInt(1),
-          "bigDecimal"    -> Json.fromBigDecimal(BigDecimal(100.0)),
           "array"         -> Json.arr(Json.fromString("a"), Json.fromString("b")),
           "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
           "dateEpoch"     -> Json.obj("$date" -> Json.fromLong(ts.toEpochMilli)),
           "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01")),
-          "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2)),
-          "uuid" -> Json.obj(
-            "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("04"))
-          ),
-          "binary" -> Json.obj("$binary" -> Json.obj("base64" -> Json.fromString("wKgBCQ=="), "subType" -> Json.fromString("00")))
+          "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
         )
 
         CirceJsonMapper.toBson(jsonObject).asDocument.map(_.toJson) mustBe bsonDocument.asDocument.map(_.toJson)
@@ -80,20 +68,49 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
             "string"        -> Json.fromString("string"),
             "null"          -> Json.Null,
             "boolean"       -> Json.fromBoolean(true),
-            "long"          -> Json.fromLong(ts.toEpochMilli),
-            "int"           -> Json.fromInt(1),
-            "bigDecimal"    -> Json.fromBigDecimal(BigDecimal(100.0)),
             "array"         -> Json.arr(Json.fromString("a"), Json.fromString("b")),
             "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateEpoch"     -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateLocalDate" -> Json.obj("$date" -> Json.fromString("2022-01-01T00:00:00Z")),
-            "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2)),
-            "uuid" -> Json.obj(
-              "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("04"))
-            ),
-            "binary" -> Json.obj("$binary" -> Json.obj("base64" -> Json.fromString("wKgBCQ=="), "subType" -> Json.fromString("00")))
+            "document"      -> Json.obj("field1" -> Json.fromString("1"), "field2" -> Json.fromInt(2))
           )
         )
+      }
+
+      "handle binary conversions" in {
+        val bson = BsonValue.document(
+          "uuid"   -> BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")),
+          "binary" -> BsonValue.binary(Array[Byte](192.toByte, 168.toByte, 1, 9))
+        )
+        val json = Json.obj(
+          "uuid" -> Json.obj(
+            "$binary" -> Json.obj("base64" -> Json.fromString("z7ynKE45RhOWvPkgtcN+Fg=="), "subType" -> Json.fromString("04"))
+          ),
+          "binary" -> Json.obj("$binary" -> Json.obj("base64" -> Json.fromString("wKgBCQ=="), "subType" -> Json.fromString("00")))
+        )
+
+        CirceJsonMapper.fromBson(bson) mustBe Right(json)
+        CirceJsonMapper.toBson(json).toString mustBe bson.toString
+      }
+
+      "handle numeric conversions" in {
+        val bson = BsonValue.document(
+          "double"     -> BsonValue.double(0.2),
+          "long"       -> BsonValue.long(ts.toEpochMilli),
+          "int"        -> BsonValue.int(1),
+          "bigDecimal" -> BsonValue.bigDecimal(BigDecimal(100.0)),
+          "bigInt"     -> BsonValue.bigDecimal(BigDecimal(BigInt(Long.MaxValue) + 3))
+        )
+        val json = Json.obj(
+          "double"     -> Json.fromDouble(0.2).get,
+          "long"       -> Json.fromLong(ts.toEpochMilli),
+          "int"        -> Json.fromInt(1),
+          "bigDecimal" -> Json.fromBigDecimal(BigDecimal(100.0)),
+          "bigInt"     -> Json.fromBigInt(BigInt(Long.MaxValue) + 3)
+        )
+
+        CirceJsonMapper.fromBson(bson) mustBe Right(json)
+        CirceJsonMapper.toBson(json).toString mustBe bson.toString
       }
     }
   }

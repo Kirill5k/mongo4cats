@@ -79,7 +79,6 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
     def toBsonValue: BsonValue =
       (isDecimal, jNumber.value) match {
-        case (true, n)                   => BsonValue.bigDecimal(n)
         case (false, n) if n.isValidInt  => BsonValue.int(n.toInt)
         case (false, n) if n.isValidLong => BsonValue.long(n.toLong)
         case (_, n)                      => BsonValue.bigDecimal(n)
