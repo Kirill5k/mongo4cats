@@ -4,8 +4,6 @@ title:  "Working with documents"
 tags: ["Document"]
 ---
 
-## Working with documents
-
 MongoDB stores data records as BSON documents. BSON is a binary representation of JSON objects, though it contains more data types than JSON. 
 
 Documents are composed of key-and-value pairs, where keys are represented as regular strings and values can be any of the BSON data types, including other documents, arrays, and arrays of documents.
