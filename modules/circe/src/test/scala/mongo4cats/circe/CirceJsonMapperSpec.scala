@@ -38,6 +38,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
       "long"          -> BsonValue.long(ts.toEpochMilli),
       "int"           -> BsonValue.int(1),
       "bigDecimal"    -> BsonValue.bigDecimal(BigDecimal(100.0)),
+      "biggerInt"     -> BsonValue.bigDecimal(BigDecimal(BigInt(Long.MaxValue) + 3))
       "array"         -> BsonValue.array(BsonValue.string("a"), BsonValue.string("b")),
       "dateInstant"   -> BsonValue.instant(ts),
       "dateEpoch"     -> BsonValue.instant(ts),
@@ -59,6 +60,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
           "long"          -> Json.fromLong(ts.toEpochMilli),
           "int"           -> Json.fromInt(1),
           "bigDecimal"    -> Json.fromBigDecimal(BigDecimal(100.0)),
+          "biggerInt"     -> Json.fromBigInt(BigInt(Long.MaxValue) + 3)
           "array"         -> Json.arr(Json.fromString("a"), Json.fromString("b")),
           "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
           "dateEpoch"     -> Json.obj("$date" -> Json.fromLong(ts.toEpochMilli)),
@@ -83,6 +85,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
             "long"          -> Json.fromLong(ts.toEpochMilli),
             "int"           -> Json.fromInt(1),
             "bigDecimal"    -> Json.fromBigDecimal(BigDecimal(100.0)),
+            "biggerInt"     -> Json.fromBigDecimal(BigDecimal(BigInt(Long.MaxValue) + 3))
             "array"         -> Json.arr(Json.fromString("a"), Json.fromString("b")),
             "dateInstant"   -> Json.obj("$date" -> Json.fromString(ts.toString)),
             "dateEpoch"     -> Json.obj("$date" -> Json.fromString(ts.toString)),
