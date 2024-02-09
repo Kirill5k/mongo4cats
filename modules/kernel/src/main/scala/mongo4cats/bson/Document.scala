@@ -107,8 +107,15 @@ final private class ListMapDocument(
   override def hashCode(): Int  = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
-      case Some(doc: Document) => doc.toSet == fields.toSet
-      case _                   => false
+      case Some(doc: Document) if doc.keys == this.keys =>
+        doc.toMap.forall { case (k, v) =>
+          (v, fields.get(k)) match {
+            case (BsonValue.BBinary(bin1), Some(BsonValue.BBinary(bin2))) => bin1.sameElements(bin2)
+            case (bv1, Some(bv2))                                     => bv1 == bv2
+            case _                                                    => false
+          }
+        }
+      case _ => false
     }
 }
 

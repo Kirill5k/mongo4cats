@@ -67,7 +67,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     def toBsonValue: BsonValue =
       jNumber.getClass.getName match {
         case "io.circe.JsonDouble" | "io.circe.JsonFloat" => BsonValue.double(jNumber.toDouble)
-        case "io.circe.JsonLong"                          => BsonValue.long(jNumber.toLong.get)
+        case "io.circe.JsonLong"                          => jNumber.toInt.map(BsonValue.int).orElse(jNumber.toLong.map(BsonValue.long)).get
         case _                                            => BsonValue.bigDecimal(jNumber.toBigDecimal.get)
       }
   }

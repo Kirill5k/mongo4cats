@@ -105,7 +105,7 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
         )
 
         ZioJsonMapper.fromBson(bson) mustBe Right(json)
-        ZioJsonMapper.toBson(json).toString mustBe bson.toString
+        ZioJsonMapper.toBson(json) mustBe bson
       }
 
       "handle numeric conversions" in {
@@ -123,7 +123,7 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
         )
 
         ZioJsonMapper.fromBson(bson) mustBe Right(json)
-        ZioJsonMapper.toBson(json).toString mustBe bson.toString
+        ZioJsonMapper.toBson(json) mustBe bson
       }
     }
   }

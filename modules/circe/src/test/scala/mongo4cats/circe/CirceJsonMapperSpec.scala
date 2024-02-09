@@ -90,7 +90,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
         )
 
         CirceJsonMapper.fromBson(bson) mustBe Right(json)
-        CirceJsonMapper.toBson(json).toString mustBe bson.toString
+        CirceJsonMapper.toBson(json) mustBe bson
       }
 
       "handle numeric conversions" in {
@@ -110,7 +110,7 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
         )
 
         CirceJsonMapper.fromBson(bson) mustBe Right(json)
-        CirceJsonMapper.toBson(json).toString mustBe bson.toString
+        CirceJsonMapper.toBson(json) mustBe bson
       }
     }
   }
