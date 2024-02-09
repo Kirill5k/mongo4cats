@@ -55,4 +55,6 @@ abstract class ClientSession[F[_]] {
   /** Returns true if operations in this session must be causally consistent
     */
   def isCausallyConsistent: Boolean = underlying.isCausallyConsistent
+
+  def close: F[Unit]
 }

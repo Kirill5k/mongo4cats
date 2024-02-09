@@ -45,6 +45,7 @@ final private class LiveClientSession[F[_]](
   def startTransaction(options: TransactionOptions): F[Unit] = F.fromTry(Try(underlying.startTransaction(options)))
   def commitTransaction: F[Unit]                             = underlying.commitTransaction().asyncVoid[F]
   def abortTransaction: F[Unit]                              = underlying.abortTransaction().asyncVoid[F]
+  def close: F[Unit]                                         = F.blocking(underlying.close())
 }
 
 final private class LiveMongoClient[F[_]](
@@ -64,8 +65,8 @@ final private class LiveMongoClient[F[_]](
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
     underlying.listDatabases(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
 
-  def startSession(options: ClientSessionOptions): Resource[F, ClientSession[F]] =
-    Resource.fromAutoCloseable(underlying.startSession(options).asyncSingle[F].unNone).map(new LiveClientSession(_))
+  def startSession(options: ClientSessionOptions): F[ClientSession[F]] =
+    underlying.startSession(options).asyncSingle[F].unNone.map(new LiveClientSession(_))
 }
 
 object MongoClient extends AsJava {

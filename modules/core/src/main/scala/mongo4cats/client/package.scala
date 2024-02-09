@@ -16,9 +16,8 @@
 
 package mongo4cats
 
-import cats.effect.kernel.Resource
 import fs2.Stream
 
 package object client {
-  type MongoClient[F[_]] = GenericMongoClient[F, Stream[F, *], Resource[F, *]]
+  type MongoClient[F[_]] = GenericMongoClient[F, Stream[F, *]]
 }

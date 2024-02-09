@@ -16,7 +16,7 @@
 
 package mongo4cats.examples
 
-import cats.effect.{IO, IOApp}
+import cats.effect.{IO, IOApp, Resource}
 import cats.syntax.foldable._
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
@@ -28,7 +28,7 @@ object Transactions extends IOApp.Simple {
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
       for {
         db <- client.getDatabase("my-db")
-        _ <- client.startSession.use { session =>
+        _ <- Resource.make(client.startSession)(_.close).use { session =>
           for {
             coll   <- db.getCollection("docs")
             _      <- session.startTransaction
