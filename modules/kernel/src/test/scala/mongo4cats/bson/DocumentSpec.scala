@@ -141,5 +141,16 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         result.toJson mustBe """{"a": 1, "b": 2, "c": 3, "d": 4}"""
       }
     }
+
+    "when comparing 2 documents" should {
+      "return true if both documents have same fields" in {
+        Document.parse(nameDoc.toJson) mustBe nameDoc
+        Document("first" := "John", "last" := "Smith", "aliases" := List("foo", "bar")) mustBe nameDoc
+      }
+
+      "return false when 2 documents are different" in {
+        (nameDoc += "age" -> 30) must not be nameDoc
+      }
+    }
   }
 }
