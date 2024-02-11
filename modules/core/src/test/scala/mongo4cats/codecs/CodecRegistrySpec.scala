@@ -29,6 +29,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import java.time.Instant
+import java.util.UUID
 import scala.concurrent.Future
 
 class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
@@ -158,6 +159,22 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
         result.map { doc =>
           doc.getAs[BigInt]("amount") mustBe Some(BigInt(Int.MaxValue) * 2)
+        }
+      }
+    }
+
+    "be able to handle uuid" in {
+      withEmbeddedMongoDatabase { db =>
+        val id = UUID.fromString("29ca24a5-8e95-4fc1-bec0-7c0d08de5196")
+        val result = for {
+          coll <- db.getCollection("coll")
+          _    <- coll.insertOne(TestData.transaction(TestData.eurAccount))
+          _    <- coll.updateMany(Filter.empty, Update.set("account", id))
+          doc  <- coll.find(Filter.eq("account", id)).first
+        } yield doc.get
+
+        result.map { doc =>
+          doc.getAs[UUID]("account") mustBe Some(id)
         }
       }
     }
