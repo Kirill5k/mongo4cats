@@ -29,6 +29,8 @@ import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect.sequential
 
+import java.util.UUID
+
 object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
 
   override val mongoPort: Int = 27000
@@ -147,6 +149,17 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
             assert(docs.flatMap(_.getString("status")).toSet)(equalTo(Set("updated"))) &&
             assert(updateResult)(hasField("matchedCount", _.getMatchedCount, equalTo(2L))) &&
             assert(updateResult)(hasField("modifiedCount", _.getModifiedCount, equalTo(2L)))
+        }
+      },
+      test("handle uuid") {
+        withEmbeddedMongoDatabase { db =>
+          val uuid = UUID.fromString("29ca24a5-8e95-4fc1-bec0-7c0d08de5196")
+          for {
+            coll <- db.getCollection("coll")
+            _    <- coll.insertOne(Document("foo" := "bar"))
+            _    <- coll.updateMany(Filter.eq("foo", "bar"), Update.set("uuid", uuid))
+            doc  <- coll.find(Filter.eq("foo", "bar")).first
+          } yield assert(doc.flatMap(_.getAs[UUID]("uuid")))(isSome[UUID](equalTo(uuid)))
         }
       },
       test("update all docs in coll") {

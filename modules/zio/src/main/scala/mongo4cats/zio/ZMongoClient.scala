@@ -21,6 +21,7 @@ import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.models.client._
 import mongo4cats.zio.syntax._
+import org.bson.UuidRepresentation
 import zio.{RIO, Scope, Task, ZIO}
 
 final private class ZClientSessionLive(
@@ -55,12 +56,21 @@ object ZMongoClient extends AsJava {
     fromConnectionString(connection.toString)
 
   def fromConnectionString(connectionString: String): RIO[Scope, ZMongoClient] =
-    mkClient(MongoClients.create(MongoClientSettings.builder().applyConnectionString(ConnectionString(connectionString)).build()))
+    mkClient {
+      MongoClients.create {
+        MongoClientSettings
+          .builder()
+          .uuidRepresentation(UuidRepresentation.STANDARD)
+          .applyConnectionString(ConnectionString(connectionString))
+          .build()
+      }
+    }
 
   def fromServerAddress(serverAddresses: ServerAddress*): RIO[Scope, ZMongoClient] =
     create {
       MongoClientSettings
         .builder()
+        .uuidRepresentation(UuidRepresentation.STANDARD)
         .applyToClusterSettings { builder =>
           val _ = builder.hosts(asJava(serverAddresses.toList))
         }
