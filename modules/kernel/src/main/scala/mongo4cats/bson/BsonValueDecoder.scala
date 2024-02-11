@@ -33,6 +33,7 @@ object BsonValueDecoder {
   implicit val booleanDecoder: BsonValueDecoder[Boolean]       = _.asBoolean
   implicit val documentDecoder: BsonValueDecoder[Document]     = _.asDocument
   implicit val bigDecimalDecoder: BsonValueDecoder[BigDecimal] = _.asBigDecimal
+  implicit val bigIntDecoder: BsonValueDecoder[BigInt]         = _.asBigDecimal.map(_.toBigInt)
   implicit val uuidDecoder: BsonValueDecoder[UUID]             = _.asUuid
 
   implicit def arrayListDecoder[A](implicit d: BsonValueDecoder[A]): BsonValueDecoder[List[A]] =

@@ -38,5 +38,5 @@ private object BigIntCodec extends Codec[BigInt] {
 
 object BigIntCodecProvider extends CodecProvider {
   override def get[T](clazz: Class[T], registry: CodecRegistry): Codec[T] =
-    if (classOf[BigDecimal].isAssignableFrom(clazz)) BigIntCodec.asInstanceOf[Codec[T]] else null
+    if (classOf[BigInt].isAssignableFrom(clazz)) BigIntCodec.asInstanceOf[Codec[T]] else null
 }

@@ -146,6 +146,21 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         }
       }
     }
+
+    "be able to handle scala big int" in {
+      withEmbeddedMongoDatabase { db =>
+        val result = for {
+          coll <- db.getCollection("coll")
+          _    <- coll.insertOne(TestData.transaction(TestData.eurAccount))
+          _    <- coll.updateMany(Filter.empty, Update.set("amount", BigInt(Int.MaxValue) * 2))
+          doc  <- coll.find.first
+        } yield doc.get
+
+        result.map { doc =>
+          doc.getAs[BigInt]("amount") mustBe Some(BigInt(Int.MaxValue) * 2)
+        }
+      }
+    }
   }
 
   def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =

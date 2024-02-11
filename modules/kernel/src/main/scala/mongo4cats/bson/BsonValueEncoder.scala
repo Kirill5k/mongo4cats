@@ -34,6 +34,7 @@ object BsonValueEncoder {
   implicit val booleanEncoder: BsonValueEncoder[Boolean]       = BsonValue.boolean(_)
   implicit val documentEncoder: BsonValueEncoder[Document]     = BsonValue.document(_)
   implicit val bigDecimalEncoder: BsonValueEncoder[BigDecimal] = BsonValue.bigDecimal(_)
+  implicit val bigIntEncoder: BsonValueEncoder[BigInt]         = BsonValue.bigInt(_)
   implicit val uuidEncoder: BsonValueEncoder[UUID]             = BsonValue.uuid(_)
   implicit val binaryEncoder: BsonValueEncoder[Array[Byte]]    = BsonValue.binary(_)
 

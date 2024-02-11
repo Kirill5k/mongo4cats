@@ -388,6 +388,7 @@ object BsonValue {
   def document(keyValues: (String, BsonValue)*): BsonValue = BDocument(Document(keyValues))
   def string(value: String): BsonValue                     = BString(value)
   def bigDecimal(value: BigDecimal): BsonValue             = BDecimal(value)
+  def bigInt(value: BigInt): BsonValue                     = BDecimal(BigDecimal(value))
   def boolean(value: Boolean): BsonValue                   = BBoolean(value)
   def double(value: Double): BsonValue                     = BDouble(value)
   def binary(value: Array[Byte]): BsonValue                = BBinary(value)
