@@ -29,6 +29,7 @@ package object codecs {
       from(BsonValueCodecProvider),
       MongoClientSettings.getDefaultCodecRegistry,
       from(BigDecimalCodecProvider),
+      from(BigIntCodecProvider),
       from(OptionCodecProvider),
       from(MapCodecProvider),
       from(IterableCodecProvider)
