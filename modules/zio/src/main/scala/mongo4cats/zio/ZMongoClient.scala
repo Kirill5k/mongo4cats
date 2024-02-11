@@ -66,13 +66,13 @@ object ZMongoClient extends AsJava {
       }
     }
 
-  def fromServerAddress(serverAddresses: ServerAddress*): RIO[Scope, ZMongoClient] =
+  def fromServerAddress(serverAddress: ServerAddress, serverAddresses: ServerAddress*): RIO[Scope, ZMongoClient] =
     create {
       MongoClientSettings
         .builder()
         .uuidRepresentation(UuidRepresentation.STANDARD)
         .applyToClusterSettings { builder =>
-          val _ = builder.hosts(asJava(serverAddresses.toList))
+          val _ = builder.hosts(asJava(serverAddress :: serverAddresses.toList))
         }
         .build()
     }
