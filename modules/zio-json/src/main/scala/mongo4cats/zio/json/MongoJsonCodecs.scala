@@ -17,7 +17,6 @@
 package mongo4cats.zio.json
 
 import mongo4cats.bson.json._
-import mongo4cats.bson.syntax._
 import mongo4cats.bson._
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.errors.MongoJsonParsingException
@@ -97,7 +96,7 @@ trait MongoJsonCodecs {
   implicit def deriveZioJsonCodecProvider[T: ClassTag](implicit enc: JsonEncoder[T], dec: JsonDecoder[T]): MongoCodecProvider[T] =
     new MongoCodecProvider[T] {
       override def get: CodecProvider = codecProvider[T](
-        _.toBson,
+        enc.toJsonAST(_).left.map(MongoJsonParsingException(_, None)).fold(throw _, ZioJsonMapper.toBson),
         ZioJsonMapper.fromBson(_).flatMap(j => dec.fromJsonAST(j).left.map(e => MongoJsonParsingException(e, Some(j.toString))))
       )
     }
