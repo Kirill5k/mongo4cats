@@ -1,8 +1,8 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
   private object Versions {
-    val kindProjector      = "0.13.2"
+    val kindProjector      = "0.13.3"
     val catsEffect         = "3.5.3"
     val mongodb            = "4.11.1"
     val fs2                = "3.9.4"
