@@ -15,6 +15,7 @@
  */
 
 package mongo4cats.zio
+
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.result.{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult}
