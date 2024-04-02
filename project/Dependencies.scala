@@ -2,21 +2,20 @@ import sbt.*
 
 object Dependencies {
   private object Versions {
+    val mongodb            = "5.0.0"
+    val fs2                = "3.10.2"
     val kindProjector      = "0.13.3"
-    val catsEffect         = "3.5.3"
-    val mongodb            = "4.11.1"
-    val fs2                = "3.9.4"
     val circe              = "0.14.6"
     val zio                = "2.0.21"
     val zioInteropReactive = "2.0.2"
     val zioJson            = "0.6.2"
 
-    val logback   = "1.4.14"
-    val scalaTest = "3.2.17"
+    val logback   = "1.5.3"
+    val scalaTest = "3.2.18"
 
     val embeddedMongo   = "4.12.2"
-    val immutableValue  = "2.10.0"
-    val commonsCompress = "1.25.0"
+    val immutableValue  = "2.10.1"
+    val commonsCompress = "1.26.1"
   }
 
   private object Libraries {
@@ -25,7 +24,6 @@ object Dependencies {
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
     val mongodbDriverSync    = "org.mongodb" % "mongodb-driver-sync"            % Versions.mongodb
 
-    val catsEffect = "org.typelevel" %% "cats-effect" % Versions.catsEffect
     val fs2Core    = "co.fs2"        %% "fs2-core"    % Versions.fs2
 
     val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
@@ -57,7 +55,6 @@ object Dependencies {
   )
 
   val core = Seq(
-    Libraries.catsEffect,
     Libraries.fs2Core,
     Libraries.logback   % Test,
     Libraries.scalaTest % Test
@@ -91,7 +88,6 @@ object Dependencies {
   )
 
   val embedded = Seq(
-    Libraries.catsEffect,
     Libraries.fs2Core,
     Libraries.mongodbDriverSync,
     Libraries.embeddedMongo,
