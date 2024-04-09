@@ -16,6 +16,7 @@
 
 package mongo4cats.zio
 
+import com.mongodb.CursorType
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
@@ -305,7 +306,11 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
             txs  <- db.getCollection("transactions")
             _    <- cats.insertMany(TestData.categories)
             _    <- txs.insertMany(TestData.transactions(1000000))
-            res  <- txs.find.boundedStream(100).run(ZSink.count)
+            res  <- txs.find
+              .noCursorTimeout(true)
+              .cursorType(CursorType.NonTailable)
+              .boundedStream(100)
+              .run(ZSink.count)
           } yield assert(res)(equalTo(1000000L))
         }
       },

@@ -16,7 +16,7 @@
 
 package mongo4cats.queries
 
-import com.mongodb.ExplainVerbosity
+import com.mongodb.{CursorType, ExplainVerbosity}
 import com.mongodb.client.model
 import com.mongodb.reactivestreams.client.FindPublisher
 import mongo4cats.bson.Document
@@ -28,6 +28,16 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
 private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher, T, QB] {
+
+  def cursorType(cursorType: CursorType): QB = withQuery(QueryCommand.CursorType(cursorType))
+
+  /** The server normally times out idle cursors after an inactivity period (10 minutes) to prevent excess memory use. Set this option to
+    * prevent that.
+    *
+    * @param noCursorTimeout
+    *   true if cursor timeout is disabled
+    */
+  def noCursorTimeout(noCursorTimeout: Boolean): QB = withQuery(QueryCommand.NoCursorTimeout(noCursorTimeout))
 
   /** Sets the maximum execution time on the server for this operation.
     *
@@ -199,25 +209,27 @@ private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher,
   override protected def applyQueries(): FindPublisher[T] =
     queries.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
-        case QueryCommand.ShowRecordId(showRecordId) => obs.showRecordId(showRecordId)
-        case QueryCommand.ReturnKey(returnKey)       => obs.returnKey(returnKey)
-        case QueryCommand.Comment(comment)           => obs.comment(comment)
-        case QueryCommand.Collation(collation)       => obs.collation(collation)
-        case QueryCommand.Partial(partial)           => obs.partial(partial)
-        case QueryCommand.MaxTime(duration)          => obs.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
-        case QueryCommand.MaxAwaitTime(duration)     => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
-        case QueryCommand.HintString(hint)           => obs.hintString(hint)
-        case QueryCommand.Hint(hint)                 => obs.hint(hint)
-        case QueryCommand.Max(index)                 => obs.max(index)
-        case QueryCommand.Min(index)                 => obs.min(index)
-        case QueryCommand.Skip(n)                    => obs.skip(n)
-        case QueryCommand.Limit(n)                   => obs.limit(n)
-        case QueryCommand.Sort(order)                => obs.sort(order)
-        case QueryCommand.Filter(filter)             => obs.filter(filter)
-        case QueryCommand.Projection(projection)     => obs.projection(projection)
-        case QueryCommand.BatchSize(size)            => obs.batchSize(size)
-        case QueryCommand.AllowDiskUse(allowDiskUse) => obs.allowDiskUse(allowDiskUse)
-        case _                                       => obs
+        case QueryCommand.ShowRecordId(showRecordId)       => obs.showRecordId(showRecordId)
+        case QueryCommand.ReturnKey(returnKey)             => obs.returnKey(returnKey)
+        case QueryCommand.Comment(comment)                 => obs.comment(comment)
+        case QueryCommand.Collation(collation)             => obs.collation(collation)
+        case QueryCommand.Partial(partial)                 => obs.partial(partial)
+        case QueryCommand.MaxTime(duration)                => obs.maxTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.MaxAwaitTime(duration)           => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.HintString(hint)                 => obs.hintString(hint)
+        case QueryCommand.Hint(hint)                       => obs.hint(hint)
+        case QueryCommand.Max(index)                       => obs.max(index)
+        case QueryCommand.Min(index)                       => obs.min(index)
+        case QueryCommand.Skip(n)                          => obs.skip(n)
+        case QueryCommand.Limit(n)                         => obs.limit(n)
+        case QueryCommand.Sort(order)                      => obs.sort(order)
+        case QueryCommand.Filter(filter)                   => obs.filter(filter)
+        case QueryCommand.Projection(projection)           => obs.projection(projection)
+        case QueryCommand.BatchSize(size)                  => obs.batchSize(size)
+        case QueryCommand.AllowDiskUse(allowDiskUse)       => obs.allowDiskUse(allowDiskUse)
+        case QueryCommand.NoCursorTimeout(noCursorTimeout) => obs.noCursorTimeout(noCursorTimeout)
+        case QueryCommand.CursorType(cursorType)           => obs.cursorType(cursorType)
+        case _                                             => obs
       }
     }
 }

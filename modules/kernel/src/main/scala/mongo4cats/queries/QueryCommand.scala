@@ -18,6 +18,7 @@ package mongo4cats.queries
 
 import com.mongodb.client.model
 import com.mongodb.client.model.changestream
+import com.mongodb.{CursorType => MCursorType}
 import org.bson.conversions.Bson
 import org.bson.{BsonDocument, BsonTimestamp}
 
@@ -26,6 +27,8 @@ import scala.concurrent.duration.Duration
 sealed private[mongo4cats] trait QueryCommand
 
 private[mongo4cats] object QueryCommand {
+  final case class CursorType(cursorType: MCursorType)                         extends QueryCommand
+  final case class NoCursorTimeout(timeout: Boolean)                           extends QueryCommand
   final case class ShowRecordId(showRecordId: Boolean)                         extends QueryCommand
   final case class ReturnKey(returnKey: Boolean)                               extends QueryCommand
   final case class Comment(comment: String)                                    extends QueryCommand

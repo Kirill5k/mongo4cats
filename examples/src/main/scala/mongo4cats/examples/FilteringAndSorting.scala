@@ -31,6 +31,7 @@ object FilteringAndSorting extends IOApp.Simple {
         coll <- db.getCollection("docs")
         _    <- coll.insertMany((0 to 100).map(i => Document("name" := s"doc-$i", "index" := i)))
         docs <- coll.find
+          .noCursorTimeout(true)
           .filter(Filter.lt("index", 10) || Filter.regex("name", "doc-[1-9]0"))
           .sortByDesc("name")
           .limit(5)

@@ -19,7 +19,7 @@ package mongo4cats.collection
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.syntax.parallel._
-import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
+import com.mongodb.{CursorType, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
 import mongo4cats.bson.Document
@@ -470,7 +470,12 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               cats <- db.getCollection("categories")
               txs  <- db.getCollection("transactions")
               _    <- (cats.insertMany(TestData.categories), txs.insertMany(TestData.transactions(1000000))).parTupled
-              res  <- txs.find.boundedStream(100).compile.count
+              res <- txs.find
+                .noCursorTimeout(true)
+                .cursorType(CursorType.NonTailable)
+                .boundedStream(100)
+                .compile
+                .count
             } yield res
 
             result.map(_ mustBe 1000000)
