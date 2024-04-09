@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.embedded.EmbeddedMongo
@@ -126,6 +127,17 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         result.map { dbs =>
           dbs must not contain "foo"
         }
+      }
+    }
+
+    "runCommand" should {
+      "run a specific command" in withEmbeddedMongoClient { client =>
+        val result = for {
+          db <- client.getDatabase("admin")
+          _ <- db.runCommand(Document("setParameter" := 1, "cursorTimeoutMillis" := 300000L))
+        } yield ()
+
+        result.map(_ mustBe ())
       }
     }
   }
