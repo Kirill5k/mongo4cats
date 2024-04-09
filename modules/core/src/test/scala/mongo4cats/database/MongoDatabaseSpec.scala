@@ -133,11 +133,13 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
     "runCommand" should {
       "run a specific command" in withEmbeddedMongoClient { client =>
         val result = for {
-          db <- client.getDatabase("admin")
-          _ <- db.runCommand(Document("setParameter" := 1, "cursorTimeoutMillis" := 300000L))
-        } yield ()
+          db  <- client.getDatabase("admin")
+          res <- db.runCommand(Document("setParameter" := 1, "cursorTimeoutMillis" := 300000L))
+        } yield res
 
-        result.map(_ mustBe ())
+        result.map { res =>
+          res.getAs[Double]("ok") mustBe Some(1.0)
+        }
       }
     }
   }
