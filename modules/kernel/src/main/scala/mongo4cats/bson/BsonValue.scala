@@ -394,6 +394,6 @@ object BsonValue {
   def binary(value: Array[Byte]): BsonValue                = BBinary(value)
   def instant(value: Instant): BsonValue                   = BDateTime(value)
   def regex(value: Regex): BsonValue                       = BRegex(value)
-  def timestamp(seconds: Long, inc: Int): BsonValue        = BTimestamp(seconds, inc)
+  def timestamp(seconds: Long, inc: Int = 1): BsonValue    = BTimestamp(seconds, inc)
   def uuid(value: UUID): BsonValue                         = BUuid(value)
 }
