@@ -137,7 +137,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         val ts = Instant.now.getEpochSecond
         val result = for {
           coll <- db.getCollection("coll")
-          _    <- coll.insertOne(TestData.transaction(TestData.gbpAccount).add("timestamp" -> BsonValue.timestamp(ts)))
+          _    <- coll.insertOne(TestData.transaction(TestData.gbpAccount).add("timestamp" -> BsonValue.timestamp(ts, 1)))
           doc  <- coll.find.first
         } yield doc.get
 

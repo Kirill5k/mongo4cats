@@ -306,7 +306,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
             txs  <- db.getCollection("transactions")
             _    <- cats.insertMany(TestData.categories)
             _    <- txs.insertMany(TestData.transactions(1000000))
-            res  <- txs.find
+            res <- txs.find
               .noCursorTimeout(true)
               .cursorType(CursorType.NonTailable)
               .boundedStream(100)

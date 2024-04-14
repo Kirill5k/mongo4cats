@@ -76,10 +76,12 @@ private[mongo4cats] object ContainerValueReader {
         val subtype = reader.peekBinarySubType()
         val binary  = reader.readBinaryData().getData
         Some(BsonValue.uuid(UuidHelper.decodeBinaryToUuid(binary, subtype, UuidRepresentation.STANDARD)))
-      case BsonType.BINARY             => Some(BsonValue.binary(reader.readBinaryData().getData))
-      case BsonType.OBJECT_ID          => Some(BsonValue.objectId(reader.readObjectId()))
-      case BsonType.BOOLEAN            => Some(BsonValue.boolean(reader.readBoolean()))
-      case BsonType.TIMESTAMP          => Some(BsonValue.timestamp(reader.readTimestamp().getTime.toLong))
+      case BsonType.BINARY    => Some(BsonValue.binary(reader.readBinaryData().getData))
+      case BsonType.OBJECT_ID => Some(BsonValue.objectId(reader.readObjectId()))
+      case BsonType.BOOLEAN   => Some(BsonValue.boolean(reader.readBoolean()))
+      case BsonType.TIMESTAMP =>
+        val ts = reader.readTimestamp()
+        Some(BsonValue.timestamp(ts.getTime.toLong, ts.getInc))
       case BsonType.DATE_TIME          => Some(BsonValue.instant(Instant.ofEpochMilli(reader.readDateTime())))
       case BsonType.REGULAR_EXPRESSION => Some(BsonValue.regex(reader.readRegularExpression().asRegularExpression().getPattern.r))
       case _                           => None

@@ -181,22 +181,22 @@ object BsonValue {
 
     override def asJava: JBsonValue = new BsonDouble(value)
   }
-  final case class BTimestamp(value: Long) extends BsonValue {
+  final case class BTimestamp(seconds: Long, inc: Int) extends BsonValue {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
-    override def asLong: Option[Long]             = Some(value)
+    override def asLong: Option[Long]             = Some(seconds)
     override def asDouble: Option[Double]         = None
     override def asBigDecimal: Option[BigDecimal] = None
     override def asBoolean: Option[Boolean]       = None
     override def asDocument: Option[Document]     = None
     override def asObjectId: Option[ObjectId]     = None
     override def asList: Option[List[BsonValue]]  = None
-    override def asInstant: Option[Instant]       = Some(Instant.ofEpochSecond(value))
+    override def asInstant: Option[Instant]       = Some(Instant.ofEpochSecond(seconds))
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
 
-    override def asJava: JBsonValue = new BsonTimestamp(value.toInt, 1)
+    override def asJava: JBsonValue = new BsonTimestamp(seconds.toInt, inc)
   }
   final case class BDateTime(value: Instant) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -394,6 +394,6 @@ object BsonValue {
   def binary(value: Array[Byte]): BsonValue                = BBinary(value)
   def instant(value: Instant): BsonValue                   = BDateTime(value)
   def regex(value: Regex): BsonValue                       = BRegex(value)
-  def timestamp(value: Long): BsonValue                    = BTimestamp(value)
+  def timestamp(seconds: Long, inc: Int): BsonValue        = BTimestamp(seconds, inc)
   def uuid(value: UUID): BsonValue                         = BUuid(value)
 }
