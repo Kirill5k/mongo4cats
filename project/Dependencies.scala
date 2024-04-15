@@ -2,7 +2,7 @@ import sbt.*
 
 object Dependencies {
   private object Versions {
-    val mongodb            = "5.0.0"
+    val mongodb            = "5.0.1"
     val fs2                = "3.10.2"
     val kindProjector      = "0.13.3"
     val circe              = "0.14.6"
