@@ -19,12 +19,12 @@ package mongo4cats.collection
 import cats.effect.Async
 import cats.syntax.functor._
 import com.mongodb.ExplainVerbosity
-import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.bson.Document
 import mongo4cats.queries._
 import mongo4cats.syntax._
 import fs2.Stream
+import mongo4cats.models.collection.ChangeStreamDocument
 
 import scala.reflect.ClassTag
 
@@ -51,8 +51,10 @@ private[collection] object Queries {
       protected val queries: List[QueryCommand]
   ) extends WatchQueryBuilder[F, T, Stream[F, *]] {
 
-    def stream: Stream[F, ChangeStreamDocument[T]]                       = applyQueries().stream[F]
-    def boundedStream(capacity: Int): Stream[F, ChangeStreamDocument[T]] = applyQueries().boundedStream[F](capacity)
+    def stream: Stream[F, ChangeStreamDocument[T]] =
+      applyQueries().stream[F].map(ChangeStreamDocument.fromJava)
+    def boundedStream(capacity: Int): Stream[F, ChangeStreamDocument[T]] =
+      applyQueries().boundedStream[F](capacity).map(ChangeStreamDocument.fromJava)
 
     override protected def withQuery(command: QueryCommand): Watch[F, T] = Fs2WatchQueryBuilder(observable, command :: queries)
   }

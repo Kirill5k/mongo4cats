@@ -17,9 +17,9 @@
 package mongo4cats.zio
 
 import com.mongodb.ExplainVerbosity
-import com.mongodb.client.model.changestream.ChangeStreamDocument
 import com.mongodb.reactivestreams.client.{AggregatePublisher, ChangeStreamPublisher, DistinctPublisher, FindPublisher}
 import mongo4cats.bson.Document
+import mongo4cats.models.collection.ChangeStreamDocument
 import mongo4cats.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, QueryCommand, WatchQueryBuilder}
 import mongo4cats.zio.syntax._
 import zio.stream.Stream
@@ -43,8 +43,10 @@ private[zio] object Queries {
       protected val queries: List[QueryCommand]
   ) extends WatchQueryBuilder[Task, T, Stream[Throwable, *]] {
 
-    def stream: Stream[Throwable, ChangeStreamDocument[T]]                       = applyQueries().stream
-    def boundedStream(capacity: Int): Stream[Throwable, ChangeStreamDocument[T]] = applyQueries().boundedStream(capacity)
+    def stream: Stream[Throwable, ChangeStreamDocument[T]] =
+      applyQueries().stream.map(ChangeStreamDocument.fromJava)
+    def boundedStream(capacity: Int): Stream[Throwable, ChangeStreamDocument[T]] =
+      applyQueries().boundedStream(capacity).map(ChangeStreamDocument.fromJava)
 
     override protected def withQuery(command: QueryCommand): Watch[T] = ZWatchQueryBuilder(observable, command :: queries)
   }

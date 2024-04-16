@@ -17,8 +17,9 @@
 package mongo4cats.queries
 
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
+import com.mongodb.client.model.changestream.FullDocument
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher
+import mongo4cats.models.collection.ChangeStreamDocument
 import org.bson.{BsonDocument, BsonTimestamp}
 
 import java.util.concurrent.TimeUnit
@@ -75,13 +76,13 @@ private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamP
     */
   def resumeAfter(resumeToken: BsonDocument): QB = withQuery(QueryCommand.ResumeAfter(resumeToken))
 
-  /** Similar to {@@@coderesumeAfter} , this option takes a resume token and starts a new change stream returning the first notification
+  /** Similar to {@code resumeAfter} , this option takes a resume token and starts a new change stream returning the first notification
     * after the token.
     *
     * <p>This will allow users to watch collections that have been dropped and recreated or newly renamed collections without missing any
     * notifications.</p>
     *
-    * <p>Note: The server will report an error if both {@@@codestartAfter} and {@@@coderesumeAfter} are specified.</p>
+    * <p>Note: The server will report an error if both {@code startAfter} and {@code resumeAfter} are specified.</p>
     *
     * @param startAfter
     *   the startAfter resumeToken

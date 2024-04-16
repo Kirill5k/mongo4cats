@@ -13,9 +13,10 @@ object Dependencies {
     val logback   = "1.5.3"
     val scalaTest = "3.2.18"
 
-    val embeddedMongo   = "4.12.2"
+    val embeddedMongo   = "4.12.6"
     val immutableValue  = "2.10.1"
     val commonsCompress = "1.26.1"
+    val jsr305          = "3.0.2"
   }
 
   private object Libraries {
@@ -24,7 +25,7 @@ object Dependencies {
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
     val mongodbDriverSync    = "org.mongodb" % "mongodb-driver-sync"            % Versions.mongodb
 
-    val fs2Core    = "co.fs2"        %% "fs2-core"    % Versions.fs2
+    val fs2Core = "co.fs2" %% "fs2-core" % Versions.fs2
 
     val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -40,9 +41,10 @@ object Dependencies {
     val scalaTest = "org.scalatest" %% "scalatest"       % Versions.scalaTest
     val logback   = "ch.qos.logback" % "logback-classic" % Versions.logback
 
-    val embeddedMongo   = "de.flapdoodle.embed" % "de.flapdoodle.embed.mongo" % Versions.embeddedMongo
-    val immutableValue  = "org.immutables"      % "value"                     % Versions.immutableValue
-    val commonsCompress = "org.apache.commons"  % "commons-compress"          % Versions.commonsCompress
+    val embeddedMongo   = "de.flapdoodle.embed"      % "de.flapdoodle.embed.mongo" % Versions.embeddedMongo
+    val immutableValue  = "org.immutables"           % "value"                     % Versions.immutableValue
+    val commonsCompress = "org.apache.commons"       % "commons-compress"          % Versions.commonsCompress
+    val jsr305          = "com.google.code.findbugs" % "jsr305"                    % Versions.jsr305
   }
 
   val kindProjector = "org.typelevel" % "kind-projector" % Versions.kindProjector
@@ -51,6 +53,7 @@ object Dependencies {
     Libraries.mongodbBson,
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
+    Libraries.jsr305    % Optional,
     Libraries.scalaTest % Test
   )
 

@@ -17,10 +17,11 @@
 package mongo4cats.examples
 
 import cats.effect.{IO, IOApp}
+import fs2.Stream
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
-import fs2.Stream
+import mongo4cats.operations.Filter
 
 object Watch extends IOApp.Simple {
 
@@ -31,8 +32,11 @@ object Watch extends IOApp.Simple {
         coll <- db.getCollection("docs")
         watchStream  = coll.watch.stream
         insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" := s"doc-$i")))
-        updates <- watchStream.concurrently(insertStream).take(10).compile.toList
-        _       <- IO.println(updates.mkString("[\n", ",\n", "\n]"))
+        deleteStream = Stream.eval(coll.deleteMany(Filter.empty))
+        dropStream   = Stream.eval(coll.drop)
+        opsStream    = insertStream ++ deleteStream ++ dropStream
+        updates <- watchStream.concurrently(opsStream).compile.toList
+        _       <- IO.println(updates.mkString("\n"))
       } yield ()
     }
 }
