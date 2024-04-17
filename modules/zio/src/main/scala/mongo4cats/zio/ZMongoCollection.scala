@@ -52,10 +52,10 @@ final private class ZMongoCollectionLive[T: ClassTag](
   def aggregate[Y: ClassTag](cs: ZClientSession, pipeline: Aggregate): Queries.Aggregate[Y] =
     Queries.aggregate(underlying.aggregate(cs.underlying, pipeline.toBson, Clazz.tag[Y]))
 
-  def watch(pipeline: Seq[Bson]): Queries.Watch[Document] = Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[Document]))
-  def watch(pipeline: Aggregate): Queries.Watch[Document] = Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[Document]))
-  def watch(cs: ZClientSession, pipeline: Aggregate): Queries.Watch[Document] =
-    Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[Document]))
+  def watch(pipeline: Seq[Bson]): Queries.Watch[T] = Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[T]))
+  def watch(pipeline: Aggregate): Queries.Watch[T] = Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[T]))
+  def watch(cs: ZClientSession, pipeline: Aggregate): Queries.Watch[T] =
+    Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[T]))
 
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): Queries.Distinct[Y] =
     Queries.distinct(underlying.distinct(fieldName, filter, Clazz.tag[Y]))

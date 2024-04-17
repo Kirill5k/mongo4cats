@@ -62,14 +62,14 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): Queries.Aggregate[F, Y] =
     Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
 
-  def watch(pipeline: Seq[Bson]): Queries.Watch[F, Document] =
-    Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[Document]))
+  def watch(pipeline: Seq[Bson]): Queries.Watch[F, T] =
+    Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[T]))
 
-  def watch(pipeline: Aggregate): Queries.Watch[F, Document] =
-    Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[Document]))
+  def watch(pipeline: Aggregate): Queries.Watch[F, T] =
+    Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[T]))
 
-  def watch(cs: ClientSession[F], pipeline: Aggregate): Queries.Watch[F, Document] =
-    Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[Document]))
+  def watch(cs: ClientSession[F], pipeline: Aggregate): Queries.Watch[F, T] =
+    Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[T]))
 
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): Queries.Distinct[F, Y] =
     Queries.distinct(underlying.distinct(fieldName, filter, Clazz.tag[Y]))

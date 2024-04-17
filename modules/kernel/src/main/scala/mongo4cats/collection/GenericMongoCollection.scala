@@ -83,17 +83,17 @@ abstract class GenericMongoCollection[F[_], T, S[_]] {
     * @note
     *   Requires MongoDB 3.6 or greater
     */
-  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document, S]
-  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document, S]
-  def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document, S]
+  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, T, S]
+  def watch(pipeline: Aggregate): WatchQueryBuilder[F, T, S]
+  def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, T, S]
 
   /** Creates a change stream for this collection.
     * @since 2.2
     * @note
     *   Requires MongoDB 3.6 or greater
     */
-  def watch: WatchQueryBuilder[F, Document, S]                            = watch(Aggregate.empty)
-  def watch(session: ClientSession[F]): WatchQueryBuilder[F, Document, S] = watch(session, Aggregate.empty)
+  def watch: WatchQueryBuilder[F, T, S]                            = watch(Aggregate.empty)
+  def watch(session: ClientSession[F]): WatchQueryBuilder[F, T, S] = watch(session, Aggregate.empty)
 
   /** Gets the distinct values of the specified field name.
     *
