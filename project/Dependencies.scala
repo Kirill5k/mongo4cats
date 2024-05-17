@@ -7,7 +7,7 @@ object Dependencies {
     val kindProjector      = "0.13.3"
     val circe              = "0.14.7"
     val zio                = "2.1.1"
-    val zioInteropReactive = "2.1.1"
+    val zioInteropReactive = "2.0.2"
     val zioJson            = "0.6.2"
 
     val logback   = "1.5.6"
