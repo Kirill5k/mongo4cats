@@ -2,18 +2,18 @@ import sbt.*
 
 object Dependencies {
   private object Versions {
-    val mongodb            = "5.0.1"
+    val mongodb            = "5.1.0"
     val fs2                = "3.10.2"
     val kindProjector      = "0.13.3"
-    val circe              = "0.14.6"
-    val zio                = "2.0.22"
-    val zioInteropReactive = "2.0.2"
+    val circe              = "0.14.7"
+    val zio                = "2.1.1"
+    val zioInteropReactive = "2.1.1"
     val zioJson            = "0.6.2"
 
     val logback   = "1.5.6"
     val scalaTest = "3.2.18"
 
-    val embeddedMongo   = "4.12.6"
+    val embeddedMongo   = "4.13.1"
     val immutableValue  = "2.10.1"
     val commonsCompress = "1.26.1"
     val jsr305          = "3.0.2"
