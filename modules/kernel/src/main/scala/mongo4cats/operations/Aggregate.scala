@@ -19,6 +19,7 @@ package mongo4cats.operations
 import com.mongodb.client.model.{Aggregates, BucketAutoOptions, Facet => JFacet, GraphLookupOptions, MergeOptions, UnwindOptions}
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
+import com.mongodb.client.model.Field
 
 trait Aggregate extends AsJava {
 
@@ -223,6 +224,20 @@ trait Aggregate extends AsJava {
     */
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate
 
+  /** Creates a \$addFields pipeline stage
+    *
+    * <p>With \$addFields, you can adds the new fields the document.</p>
+    *
+    * @param name
+    *   the name of the new field
+    * @param value
+    *   the value of the new field
+    * @return
+    *   the \$addFields pipeline stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/addFields/]]
+    * @since 3.4
+    */
+  def addFields[TExpression](name: String, value: TExpression): Aggregate
+
   /** Creates a graphLookup pipeline stage for the specified filter
     *
     * @param from
@@ -321,6 +336,7 @@ object Aggregate {
   def out(databaseName: String, collectionName: String): Aggregate                         = empty.out(databaseName, collectionName)
   def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate = empty.merge(collectionName, options)
   def replaceWith[TExpression](value: TExpression): Aggregate                              = empty.replaceWith(value)
+  def addFields[TExpression](name: String, value: TExpression): Aggregate                  = empty.addFields(name, value)
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate                     = empty.lookup(from, pipeline, as)
 
   def graphLookup[TExpression](
@@ -383,6 +399,10 @@ final private case class AggregateBuilder(
     AggregateBuilder(Aggregates.merge(collectionName, options) :: aggregates)
 
   def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
+
+  def addFields[TExpression](name: String, value: TExpression): Aggregate = AggregateBuilder(
+    Aggregates.addFields(new Field(name, value)) :: aggregates
+  )
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
     AggregateBuilder(Aggregates.lookup(from, pipeline.toBson, as) :: aggregates)
