@@ -236,7 +236,9 @@ trait Aggregate extends AsJava {
     *   the \$addFields pipeline stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/addFields/]]
     * @since 3.4
     */
-  def addFields[TExpression](name: String, value: TExpression): Aggregate
+  def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate
+
+  def addFields[TExpression](fields: (String, TExpression)*): Aggregate = addFields(fields.toList)
 
   /** Creates a graphLookup pipeline stage for the specified filter
     *
@@ -336,8 +338,10 @@ object Aggregate {
   def out(databaseName: String, collectionName: String): Aggregate                         = empty.out(databaseName, collectionName)
   def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate = empty.merge(collectionName, options)
   def replaceWith[TExpression](value: TExpression): Aggregate                              = empty.replaceWith(value)
-  def addFields[TExpression](name: String, value: TExpression): Aggregate                  = empty.addFields(name, value)
-  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate                     = empty.lookup(from, pipeline, as)
+  def addFields[TExpression](fields: (String, TExpression)*): Aggregate                    = empty.addFields(fields.toList)
+  def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate               = empty.addFields(fields)
+
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate = empty.lookup(from, pipeline, as)
 
   def graphLookup[TExpression](
       from: String,
@@ -400,9 +404,11 @@ final private case class AggregateBuilder(
 
   def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
 
-  def addFields[TExpression](name: String, value: TExpression): Aggregate = AggregateBuilder(
-    Aggregates.addFields(new Field(name, value)) :: aggregates
-  )
+  def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate = {
+    val jFields: List[Field[?]] = fields.map { case (name, value) => new Field(name, value) }
+    AggregateBuilder(Aggregates.addFields(asJava(jFields)) :: aggregates)
+
+  }
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
     AggregateBuilder(Aggregates.lookup(from, pipeline.toBson, as) :: aggregates)
