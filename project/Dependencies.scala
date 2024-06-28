@@ -26,6 +26,7 @@ object Dependencies {
     val mongodbDriverSync    = "org.mongodb" % "mongodb-driver-sync"            % Versions.mongodb
 
     val fs2Core = "co.fs2" %% "fs2-core" % Versions.fs2
+    val fs2ReactiveStreams = "co.fs2" %% "fs2-reactive-streams" % Versions.fs2
 
     val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -59,6 +60,7 @@ object Dependencies {
 
   val core = Seq(
     Libraries.fs2Core,
+    Libraries.fs2ReactiveStreams,
     Libraries.logback   % Test,
     Libraries.scalaTest % Test
   )

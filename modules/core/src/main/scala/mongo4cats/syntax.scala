@@ -16,14 +16,10 @@
 
 package mongo4cats
 
-import cats.effect.std.{Dispatcher, Queue}
-import cats.effect.{Async, Deferred, Resource}
-import cats.syntax.applicative._
-import cats.syntax.either._
-import cats.syntax.functor._
-import cats.syntax.option._
+import cats.effect.Async
 import cats.syntax.flatMap._
 import fs2.Stream
+import fs2.interop.reactivestreams._
 import mongo4cats.errors.MongoEmptyStreamException
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
@@ -73,29 +69,7 @@ private[mongo4cats] object syntax {
       boundedStream(1024)
 
     def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
-      mkStream(Queue.bounded(capacity))
+      publisher.toStreamBuffered(capacity)
 
-    private def mkStream[F[_]: Async](mkQueue: F[Queue[F, Either[Option[Throwable], T]]]): Stream[F, T] =
-      for {
-        safeGuard  <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
-        queue      <- Stream.eval(mkQueue)
-        dispatcher <- Stream.resource(Dispatcher.parallel[F])
-        _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get.void))
-        _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
-          override def onNext(el: T): Unit                = dispatcher.unsafeRunSync(queue.offer(el.asRight))
-          override def onError(err: Throwable): Unit      = dispatcher.unsafeRunSync(queue.offer(err.some.asLeft))
-          override def onComplete(): Unit                 = dispatcher.unsafeRunSync(queue.offer(None.asLeft))
-          override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-        })))
-        stream <- Stream
-          .fromQueueUnterminated(queue)
-          .flatMap[F, T] {
-            case Right(value)    => Stream(value)
-            case Left(None)      => Stream.eval(safeGuard.complete(().asRight)).drain
-            case Left(Some(err)) => Stream.eval(safeGuard.complete(err.asLeft)).drain
-          }
-          .interruptWhen(safeGuard.get)
-          .onFinalize(safeGuard.complete(().asRight).void)
-      } yield stream
   }
 }
