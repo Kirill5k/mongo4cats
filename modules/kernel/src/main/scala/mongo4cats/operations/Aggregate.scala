@@ -300,6 +300,19 @@ trait Aggregate extends AsJava {
     */
   def combinedWith(anotherAggregate: Aggregate): Aggregate
 
+  /** Creates an \$unset pipeline stage
+    *
+    * <p> With \$unset, you can removes/excludes fields from documents
+    *
+    * @param fields
+    *   the fields to exclude. May use dot notation.
+    * @return
+    *   the \$unset aggregate stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/unset/]]
+    * @since 4.8
+    */
+  def unset(fields: List[String]): Aggregate
+  def unset(fields: String*): Aggregate = unset(fields.toList)
+
   private[mongo4cats] def aggregates: List[Bson]
   private[mongo4cats] def toBson: java.util.List[Bson]
 }
@@ -340,6 +353,9 @@ object Aggregate {
   def replaceWith[TExpression](value: TExpression): Aggregate                              = empty.replaceWith(value)
   def addFields[TExpression](fields: (String, TExpression)*): Aggregate                    = empty.addFields(fields.toList)
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate               = empty.addFields(fields)
+
+  def unset(fields: String*): Aggregate      = empty.unset(fields.toList)
+  def unset(fields: List[String]): Aggregate = empty.unset(fields)
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate = empty.lookup(from, pipeline, as)
 
@@ -407,8 +423,10 @@ final private case class AggregateBuilder(
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate = {
     val jFields: List[Field[?]] = fields.map { case (name, value) => new Field(name, value) }
     AggregateBuilder(Aggregates.addFields(asJava(jFields)) :: aggregates)
-
   }
+
+  def unset(fields: List[String]): Aggregate =
+    AggregateBuilder(Aggregates.unset(asJava(fields)) :: aggregates)
 
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate =
     AggregateBuilder(Aggregates.lookup(from, pipeline.toBson, as) :: aggregates)
