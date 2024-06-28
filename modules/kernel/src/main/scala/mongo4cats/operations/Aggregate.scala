@@ -20,6 +20,7 @@ import com.mongodb.client.model.{Aggregates, BucketAutoOptions, Facet => JFacet,
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
 import com.mongodb.client.model.Field
+import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
 
 trait Aggregate extends AsJava {
 
@@ -313,6 +314,21 @@ trait Aggregate extends AsJava {
   def unset(fields: List[String]): Aggregate
   def unset(fields: String*): Aggregate = unset(fields.toList)
 
+  /** Creates a \$densify pipeline stage, which adds documents to a sequence of documents where certain values in the field are missing.
+    *
+    * @param field
+    *   The field to densify.
+    * @param range
+    *   The range.
+    * @param options
+    *   The densify options.
+    * @return
+    *   The requested pipeline stage.
+    * @since 4.7
+    */
+  def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate
+  def densify(field: String, range: DensifyRange): Aggregate = densify(field, range, DensifyOptions.densifyOptions())
+
   private[mongo4cats] def aggregates: List[Bson]
   private[mongo4cats] def toBson: java.util.List[Bson]
 }
@@ -444,6 +460,9 @@ final private case class AggregateBuilder(
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
+
+  def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate =
+    AggregateBuilder(Aggregates.densify(field, range, options) :: aggregates)
 
   override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
