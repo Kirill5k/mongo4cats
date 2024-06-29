@@ -238,8 +238,20 @@ trait Aggregate extends AsJava {
     * @since 3.4
     */
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate
-
   def addFields[TExpression](fields: (String, TExpression)*): Aggregate = addFields(fields.toList)
+
+  /** Creates a $set pipeline stage for the specified projection
+    *
+    * @param fields
+    *   the fields to add
+    * @return
+    *   the $set pipeline stage
+    * @see
+    *   Projections
+    * @since 4.3
+    */
+  def set[TExpression](fields: List[(String, TExpression)]): Aggregate
+  def set[TExpression](fields: (String, TExpression)*): Aggregate = set(fields.toList)
 
   /** Creates a graphLookup pipeline stage for the specified filter
     *
@@ -393,6 +405,9 @@ final private case class AggregateBuilder(
     override val aggregates: List[Bson]
 ) extends Aggregate with AsJava {
 
+  private def toJavaField[T](fields: List[(String, T)]): List[Field[?]] =
+    fields.map { case (name, value) => new Field(name, value) }
+
   def bucketAuto[TExpression](
       groupBy: TExpression,
       buckets: Int,
@@ -436,10 +451,11 @@ final private case class AggregateBuilder(
 
   def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
 
-  def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate = {
-    val jFields: List[Field[?]] = fields.map { case (name, value) => new Field(name, value) }
-    AggregateBuilder(Aggregates.addFields(asJava(jFields)) :: aggregates)
-  }
+  def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate =
+    AggregateBuilder(Aggregates.addFields(asJava(toJavaField(fields))) :: aggregates)
+
+  def set[TExpression](fields: List[(String, TExpression)]): Aggregate =
+    AggregateBuilder(Aggregates.set(asJava(toJavaField(fields))) :: aggregates)
 
   def unset(fields: List[String]): Aggregate =
     AggregateBuilder(Aggregates.unset(asJava(fields)) :: aggregates)
