@@ -21,6 +21,7 @@ import mongo4cats.AsJava
 import org.bson.conversions.Bson
 import com.mongodb.client.model.Field
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
+import com.mongodb.client.model.fill.{FillOptions, FillOutputField}
 
 trait Aggregate extends AsJava {
 
@@ -341,6 +342,18 @@ trait Aggregate extends AsJava {
   def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate
   def densify(field: String, range: DensifyRange): Aggregate = densify(field, range, DensifyOptions.densifyOptions())
 
+  /** Creates a \$fill pipeline stage, which assigns values to fields when they are Null or missing.
+    *
+    * @param options
+    *   The fill options.
+    * @param outputs
+    *   The FillOutputField.
+    * @since 4.7
+    */
+  def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate
+  def fill(options: FillOptions, output: FillOutputField, outputs: FillOutputField*): Aggregate =
+    fill(options, output :: outputs.toList)
+
   private[mongo4cats] def aggregates: List[Bson]
   private[mongo4cats] def toBson: java.util.List[Bson]
 }
@@ -479,6 +492,9 @@ final private case class AggregateBuilder(
 
   def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate =
     AggregateBuilder(Aggregates.densify(field, range, options) :: aggregates)
+
+  override def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate =
+    AggregateBuilder(Aggregates.fill(options, asJava(outputs)) :: aggregates)
 
   override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
