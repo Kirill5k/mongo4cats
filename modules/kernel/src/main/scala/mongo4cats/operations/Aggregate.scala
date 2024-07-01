@@ -16,12 +16,21 @@
 
 package mongo4cats.operations
 
-import com.mongodb.client.model.{Aggregates, BucketAutoOptions, Facet => JFacet, GraphLookupOptions, MergeOptions, UnwindOptions}
+import com.mongodb.client.model.{
+  Aggregates,
+  BucketAutoOptions,
+  Facet => JFacet,
+  Field,
+  GeoNearOptions,
+  GraphLookupOptions,
+  MergeOptions,
+  UnwindOptions
+}
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
-import com.mongodb.client.model.Field
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
 import com.mongodb.client.model.fill.{FillOptions, FillOutputField}
+import com.mongodb.client.model.geojson.Point
 
 trait Aggregate extends AsJava {
 
@@ -354,6 +363,19 @@ trait Aggregate extends AsJava {
   def fill(options: FillOptions, output: FillOutputField, outputs: FillOutputField*): Aggregate =
     fill(options, output :: outputs.toList)
 
+  /** Creates a \$geoNear pipeline stage that outputs documents in order of nearest to farthest from a specified point.
+    *
+    * @param point
+    *   The point for which to find the closest documents.
+    * @param distanceField
+    *   The output field that contains the calculated distance. To specify a field within an embedded document, use dot notation.
+    * @param options
+    *   GeoNearOptions
+    * @since 4.8
+    */
+  def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate
+  def geoNear(point: Point, distanceField: String): Aggregate = geoNear(point, distanceField, GeoNearOptions.geoNearOptions())
+
   private[mongo4cats] def aggregates: List[Bson]
   private[mongo4cats] def toBson: java.util.List[Bson]
 }
@@ -384,21 +406,30 @@ object Aggregate {
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
     empty.lookup(from, localField, foreignField, as)
 
-  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate = empty.group(id, fieldAccumulators)
-
+  def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate     = empty.group(id, fieldAccumulators)
   def unwind(fieldName: String, options: UnwindOptions = new UnwindOptions()): Aggregate = empty.unwind(fieldName, options)
 
+  def facet(facets: List[Aggregate.Facet]): Aggregate                                      = empty.facet(facets)
+  def facet(facets: Aggregate.Facet*): Aggregate                                           = empty.facet(facets.toList)
   def out(collectionName: String): Aggregate                                               = empty.out(collectionName)
   def out(databaseName: String, collectionName: String): Aggregate                         = empty.out(databaseName, collectionName)
   def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate = empty.merge(collectionName, options)
   def replaceWith[TExpression](value: TExpression): Aggregate                              = empty.replaceWith(value)
   def addFields[TExpression](fields: (String, TExpression)*): Aggregate                    = empty.addFields(fields.toList)
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate               = empty.addFields(fields)
+  def unset(fields: String*): Aggregate                                                    = empty.unset(fields.toList)
+  def unset(fields: List[String]): Aggregate                                               = empty.unset(fields)
+  def set[TExpression](fields: List[(String, TExpression)]): Aggregate                     = empty.set(fields)
+  def set[TExpression](fields: (String, TExpression)*): Aggregate                          = empty.set(fields.toList)
+  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate                     = empty.lookup(from, pipeline, as)
+  def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate      = empty.densify(field, range, options)
+  def densify(field: String, range: DensifyRange): Aggregate                               = empty.densify(field, range)
+  def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate                = empty.fill(options, outputs)
+  def fill(options: FillOptions, output: FillOutputField, outputs: FillOutputField*): Aggregate =
+    empty.fill(options, output :: outputs.toList)
 
-  def unset(fields: String*): Aggregate      = empty.unset(fields.toList)
-  def unset(fields: List[String]): Aggregate = empty.unset(fields)
-
-  def lookup(from: String, pipeline: Aggregate, as: String): Aggregate = empty.lookup(from, pipeline, as)
+  def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate = empty.geoNear(point, distanceField, options)
+  def geoNear(point: Point, distanceField: String): Aggregate                          = empty.geoNear(point, distanceField)
 
   def graphLookup[TExpression](
       from: String,
@@ -409,8 +440,6 @@ object Aggregate {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = empty.graphLookup(from, startWith, connectFromField, connectToField, as, options)
 
-  def facet(facets: List[Aggregate.Facet]): Aggregate               = empty.facet(facets)
-  def facet(facets: Aggregate.Facet*): Aggregate                    = empty.facet(facets.toList)
   def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
 }
 
@@ -493,10 +522,14 @@ final private case class AggregateBuilder(
   def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate =
     AggregateBuilder(Aggregates.densify(field, range, options) :: aggregates)
 
-  override def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate =
+  def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate =
     AggregateBuilder(Aggregates.fill(options, asJava(outputs)) :: aggregates)
+
+  def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate =
+    AggregateBuilder(Aggregates.geoNear(point, distanceField, options) :: aggregates)
 
   override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
   override private[mongo4cats] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
+
 }
