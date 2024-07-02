@@ -250,12 +250,12 @@ trait Aggregate extends AsJava {
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate
   def addFields[TExpression](fields: (String, TExpression)*): Aggregate = addFields(fields.toList)
 
-  /** Creates a $set pipeline stage for the specified projection
+  /** Creates a \$set pipeline stage for the specified projection
     *
     * @param fields
     *   the fields to add
     * @return
-    *   the $set pipeline stage
+    *   the \$set pipeline stage
     * @see
     *   Projections
     * @since 4.3
