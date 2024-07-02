@@ -321,6 +321,17 @@ object Filter extends AsJava {
   def where(javaScriptExpression: String): Filter =
     FilterBuilder(Filters.where(javaScriptExpression))
 
+  /** Creates a filter that matches all documents for which the given expression is true.
+    *
+    * @param expression
+    *   the aggregation expression
+    * @return
+    *   the filter
+    * @since 3.6
+    */
+  def expr[TExpression](expr: TExpression): Filter =
+    FilterBuilder(Filters.expr(expr))
+
   /** Creates a filter that matches all documents where the value of a field is an array that contains all the specified values.
     *
     * @param fieldName
