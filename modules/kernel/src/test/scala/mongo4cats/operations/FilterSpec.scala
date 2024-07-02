@@ -81,6 +81,10 @@ class FilterSpec extends AnyWordSpec with Matchers {
       Filter.where("foo") isTheSameAs Filters.where("foo")
     }
 
+    "expr" in {
+      Filter.expr("$expr: { $gt: [ $spent , $budget ] }") isTheSameAs Filters.expr("$expr: { $gt: [ $spent , $budget ] }")
+    }
+
     "all" in {
       Filter.all("foo", "bar") isTheSameAs Filters.all("foo", 'b', 'a', 'r')
     }
