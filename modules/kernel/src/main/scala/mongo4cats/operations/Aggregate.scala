@@ -378,8 +378,8 @@ trait Aggregate extends AsJava {
   def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate
   def geoNear(point: Point, distanceField: String): Aggregate = geoNear(point, distanceField, GeoNearOptions.geoNearOptions())
 
-  /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via metaSearchScore ( String )
-    * in Projection, to extract the relevance score assigned to each found document.
+  /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via
+    * Projection.metaSearchScore(String), to extract the relevance score assigned to each found document.
     * @param operator
     *   A search operator.
     * @param options
@@ -389,8 +389,8 @@ trait Aggregate extends AsJava {
   def search(operator: SearchOperator, options: SearchOptions): Aggregate
   def search(operator: SearchOperator): Aggregate = search(operator, SearchOptions.searchOptions())
 
-  /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via metaSearchScore ( String )
-    * in Projection, to extract the relevance score assigned to each found document.
+  /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via
+    * Projection.metaSearchScore(String), to extract the relevance score assigned to each found document.
     * @param collector
     *   A search collector.
     * @param options

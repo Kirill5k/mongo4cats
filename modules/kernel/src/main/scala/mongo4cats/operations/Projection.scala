@@ -122,6 +122,30 @@ trait Projection {
     */
   def metaTextScore(fieldName: String): Projection
 
+  /** Creates a projection to the given field name of the searchScore, for use with Aggregate.search(SearchOperator,SearchOptions) /
+    * Aggregate.search(SearchCollector,SearchOptions). Calling this method is equivalent to calling meta(String,String) with "searchScore"
+    * as the second argument.
+    *
+    * @param fieldName
+    *   the field name
+    * @return
+    *   the projection
+    * @since 4.7
+    */
+  def metaSearchScore(fieldName: String): Projection
+
+  /** Creates a projection to the given field name of the searchHighlights, for use with Aggregate.search(SearchOperator,SearchOptions) /
+    * Aggregates.search(SearchCollector,SearchOptions). Calling this method is equivalent to calling meta String,String) with
+    * "searchHighlights" as the second argument.
+    *
+    * @param fieldName
+    *   the field name
+    * @return
+    *   the projection
+    * @since 4.7
+    */
+  def metaSearchHighlights(fieldName: String): Projection
+
   /** Creates a projection to the given field name of a slice of the array value of that field.
     *
     * @param fieldName
@@ -162,31 +186,21 @@ trait Projection {
 object Projection {
   private val empty: Projection = ProjectionBuilder(Nil)
 
-  def computed[T](fieldName: String, expression: T): Projection = empty.computed(fieldName, expression)
-
-  def include(fieldName: String): Projection = empty.include(fieldName)
-
-  def include(fieldNames: Seq[String]): Projection = empty.include(fieldNames)
-
-  def exclude(fieldName: String): Projection = empty.exclude(fieldName)
-
-  def exclude(fieldNames: Seq[String]): Projection = empty.exclude(fieldNames)
-
-  def excludeId: Projection = empty.excludeId
-
-  def elemMatch(fieldName: String): Projection = empty.elemMatch(fieldName)
-
-  def elemMatch(fieldName: String, filter: Filter): Projection = empty.elemMatch(fieldName, filter)
-
-  def meta(fieldName: String, metaFieldName: String): Projection = empty.meta(fieldName, metaFieldName)
-
-  def metaTextScore(fieldName: String): Projection = empty.metaTextScore(fieldName)
-
-  def slice(fieldName: String, limit: Int): Projection = empty.slice(fieldName, limit)
-
+  def computed[T](fieldName: String, expression: T): Projection   = empty.computed(fieldName, expression)
+  def include(fieldName: String): Projection                      = empty.include(fieldName)
+  def include(fieldNames: Seq[String]): Projection                = empty.include(fieldNames)
+  def exclude(fieldName: String): Projection                      = empty.exclude(fieldName)
+  def exclude(fieldNames: Seq[String]): Projection                = empty.exclude(fieldNames)
+  def excludeId: Projection                                       = empty.excludeId
+  def elemMatch(fieldName: String): Projection                    = empty.elemMatch(fieldName)
+  def elemMatch(fieldName: String, filter: Filter): Projection    = empty.elemMatch(fieldName, filter)
+  def meta(fieldName: String, metaFieldName: String): Projection  = empty.meta(fieldName, metaFieldName)
+  def metaTextScore(fieldName: String): Projection                = empty.metaTextScore(fieldName)
+  def metaSearchScore(fieldName: String): Projection              = empty.metaSearchScore(fieldName)
+  def metaSearchHighlights(fieldName: String): Projection         = empty.metaSearchHighlights(fieldName)
+  def slice(fieldName: String, limit: Int): Projection            = empty.slice(fieldName, limit)
   def slice(fieldName: String, skip: Int, limit: Int): Projection = empty.slice(fieldName, skip, limit)
-
-  def combinedWith(anotherProjection: Projection): Projection = empty.combinedWith(anotherProjection)
+  def combinedWith(anotherProjection: Projection): Projection     = empty.combinedWith(anotherProjection)
 }
 
 final private case class ProjectionBuilder(
@@ -222,6 +236,12 @@ final private case class ProjectionBuilder(
 
   override def metaTextScore(fieldName: String): Projection =
     ProjectionBuilder(Projections.metaTextScore(fieldName) :: projections)
+
+  override def metaSearchScore(fieldName: String): Projection =
+    ProjectionBuilder(Projections.metaSearchScore(fieldName) :: projections)
+
+  override def metaSearchHighlights(fieldName: String): Projection =
+    ProjectionBuilder(Projections.metaSearchHighlights(fieldName) :: projections)
 
   override def slice(fieldName: String, limit: Int): Projection = {
     val sliceCommand    = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(limit)))
