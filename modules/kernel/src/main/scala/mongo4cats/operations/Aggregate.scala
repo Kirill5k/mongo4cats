@@ -31,6 +31,8 @@ import org.bson.conversions.Bson
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
 import com.mongodb.client.model.fill.{FillOptions, FillOutputField}
 import com.mongodb.client.model.geojson.Point
+import com.mongodb.client.model.search.SearchOptions.searchOptions
+import com.mongodb.client.model.search.{SearchCollector, SearchOperator, SearchOptions}
 
 trait Aggregate extends AsJava {
 
@@ -376,6 +378,30 @@ trait Aggregate extends AsJava {
   def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate
   def geoNear(point: Point, distanceField: String): Aggregate = geoNear(point, distanceField, GeoNearOptions.geoNearOptions())
 
+  /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via metaSearchScore ( String )
+    * in Projection, to extract the relevance score assigned to each found document.
+    * @param operator
+    *   A search operator.
+    * @param options
+    *   Optional \$search pipeline stage fields.
+    * @since 4.7
+    */
+  def search(operator: SearchOperator, options: SearchOptions): Aggregate
+  def search(operator: SearchOperator): Aggregate = search(operator, SearchOptions.searchOptions())
+
+  /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via metaSearchScore ( String )
+    * in Projection, to extract the relevance score assigned to each found document.
+    * @param collector
+    *   A search collector.
+    * @param options
+    *   Optional \$search pipeline stage fields.
+    * @return
+    *   The \$search pipeline stage.
+    * @since 4.7
+    */
+  def search(collector: SearchCollector, options: SearchOptions): Aggregate
+  def search(collector: SearchCollector): Aggregate = search(collector, SearchOptions.searchOptions())
+
   private[mongo4cats] def aggregates: List[Bson]
   private[mongo4cats] def toBson: java.util.List[Bson]
 }
@@ -430,6 +456,10 @@ object Aggregate {
 
   def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate = empty.geoNear(point, distanceField, options)
   def geoNear(point: Point, distanceField: String): Aggregate                          = empty.geoNear(point, distanceField)
+  def search(operator: SearchOperator, options: SearchOptions): Aggregate              = empty.search(operator, options)
+  def search(operator: SearchOperator): Aggregate                                      = empty.search(operator)
+  def search(collector: SearchCollector, options: SearchOptions): Aggregate            = empty.search(collector, options)
+  def search(collector: SearchCollector): Aggregate                                    = empty.search(collector)
 
   def graphLookup[TExpression](
       from: String,
@@ -528,8 +558,13 @@ final private case class AggregateBuilder(
   def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate =
     AggregateBuilder(Aggregates.geoNear(point, distanceField, options) :: aggregates)
 
+  def search(operator: SearchOperator, options: SearchOptions): Aggregate =
+    AggregateBuilder(Aggregates.search(operator, options) :: aggregates)
+
+  def search(collector: SearchCollector, options: SearchOptions): Aggregate =
+    AggregateBuilder(Aggregates.search(collector, options) :: aggregates)
+
   override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
   override private[mongo4cats] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
-
 }
