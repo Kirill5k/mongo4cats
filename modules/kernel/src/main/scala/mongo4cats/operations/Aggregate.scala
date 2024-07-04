@@ -31,7 +31,6 @@ import org.bson.conversions.Bson
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
 import com.mongodb.client.model.fill.{FillOptions, FillOutputField}
 import com.mongodb.client.model.geojson.Point
-import com.mongodb.client.model.search.SearchOptions.searchOptions
 import com.mongodb.client.model.search.{SearchCollector, SearchOperator, SearchOptions}
 
 trait Aggregate extends AsJava {
