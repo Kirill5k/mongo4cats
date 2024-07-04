@@ -146,6 +146,18 @@ trait Projection {
     */
   def metaSearchHighlights(fieldName: String): Projection
 
+  /** Creates a projection of a field whose value is equal to the \$\$SEARCH_META variable, for use with
+    * Aggregate.search(SearchOperator,SearchOptions) / Aggregate.search(SearchCollector,SearchOptions). Calling this method is equivalent to
+    * calling computed(String,Object) with "\$\$SEARCH_META" as the second argument.
+    *
+    * @param fieldName
+    *   the field name
+    * @return
+    *   the projection
+    * @since 4.7
+    */
+  def computedSearchMeta(fieldName: String): Projection
+
   /** Creates a projection to the given field name of a slice of the array value of that field.
     *
     * @param fieldName
@@ -183,8 +195,10 @@ trait Projection {
   private[mongo4cats] def projections: List[Bson]
 }
 
-object Projection {
-  private val empty: Projection = ProjectionBuilder(Nil)
+object Projection extends Projection {
+  private[mongo4cats] def toBson: Bson            = empty.toBson
+  private[mongo4cats] def projections: List[Bson] = empty.projections
+  private val empty: Projection                   = ProjectionBuilder(Nil)
 
   def computed[T](fieldName: String, expression: T): Projection   = empty.computed(fieldName, expression)
   def include(fieldName: String): Projection                      = empty.include(fieldName)
@@ -201,11 +215,17 @@ object Projection {
   def slice(fieldName: String, limit: Int): Projection            = empty.slice(fieldName, limit)
   def slice(fieldName: String, skip: Int, limit: Int): Projection = empty.slice(fieldName, skip, limit)
   def combinedWith(anotherProjection: Projection): Projection     = empty.combinedWith(anotherProjection)
+  def computedSearchMeta(fieldName: String): Projection           = empty.computedSearchMeta(fieldName)
 }
 
 final private case class ProjectionBuilder(
     override val projections: List[Bson]
 ) extends Projection {
+
+  override def combinedWith(anotherProjection: Projection): Projection =
+    ProjectionBuilder(anotherProjection.projections ::: projections)
+
+  override private[mongo4cats] def toBson = Projections.fields(projections.reverse: _*)
 
   override def computed[T](fieldName: String, expression: T): Projection =
     ProjectionBuilder(Projections.computed(fieldName, expression) :: projections)
@@ -243,6 +263,9 @@ final private case class ProjectionBuilder(
   override def metaSearchHighlights(fieldName: String): Projection =
     ProjectionBuilder(Projections.metaSearchHighlights(fieldName) :: projections)
 
+  override def computedSearchMeta(fieldName: String): Projection =
+    ProjectionBuilder(Projections.computedSearchMeta(fieldName) :: projections)
+
   override def slice(fieldName: String, limit: Int): Projection = {
     val sliceCommand    = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(limit)))
     val sliceProjection = Document(fieldName := sliceCommand)
@@ -254,9 +277,4 @@ final private case class ProjectionBuilder(
     val sliceProjection = Document(fieldName := sliceCommand)
     ProjectionBuilder(sliceProjection.toBsonDocument :: projections)
   }
-
-  override def combinedWith(anotherProjection: Projection): Projection =
-    ProjectionBuilder(anotherProjection.projections ::: projections)
-
-  override private[mongo4cats] def toBson = Projections.fields(projections.reverse: _*)
 }
