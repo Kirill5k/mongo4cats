@@ -252,7 +252,7 @@ trait Aggregate extends AsJava {
     * @param fields
     *   the fields to add
     * @return
-    *   Aggregate with \$set pipeline stage
+    *   Aggregate with \$set pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/set/]]
     * @since 4.3
     */
   def set[TExpression](fields: List[(String, TExpression)]): Aggregate
@@ -308,15 +308,6 @@ trait Aggregate extends AsJava {
     */
   def unionWith(collection: String, pipeline: Aggregate): Aggregate
 
-  /** Merges 2 aggregation pipelines together.
-    *
-    * @param anotherAggregate
-    *   the aggregate to be merged with
-    * @return
-    *   the aggregate pipeline
-    */
-  def combinedWith(anotherAggregate: Aggregate): Aggregate
-
   /** Creates an \$unset pipeline stage. With \$unset you can removes/excludes fields from documents.
     *
     * @param fields
@@ -337,7 +328,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   The densify options.
     * @return
-    *   Aggregate with requested pipeline stage.
+    *   Aggregate with requested pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/densify/]]
     * @since 4.7
     */
   def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate
@@ -350,7 +341,7 @@ trait Aggregate extends AsJava {
     * @param outputs
     *   The FillOutputField.
     * @return
-    *   Aggregate with requested pipeline stage.
+    *   Aggregate with requested pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/fill/]]
     * @since 4.7
     */
   def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate
@@ -366,7 +357,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   GeoNearOptions
     * @return
-    *   Aggregate with requested pipeline stage.
+    *   Aggregate with requested pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/geoNear/]]
     * @since 4.8
     */
   def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate
@@ -379,7 +370,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   Optional \$search pipeline stage fields.
     * @return
-    *   Aggregate with requested pipeline stage.
+    *   Aggregate with requested pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/search/]]
     * @since 4.7
     */
   def search(operator: SearchOperator, options: SearchOptions): Aggregate
@@ -392,11 +383,50 @@ trait Aggregate extends AsJava {
     * @param options
     *   Optional \$search pipeline stage fields.
     * @return
-    *   Aggregate with \$search pipeline stage.
+    *   Aggregate with \$search pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/search/]]
     * @since 4.7
     */
   def search(collector: SearchCollector, options: SearchOptions): Aggregate
   def search(collector: SearchCollector): Aggregate = search(collector, SearchOptions.searchOptions())
+
+  /** Creates a \$searchMeta pipeline stage supported by MongoDB Atlas. Unlike \$search, it does not return found documents, instead it
+    * returns metadata, which in case of using the \$search stage may be extracted by using \$\$SEARCH_META variable, e.g., via
+    * Projection.computedSearchMeta(String).
+    *
+    * @param operator
+    *   A search operator.
+    * @param options
+    *   Optional \$search pipeline stage fields.
+    * @return
+    *   Aggregate with \$searchMeta pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/searchMeta/]]
+    * @since 4.7
+    */
+  def searchMeta(operator: SearchOperator, options: SearchOptions): Aggregate
+  def searchMeta(operator: SearchOperator): Aggregate = searchMeta(operator, SearchOptions.searchOptions())
+
+  /** Creates a \$searchMeta pipeline stage supported by MongoDB Atlas. Unlike \$search, it does not return found documents, instead it
+    * returns metadata, which in case of using the \$search stage may be extracted by using \$\$SEARCH_META variable, e.g., via
+    * Projection.computedSearchMeta(String).
+    *
+    * @param collector
+    *   A search collector.
+    * @param options
+    *   Optional \$search pipeline stage fields.
+    * @return
+    *   Aggregate with \$searchMeta pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/searchMeta/]]
+    * @since 4.7
+    */
+  def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate
+  def searchMeta(collector: SearchCollector): Aggregate = searchMeta(collector, SearchOptions.searchOptions())
+
+  /** Merges 2 aggregation pipelines together.
+    *
+    * @param anotherAggregate
+    *   the aggregate to be merged with
+    * @return
+    *   the aggregate pipeline
+    */
+  def combinedWith(anotherAggregate: Aggregate): Aggregate
 
   private[mongo4cats] def aggregates: List[Bson]
   private[mongo4cats] def toBson: java.util.List[Bson]
@@ -456,6 +486,10 @@ object Aggregate {
   def search(operator: SearchOperator): Aggregate                                      = empty.search(operator)
   def search(collector: SearchCollector, options: SearchOptions): Aggregate            = empty.search(collector, options)
   def search(collector: SearchCollector): Aggregate                                    = empty.search(collector)
+  def searchMeta(operator: SearchOperator, options: SearchOptions): Aggregate          = empty.searchMeta(operator, options)
+  def searchMeta(operator: SearchOperator): Aggregate                                  = empty.searchMeta(operator)
+  def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate        = empty.searchMeta(collector, options)
+  def searchMeta(collector: SearchCollector): Aggregate                                = empty.searchMeta(collector)
 
   def graphLookup[TExpression](
       from: String,
@@ -473,8 +507,12 @@ final private case class AggregateBuilder(
     override val aggregates: List[Bson]
 ) extends Aggregate with AsJava {
 
+  override private[mongo4cats] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
+
   private def toJavaField[T](fields: List[(String, T)]): List[Field[?]] =
     fields.map { case (name, value) => new Field(name, value) }
+
+  override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
   def bucketAuto[TExpression](
       groupBy: TExpression,
@@ -482,23 +520,32 @@ final private case class AggregateBuilder(
       options: BucketAutoOptions = new BucketAutoOptions()
   ): Aggregate = AggregateBuilder(Aggregates.bucketAuto(groupBy, buckets, options) :: aggregates)
 
-  def sample(size: Int): Aggregate = AggregateBuilder(Aggregates.sample(size) :: aggregates)
+  def sample(size: Int): Aggregate =
+    AggregateBuilder(Aggregates.sample(size) :: aggregates)
 
-  def count: Aggregate = AggregateBuilder(Aggregates.count() :: aggregates)
+  def count: Aggregate =
+    AggregateBuilder(Aggregates.count() :: aggregates)
 
-  def count(field: String): Aggregate = AggregateBuilder(Aggregates.count(field) :: aggregates)
+  def count(field: String): Aggregate =
+    AggregateBuilder(Aggregates.count(field) :: aggregates)
 
-  def matchBy(filter: Filter): Aggregate = AggregateBuilder(Aggregates.`match`(filter.toBson) :: aggregates)
+  def matchBy(filter: Filter): Aggregate =
+    AggregateBuilder(Aggregates.`match`(filter.toBson) :: aggregates)
 
-  def project(projection: Projection): Aggregate = AggregateBuilder(Aggregates.project(projection.toBson) :: aggregates)
+  def project(projection: Projection): Aggregate =
+    AggregateBuilder(Aggregates.project(projection.toBson) :: aggregates)
 
-  def sort(sort: Sort): Aggregate = AggregateBuilder(Aggregates.sort(sort.toBson) :: aggregates)
+  def sort(sort: Sort): Aggregate =
+    AggregateBuilder(Aggregates.sort(sort.toBson) :: aggregates)
 
-  def sortByCount[TExpression](filter: TExpression): Aggregate = AggregateBuilder(Aggregates.sortByCount(filter) :: aggregates)
+  def sortByCount[TExpression](filter: TExpression): Aggregate =
+    AggregateBuilder(Aggregates.sortByCount(filter) :: aggregates)
 
-  def skip(n: Int): Aggregate = AggregateBuilder(Aggregates.skip(n) :: aggregates)
+  def skip(n: Int): Aggregate =
+    AggregateBuilder(Aggregates.skip(n) :: aggregates)
 
-  def limit(n: Int): Aggregate = AggregateBuilder(Aggregates.limit(n) :: aggregates)
+  def limit(n: Int): Aggregate =
+    AggregateBuilder(Aggregates.limit(n) :: aggregates)
 
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate =
     AggregateBuilder(Aggregates.lookup(from, localField, foreignField, as) :: aggregates)
@@ -509,7 +556,8 @@ final private case class AggregateBuilder(
   def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
     AggregateBuilder(Aggregates.unwind(fieldName, unwindOptions) :: aggregates)
 
-  def out(collectionName: String): Aggregate = AggregateBuilder(Aggregates.out(collectionName) :: aggregates)
+  def out(collectionName: String): Aggregate =
+    AggregateBuilder(Aggregates.out(collectionName) :: aggregates)
 
   def out(databaseName: String, collectionName: String): Aggregate =
     AggregateBuilder(Aggregates.out(databaseName, collectionName) :: aggregates)
@@ -517,7 +565,8 @@ final private case class AggregateBuilder(
   def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate =
     AggregateBuilder(Aggregates.merge(collectionName, options) :: aggregates)
 
-  def replaceWith[TExpression](value: TExpression): Aggregate = AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
+  def replaceWith[TExpression](value: TExpression): Aggregate =
+    AggregateBuilder(Aggregates.replaceWith(value) :: aggregates)
 
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate =
     AggregateBuilder(Aggregates.addFields(asJava(toJavaField(fields))) :: aggregates)
@@ -540,7 +589,8 @@ final private case class AggregateBuilder(
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
 
-  def facet(facets: List[Aggregate.Facet]): Aggregate = AggregateBuilder(Aggregates.facet(asJava(facets.map(_.toJava))) :: aggregates)
+  def facet(facets: List[Aggregate.Facet]): Aggregate =
+    AggregateBuilder(Aggregates.facet(asJava(facets.map(_.toJava))) :: aggregates)
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
@@ -560,7 +610,9 @@ final private case class AggregateBuilder(
   def search(collector: SearchCollector, options: SearchOptions): Aggregate =
     AggregateBuilder(Aggregates.search(collector, options) :: aggregates)
 
-  override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
+  def searchMeta(operator: SearchOperator, options: SearchOptions): Aggregate =
+    AggregateBuilder(Aggregates.searchMeta(operator, options) :: aggregates)
 
-  override private[mongo4cats] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
+  def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate =
+    AggregateBuilder(Aggregates.searchMeta(collector, options) :: aggregates)
 }
