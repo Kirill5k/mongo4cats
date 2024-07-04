@@ -35,7 +35,7 @@ import com.mongodb.client.model.search.{SearchCollector, SearchOperator, SearchO
 
 trait Aggregate extends AsJava {
 
-  /** Creates a \$bucketAuto pipeline stage
+  /** Creates a \$bucketAuto pipeline stage.
     *
     * @param groupBy
     *   the criteria to group By
@@ -44,7 +44,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   the optional values for the \$bucketAuto stage
     * @return
-    *   the \$bucketAuto pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/bucketAuto/]]
+    *   Aggregate with \$bucketAuto pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/bucketAuto/]]
     * @since 3.4
     */
   def bucketAuto[TExpression](
@@ -53,77 +53,77 @@ trait Aggregate extends AsJava {
       options: BucketAutoOptions = new BucketAutoOptions()
   ): Aggregate
 
-  /** Creates a \$sample pipeline stage with the specified sample size
+  /** Creates a \$sample pipeline stage with the specified sample size.
     *
     * @param size
     *   the sample size
     * @return
-    *   the \$sample pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sample/]]
+    *   Aggregate with \$sample pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sample/]]
     * @since 3.2
     */
   def sample(size: Int): Aggregate
 
-  /** Creates a \$count pipeline stage using the field name "count" to store the result
+  /** Creates a \$count pipeline stage using the field name "count" to store the result.
     *
     * @return
-    *   the \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
+    *   Aggregate with \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
     * @since 3.4
     */
   def count: Aggregate
 
-  /** Creates a \$count pipeline stage using the named field to store the result
+  /** Creates a \$count pipeline stage using the named field to store the result.
     *
     * @param field
     *   the field in which to store the count
     * @return
-    *   the \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
+    *   Aggregate with \$count pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/count/]]
     * @since 3.4
     */
   def count(field: String): Aggregate
 
-  /** Creates a \$match pipeline stage for the specified filter
+  /** Creates a \$match pipeline stage for the specified filter.
     *
     * @param filter
     *   the filter to match
     * @return
-    *   the \$match pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/match/]]
+    *   Aggregate with \$match pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/match/]]
     */
   def matchBy(filter: Filter): Aggregate
 
-  /** Creates a \$project pipeline stage for the specified projection
+  /** Creates a \$project pipeline stage for the specified projection.
     *
     * @param projection
     *   the projection
     * @return
-    *   the \$project pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/project/]]
+    *   Aggregate with \$project pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/project/]]
     */
   def project(projection: Projection): Aggregate
 
-  /** Creates a \$sort pipeline stage for the specified sort specification
+  /** Creates a \$sort pipeline stage for the specified sort specification.
     *
     * @param sort
     *   the sort specification
     * @return
-    *   the \$sort pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sort/]]
+    *   Aggregate with \$sort pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sort/]]
     */
   def sort(sort: Sort): Aggregate
 
-  /** Creates a \$sortByCount pipeline stage for the specified filter
+  /** Creates a \$sortByCount pipeline stage for the specified filter.
     *
     * @param filter
     *   the filter specification
     * @return
-    *   the \$sortByCount pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sortByCount/]]
+    *   Aggregate with \$sortByCount pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/sortByCount/]]
     * @since 3.4
     */
   def sortByCount[TExpression](filter: TExpression): Aggregate
 
-  /** Creates a \$skip pipeline stage
+  /** Creates a \$skip pipeline stage.
     *
     * @param n
     *   the number of documents to skip
     * @return
-    *   the \$skip pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/skip/]]
+    *   Aggregate with \$skip pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/skip/]]
     */
   def skip(n: Int): Aggregate
 
@@ -132,12 +132,12 @@ trait Aggregate extends AsJava {
     * @param n
     *   the limit
     * @return
-    *   the \$limit pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/limi/]]
+    *   Aggregate with \$limit pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/limi/]]
     */
   def limit(n: Int): Aggregate
 
   /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using equality match between the
-    * local field and the foreign field
+    * local field and the foreign field.
     *
     * @param from
     *   the name of the collection in the same database to perform the join with.
@@ -148,19 +148,19 @@ trait Aggregate extends AsJava {
     * @param as
     *   the name of the new array field to add to the input documents.
     * @return
-    *   the \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
+    *   Aggregate with \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
     * @since 3.2
     */
   def lookup(from: String, localField: String, foreignField: String, as: String): Aggregate
 
-  /** Creates a \$group pipeline stage for the specified filter
+  /** Creates a \$group pipeline stage for the specified filter.
     *
     * @param id
     *   the id expression for the group
     * @param fieldAccumulators
     *   zero or more field accumulator pairs
     * @return
-    *   the \$group pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/group/]]
+    *   Aggregate with \$group pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/group/]]
     */
   def group[TExpression](id: TExpression, fieldAccumulators: Accumulator): Aggregate
 
@@ -171,7 +171,7 @@ trait Aggregate extends AsJava {
     * @param unwindOptions
     *   options for the unwind pipeline stage
     * @return
-    *   the \$unwind pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/]]
+    *   Aggregate with \$unwind pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/]]
     * @since 3.2
     */
   def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate
@@ -181,7 +181,7 @@ trait Aggregate extends AsJava {
     * @param collectionName
     *   the collection name
     * @return
-    *   the \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
+    *   Aggregate with \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
     */
   def out(collectionName: String): Aggregate
 
@@ -192,7 +192,7 @@ trait Aggregate extends AsJava {
     * @param collectionName
     *   the collection name
     * @return
-    *   the \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
+    *   Aggregate with \$out pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/out/]]
     * @since 4.1
     */
   def out(databaseName: String, collectionName: String): Aggregate
@@ -204,25 +204,23 @@ trait Aggregate extends AsJava {
     * @param options
     *   the merge options
     * @return
-    *   the \$merge pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/merge/]]
+    *   Aggregate with \$merge pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/merge/]]
     * @since 3.11
     */
   def merge(collectionName: String, options: MergeOptions = new MergeOptions()): Aggregate
 
-  /** Creates a \$replaceRoot pipeline stage
-    *
-    * <p>With \$replaceWith, you can promote an embedded document to the top-level. You can also specify a new document as the
-    * replacement.</p>
+  /** Creates a \$replaceRoot pipeline stage. With \$replaceWith you can promote an embedded document to the top-level. You can also specify
+    * a new document as the replacement.
     *
     * @param value
     *   the new root value
     * @return
-    *   the \$replaceRoot pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/replaceWith/]]
+    *   Aggregate with \$replaceRoot pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/replaceWith/]]
     * @since 3.11
     */
   def replaceWith[TExpression](value: TExpression): Aggregate
 
-  /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using the given pipeline
+  /** Creates a \$lookup pipeline stage, joining the current collection with the one specified in from using the given pipeline.
     *
     * @param from
     *   the name of the collection in the same database to perform the join with.
@@ -231,40 +229,36 @@ trait Aggregate extends AsJava {
     * @param as
     *   the name of the new array field to add to the input documents.
     * @return
-    *   the \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
+    *   Aggregate with \$lookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/]]
     * @since 3.7
     */
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate
 
-  /** Creates a \$addFields pipeline stage
-    *
-    * <p>With \$addFields, you can adds the new fields the document.</p>
+  /** Creates a \$addFields pipeline stage. With \$addFields you can add new fields the document.
     *
     * @param name
     *   the name of the new field
     * @param value
     *   the value of the new field
     * @return
-    *   the \$addFields pipeline stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/addFields/]]
+    *   Aggregate with \$addFields pipeline stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/addFields/]]
     * @since 3.4
     */
   def addFields[TExpression](fields: List[(String, TExpression)]): Aggregate
   def addFields[TExpression](fields: (String, TExpression)*): Aggregate = addFields(fields.toList)
 
-  /** Creates a \$set pipeline stage for the specified projection
+  /** Creates a \$set pipeline stage for the specified projection.
     *
     * @param fields
     *   the fields to add
     * @return
-    *   the \$set pipeline stage
-    * @see
-    *   Projections
+    *   Aggregate with \$set pipeline stage
     * @since 4.3
     */
   def set[TExpression](fields: List[(String, TExpression)]): Aggregate
   def set[TExpression](fields: (String, TExpression)*): Aggregate = set(fields.toList)
 
-  /** Creates a graphLookup pipeline stage for the specified filter
+  /** Creates a graphLookup pipeline stage for the specified filter.
     *
     * @param from
     *   the collection to query
@@ -279,7 +273,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   optional values for the graphLookup
     * @return
-    *   the \$graphLookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/graphLookup/]]
+    *   Aggregate with \$graphLookup pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/graphLookup/]]
     * @since 3.4
     */
   def graphLookup[TExpression](
@@ -291,16 +285,15 @@ trait Aggregate extends AsJava {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate
 
-  /** Creates a facet pipeline stage
+  /** Creates a facet pipeline stage.
     *
     * @param facets
     *   the facets to use
     * @return
-    *   the \$facets pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/facet/]]
+    *   Aggregate with \$facets pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/facet/]]
     * @since 3.4
     */
   def facet(facets: List[Aggregate.Facet]): Aggregate
-
   def facet(facets: Aggregate.Facet*): Aggregate = facet(facets.toList)
 
   /** Creates a \$unionWith pipeline stage.
@@ -310,7 +303,7 @@ trait Aggregate extends AsJava {
     * @param pipeline
     *   the pipeline to run on the union.
     * @return
-    *   the \$unionWith pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unionWith/]]
+    *   Aggregate with \$unionWith pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unionWith/]]
     * @since 4.1
     */
   def unionWith(collection: String, pipeline: Aggregate): Aggregate
@@ -324,14 +317,12 @@ trait Aggregate extends AsJava {
     */
   def combinedWith(anotherAggregate: Aggregate): Aggregate
 
-  /** Creates an \$unset pipeline stage
-    *
-    * <p> With \$unset, you can removes/excludes fields from documents
+  /** Creates an \$unset pipeline stage. With \$unset you can removes/excludes fields from documents.
     *
     * @param fields
     *   the fields to exclude. May use dot notation.
     * @return
-    *   the \$unset aggregate stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/unset/]]
+    *   Aggregate with \$unset aggregate stage [[https://www.mongodb.com/docs/manual/reference/operator/aggregation/unset/]]
     * @since 4.8
     */
   def unset(fields: List[String]): Aggregate
@@ -346,7 +337,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   The densify options.
     * @return
-    *   The requested pipeline stage.
+    *   Aggregate with requested pipeline stage.
     * @since 4.7
     */
   def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate
@@ -358,6 +349,8 @@ trait Aggregate extends AsJava {
     *   The fill options.
     * @param outputs
     *   The FillOutputField.
+    * @return
+    *   Aggregate with requested pipeline stage.
     * @since 4.7
     */
   def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate
@@ -372,6 +365,8 @@ trait Aggregate extends AsJava {
     *   The output field that contains the calculated distance. To specify a field within an embedded document, use dot notation.
     * @param options
     *   GeoNearOptions
+    * @return
+    *   Aggregate with requested pipeline stage.
     * @since 4.8
     */
   def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate
@@ -383,6 +378,8 @@ trait Aggregate extends AsJava {
     *   A search operator.
     * @param options
     *   Optional \$search pipeline stage fields.
+    * @return
+    *   Aggregate with requested pipeline stage.
     * @since 4.7
     */
   def search(operator: SearchOperator, options: SearchOptions): Aggregate
@@ -395,7 +392,7 @@ trait Aggregate extends AsJava {
     * @param options
     *   Optional \$search pipeline stage fields.
     * @return
-    *   The \$search pipeline stage.
+    *   Aggregate with \$search pipeline stage.
     * @since 4.7
     */
   def search(collector: SearchCollector, options: SearchOptions): Aggregate
