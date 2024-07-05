@@ -331,8 +331,7 @@ trait Aggregate extends AsJava {
     *   Aggregate with requested pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/densify/]]
     * @since 4.7
     */
-  def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate
-  def densify(field: String, range: DensifyRange): Aggregate = densify(field, range, DensifyOptions.densifyOptions())
+  def densify(field: String, range: DensifyRange, options: DensifyOptions = DensifyOptions.densifyOptions()): Aggregate
 
   /** Creates a \$fill pipeline stage, which assigns values to fields when they are Null or missing.
     *
@@ -360,8 +359,7 @@ trait Aggregate extends AsJava {
     *   Aggregate with requested pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/geoNear/]]
     * @since 4.8
     */
-  def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate
-  def geoNear(point: Point, distanceField: String): Aggregate = geoNear(point, distanceField, GeoNearOptions.geoNearOptions())
+  def geoNear(point: Point, distanceField: String, options: GeoNearOptions = GeoNearOptions.geoNearOptions()): Aggregate
 
   /** Creates a \$search pipeline stage supported by MongoDB Atlas. You may use \$meta: "searchScore", e.g., via
     * Projection.metaSearchScore(String), to extract the relevance score assigned to each found document.
@@ -474,22 +472,21 @@ object Aggregate {
   def set[TExpression](fields: List[(String, TExpression)]): Aggregate                     = empty.set(fields)
   def set[TExpression](fields: (String, TExpression)*): Aggregate                          = empty.set(fields.toList)
   def lookup(from: String, pipeline: Aggregate, as: String): Aggregate                     = empty.lookup(from, pipeline, as)
-  def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate      = empty.densify(field, range, options)
-  def densify(field: String, range: DensifyRange): Aggregate                               = empty.densify(field, range)
-  def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate                = empty.fill(options, outputs)
+  def densify(field: String, range: DensifyRange, options: DensifyOptions = DensifyOptions.densifyOptions()): Aggregate =
+    empty.densify(field, range, options)
+  def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate = empty.fill(options, outputs)
   def fill(options: FillOptions, output: FillOutputField, outputs: FillOutputField*): Aggregate =
     empty.fill(options, output :: outputs.toList)
-
-  def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate = empty.geoNear(point, distanceField, options)
-  def geoNear(point: Point, distanceField: String): Aggregate                          = empty.geoNear(point, distanceField)
-  def search(operator: SearchOperator, options: SearchOptions): Aggregate              = empty.search(operator, options)
-  def search(operator: SearchOperator): Aggregate                                      = empty.search(operator)
-  def search(collector: SearchCollector, options: SearchOptions): Aggregate            = empty.search(collector, options)
-  def search(collector: SearchCollector): Aggregate                                    = empty.search(collector)
-  def searchMeta(operator: SearchOperator, options: SearchOptions): Aggregate          = empty.searchMeta(operator, options)
-  def searchMeta(operator: SearchOperator): Aggregate                                  = empty.searchMeta(operator)
-  def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate        = empty.searchMeta(collector, options)
-  def searchMeta(collector: SearchCollector): Aggregate                                = empty.searchMeta(collector)
+  def geoNear(point: Point, distanceField: String, options: GeoNearOptions = GeoNearOptions.geoNearOptions()): Aggregate =
+    empty.geoNear(point, distanceField, options)
+  def search(operator: SearchOperator, options: SearchOptions): Aggregate       = empty.search(operator, options)
+  def search(operator: SearchOperator): Aggregate                               = empty.search(operator)
+  def search(collector: SearchCollector, options: SearchOptions): Aggregate     = empty.search(collector, options)
+  def search(collector: SearchCollector): Aggregate                             = empty.search(collector)
+  def searchMeta(operator: SearchOperator, options: SearchOptions): Aggregate   = empty.searchMeta(operator, options)
+  def searchMeta(operator: SearchOperator): Aggregate                           = empty.searchMeta(operator)
+  def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate = empty.searchMeta(collector, options)
+  def searchMeta(collector: SearchCollector): Aggregate                         = empty.searchMeta(collector)
 
   def graphLookup[TExpression](
       from: String,
@@ -512,7 +509,8 @@ final private case class AggregateBuilder(
   private def toJavaField[T](fields: List[(String, T)]): List[Field[?]] =
     fields.map { case (name, value) => new Field(name, value) }
 
-  override def combinedWith(anotherAggregate: Aggregate): Aggregate = AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
+  override def combinedWith(anotherAggregate: Aggregate): Aggregate =
+    AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
   def bucketAuto[TExpression](
       groupBy: TExpression,
@@ -595,13 +593,13 @@ final private case class AggregateBuilder(
   def unionWith(collection: String, pipeline: Aggregate): Aggregate =
     AggregateBuilder(Aggregates.unionWith(collection, pipeline.toBson) :: aggregates)
 
-  def densify(field: String, range: DensifyRange, options: DensifyOptions): Aggregate =
+  def densify(field: String, range: DensifyRange, options: DensifyOptions = DensifyOptions.densifyOptions()): Aggregate =
     AggregateBuilder(Aggregates.densify(field, range, options) :: aggregates)
 
   def fill(options: FillOptions, outputs: List[FillOutputField]): Aggregate =
     AggregateBuilder(Aggregates.fill(options, asJava(outputs)) :: aggregates)
 
-  def geoNear(point: Point, distanceField: String, options: GeoNearOptions): Aggregate =
+  def geoNear(point: Point, distanceField: String, options: GeoNearOptions = GeoNearOptions.geoNearOptions()): Aggregate =
     AggregateBuilder(Aggregates.geoNear(point, distanceField, options) :: aggregates)
 
   def search(operator: SearchOperator, options: SearchOptions): Aggregate =
