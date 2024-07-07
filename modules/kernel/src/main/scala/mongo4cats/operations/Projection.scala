@@ -182,6 +182,18 @@ trait Projection {
     */
   def slice(fieldName: String, skip: Int, limit: Int): Projection
 
+  /** Creates a projection to the given field name of the vectorSearchScore, for use with
+    * Aggregate.vectorSearch(FieldSearchPath,Seq,String,Long,Long,VectorSearchOptions). Calling this method is equivalent to calling
+    * meta(String,String) with "vectorSearchScore" as the second argument.
+    *
+    * @param fieldName
+    *   the field name
+    * @return
+    *   the projection
+    * @since 4.11
+    */
+  def metaVectorSearchScore(fieldName: String): Projection
+
   /** Merges 2 sequences of projection operations together. If there are duplicate keys, the last one takes precedence.
     *
     * @param anotherProjection
@@ -212,6 +224,7 @@ object Projection extends Projection {
   def metaTextScore(fieldName: String): Projection                = empty.metaTextScore(fieldName)
   def metaSearchScore(fieldName: String): Projection              = empty.metaSearchScore(fieldName)
   def metaSearchHighlights(fieldName: String): Projection         = empty.metaSearchHighlights(fieldName)
+  def metaVectorSearchScore(fieldName: String): Projection        = empty.metaVectorSearchScore(fieldName)
   def slice(fieldName: String, limit: Int): Projection            = empty.slice(fieldName, limit)
   def slice(fieldName: String, skip: Int, limit: Int): Projection = empty.slice(fieldName, skip, limit)
   def combinedWith(anotherProjection: Projection): Projection     = empty.combinedWith(anotherProjection)
@@ -262,6 +275,9 @@ final private case class ProjectionBuilder(
 
   override def metaSearchHighlights(fieldName: String): Projection =
     ProjectionBuilder(Projections.metaSearchHighlights(fieldName) :: projections)
+
+  def metaVectorSearchScore(fieldName: String): Projection =
+    ProjectionBuilder(Projections.metaVectorSearchScore(fieldName) :: projections)
 
   override def computedSearchMeta(fieldName: String): Projection =
     ProjectionBuilder(Projections.computedSearchMeta(fieldName) :: projections)

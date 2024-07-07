@@ -31,7 +31,7 @@ import org.bson.conversions.Bson
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
 import com.mongodb.client.model.fill.{FillOptions, FillOutputField}
 import com.mongodb.client.model.geojson.Point
-import com.mongodb.client.model.search.{SearchCollector, SearchOperator, SearchOptions}
+import com.mongodb.client.model.search.{FieldSearchPath, SearchCollector, SearchOperator, SearchOptions, VectorSearchOptions}
 
 trait Aggregate extends AsJava {
 
@@ -285,6 +285,34 @@ trait Aggregate extends AsJava {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate
 
+  /** Creates a \$vectorSearch pipeline stage supported by MongoDB Atlas. You may use the \$meta: "vectorSearchScore" expression, e.g., via
+    * Projection.metaVectorSearchScore(String), to extract the relevance score assigned to each found document.
+    *
+    * @param queryVector
+    *   The query vector. The number of dimensions must match that of the index.
+    * @param path
+    *   The field to be searched.
+    * @param index
+    *   The name of the index to use.
+    * @param numCandidates
+    *   The number of candidates.
+    * @param limit
+    *   The limit on the number of documents produced by the pipeline stage.
+    * @param options
+    *   Optional \$vectorSearch pipeline stage fields.
+    * @return
+    *   The Aggregate with \$vectorSearch pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/vectorSearch/]]
+    * @since 4.11
+    */
+  def vectorSearch(
+      path: FieldSearchPath,
+      queryVector: Seq[Double],
+      index: String,
+      numCandidates: Long,
+      limit: Long,
+      options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
+  ): Aggregate
+
   /** Creates a facet pipeline stage.
     *
     * @param facets
@@ -497,6 +525,15 @@ object Aggregate {
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = empty.graphLookup(from, startWith, connectFromField, connectToField, as, options)
 
+  def vectorSearch(
+      path: FieldSearchPath,
+      queryVector: Seq[Double],
+      index: String,
+      numCandidates: Long,
+      limit: Long,
+      options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
+  ): Aggregate = empty.vectorSearch(path, queryVector, index, numCandidates, limit, options)
+
   def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
 }
 
@@ -586,6 +623,17 @@ final private case class AggregateBuilder(
       as: String,
       options: GraphLookupOptions = new GraphLookupOptions()
   ): Aggregate = AggregateBuilder(Aggregates.graphLookup(from, startWith, connectFromField, connectToField, as, options) :: aggregates)
+
+  def vectorSearch(
+      path: FieldSearchPath,
+      queryVector: Seq[Double],
+      index: String,
+      numCandidates: Long,
+      limit: Long,
+      options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
+  ): Aggregate = AggregateBuilder(
+    Aggregates.vectorSearch(path, asJava(queryVector.map(java.lang.Double.valueOf)), index, numCandidates, limit, options) :: aggregates
+  )
 
   def facet(facets: List[Aggregate.Facet]): Aggregate =
     AggregateBuilder(Aggregates.facet(asJava(facets.map(_.toJava))) :: aggregates)
