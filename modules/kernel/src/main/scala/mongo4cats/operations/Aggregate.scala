@@ -19,6 +19,7 @@ package mongo4cats.operations
 import com.mongodb.client.model.{
   Aggregates,
   BucketAutoOptions,
+  BucketOptions,
   Facet => JFacet,
   Field,
   GeoNearOptions,
@@ -34,6 +35,26 @@ import com.mongodb.client.model.geojson.Point
 import com.mongodb.client.model.search.{FieldSearchPath, SearchCollector, SearchOperator, SearchOptions, VectorSearchOptions}
 
 trait Aggregate extends AsJava {
+
+  /** Creates a \$bucket pipeline stage
+    *
+    * @param the
+    *   groupBy expression type
+    * @param groupBy
+    *   the criteria to group By
+    * @param boundaries
+    *   the boundaries of the buckets
+    * @param options
+    *   the optional values for the $bucket stage
+    * @return
+    *   Aggregate \$bucket pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/bucket/]]
+    * @since 3.4
+    */
+  def bucket[TExpression](
+      groupBy: TExpression,
+      boundaries: Seq[Double],
+      options: BucketOptions = new BucketOptions()
+  ): Aggregate
 
   /** Creates a \$bucketAuto pipeline stage.
     *
@@ -465,11 +486,11 @@ object Aggregate {
 
   private[mongo4cats] val empty: Aggregate = AggregateBuilder(Nil)
 
-  def bucketAuto[TExpression](
-      groupBy: TExpression,
-      buckets: Int,
-      options: BucketAutoOptions = new BucketAutoOptions()
-  ): Aggregate = empty.bucketAuto(groupBy, buckets, options)
+  def bucket[TExpression](groupBy: TExpression, boundaries: Seq[Double], options: BucketOptions = new BucketOptions()): Aggregate =
+    empty.bucket(groupBy, boundaries, options)
+
+  def bucketAuto[TExpression](groupBy: TExpression, buckets: Int, options: BucketAutoOptions = new BucketAutoOptions()): Aggregate =
+    empty.bucketAuto(groupBy, buckets, options)
 
   def sample(size: Int): Aggregate                             = empty.sample(size)
   def count: Aggregate                                         = empty.count
@@ -543,17 +564,20 @@ final private case class AggregateBuilder(
 
   override private[mongo4cats] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
 
+  private def toJavaDouble(double: Double): java.lang.Double =
+    java.lang.Double.valueOf(double)
+
   private def toJavaField[T](fields: List[(String, T)]): List[Field[?]] =
     fields.map { case (name, value) => new Field(name, value) }
 
   override def combinedWith(anotherAggregate: Aggregate): Aggregate =
     AggregateBuilder(anotherAggregate.aggregates ::: aggregates)
 
-  def bucketAuto[TExpression](
-      groupBy: TExpression,
-      buckets: Int,
-      options: BucketAutoOptions = new BucketAutoOptions()
-  ): Aggregate = AggregateBuilder(Aggregates.bucketAuto(groupBy, buckets, options) :: aggregates)
+  def bucket[TExpression](groupBy: TExpression, boundaries: Seq[Double], options: BucketOptions = new BucketOptions()): Aggregate =
+    AggregateBuilder(Aggregates.bucket(groupBy, asJava(boundaries.map(toJavaDouble)), options) :: aggregates)
+
+  def bucketAuto[TExpression](groupBy: TExpression, buckets: Int, options: BucketAutoOptions = new BucketAutoOptions()): Aggregate =
+    AggregateBuilder(Aggregates.bucketAuto(groupBy, buckets, options) :: aggregates)
 
   def sample(size: Int): Aggregate =
     AggregateBuilder(Aggregates.sample(size) :: aggregates)
@@ -632,7 +656,7 @@ final private case class AggregateBuilder(
       limit: Long,
       options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
   ): Aggregate = AggregateBuilder(
-    Aggregates.vectorSearch(path, asJava(queryVector.map(java.lang.Double.valueOf)), index, numCandidates, limit, options) :: aggregates
+    Aggregates.vectorSearch(path, asJava(queryVector.map(toJavaDouble)), index, numCandidates, limit, options) :: aggregates
   )
 
   def facet(facets: List[Aggregate.Facet]): Aggregate =
