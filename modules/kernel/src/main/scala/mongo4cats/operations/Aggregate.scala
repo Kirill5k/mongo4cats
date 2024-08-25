@@ -45,7 +45,7 @@ trait Aggregate extends AsJava {
     * @param boundaries
     *   the boundaries of the buckets
     * @param options
-    *   the optional values for the $bucket stage
+    *   the optional values for the \$bucket stage
     * @return
     *   Aggregate \$bucket pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/bucket/]]
     * @since 3.4
