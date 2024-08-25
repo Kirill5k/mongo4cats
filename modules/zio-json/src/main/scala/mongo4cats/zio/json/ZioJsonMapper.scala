@@ -133,7 +133,13 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     binaryBase64ToJson(Base64.getEncoder.encodeToString(binary), "00")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
-    json.asObject.flatMap(_.get(Tag.binary)).flatMap(_.asObject).flatMap(_.get("base64")).flatMap(_.asString)
+    for {
+      obj       <- json.asObject
+      bin       <- obj.get(Tag.binary)
+      binObj    <- bin.asObject
+      base64    <- binObj.get("base64")
+      base64Str <- base64.asString
+    } yield base64Str
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(jsonToBinaryBase64(json).get)

@@ -104,7 +104,13 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     binaryBase64ToJson(Uuid.toBase64(uuid), "04")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
-    json.asObject.flatMap(_.apply(Tag.binary)).flatMap(_.asObject).flatMap(_.apply("base64")).flatMap(_.asString)
+    for {
+      obj       <- json.asObject
+      bin       <- obj(Tag.binary)
+      binObj    <- bin.asObject
+      base64    <- binObj("base64")
+      base64Str <- base64.asString
+    } yield base64Str
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(jsonToBinaryBase64(json).get)
