@@ -489,9 +489,9 @@ trait Aggregate extends AsJava {
       outputs: Seq[WindowOutputField]
   ): Aggregate
 
-  /** Creates a \$setWindowFields pipeline stage, which allows using window operators. This stage sorts input documents,
-    * computes fields in the documents by computing window functions over windows specified per
-    * function, and outputs the documents. Here, documents will belong to the same partition.
+  /** Creates a \$setWindowFields pipeline stage, which allows using window operators. This stage sorts input documents, computes fields in
+    * the documents by computing window functions over windows specified per function, and outputs the documents. Here, documents will
+    * belong to the same partition.
     *
     * @param sortBy
     *   Fields to sort by. Sorting is required by certain functions and may be required by some windows. Sorting is used only for the
