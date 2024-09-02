@@ -25,7 +25,8 @@ import com.mongodb.client.model.{
   GeoNearOptions,
   GraphLookupOptions,
   MergeOptions,
-  UnwindOptions
+  UnwindOptions,
+  WindowOutputField
 }
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
@@ -466,6 +467,46 @@ trait Aggregate extends AsJava {
   def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate
   def searchMeta(collector: SearchCollector): Aggregate = searchMeta(collector, SearchOptions.searchOptions())
 
+  /** Creates a \$setWindowFields pipeline stage, which allows using window operators. This stage partitions the input documents similarly
+    * to the \$group pipeline stage, sorts them, computes fields in the documents by computing window functions over windows specified per
+    * function, and outputs the documents. The important difference from the \$group pipeline stage is that documents belonging to the same
+    * partition or window are not folded into a single document.
+    *
+    * @param partitionBy
+    *   Partitioning of data specified like id in \$group.
+    * @param sortBy
+    *   Fields to sort by. Sorting is required by certain functions and may be required by some windows. Sorting is used only for the
+    *   purpose of computing window functions and does not guarantee ordering of the output documents.
+    * @param output
+    *   A list of windowed computations. Specifying an empty list is not an error, but the resulting stage does not do anything useful.
+    * @return
+    *   Aggregate with \$setWindowFields pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/setWindowFields/]]
+    * @since 4.3
+    */
+  def setWindowFields[TExpression](
+      partitionBy: TExpression,
+      sortBy: Sort,
+      outputs: Seq[WindowOutputField]
+  ): Aggregate
+
+  /** Creates a \$setWindowFields pipeline stage, which allows using window operators. This stage sorts input documents,
+    * computes fields in the documents by computing window functions over windows specified per
+    * function, and outputs the documents. Here, documents will belong to the same partition.
+    *
+    * @param sortBy
+    *   Fields to sort by. Sorting is required by certain functions and may be required by some windows. Sorting is used only for the
+    *   purpose of computing window functions and does not guarantee ordering of the output documents.
+    * @param output
+    *   A list of windowed computations. Specifying an empty list is not an error, but the resulting stage does not do anything useful.
+    * @return
+    *   Aggregate with \$setWindowFields pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/setWindowFields/]]
+    * @since 4.3
+    */
+  def setWindowFields(
+      sortBy: Sort,
+      outputs: Seq[WindowOutputField]
+  ): Aggregate
+
   /** Merges 2 aggregation pipelines together.
     *
     * @param anotherAggregate
@@ -554,6 +595,12 @@ object Aggregate {
       limit: Long,
       options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
   ): Aggregate = empty.vectorSearch(path, queryVector, index, numCandidates, limit, options)
+
+  def setWindowFields[TExpression](partitionBy: TExpression, sortBy: Sort, outputs: Seq[WindowOutputField]): Aggregate =
+    empty.setWindowFields(partitionBy, sortBy, outputs)
+
+  def setWindowFields(sortBy: Sort, outputs: Seq[WindowOutputField]): Aggregate =
+    empty.setWindowFields(sortBy, outputs)
 
   def unionWith(collection: String, pipeline: Aggregate): Aggregate = empty.unionWith(collection, pipeline)
 }
@@ -685,4 +732,10 @@ final private case class AggregateBuilder(
 
   def searchMeta(collector: SearchCollector, options: SearchOptions): Aggregate =
     AggregateBuilder(Aggregates.searchMeta(collector, options) :: aggregates)
+
+  def setWindowFields[TExpression](partitionBy: TExpression, sortBy: Sort, outputs: Seq[WindowOutputField]): Aggregate =
+    AggregateBuilder(Aggregates.setWindowFields(partitionBy, sortBy.toBson, asJava(outputs)) :: aggregates)
+
+  def setWindowFields(sortBy: Sort, outputs: Seq[WindowOutputField]): Aggregate =
+    AggregateBuilder(Aggregates.setWindowFields(null, sortBy.toBson, asJava(outputs)) :: aggregates)
 }
