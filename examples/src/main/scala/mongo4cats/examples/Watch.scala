@@ -31,8 +31,8 @@ object Watch extends IOApp.Simple {
         db   <- client.getDatabase("my-db")
         coll <- db.getCollection("docs")
         watchStream  = coll.watch.stream
-        insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" := s"doc-$i")))
-        deleteStream = Stream.eval(coll.deleteMany(Filter.empty))
+        insertStream = Stream.range(0, 10).evalMap(i => coll.insertOne(Document("name" := s"doc-$i"))).drain
+        deleteStream = Stream.eval(coll.deleteMany(Filter.empty)).drain
         dropStream   = Stream.eval(coll.drop)
         opsStream    = insertStream ++ deleteStream ++ dropStream
         updates <- watchStream.concurrently(opsStream).compile.toList

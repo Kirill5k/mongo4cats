@@ -455,7 +455,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
       ZIO
         .serviceWithZIO[ZMongoDatabase](test(_))
         .provide(
-          ZLayer.scoped(ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))),
+          ZLayer.scoped[Any][Throwable, ZMongoClient](ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))),
           ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("test-db")))
         )
     }

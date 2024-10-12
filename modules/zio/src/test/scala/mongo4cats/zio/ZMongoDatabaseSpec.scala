@@ -116,9 +116,13 @@ object ZMongoDatabaseSpec extends ZIOSpecDefault with EmbeddedMongo {
   ) @@ sequential
 
   def withEmbeddedMongoClient[A](test: ZMongoClient => ZIO[Any, Throwable, A]): ZIO[Scope, Throwable, A] =
-    withRunningEmbeddedMongo {
+    withRunningEmbeddedMongo[Scope, Throwable, A] {
       ZIO
         .serviceWithZIO[ZMongoClient](test(_))
-        .provide(ZLayer.scoped(ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))))
+        .provide(
+          ZLayer.scoped[Any][Throwable, ZMongoClient] {
+            ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))
+          }
+        )
     }
 }
