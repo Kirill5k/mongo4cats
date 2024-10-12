@@ -28,7 +28,7 @@ import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
 import org.bson.Document
 
 trait EmbeddedMongo {
-  protected val mongoVersion: Version         = Version.V5_0_14
+  protected val mongoVersion: Version         = Version.V6_0_1
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
