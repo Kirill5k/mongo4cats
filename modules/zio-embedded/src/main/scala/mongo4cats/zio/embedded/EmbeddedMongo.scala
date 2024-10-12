@@ -27,7 +27,7 @@ import org.bson.Document
 import zio.{Scope, ZIO}
 
 trait EmbeddedMongo {
-  protected val mongoVersion: Version         = Version.V6_0_1
+  protected val mongoVersion: Version         = Version.V7_0_0
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None
