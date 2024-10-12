@@ -316,8 +316,6 @@ trait Aggregate extends AsJava {
     *   The field to be searched.
     * @param index
     *   The name of the index to use.
-    * @param numCandidates
-    *   The number of candidates.
     * @param limit
     *   The limit on the number of documents produced by the pipeline stage.
     * @param options
@@ -330,9 +328,8 @@ trait Aggregate extends AsJava {
       path: FieldSearchPath,
       queryVector: Seq[Double],
       index: String,
-      numCandidates: Long,
       limit: Long,
-      options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
+      options: VectorSearchOptions = VectorSearchOptions.exactVectorSearchOptions()
   ): Aggregate
 
   /** Creates a facet pipeline stage.
@@ -591,10 +588,9 @@ object Aggregate {
       path: FieldSearchPath,
       queryVector: Seq[Double],
       index: String,
-      numCandidates: Long,
       limit: Long,
-      options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
-  ): Aggregate = empty.vectorSearch(path, queryVector, index, numCandidates, limit, options)
+      options: VectorSearchOptions = VectorSearchOptions.exactVectorSearchOptions()
+  ): Aggregate = empty.vectorSearch(path, queryVector, index, limit, options)
 
   def setWindowFields[TExpression](partitionBy: TExpression, sortBy: Sort, outputs: Seq[WindowOutputField]): Aggregate =
     empty.setWindowFields(partitionBy, sortBy, outputs)
@@ -699,11 +695,10 @@ final private case class AggregateBuilder(
       path: FieldSearchPath,
       queryVector: Seq[Double],
       index: String,
-      numCandidates: Long,
       limit: Long,
-      options: VectorSearchOptions = VectorSearchOptions.vectorSearchOptions()
+      options: VectorSearchOptions = VectorSearchOptions.exactVectorSearchOptions()
   ): Aggregate = AggregateBuilder(
-    Aggregates.vectorSearch(path, asJava(queryVector.map(toJavaDouble)), index, numCandidates, limit, options) :: aggregates
+    Aggregates.vectorSearch(path, asJava(queryVector.map(toJavaDouble)), index, limit, options) :: aggregates
   )
 
   def facet(facets: List[Aggregate.Facet]): Aggregate =
