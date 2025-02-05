@@ -681,4 +681,6 @@ final private case class FilterBuilder(
     FilterBuilder(Filters.nor(filter, anotherFilter.filter))
 
   override private[mongo4cats] def toBson = filter
+
+  override def toString: String = filter.toString
 }
