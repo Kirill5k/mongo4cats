@@ -83,7 +83,6 @@ object Filter extends AsJava {
     *
     * @return
     *   the filter
-    * @since 3.4
     */
   val empty: Filter = FilterBuilder(Filters.empty())
 
@@ -94,7 +93,6 @@ object Filter extends AsJava {
     *   the value, which may be null
     * @return
     *   the filter
-    * @since 3.4
     */
   def idEq[A](value: A): Filter =
     FilterBuilder(Filters.eq(value))
@@ -327,7 +325,6 @@ object Filter extends AsJava {
     *   the aggregation expression
     * @return
     *   the filter
-    * @since 3.6
     */
   def expr[TExpression](expr: TExpression): Filter =
     FilterBuilder(Filters.expr(expr))
@@ -377,7 +374,6 @@ object Filter extends AsJava {
     *   the bitmask
     * @return
     *   the filter
-    * @since 3.2
     */
   def bitsAllClear(fieldName: String, bitmask: Long): Filter =
     FilterBuilder(Filters.bitsAllClear(fieldName, bitmask))
@@ -390,7 +386,6 @@ object Filter extends AsJava {
     *   the bitmask
     * @return
     *   the filter
-    * @since 3.2
     */
   def bitsAllSet(fieldName: String, bitmask: Long): Filter =
     FilterBuilder(Filters.bitsAllSet(fieldName, bitmask))
@@ -403,7 +398,6 @@ object Filter extends AsJava {
     *   the bitmask
     * @return
     *   the filter
-    * @since 3.2
     */
   def bitsAnyClear(fieldName: String, bitmask: Long): Filter =
     FilterBuilder(Filters.bitsAnyClear(fieldName, bitmask))
@@ -416,7 +410,6 @@ object Filter extends AsJava {
     *   the bitmask
     * @return
     *   the filter
-    * @since 3.2
     */
   def bitsAnySet(fieldName: String, bitmask: Long): Filter =
     FilterBuilder(Filters.bitsAnySet(fieldName, bitmask))
@@ -429,7 +422,6 @@ object Filter extends AsJava {
     *   the bounding GeoJSON geometry object
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoWithin(fieldName: String, geometry: Geometry): Filter =
     FilterBuilder(Filters.geoWithin(fieldName, geometry))
@@ -442,7 +434,6 @@ object Filter extends AsJava {
     *   the bounding GeoJSON geometry object
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoWithin(fieldName: String, geometry: Bson): Filter =
     FilterBuilder(Filters.geoWithin(fieldName, geometry))
@@ -462,7 +453,6 @@ object Filter extends AsJava {
     *   the upper left y coordinate of the box
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoWithinBox(fieldName: String, lowerLeftX: Double, lowerLeftY: Double, upperRightX: Double, upperRightY: Double): Filter =
     FilterBuilder(Filters.geoWithinBox(fieldName, lowerLeftX, lowerLeftY, upperRightX, upperRightY))
@@ -476,7 +466,6 @@ object Filter extends AsJava {
     *   a list of pairs of x, y coordinates. Any extra dimensions are ignored
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoWithinPolygon(fieldName: String, points: Seq[Seq[Double]]): Filter =
     FilterBuilder(Filters.geoWithinPolygon(fieldName, asJava(points.map(p => asJava(p.map(Double.box))))))
@@ -494,7 +483,6 @@ object Filter extends AsJava {
     *   the radius of the circle, as measured in the units used by the coordinate system
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoWithinCenter(fieldName: String, x: Double, y: Double, radius: Double): Filter =
     FilterBuilder(Filters.geoWithinCenter(fieldName, x, y, radius))
@@ -512,7 +500,6 @@ object Filter extends AsJava {
     *   the radius of the circle, in radians
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoWithinCenterSphere(fieldName: String, x: Double, y: Double, radius: Double): Filter =
     FilterBuilder(Filters.geoWithinCenterSphere(fieldName, x, y, radius))
@@ -525,7 +512,6 @@ object Filter extends AsJava {
     *   the bounding GeoJSON geometry object
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoIntersects(fieldName: String, geometry: Geometry): Filter =
     FilterBuilder(Filters.geoIntersects(fieldName, geometry))
@@ -538,7 +524,6 @@ object Filter extends AsJava {
     *   the bounding GeoJSON geometry object
     * @return
     *   the filter
-    * @since 3.1
     */
   def geoIntersects(fieldName: String, geometry: Bson): Filter =
     FilterBuilder(Filters.geoIntersects(fieldName, geometry))
@@ -555,7 +540,6 @@ object Filter extends AsJava {
     *   the minimum distance from the point, in meters. It may be null.
     * @return
     *   the filter
-    * @since 3.1
     */
   def near(fieldName: String, geometry: Point, maxDistance: Double, minDistance: Double): Filter =
     FilterBuilder(Filters.near(fieldName, geometry, maxDistance, minDistance))
@@ -572,7 +556,6 @@ object Filter extends AsJava {
     *   the minimum distance from the point, in meters. It may be null.
     * @return
     *   the filter
-    * @since 3.1
     */
   def near(fieldName: String, geometry: Bson, maxDistance: Double, minDistance: Double): Filter =
     FilterBuilder(Filters.near(fieldName, geometry, maxDistance, minDistance))
@@ -591,7 +574,6 @@ object Filter extends AsJava {
     *   the minimum distance from the point, in radians. It may be null.
     * @return
     *   the filter
-    * @since 3.1
     */
   def near(fieldName: String, x: Double, y: Double, maxDistance: Double, minDistance: Double): Filter =
     FilterBuilder(Filters.near(fieldName, x, y, maxDistance, minDistance))
@@ -609,7 +591,6 @@ object Filter extends AsJava {
     *   the minimum distance from the point, in meters. It may be null.
     * @return
     *   the filter
-    * @since 3.1
     */
   def nearSphere(fieldName: String, geometry: Point, maxDistance: Double, minDistance: Double): Filter =
     FilterBuilder(Filters.nearSphere(fieldName, geometry, maxDistance, minDistance))
@@ -627,7 +608,6 @@ object Filter extends AsJava {
     *   the minimum distance from the point, in meters. It may be null.
     * @return
     *   the filter
-    * @since 3.1
     */
   def nearSphere(fieldName: String, geometry: Bson, maxDistance: Double, minDistance: Double): Filter =
     FilterBuilder(Filters.nearSphere(fieldName, geometry, maxDistance, minDistance))
@@ -647,7 +627,6 @@ object Filter extends AsJava {
     *   the minimum distance from the point, in radians. It may be null.
     * @return
     *   the filter
-    * @since 3.1
     */
   def nearSphere(fieldName: String, x: Double, y: Double, maxDistance: Double, minDistance: Double): Filter =
     FilterBuilder(Filters.nearSphere(fieldName, x, y, maxDistance, minDistance))
@@ -658,7 +637,6 @@ object Filter extends AsJava {
     *   the JSON schema to validate against
     * @return
     *   the filter
-    * @since 3.6
     */
   def jsonSchema(schema: Bson): Filter =
     FilterBuilder(Filters.jsonSchema(schema))
