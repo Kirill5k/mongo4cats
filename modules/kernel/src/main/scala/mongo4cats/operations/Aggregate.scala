@@ -558,7 +558,6 @@ class Aggregate(
       case Some(agg: Aggregate) => agg.aggregates == aggregates
       case _                    => false
     }
-
 }
 
 object Aggregate extends Aggregate {
