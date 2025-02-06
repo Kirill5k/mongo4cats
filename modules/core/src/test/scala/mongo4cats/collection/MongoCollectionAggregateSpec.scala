@@ -18,6 +18,7 @@ package mongo4cats.collection
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import de.flapdoodle.embed.mongo.distribution.Version
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
@@ -33,6 +34,7 @@ import scala.concurrent.Future
 
 class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
   override val mongoPort = 12350
+  override val mongoVersion: Version = Version.V7_0_0
 
   "A MongoCollection" when {
     "aggregate" should {
@@ -139,15 +141,20 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
                   .project(Projection.excludeId)
                   .unwind("$name", UnwindOptions().preserveNullAndEmptyArrays(false))
                   .group("$_id", Accumulator.addToSet("uniqueNames", "$name"))
-                  .project(Projection.slice("uniqueNames", 1, 1))
+                  .unwind("$uniqueNames")
+                  .sort(Sort.asc("uniqueNames"))
+                  .group("$_id", Accumulator.push("uniqueNames", "$uniqueNames"))
+                  .addFields("slicedUniqueNames1" -> "$uniqueNames")
+                  .addFields("slicedUniqueNames2" -> "$uniqueNames")
+                  .project(Projection.include("uniqueNames").slice("slicedUniqueNames1", 1, 2).slice("slicedUniqueNames2", 2))
               )
-              .all
+              .first
           } yield res
 
           result.map { res =>
-            val accounts = res.flatMap(_.getAs[List[String]]("uniqueNames")).flatten
-            accounts must have size 1
-            accounts must contain oneOf ("usd-acc", "eur-acc", "gbp-acc")
+            res.flatMap(_.getAs[List[String]]("uniqueNames")) mustBe Some(List("eur-acc", "gbp-acc", "usd-acc"))
+            res.flatMap(_.getAs[List[String]]("slicedUniqueNames1")) mustBe Some(List("gbp-acc", "usd-acc"))
+            res.flatMap(_.getAs[List[String]]("slicedUniqueNames2")) mustBe Some(List("eur-acc", "gbp-acc"))
           }
         }
       }

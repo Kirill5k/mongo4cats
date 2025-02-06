@@ -61,7 +61,7 @@ class Index(
 
   /** Create an index key for an descending index on the given fields.
     *
-    * @param fieldName
+    * @param fieldNames
     *   the field names, which must contain at least one
     * @return
     *   the index specification [[https://docs.mongodb.com/manual/core/index-single/#single-field-indexes]]
