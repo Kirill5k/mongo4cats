@@ -8,7 +8,7 @@ object Dependencies {
     val circe              = "0.14.10"
     val zio                = "2.1.15"
     val zioInteropReactive = "2.0.2"
-    val zioJson            = "0.7.15"
+    val zioJson            = "0.7.14"
 
     val logback   = "1.5.16"
     val scalaTest = "3.2.19"

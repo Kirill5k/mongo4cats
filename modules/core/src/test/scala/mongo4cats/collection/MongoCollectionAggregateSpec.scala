@@ -33,7 +33,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-  override val mongoPort = 12350
+  override val mongoPort             = 12350
   override val mongoVersion: Version = Version.V7_0_0
 
   "A MongoCollection" when {
