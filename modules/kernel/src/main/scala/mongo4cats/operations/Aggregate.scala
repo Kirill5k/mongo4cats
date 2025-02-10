@@ -16,24 +16,14 @@
 
 package mongo4cats.operations
 
-import com.mongodb.client.model.{
-  Aggregates,
-  BucketAutoOptions,
-  BucketOptions,
-  Facet => JFacet,
-  Field,
-  GeoNearOptions,
-  GraphLookupOptions,
-  MergeOptions,
-  UnwindOptions,
-  WindowOutputField
-}
+import com.mongodb.client.model.{Aggregates, BucketAutoOptions, BucketOptions, Field, GeoNearOptions, GraphLookupOptions, MergeOptions, WindowOutputField, Facet => JFacet}
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
 import com.mongodb.client.model.fill.{FillOptions, FillOutputField}
 import com.mongodb.client.model.geojson.Point
 import com.mongodb.client.model.search.{FieldSearchPath, SearchCollector, SearchOperator, SearchOptions, VectorSearchOptions}
+import mongo4cats.models.collection.UnwindOptions
 
 class Aggregate(
     private val aggregates: List[Bson]
@@ -212,7 +202,7 @@ class Aggregate(
     * @return
     *   Aggregate with \$unwind pipeline stage [[https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/]]
     */
-  def unwind(fieldName: String, unwindOptions: UnwindOptions = new UnwindOptions()): Aggregate =
+  def unwind(fieldName: String, unwindOptions: UnwindOptions = UnwindOptions()): Aggregate =
     withAggregate(Aggregates.unwind(fieldName, unwindOptions))
 
   /** Creates a \$out pipeline stage that writes into the specified collection

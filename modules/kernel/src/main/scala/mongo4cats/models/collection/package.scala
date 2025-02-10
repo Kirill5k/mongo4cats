@@ -71,12 +71,20 @@ package object collection {
         upsert: Boolean = false,
         bypassDocumentValidation: Boolean = false,
         comment: Option[String] = None
-    ): UpdateOptions = new JUpdateOptions().upsert(upsert).bypassDocumentValidation(bypassDocumentValidation).comment(comment.orNull)
+    ): UpdateOptions = new JUpdateOptions()
+      .upsert(upsert)
+      .bypassDocumentValidation(bypassDocumentValidation)
+      .comment(comment.orNull)
   }
 
   type UnwindOptions = JUnwindOptions
   object UnwindOptions {
-    def apply(): UnwindOptions = new JUnwindOptions()
+    def apply(
+        preserveNullAndEmptyArrays: Boolean = false,
+        includeArrayIndex: Option[String] = None
+    ): UnwindOptions = new JUnwindOptions()
+      .preserveNullAndEmptyArrays(preserveNullAndEmptyArrays)
+      .includeArrayIndex(includeArrayIndex.orNull)
   }
 
   type ReplaceOptions = JReplaceOptions
