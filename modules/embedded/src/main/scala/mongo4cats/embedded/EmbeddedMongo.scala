@@ -73,7 +73,7 @@ object EmbeddedMongo {
     Resource
       .fromAutoCloseable(F.delay(startMongod(port, username, password, version)))
       .void
-      .handleErrorWith[Unit, Throwable] { error =>
+      .handleErrorWith[Unit] { error =>
         if (remainingAttempts <= 0) Resource.raiseError(error)
         else start[F](port, username, password, version, remainingAttempts - 1)
       }

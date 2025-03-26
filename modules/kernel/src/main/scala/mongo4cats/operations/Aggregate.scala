@@ -16,7 +16,17 @@
 
 package mongo4cats.operations
 
-import com.mongodb.client.model.{Aggregates, BucketAutoOptions, BucketOptions, Field, GeoNearOptions, GraphLookupOptions, MergeOptions, WindowOutputField, Facet => JFacet}
+import com.mongodb.client.model.{
+  Aggregates,
+  BucketAutoOptions,
+  BucketOptions,
+  Facet => JFacet,
+  Field,
+  GeoNearOptions,
+  GraphLookupOptions,
+  MergeOptions,
+  WindowOutputField
+}
 import mongo4cats.AsJava
 import org.bson.conversions.Bson
 import com.mongodb.client.model.densify.{DensifyOptions, DensifyRange}
