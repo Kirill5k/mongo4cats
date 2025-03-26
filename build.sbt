@@ -19,7 +19,7 @@ ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / versionScheme          := Some("early-semver")
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
-ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("17"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
 ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
 
 releaseProcess := Seq[ReleaseStep](
