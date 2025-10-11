@@ -41,7 +41,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
       "join data from 2 collections" in withEmbeddedMongoDatabase { db =>
         val result = for {
           accs <- db.getCollection("accounts")
-          res <- accs
+          res  <- accs
             .aggregate[Document] {
               Aggregate
                 .matchBy(Filter.eq("currency", TestData.USD))
@@ -89,7 +89,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
       "explain the pipeline in a form of a document" in withEmbeddedMongoDatabase { db =>
         val result = for {
           accs <- db.getCollection("accounts")
-          res <- accs
+          res  <- accs
             .aggregate[Document] {
               Aggregate
                 .matchBy(Filter.eq("currency", TestData.USD))
@@ -107,7 +107,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         }
       }
 
-      "processes multiple aggregation pipelines within a single stage on the same set of input documents" in {
+      "processes multiple aggregation pipelines within a single stage on the same set of input documents" in
         withEmbeddedMongoDatabase { db =>
           val result = for {
             txs <- db.getCollection("transactions")
@@ -129,13 +129,12 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
             res.getList("transactionsByAccount").get must have size 1
           }
         }
-      }
 
-      "collect all unique account currencies" in {
+      "collect all unique account currencies" in
         withEmbeddedMongoDatabase { db =>
           val result = for {
             accs <- db.getCollection("accounts")
-            res <- accs
+            res  <- accs
               .aggregate[Document](
                 Aggregate
                   .project(Projection.excludeId)
@@ -157,13 +156,12 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
             res.flatMap(_.getAs[List[String]]("slicedUniqueNames2")) mustBe Some(List("eur-acc", "gbp-acc"))
           }
         }
-      }
 
-      "using first, return none if no result is found" in {
+      "using first, return none if no result is found" in
         withEmbeddedMongoDatabase { db =>
           val result = for {
             accs <- db.getCollection("accounts")
-            res <- accs
+            res  <- accs
               .aggregate[Document](
                 Aggregate
                   .matchBy(Filter.eq("currency", TestData.LVL))
@@ -175,7 +173,6 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
             res mustBe empty
           }
         }
-      }
     }
   }
 

@@ -44,11 +44,11 @@ private[mongo4cats] object json {
       fromBson: BsonValue => Either[MongoJsonParsingException, T]
   ): CodecProvider =
     new CodecProvider {
-      private val classT = Clazz.tag[T]
+      private val classT                                                       = Clazz.tag[T]
       override def get[Y](classY: Class[Y], registry: CodecRegistry): Codec[Y] =
         if (classY == classT || classT.isAssignableFrom(classY))
           new Codec[Y] {
-            override def getEncoderClass: Class[Y] = classY
+            override def getEncoderClass: Class[Y]                                              = classY
             override def encode(writer: BsonWriter, t: Y, encoderContext: EncoderContext): Unit =
               ContainerValueWriter.writeBsonValue(toBson(t.asInstanceOf[T]), writer)
             override def decode(reader: BsonReader, decoderContext: DecoderContext): Y =

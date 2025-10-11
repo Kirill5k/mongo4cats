@@ -43,9 +43,9 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
   "A MongoCollection" should {
 
-    "use circe codecs for encoding and decoding data" in {
+    "use circe codecs for encoding and decoding data" in
       withEmbeddedMongoClient { client =>
-        val p = person()
+        val p      = person()
         val result = for {
           db   <- client.getDatabase("test")
           _    <- db.createCollection("people")
@@ -57,11 +57,10 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
         result.map(_ mustBe List(p))
       }
-    }
 
-    "use circe-codec-provider for encoding and decoding data" in {
+    "use circe-codec-provider for encoding and decoding data" in
       withEmbeddedMongoClient { client =>
-        val p = person()
+        val p      = person()
         val result = for {
           db     <- client.getDatabase("test")
           _      <- db.createCollection("people")
@@ -72,9 +71,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
 
         result.map(_ mustBe List(p))
       }
-    }
 
-    "find distinct nested objects" in {
+    "find distinct nested objects" in
       withEmbeddedMongoClient { client =>
         val result = for {
           db        <- client.getDatabase("test")
@@ -88,12 +86,11 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           res mustBe List(Address(611, "5th Ave", "New York", "NY 10022"))
         }
       }
-    }
 
-    "find by items in array" in {
+    "find by items in array" in
       withEmbeddedMongoClient { client =>
         val newPerson = person()
-        val result = for {
+        val result    = for {
           db   <- client.getDatabase("test")
           _    <- db.createCollection("people")
           coll <- db.getCollectionWithCodec[Person]("people")
@@ -105,9 +102,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           res mustBe List(newPerson)
         }
       }
-    }
 
-    "find distinct nested objects via distinctWithCode" in {
+    "find distinct nested objects via distinctWithCode" in
       withEmbeddedMongoClient { client =>
         val result = for {
           db        <- client.getDatabase("test")
@@ -121,9 +117,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           res mustBe List(Address(611, "5th Ave", "New York", "NY 10022"))
         }
       }
-    }
 
-    "find distinct nested enums" in {
+    "find distinct nested enums" in
       withEmbeddedMongoClient { client =>
         val result = for {
           db      <- client.getDatabase("test")
@@ -137,9 +132,8 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           res.toSet mustBe Set(Gender.Female, Gender.Male)
         }
       }
-    }
 
-    "search by nested classes" in {
+    "search by nested classes" in
       withEmbeddedMongoClient { client =>
         val result = for {
           db      <- client.getDatabase("test")
@@ -153,7 +147,6 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
           res must have size 1
         }
       }
-    }
 
     "work with uuids" in {
       final case class UuidPerson(_id: UUID, anotherId: UUID, name: String)

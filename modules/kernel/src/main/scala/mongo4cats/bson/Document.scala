@@ -103,8 +103,8 @@ final private class ListMapDocument(
   def toSet: Set[(String, BsonValue)]   = fields.toSet
   def toMap: Map[String, BsonValue]     = fields
 
-  override def toString: String = toJson
-  override def hashCode(): Int  = fields.hashCode()
+  override def toString: String            = toJson
+  override def hashCode(): Int             = fields.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(doc: Document) if doc.keys == this.keys =>

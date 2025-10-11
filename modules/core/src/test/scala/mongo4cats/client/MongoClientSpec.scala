@@ -23,6 +23,7 @@ import com.mongodb.MongoTimeoutException
 import com.mongodb.connection.ClusterConnectionMode
 import mongo4cats.models.client._
 import mongo4cats.embedded.EmbeddedMongo
+import org.scalatest.Assertion
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -52,15 +53,16 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
         }
     }.unsafeToFuture()(IORuntime.global)
 
-    "connect to a db via connection object with authentication" in withRunningEmbeddedMongo(mongoPort, username, password) {
-      val connection = MongoConnection.classic("localhost", mongoPort, Some(MongoCredential(username, password)))
-      MongoClient
-        .fromConnection[IO](connection)
-        .use { client =>
-          val cluster = client.clusterDescription
-          IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
-        }
-    }.unsafeToFuture()(IORuntime.global)
+    "connect to a db via connection object with authentication" in
+      withRunningEmbeddedMongo[IO, Assertion](mongoPort, username, password) {
+        val connection = MongoConnection.classic("localhost", mongoPort, Some(MongoCredential(username, password)))
+        MongoClient
+          .fromConnection[IO](connection)
+          .use { client =>
+            val cluster = client.clusterDescription
+            IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
+          }
+      }.unsafeToFuture()(IORuntime.global)
 
     "return current database names" in withRunningEmbeddedMongo {
       MongoClient

@@ -22,6 +22,7 @@ import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.embedded.EmbeddedMongo
+import org.scalatest.Assertion
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -42,16 +43,17 @@ class WithEmbeddedMongoSpec extends AsyncWordSpec with Matchers with EmbeddedMon
       }
     }.unsafeToFuture()
 
-    "start instance on different port" in withRunningEmbeddedMongo(12355) {
-      MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
-        for {
-          db   <- client.getDatabase("my-db")
-          coll <- db.getCollection("docs")
-          testDoc = Document("Hello" := "World!")
-          _        <- coll.insertOne(testDoc)
-          foundDoc <- coll.find.first
-        } yield foundDoc.map(_.remove("_id")) mustBe Some(testDoc)
-      }
-    }.unsafeToFuture()
+    "start instance on different port" in
+      withRunningEmbeddedMongo[IO, Assertion](12355) {
+        MongoClient.fromConnectionString[IO]("mongodb://localhost:12355").use { client =>
+          for {
+            db   <- client.getDatabase("my-db")
+            coll <- db.getCollection("docs")
+            testDoc = Document("Hello" := "World!")
+            _        <- coll.insertOne(testDoc)
+            foundDoc <- coll.find.first
+          } yield foundDoc.map(_.remove("_id")) mustBe Some(testDoc)
+        }
+      }.unsafeToFuture()
   }
 }

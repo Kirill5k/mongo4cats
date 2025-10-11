@@ -142,8 +142,8 @@ class Index(
 
   private[mongo4cats] def toBson: Bson = Indexes.compoundIndex(asJava(indexes.reverse))
 
-  override def toString: String = indexes.reverse.mkString("[", ",", "]")
-  override def hashCode(): Int  = indexes.hashCode()
+  override def toString: String            = indexes.reverse.mkString("[", ",", "]")
+  override def hashCode(): Int             = indexes.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(ind: Index) => ind.indexes == indexes

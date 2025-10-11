@@ -94,8 +94,8 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
       test("delete multiple docs in coll") {
         withEmbeddedMongoDatabase { db =>
           for {
-            coll <- db.getCollection("coll")
-            _    <- coll.insertMany(TestData.accounts)
+            coll         <- db.getCollection("coll")
+            _            <- coll.insertMany(TestData.accounts)
             deleteResult <- coll.deleteMany(
               Filter.eq("currency", TestData.EUR) || Filter.eq("currency", TestData.GBP)
             )
@@ -306,7 +306,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
             txs  <- db.getCollection("transactions")
             _    <- cats.insertMany(TestData.categories)
             _    <- txs.insertMany(TestData.transactions(1000000))
-            res <- txs.find
+            res  <- txs.find
               .noCursorTimeout(true)
               .cursorType(CursorType.NonTailable)
               .boundedStream(100)
@@ -321,7 +321,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
             txs  <- db.getCollection("transactions")
             _    <- cats.insertMany(TestData.categories)
             _    <- txs.insertMany(TestData.transactions(1000000))
-            res <- ZStream
+            res  <- ZStream
               .mergeAllUnbounded(512)(
                 txs.find.skip(10000).limit(10000).boundedStream(124),
                 txs.find.skip(20000).limit(10000).boundedStream(124),
@@ -351,7 +351,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
           for {
             coll <- db.getCollection("coll")
             _    <- coll.insertMany(TestData.accounts)
-            res <- coll.bulkWrite(
+            res  <- coll.bulkWrite(
               List(
                 WriteCommand.InsertOne(TestData.lvlAccount),
                 WriteCommand.DeleteOne(Filter.eq("name", "eur-acc")),

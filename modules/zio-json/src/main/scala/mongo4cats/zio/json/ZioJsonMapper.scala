@@ -53,7 +53,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     def isId: Boolean          = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
     def isDate: Boolean        = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
     def isEpochMillis: Boolean = isDate && json.asObject.exists(_.get(Tag.date).exists(_.isNumber))
-    def isLocalDate: Boolean =
+    def isLocalDate: Boolean   =
       isDate && json.asObject.exists(o => o.get(Tag.date).exists(_.isString) && o.get(Tag.date).exists(_.asString.get.length == 10))
 
     private def isBinary(subTypeMatch: String): Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
@@ -100,7 +100,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case BsonValue.BDouble(value)   => Right(Json.Num(value))
       case BsonValue.BUuid(value)     => Right(uuidToJson(value))
       case BsonValue.BBinary(value)   => Right(binaryArrayToJson(value))
-      case BsonValue.BArray(value) =>
+      case BsonValue.BArray(value)    =>
         value.toList
           .foldRight(rightEmptyList[Json]) { case (a, acc) => (fromBson(a), acc).mapN(_ :: _) }
           .map(xs => Json.Arr(xs: _*))

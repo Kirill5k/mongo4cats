@@ -38,7 +38,7 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
   "A CodecRegistry" should {
 
-    "be able to handle scala option" in {
+    "be able to handle scala option" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
@@ -54,9 +54,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.get("updatedAt") mustBe defined
         }
       }
-    }
 
-    "be able to handle scala map" in {
+    "be able to handle scala map" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
@@ -69,9 +68,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getDocument("props") mustBe Some(Document("a" := 42, "b" := "foo"))
         }
       }
-    }
 
-    "be able to handle scala iterables" in {
+    "be able to handle scala iterables" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
@@ -84,9 +82,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getList("tags") mustBe Some(List("foo".toBson, "bar".toBson, 42.toBson))
         }
       }
-    }
 
-    "be able to handle documents" in {
+    "be able to handle documents" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollectionWithCodec[Document]("coll")
@@ -100,9 +97,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getObjectId("_id") mustBe defined
         }
       }
-    }
 
-    "be able to handle documents with different id types" in {
+    "be able to handle documents with different id types" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollectionWithCodec[Document]("coll")
@@ -115,9 +111,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getString("foo") mustBe Some("bar")
         }
       }
-    }
 
-    "be able to handle scala bigdecimal" in {
+    "be able to handle scala bigdecimal" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
@@ -130,11 +125,10 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getAs[BigDecimal]("amount") mustBe Some(BigDecimal(42))
         }
       }
-    }
 
-    "be able to handle timestamps" in {
+    "be able to handle timestamps" in
       withEmbeddedMongoDatabase { db =>
-        val ts = Instant.now.getEpochSecond
+        val ts     = Instant.now.getEpochSecond
         val result = for {
           coll <- db.getCollection("coll")
           _    <- coll.insertOne(TestData.transaction(TestData.gbpAccount).add("timestamp" -> BsonValue.timestamp(ts, 1)))
@@ -146,9 +140,8 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getAs[Long]("timestamp") mustBe Some(ts)
         }
       }
-    }
 
-    "be able to handle scala big int" in {
+    "be able to handle scala big int" in
       withEmbeddedMongoDatabase { db =>
         val result = for {
           coll <- db.getCollection("coll")
@@ -161,11 +154,10 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getAs[BigInt]("amount") mustBe Some(BigInt(Int.MaxValue) * 2)
         }
       }
-    }
 
-    "be able to handle uuid" in {
+    "be able to handle uuid" in
       withEmbeddedMongoDatabase { db =>
-        val id = UUID.fromString("29ca24a5-8e95-4fc1-bec0-7c0d08de5196")
+        val id     = UUID.fromString("29ca24a5-8e95-4fc1-bec0-7c0d08de5196")
         val result = for {
           coll <- db.getCollection("coll")
           _    <- coll.insertOne(TestData.transaction(TestData.eurAccount))
@@ -177,7 +169,6 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
           doc.getAs[UUID]("account") mustBe Some(id)
         }
       }
-    }
   }
 
   def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =

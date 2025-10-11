@@ -48,7 +48,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     def isId: Boolean          = json.isObject && json.asObject.exists(_.contains(Tag.id))
     def isDate: Boolean        = json.isObject && json.asObject.exists(_.contains(Tag.date))
     def isEpochMillis: Boolean = isDate && json.asObject.exists(_(Tag.date).exists(_.isNumber))
-    def isLocalDate: Boolean =
+    def isLocalDate: Boolean   =
       isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
 
     private def isBinary(subTypeMatch: String): Boolean = json.isObject && json.asObject.exists { o =>

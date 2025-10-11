@@ -175,8 +175,8 @@ class Accumulator(
 
   private[mongo4cats] def toBson: java.util.List[BsonField] = asJava(accumulators.reverse)
 
-  override def toString: String = accumulators.reverse.mkString("[", ",", "]")
-  override def hashCode(): Int  = accumulators.hashCode()
+  override def toString: String            = accumulators.reverse.mkString("[", ",", "]")
+  override def hashCode(): Int             = accumulators.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(acc: Accumulator) => acc.accumulators == accumulators

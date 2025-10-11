@@ -41,7 +41,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
   "A MongoCollection" when {
     "updating preferences" should {
-      "set write concern" in {
+      "set write concern" in
         withEmbeddedMongoDatabase { db =>
           val result = for {
             coll <- db.getCollection("coll")
@@ -51,9 +51,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
           result.map(_ mustBe WriteConcern.UNACKNOWLEDGED)
         }
-      }
 
-      "set read concern" in {
+      "set read concern" in
         withEmbeddedMongoDatabase { db =>
           val result = for {
             coll <- db.getCollection("coll")
@@ -63,9 +62,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
           result.map(_ mustBe ReadConcern.MAJORITY)
         }
-      }
 
-      "set read preference" in {
+      "set read preference" in
         withEmbeddedMongoDatabase { db =>
           val result = for {
             coll <- db.getCollection("coll")
@@ -75,13 +73,12 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
           result.map(_ mustBe ReadPreference.primaryPreferred())
         }
-      }
     }
 
     "working with Documents" should {
 
       "insertOne" should {
-        "store new document in db" in {
+        "store new document in db" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
@@ -94,9 +91,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               insertRes.wasAcknowledged() mustBe true
             }
           }
-        }
 
-        "insert a document with options" in {
+        "insert a document with options" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -108,11 +104,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               result.wasAcknowledged() mustBe true
             }
           }
-        }
       }
 
       "insertMany" should {
-        "store several documents in db" in {
+        "store several documents in db" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
@@ -126,11 +121,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               insertRes.getInsertedIds must have size 3
             }
           }
-        }
       }
 
       "count" should {
-        "return count of all documents in collection" in {
+        "return count of all documents in collection" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll  <- db.getCollection("coll")
@@ -140,9 +134,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ mustBe 3)
           }
-        }
 
-        "return 0 for empty collection" in {
+        "return 0 for empty collection" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll  <- db.getCollection("coll")
@@ -151,9 +144,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ mustBe 0)
           }
-        }
 
-        "apply filters" in {
+        "apply filters" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll  <- db.getCollection("coll")
@@ -163,15 +155,14 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ mustBe 1)
           }
-        }
       }
 
       "deleteMany" should {
-        "delete multiple docs in coll" in {
+        "delete multiple docs in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
-              coll <- db.getCollection("coll")
-              _    <- coll.insertMany(TestData.accounts)
+              coll         <- db.getCollection("coll")
+              _            <- coll.insertMany(TestData.accounts)
               deleteResult <- coll.deleteMany(
                 Filter.eq("currency", TestData.EUR) || Filter.eq("currency", TestData.GBP)
               )
@@ -183,11 +174,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               deleteRes.getDeletedCount mustBe 2
             }
           }
-        }
       }
 
       "deleteOne" should {
-        "delete one doc in coll" in {
+        "delete one doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
@@ -202,11 +192,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             }
 
           }
-        }
       }
 
       "replaceOne" should {
-        "replace doc in coll" in {
+        "replace doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -223,11 +212,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               updateRes.getModifiedCount mustBe 1
             }
           }
-        }
       }
 
       "updateOne and updateMany" should {
-        "update one doc in coll" in {
+        "update one doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
@@ -243,9 +231,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
             }
 
           }
-        }
 
-        "update many docs in coll" in {
+        "update many docs in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll         <- db.getCollection("coll")
@@ -261,9 +248,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               updateRes.getModifiedCount mustBe 2
             }
           }
-        }
 
-        "update all docs in coll" in {
+        "update all docs in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -283,9 +269,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               updateRes.getModifiedCount mustBe 3
             }
           }
-        }
 
-        "combine multiple updates together" in {
+        "combine multiple updates together" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -308,11 +293,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               updateRes.getModifiedCount mustBe 3
             }
           }
-        }
       }
 
       "deleteOne and deleteMany" should {
-        "delete one doc in coll" in {
+        "delete one doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll      <- db.getCollection("coll")
@@ -326,9 +310,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               deleteRes.getDeletedCount mustBe 1
             }
           }
-        }
 
-        "delete many docs in coll" in {
+        "delete many docs in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll      <- db.getCollection("coll")
@@ -342,11 +325,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               deleteRes.getDeletedCount mustBe 2
             }
           }
-        }
       }
 
       "findOneAndReplace" should {
-        "find and replace doc in coll" in {
+        "find and replace doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -360,11 +342,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               old mustBe Some(TestData.eurAccount)
             }
           }
-        }
       }
 
       "findOneAndUpdate" should {
-        "find and update doc in coll" in {
+        "find and update doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -378,11 +359,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               docs mustBe List(TestData.eurAccount += ("status" -> "updated"))
             }
           }
-        }
       }
 
       "findOneAndDelete" should {
-        "find and delete doc in coll" in {
+        "find and delete doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -397,11 +377,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               old.flatMap(_.getString("name")) mustBe Some("eur-acc")
             }
           }
-        }
       }
 
       "find" should {
-        "find docs by field" in {
+        "find docs by field" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -413,9 +392,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               res mustBe List(TestData.eurAccount)
             }
           }
-        }
 
-        "get all docs with sort, skip and limit" in {
+        "get all docs with sort, skip and limit" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -427,9 +405,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               found.flatMap(_.getString("name")) mustBe List("cat-7", "cat-6", "cat-5")
             }
           }
-        }
 
-        "get first doc with sort, skip and limit" in {
+        "get first doc with sort, skip and limit" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -439,9 +416,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_.flatMap(_.getString("name")) mustBe Some("cat-6"))
           }
-        }
 
-        "return none when there are no docs that match query" in {
+        "return none when there are no docs that match query" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -450,9 +426,8 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ mustBe None)
           }
-        }
 
-        "stream with filter" in {
+        "stream with filter" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -462,15 +437,14 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ must have size 23333)
           }
-        }
 
-        "bounded stream" in {
+        "bounded stream" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               cats <- db.getCollection("categories")
               txs  <- db.getCollection("transactions")
               _    <- (cats.insertMany(TestData.categories), txs.insertMany(TestData.transactions(1000000))).parTupled
-              res <- txs.find
+              res  <- txs.find
                 .noCursorTimeout(true)
                 .cursorType(CursorType.NonTailable)
                 .boundedStream(100)
@@ -480,16 +454,15 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ mustBe 1000000)
           }
-        }
 
-        "execute multiple bounded streams in parallel" in {
+        "execute multiple bounded streams in parallel" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               cats <- db.getCollection("categories")
               txs  <- db.getCollection("transactions")
               _    <- cats.insertMany(TestData.categories)
               _    <- txs.insertMany(TestData.transactions(1000000))
-              res <- Stream(
+              res  <- Stream(
                 txs.find.skip(10000).limit(10000).boundedStream(100),
                 txs.find.skip(20000).limit(10000).boundedStream(100),
                 txs.find.skip(30000).limit(10000).boundedStream(100),
@@ -500,11 +473,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
 
             result.map(_ mustBe 50000)
           }
-        }
       }
 
       "distinct" should {
-        "return distinct fields of a doc" in {
+        "return distinct fields of a doc" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
@@ -516,16 +488,15 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               res.toSet mustBe Set(TestData.USD, TestData.EUR, TestData.GBP)
             }
           }
-        }
       }
 
       "bulkWrite" should {
-        "perform multiple operations at once" in {
+        "perform multiple operations at once" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll <- db.getCollection("coll")
               _    <- coll.insertMany(TestData.accounts)
-              res <- coll.bulkWrite(
+              res  <- coll.bulkWrite(
                 List(
                   WriteCommand.InsertOne(TestData.lvlAccount),
                   WriteCommand.DeleteOne(Filter.eq("name", "eur-acc")),
@@ -540,11 +511,10 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               res.getInsertedCount mustBe 1
             }
           }
-        }
       }
 
       "renameCollection" should {
-        "change collection name and keep the data" in {
+        "change collection name and keep the data" in
           withEmbeddedMongoDatabase { db =>
             val result = for {
               coll  <- db.getCollection("coll")
@@ -559,7 +529,6 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               count mustBe 3
             }
           }
-        }
       }
 
       "createIndex" should {
@@ -644,7 +613,7 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
     "working with json" should {
 
       "findOneAndUpdate" should {
-        "find and update doc in coll" in {
+        "find and update doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val json =
               """{
@@ -664,7 +633,6 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
               updated mustBe old.map(_ += "dob" -> "2020-01-01")
             }
           }
-        }
       }
     }
   }

@@ -35,10 +35,10 @@ final private class ZMongoCollectionLive[T: ClassTag](
     val underlying: MongoCollection[T]
 ) extends ZMongoCollection[T] with AsJava {
 
-  def withReadPreference(rp: ReadPreference): ZMongoCollection[T] = new ZMongoCollectionLive(underlying.withReadPreference(rp))
-  def withWriteConcern(wc: WriteConcern): ZMongoCollection[T]     = new ZMongoCollectionLive(underlying.withWriteConcern(wc))
-  def withReadConcern(rc: ReadConcern): ZMongoCollection[T]       = new ZMongoCollectionLive(underlying.withReadConcern(rc))
-  def as[Y: ClassTag]: ZMongoCollection[Y]                        = new ZMongoCollectionLive[Y](withNewDocumentClass(underlying))
+  def withReadPreference(rp: ReadPreference): ZMongoCollection[T]          = new ZMongoCollectionLive(underlying.withReadPreference(rp))
+  def withWriteConcern(wc: WriteConcern): ZMongoCollection[T]              = new ZMongoCollectionLive(underlying.withWriteConcern(wc))
+  def withReadConcern(rc: ReadConcern): ZMongoCollection[T]                = new ZMongoCollectionLive(underlying.withReadConcern(rc))
+  def as[Y: ClassTag]: ZMongoCollection[Y]                                 = new ZMongoCollectionLive[Y](withNewDocumentClass(underlying))
   def withAddedCodec(newCodecRegistry: CodecRegistry): ZMongoCollection[T] =
     new ZMongoCollectionLive[T](underlying.withCodecRegistry(CodecRegistry.from(codecs, newCodecRegistry)))
 
@@ -52,8 +52,8 @@ final private class ZMongoCollectionLive[T: ClassTag](
   def aggregate[Y: ClassTag](cs: ZClientSession, pipeline: Aggregate): Queries.Aggregate[Y] =
     Queries.aggregate(underlying.aggregate(cs.underlying, pipeline.toBson, Clazz.tag[Y]))
 
-  def watch(pipeline: Seq[Bson]): Queries.Watch[T] = Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[T]))
-  def watch(pipeline: Aggregate): Queries.Watch[T] = Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[T]))
+  def watch(pipeline: Seq[Bson]): Queries.Watch[T]                     = Queries.watch(underlying.watch(asJava(pipeline), Clazz.tag[T]))
+  def watch(pipeline: Aggregate): Queries.Watch[T]                     = Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[T]))
   def watch(cs: ZClientSession, pipeline: Aggregate): Queries.Watch[T] =
     Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[T]))
 
@@ -63,7 +63,7 @@ final private class ZMongoCollectionLive[T: ClassTag](
   def distinct[Y: ClassTag](cs: ZClientSession, fieldName: String, filter: Filter): Queries.Distinct[Y] =
     Queries.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, Clazz.tag[Y]))
 
-  def find(filter: Bson): Queries.Find[T] = Queries.find(underlying.find(filter))
+  def find(filter: Bson): Queries.Find[T]                       = Queries.find(underlying.find(filter))
   def find(cs: ZClientSession, filter: Filter): Queries.Find[T] =
     Queries.find(underlying.find(cs.underlying, filter.toBson))
 

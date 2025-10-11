@@ -126,7 +126,7 @@ abstract class GenericMongoCollection[F[_], T, S[_]] {
     * @param fieldName
     *   the field name
     */
-  def distinct[Y: ClassTag](fieldName: String): DistinctQueryBuilder[F, Y, S] = distinct(fieldName, Filter.empty)
+  def distinct[Y: ClassTag](fieldName: String): DistinctQueryBuilder[F, Y, S]                            = distinct(fieldName, Filter.empty)
   def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String): DistinctQueryBuilder[F, Y, S] =
     distinct(session, fieldName, Filter.empty)
   def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String): DistinctQueryBuilder[F, Y, S] =
@@ -163,8 +163,8 @@ abstract class GenericMongoCollection[F[_], T, S[_]] {
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]]
   def findOneAndDelete(filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]] = findOneAndDelete(filter.toBson, options)
   def findOneAndDelete(session: ClientSession[F], filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]]
-  def findOneAndDelete(filter: Bson): F[Option[T]]   = findOneAndDelete(filter, FindOneAndDeleteOptions())
-  def findOneAndDelete(filter: Filter): F[Option[T]] = findOneAndDelete(filter, FindOneAndDeleteOptions())
+  def findOneAndDelete(filter: Bson): F[Option[T]]                              = findOneAndDelete(filter, FindOneAndDeleteOptions())
+  def findOneAndDelete(filter: Filter): F[Option[T]]                            = findOneAndDelete(filter, FindOneAndDeleteOptions())
   def findOneAndDelete(session: ClientSession[F], filter: Filter): F[Option[T]] =
     findOneAndDelete(session, filter, FindOneAndDeleteOptions())
 
@@ -290,8 +290,8 @@ abstract class GenericMongoCollection[F[_], T, S[_]] {
   def updateMany(filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
     updateMany(filter.toBson, update.toBson, options)
   def updateMany(session: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult]
-  def updateMany(filters: Bson, update: Bson): F[UpdateResult]     = updateMany(filters, update, UpdateOptions())
-  def updateMany(filters: Filter, update: Update): F[UpdateResult] = updateMany(filters, update, UpdateOptions())
+  def updateMany(filters: Bson, update: Bson): F[UpdateResult]                               = updateMany(filters, update, UpdateOptions())
+  def updateMany(filters: Filter, update: Update): F[UpdateResult]                           = updateMany(filters, update, UpdateOptions())
   def updateMany(session: ClientSession[F], filter: Filter, update: Update): F[UpdateResult] =
     updateMany(session, filter, update, UpdateOptions())
 
@@ -324,8 +324,8 @@ abstract class GenericMongoCollection[F[_], T, S[_]] {
   def updateOne(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult]
   def updateOne(filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] = updateOne(filter.toBson, update.toBson, options)
   def updateOne(session: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult]
-  def updateOne(filters: Bson, update: Bson): F[UpdateResult]     = updateOne(filters, update, UpdateOptions())
-  def updateOne(filters: Filter, update: Update): F[UpdateResult] = updateOne(filters, update, UpdateOptions())
+  def updateOne(filters: Bson, update: Bson): F[UpdateResult]                                = updateOne(filters, update, UpdateOptions())
+  def updateOne(filters: Filter, update: Update): F[UpdateResult]                            = updateOne(filters, update, UpdateOptions())
   def updateOne(session: ClientSession[F], filters: Filter, update: Update): F[UpdateResult] =
     updateOne(session, filters, update, UpdateOptions())
 

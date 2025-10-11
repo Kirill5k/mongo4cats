@@ -80,8 +80,8 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
 
   "Document codec" should {
     "encode and decode Document to json and back" in {
-      val id = ObjectId.gen
-      val ts = Instant.now
+      val id       = ObjectId.gen
+      val ts       = Instant.now
       val document = Document(
         "_id"           -> BsonValue.objectId(id),
         "string"        -> BsonValue.string("string"),

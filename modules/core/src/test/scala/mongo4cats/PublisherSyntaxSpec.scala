@@ -38,14 +38,13 @@ class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
 
     "stream" should {
 
-      "convert elements into a stream" in {
+      "convert elements into a stream" in
         publisher(List(OnNext("a"), OnNext("b"), OnNext("c"), OnComplete))
           .stream[IO]
           .compile
           .toList
           .unsafeToFuture()
           .map(_ mustBe List("a", "b", "c"))
-      }
 
       "process errors" in {
         val error = new RuntimeException("uh-oh")
@@ -60,7 +59,7 @@ class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
           .map(_ mustBe List(Right("a"), Right("b"), Right("c"), Left(error)))
       }
 
-      "not terminate if there was no terminal signal" in {
+      "not terminate if there was no terminal signal" in
         publisher(List(OnNext("a"), OnNext("b")))
           .stream[IO]
           .timeout(5.seconds)
@@ -69,7 +68,6 @@ class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
           .attempt
           .unsafeToFuture()
           .map(_.leftMap(_.getMessage) mustBe Left(s"Timed out after ${5.seconds}"))
-      }
     }
 
     def publisher(actions: List[Action[String]]): Publisher[String] =

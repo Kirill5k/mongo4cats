@@ -551,8 +551,8 @@ class Aggregate(
 
   private[mongo4cats] def toBson: java.util.List[Bson] = asJava(aggregates.reverse)
 
-  override def toString: String = aggregates.reverse.mkString("[", ",", "]")
-  override def hashCode(): Int  = aggregates.hashCode()
+  override def toString: String            = aggregates.reverse.mkString("[", ",", "]")
+  override def hashCode(): Int             = aggregates.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(agg: Aggregate) => agg.aggregates == aggregates

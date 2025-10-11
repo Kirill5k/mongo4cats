@@ -228,8 +228,8 @@ class Projection(
 
   private[mongo4cats] def toBson: Bson = Projections.fields(projections.reverse: _*)
 
-  override def toString: String = projections.reverse.mkString("[", ",", "]")
-  override def hashCode(): Int  = projections.hashCode()
+  override def toString: String            = projections.reverse.mkString("[", ",", "]")
+  override def hashCode(): Int             = projections.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(proj: Projection) => proj.projections == projections

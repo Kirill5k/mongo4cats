@@ -70,7 +70,7 @@ private[mongo4cats] object syntax {
       }
 
     def stream[F[_]: Async]: Stream[F, T] =
-      boundedStream(1024)
+      boundedStream[F](1024)
 
     def boundedStream[F[_]: Async](capacity: Int): Stream[F, T] =
       mkStream(Queue.bounded(capacity))
@@ -81,7 +81,7 @@ private[mongo4cats] object syntax {
         queue      <- Stream.eval(mkQueue)
         dispatcher <- Stream.resource(Dispatcher.parallel[F])
         _          <- Stream.resource(Resource.make(safeGuard.pure[F])(_.get.void))
-        _ <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
+        _          <- Stream.eval(Async[F].delay(publisher.subscribe(new Subscriber[T] {
           override def onNext(el: T): Unit                = dispatcher.unsafeRunSync(queue.offer(el.asRight))
           override def onError(err: Throwable): Unit      = dispatcher.unsafeRunSync(queue.offer(err.some.asLeft))
           override def onComplete(): Unit                 = dispatcher.unsafeRunSync(queue.offer(None.asLeft))

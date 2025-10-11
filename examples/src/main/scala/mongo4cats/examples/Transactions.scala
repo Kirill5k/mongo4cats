@@ -28,7 +28,7 @@ object Transactions extends IOApp.Simple {
     MongoClient.fromConnectionString[IO]("mongodb://localhost:27017/?retryWrites=false").use { client =>
       for {
         db <- client.getDatabase("my-db")
-        _ <- client.startSession.use { session =>
+        _  <- client.startSession.use { session =>
           for {
             coll   <- db.getCollection("docs")
             _      <- session.startTransaction

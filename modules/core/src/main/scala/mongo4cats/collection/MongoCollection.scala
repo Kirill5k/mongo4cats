@@ -101,10 +101,10 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def findOneAndReplace(cs: ClientSession[F], filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
     underlying.findOneAndReplace(cs.underlying, filter.toBson, replacement, options).asyncSingle[F]
 
-  def dropIndex(name: String, options: DropIndexOptions): F[Unit] = underlying.dropIndex(name, options).asyncVoid[F]
+  def dropIndex(name: String, options: DropIndexOptions): F[Unit]                       = underlying.dropIndex(name, options).asyncVoid[F]
   def dropIndex(cs: ClientSession[F], name: String, options: DropIndexOptions): F[Unit] =
     underlying.dropIndex(cs.underlying, name, options).asyncVoid[F]
-  def dropIndex(keys: Bson, options: DropIndexOptions): F[Unit] = underlying.dropIndex(keys, options).asyncVoid[F]
+  def dropIndex(keys: Bson, options: DropIndexOptions): F[Unit]                         = underlying.dropIndex(keys, options).asyncVoid[F]
   def dropIndex(cs: ClientSession[F], index: Index, options: DropIndexOptions): F[Unit] =
     underlying.dropIndex(cs.underlying, index.toBson, options).asyncVoid[F]
 

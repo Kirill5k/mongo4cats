@@ -333,8 +333,8 @@ class Update(
 
   private[mongo4cats] def toBson: Bson = Updates.combine(asJava(updates.reverse))
 
-  override def toString: String = updates.reverse.mkString("[", ",", "]")
-  override def hashCode(): Int  = updates.hashCode()
+  override def toString: String            = updates.reverse.mkString("[", ",", "]")
+  override def hashCode(): Int             = updates.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(upd: Update) => upd.updates == updates

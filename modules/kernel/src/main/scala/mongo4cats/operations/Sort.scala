@@ -71,8 +71,8 @@ class Sort(
 
   private[mongo4cats] def toBson: Bson = Sorts.orderBy(asJava(sorts.reverse))
 
-  override def toString: String = sorts.reverse.mkString("[", ",", "]")
-  override def hashCode(): Int  = sorts.hashCode()
+  override def toString: String            = sorts.reverse.mkString("[", ",", "]")
+  override def hashCode(): Int             = sorts.hashCode()
   override def equals(other: Any): Boolean =
     Option(other) match {
       case Some(sort: Sort) => sort.sorts == sorts
