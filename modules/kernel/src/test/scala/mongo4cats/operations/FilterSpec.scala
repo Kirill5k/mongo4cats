@@ -89,6 +89,13 @@ class FilterSpec extends AnyWordSpec with Matchers {
       Filter.all("foo", "bar") isTheSameAs Filters.all("foo", 'b', 'a', 'r')
     }
 
+    "or multiple" in {
+      Filter.or(Filter.eq("foo", "test"), Filter.eq("foo", "test2")) isTheSameAs Filters.or(
+        Filters.eq("foo", "test"),
+        Filters.eq("foo", "test2")
+      )
+    }
+
     "nin" in {
       Filter.nin("foo", List("bar")) isTheSameAs Filters.nin("foo", "bar")
     }
@@ -135,6 +142,15 @@ class FilterSpec extends AnyWordSpec with Matchers {
 
       f1 or f2 isTheSameAs Filters.or(Filters.exists("foo"), Filters.eq("bar", 1))
       (f1 or f2).toBson mustBe (f1 || f2).toBson
+    }
+
+    "or with multiple expressions" in {
+      val f1 = Filter.exists("foo")
+      val f2 = Filter.eq("bar", 1)
+      val f3 = Filter.eq("var", "test")
+
+      (f1 or (f2, f3)) isTheSameAs Filters.or(Filters.exists("foo"), Filters.eq("bar", 1), Filters.eq("var", "test"))
+      (f1 or (f2, f3)).toBson mustBe (f1 || (f2, f3)).toBson
     }
 
     "and + or" in {
