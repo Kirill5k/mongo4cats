@@ -89,8 +89,15 @@ class FilterSpec extends AnyWordSpec with Matchers {
       Filter.all("foo", "bar") isTheSameAs Filters.all("foo", 'b', 'a', 'r')
     }
 
-    "or multiple" in {
+    "or multiple expressions" in {
       Filter.or(Filter.eq("foo", "test"), Filter.eq("foo", "test2")) isTheSameAs Filters.or(
+        Filters.eq("foo", "test"),
+        Filters.eq("foo", "test2")
+      )
+    }
+
+    "and multiple expressions" in {
+      Filter.and(Filter.eq("foo", "test"), Filter.eq("foo", "test2")) isTheSameAs Filters.and(
         Filters.eq("foo", "test"),
         Filters.eq("foo", "test2")
       )

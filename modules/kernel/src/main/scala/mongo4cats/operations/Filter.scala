@@ -352,6 +352,16 @@ object Filter extends AsJava {
   def or(filters: Filter*): Filter =
     FilterBuilder(Filters.or(filters.map(_.filter): _*))
 
+  /** Creates a filter that selects the documents that satisfy all the filters inside.
+    * https://www.mongodb.com/docs/manual/reference/operator/query/and/
+    * @param filters
+    *   array of filters
+    * @return
+    *   the filter
+    */
+  def and(filters: Filter*): Filter =
+    FilterBuilder(Filters.and(filters.map(_.filter): _*))
+
   /** Creates a filter that matches all documents containing a field that is an array where at least one member of the array matches the
     * given filter.
     *
