@@ -6,11 +6,11 @@ object Dependencies {
     val fs2                = "3.12.2"
     val kindProjector      = "0.13.4"
     val circe              = "0.14.15"
-    val zio                = "2.1.21"
+    val zio                = "2.1.22"
     val zioInteropReactive = "2.0.2"
-    val zioJson            = "0.7.44"
+    val zioJson            = "0.7.45"
 
-    val logback   = "1.5.19"
+    val logback   = "1.5.20"
     val scalaTest = "3.2.19"
 
     val embeddedMongo   = "4.21.0"
