@@ -37,9 +37,9 @@ trait Filter {
     * @return
     *   the filter
     */
-  def and(anotherFilter: Filter): Filter
+  def and(anotherFilter: Filter*): Filter
 
-  def &&(anotherFilter: Filter): Filter = and(anotherFilter)
+  def &&(anotherFilter: Filter*): Filter = and(anotherFilter: _*)
 
   /** Creates a filter that preforms a logical OR of the provided filter.
     *
@@ -48,9 +48,9 @@ trait Filter {
     * @return
     *   the filter
     */
-  def or(anotherFilter: Filter): Filter
+  def or(anotherFilter: Filter*): Filter
 
-  def ||(anotherFilter: Filter): Filter = or(anotherFilter)
+  def ||(anotherFilter: Filter*): Filter = or(anotherFilter: _*)
 
   /** Creates a filter that matches all documents that do not match the passed in filter. Lifts the current filter to create a valid "\$not"
     * query:
@@ -71,7 +71,7 @@ trait Filter {
     * @return
     *   the filter
     */
-  def nor(anotherFilter: Filter): Filter
+  def nor(anotherFilter: Filter*): Filter
 
   private[mongo4cats] def toBson: Bson
   private[mongo4cats] def filter: Bson
@@ -340,6 +340,27 @@ object Filter extends AsJava {
     */
   def all[A](fieldName: String, values: Seq[A]): Filter =
     FilterBuilder(Filters.all(fieldName, asJava(values)))
+
+  /** Creates a filter that selects the documents that satisfy at least one of the filter
+    * https://www.mongodb.com/docs/manual/reference/operator/query/or/
+    *
+    * @param filters
+    *   array of filters
+    * @return
+    *   the filter
+    */
+  def or(filters: Filter*): Filter =
+    FilterBuilder(Filters.or(filters.map(_.filter): _*))
+
+  /** Creates a filter that selects the documents that satisfy all the filters inside.
+    * https://www.mongodb.com/docs/manual/reference/operator/query/and/
+    * @param filters
+    *   array of filters
+    * @return
+    *   the filter
+    */
+  def and(filters: Filter*): Filter =
+    FilterBuilder(Filters.and(filters.map(_.filter): _*))
 
   /** Creates a filter that matches all documents containing a field that is an array where at least one member of the array matches the
     * given filter.
@@ -649,15 +670,20 @@ final private case class FilterBuilder(
   override def not: Filter =
     FilterBuilder(Filters.not(filter))
 
-  override def and(anotherFilter: Filter): Filter =
-    FilterBuilder(Filters.and(filter, anotherFilter.filter))
+  override def and(anotherFilter: Filter*): Filter = {
+    val filters = filter +: anotherFilter.map(_.filter)
+    FilterBuilder(Filters.and(filters: _*))
+  }
 
-  override def or(anotherFilter: Filter): Filter =
-    FilterBuilder(Filters.or(filter, anotherFilter.filter))
+  override def or(anotherFilter: Filter*): Filter = {
+    val filters = filter +: anotherFilter.map(_.filter)
+    FilterBuilder(Filters.or(filters: _*))
+  }
 
-  override def nor(anotherFilter: Filter): Filter =
-    FilterBuilder(Filters.nor(filter, anotherFilter.filter))
-
+  override def nor(anotherFilter: Filter*): Filter = {
+    val filters = filter +: anotherFilter.map(_.filter)
+    FilterBuilder(Filters.nor(filters: _*))
+  }
   override private[mongo4cats] def toBson = filter
 
   override def toString: String = filter.toString
