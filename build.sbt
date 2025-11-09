@@ -14,6 +14,9 @@ ThisBuild / homepage               := Some(url("https://kirill5k.github.io/mongo
 ThisBuild / scmInfo                := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
 ThisBuild / developers             := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses               := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
+ThisBuild / sonatypeRepository     := "https://central.sonatype.com/service/local"
+ThisBuild / sonatypeProfileName    := "io.github.kirill5k"
 ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / versionScheme          := Some("early-semver")
@@ -148,7 +151,7 @@ val website = project
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
-    moduleName := "mongo4cats",
+    moduleName    := "mongo4cats",
     mdocVariables := Map(
       "VERSION" -> version.value
     )
