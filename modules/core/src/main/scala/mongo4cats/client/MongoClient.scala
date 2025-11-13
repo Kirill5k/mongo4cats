@@ -59,10 +59,10 @@ final private class LiveMongoClient[F[_]](
     underlying.listDatabaseNames().asyncIterable[F]
 
   def listDatabases: F[Iterable[Document]] =
-    underlying.listDatabases().asyncIterable[F].map(_.map(Document.fromJava))
+    underlying.listDatabases().asyncIterableF(Document.fromJava)
 
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listDatabases(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
+    underlying.listDatabases(cs.underlying).asyncIterableF(Document.fromJava)
 
   def startSession(options: ClientSessionOptions): Resource[F, ClientSession[F]] =
     Resource.fromAutoCloseable(underlying.startSession(options).asyncSingle[F].unNone).map(new LiveClientSession(_))

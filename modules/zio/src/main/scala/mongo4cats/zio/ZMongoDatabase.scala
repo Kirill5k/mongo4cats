@@ -71,8 +71,8 @@ final private class ZMongoDatabaseLive(
   def runCommand(session: ZClientSession, command: Bson, readPreference: ReadPreference): Task[Document] =
     underlying.runCommand(session.underlying, command, readPreference).asyncSingle.unNone.map(Document.fromJava)
 
-  def drop: Task[Unit]                                = ZIO.attempt(underlying.drop()).unit
-  def drop(clientSession: ZClientSession): Task[Unit] = ZIO.attempt(underlying.drop(clientSession.underlying)).unit
+  def drop: Task[Unit]                                = underlying.drop().asyncVoid
+  def drop(clientSession: ZClientSession): Task[Unit] = underlying.drop(clientSession.underlying).asyncVoid
 }
 
 object ZMongoDatabase {

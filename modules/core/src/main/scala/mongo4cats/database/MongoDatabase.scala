@@ -53,9 +53,9 @@ final private class LiveMongoDatabase[F[_]](
   def listCollectionNames: F[Iterable[String]]                       = underlying.listCollectionNames().asyncIterable[F]
   def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = underlying.listCollectionNames(cs.underlying).asyncIterable[F]
 
-  def listCollections: F[Iterable[Document]] = underlying.listCollections.asyncIterable[F].map(_.map(Document.fromJava))
+  def listCollections: F[Iterable[Document]] = underlying.listCollections.asyncIterableF(Document.fromJava)
   def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listCollections(cs.underlying).asyncIterable[F].map(_.map(Document.fromJava))
+    underlying.listCollections(cs.underlying).asyncIterableF(Document.fromJava)
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {

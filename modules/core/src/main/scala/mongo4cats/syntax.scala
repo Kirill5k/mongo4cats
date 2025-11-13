@@ -59,11 +59,14 @@ private[mongo4cats] object syntax {
       }
 
     def asyncIterable[F[_]: Async]: F[Iterable[T]] =
+      asyncIterableF(identity)
+
+    def asyncIterableF[F[_]: Async, Y](f: T => Y): F[Iterable[Y]] =
       Async[F].async_ { k =>
         publisher.subscribe(new Subscriber[T] {
-          private val results: ListBuffer[T]              = ListBuffer.empty[T]
+          private val results: ListBuffer[Y]              = ListBuffer.empty[Y]
           override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-          override def onNext(result: T): Unit            = results += result
+          override def onNext(result: T): Unit            = results += f(result)
           override def onError(e: Throwable): Unit        = k(Left(e))
           override def onComplete(): Unit                 = k(Right(results.toList))
         })
