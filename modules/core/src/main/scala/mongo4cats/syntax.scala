@@ -59,7 +59,7 @@ private[mongo4cats] object syntax {
       }
 
     def asyncIterable[F[_]: Async]: F[Iterable[T]] =
-      asyncIterableF(identity)
+      asyncIterableF[F, T](identity)
 
     def asyncIterableF[F[_]: Async, Y](f: T => Y): F[Iterable[Y]] =
       Async[F].async_ { k =>

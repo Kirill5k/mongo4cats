@@ -16,7 +16,7 @@
 
 package mongo4cats.circe
 
-import io.circe.{Decoder, Encoder, Json, JsonObject}
+import io.circe.{Decoder, Encoder}
 import mongo4cats.bson._
 import mongo4cats.bson.json._
 import mongo4cats.bson.syntax._
@@ -30,8 +30,6 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 trait MongoJsonCodecs {
-  private val emptyJsonObject = Json.fromJsonObject(JsonObject.empty)
-
   implicit def deriveJsonBsonValueDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
     bson => CirceJsonMapper.fromBson(bson).flatMap(d.decodeJson).toOption
 
@@ -39,7 +37,12 @@ trait MongoJsonCodecs {
     value => CirceJsonMapper.toBson(e(value))
 
   implicit val documentEncoder: Encoder[Document] =
-    Encoder.encodeJson.contramap[Document](d => CirceJsonMapper.fromBson(BsonValue.document(d)).getOrElse(emptyJsonObject))
+    Encoder.encodeJson.contramap[Document] { d =>
+      CirceJsonMapper.fromBson(BsonValue.document(d)) match {
+        case Right(json) => json
+        case Left(err)   => throw err
+      }
+    }
 
   implicit val documentDecoder: Decoder[Document] =
     Decoder.decodeJson.emap(j => CirceJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))

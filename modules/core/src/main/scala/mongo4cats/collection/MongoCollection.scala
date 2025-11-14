@@ -120,11 +120,11 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     underlying.createIndex(cs.underlying, index.toBson, options).asyncSingle[F].unNone
 
   def listIndexes: F[Iterable[Document]] =
-    underlying.listIndexes().asyncIterableF(Document.fromJava)
+    underlying.listIndexes().asyncIterableF[F, Document](Document.fromJava)
   def listIndexes[Y: ClassTag]: F[Iterable[Y]] =
     underlying.listIndexes(Clazz.tag[Y]).asyncIterable[F]
   def listIndexes(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listIndexes(cs.underlying).asyncIterableF(Document.fromJava)
+    underlying.listIndexes(cs.underlying).asyncIterableF[F, Document](Document.fromJava)
   def listIndexes[Y: ClassTag](cs: ClientSession[F]): F[Iterable[Y]] =
     underlying.listIndexes(cs.underlying, Clazz.tag[Y]).asyncIterable[F]
 

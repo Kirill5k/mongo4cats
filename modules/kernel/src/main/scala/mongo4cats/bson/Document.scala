@@ -16,6 +16,7 @@
 
 package mongo4cats.bson
 
+import mongo4cats.AsScala
 import mongo4cats.codecs.{CodecRegistry, DocumentCodecProvider, MongoCodecProvider}
 import org.bson.codecs.{DecoderContext, EncoderContext}
 import org.bson.{BsonDocument => JBsonDocument, BsonDocumentWrapper, Document => JDocument}
@@ -119,7 +120,7 @@ final private class ListMapDocument(
     }
 }
 
-object Document {
+object Document extends AsScala {
   val empty: Document = apply()
 
   def apply(): Document                                         = new ListMapDocument(ListMap.empty)
@@ -129,8 +130,8 @@ object Document {
 
   def parse(json: String): Document = DocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
-  def fromJava(document: JDocument): Document     = parse(document.toJson)
-  def fromJava(document: JBsonDocument): Document = parse(document.toJson)
+  def fromJava(document: JBsonDocument): Document = Document(asScala(document).map { case (k, v) => k -> BsonValue.fromJava(v) }.toList)
+  def fromJava(document: JDocument): Document     = fromJava(document.toBsonDocument())
 
   implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
     override def get: CodecProvider = DocumentCodecProvider
