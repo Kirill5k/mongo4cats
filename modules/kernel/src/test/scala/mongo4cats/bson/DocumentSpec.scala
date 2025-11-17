@@ -17,6 +17,7 @@
 package mongo4cats.bson
 
 import mongo4cats.bson.syntax._
+import org.bson.{Document => JDocument}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -150,6 +151,115 @@ class DocumentSpec extends AnyWordSpec with Matchers {
 
       "return false when 2 documents are different" in {
         (nameDoc += "age" -> 30) must not be nameDoc
+      }
+    }
+
+    "when converting from Java Document" should {
+      "convert simple Java Document with basic types" in {
+        val javaDoc = new JDocument()
+          .append("name", "John")
+          .append("age", 30)
+          .append("active", true)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("name") mustBe Some("John")
+        result.getInt("age") mustBe Some(30)
+        result.getBoolean("active") mustBe Some(true)
+      }
+
+      "convert Java Document with nested documents" in {
+        val nestedJavaDoc = new JDocument()
+          .append("first", "John")
+          .append("last", "Smith")
+
+        val javaDoc = new JDocument()
+          .append("name", nestedJavaDoc)
+          .append("id", 1)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getDocument("name").flatMap(_.getString("first")) mustBe Some("John")
+        result.getDocument("name").flatMap(_.getString("last")) mustBe Some("Smith")
+        result.getInt("id") mustBe Some(1)
+      }
+
+      "convert Java Document with arrays" in {
+        val javaDoc = new JDocument()
+          .append("tags", java.util.Arrays.asList("scala", "mongodb", "test"))
+          .append("numbers", java.util.Arrays.asList(1, 2, 3))
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getAs[List[String]]("tags") mustBe Some(List("scala", "mongodb", "test"))
+        result.getAs[List[Int]]("numbers") mustBe Some(List(1, 2, 3))
+      }
+
+      "convert Java Document with numeric types" in {
+        val javaDoc = new JDocument()
+          .append("intValue", 42)
+          .append("longValue", Long.box(9876543210L))
+          .append("doubleValue", 3.14)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getInt("intValue") mustBe Some(42)
+        result.getLong("longValue") mustBe Some(9876543210L)
+        result.getDouble("doubleValue") mustBe Some(3.14)
+      }
+
+      "convert Java Document with null values" in {
+        val javaDoc = new JDocument()
+          .append("name", "John")
+          .append("middleName", null)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("name") mustBe Some("John")
+        result.get("middleName") mustBe Some(BsonValue.Null)
+      }
+
+      "preserve field order when converting from Java Document" in {
+        val javaDoc = new JDocument()
+          .append("a", 1)
+          .append("b", 2)
+          .append("c", 3)
+          .append("d", 4)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.toJson mustBe """{"a": 1, "b": 2, "c": 3, "d": 4}"""
+      }
+
+      "convert empty Java Document" in {
+        val javaDoc = new JDocument()
+
+        val result = Document.fromJava(javaDoc)
+
+        result.isEmpty mustBe true
+        result.size mustBe 0
+        result mustBe Document.empty
+      }
+
+      "convert Java Document with complex nested structures" in {
+        val addressDoc = new JDocument()
+          .append("street", "123 Main St")
+          .append("city", "Springfield")
+
+        val contactDoc = new JDocument()
+          .append("email", "john@example.com")
+          .append("address", addressDoc)
+
+        val javaDoc = new JDocument()
+          .append("name", "John")
+          .append("contact", contactDoc)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("name") mustBe Some("John")
+        result.getNestedAs[String]("contact.email") mustBe Some("john@example.com")
+        result.getNestedAs[String]("contact.address.street") mustBe Some("123 Main St")
+        result.getNestedAs[String]("contact.address.city") mustBe Some("Springfield")
       }
     }
   }
