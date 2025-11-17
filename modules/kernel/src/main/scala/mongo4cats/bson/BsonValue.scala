@@ -35,7 +35,6 @@ import org.bson.{
   BsonRegularExpression,
   BsonString,
   BsonTimestamp,
-  BsonType,
   BsonUndefined,
   BsonValue => JBsonValue
 }
@@ -397,28 +396,4 @@ object BsonValue extends AsScala {
   def regex(value: Regex): BsonValue                       = BRegex(value)
   def timestamp(seconds: Long, inc: Int = 1): BsonValue    = BTimestamp(seconds, inc)
   def uuid(value: UUID): BsonValue                         = BUuid(value)
-
-  def fromJava(jv: JBsonValue): BsonValue =
-    jv.getBsonType match {
-      case BsonType.NULL      => BNull
-      case BsonType.UNDEFINED => BUndefined
-      case BsonType.MAX_KEY   => BMaxKey
-      case BsonType.MIN_KEY   => BMinKey
-      case BsonType.INT32     => BInt32(jv.asInt32.getValue)
-      case BsonType.INT64     => BInt64(jv.asInt64.getValue)
-      case BsonType.DOUBLE    => BDouble(jv.asDouble.getValue)
-      case BsonType.TIMESTAMP => BTimestamp(jv.asTimestamp.getTime.toLong, jv.asTimestamp.getInc)
-      case BsonType.DATE_TIME => BDateTime(Instant.ofEpochMilli(jv.asDateTime.getValue))
-      case BsonType.BINARY    =>
-        val bin = jv.asBinary()
-        if (bin.getType == BsonBinarySubType.UUID_STANDARD.getValue) BUuid(UUID.nameUUIDFromBytes(bin.getData)) else BBinary(bin.getData)
-      case BsonType.BOOLEAN            => BBoolean(jv.asBoolean.getValue)
-      case BsonType.DECIMAL128         => BDecimal(jv.asDecimal128.getValue.bigDecimalValue())
-      case BsonType.STRING             => BString(jv.asString.getValue)
-      case BsonType.OBJECT_ID          => BObjectId(jv.asObjectId.getValue)
-      case BsonType.DOCUMENT           => BDocument(Document.fromJava(jv.asDocument))
-      case BsonType.ARRAY              => BArray(asScala(jv.asArray.getValues).map(fromJava))
-      case BsonType.REGULAR_EXPRESSION => BRegex(jv.asRegularExpression.getPattern.r)
-      case bsonType                    => throw new IllegalArgumentException(s"unsupported bson type $bsonType")
-    }
 }

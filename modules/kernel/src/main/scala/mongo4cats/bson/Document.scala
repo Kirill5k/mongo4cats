@@ -130,13 +130,11 @@ object Document extends AsScala {
 
   def parse(json: String): Document = DocumentCodecProvider.DefaultCodec.decode(new JsonReader(json), DecoderContext.builder().build())
 
-  def fromJava(document: JDocument): Document     = parse(document.toJson)
-  def fromJava(document: JBsonDocument): Document = parse(document.toJson)
+  def fromJava(document: JDocument): Document =
+    Document(asScala(document).map { case (k, v) => k -> BsonValueConverter.fromAny(v) }.toList)
 
-  /*
-  def fromJava(document: JBsonDocument): Document = Document(asScala(document).map { case (k, v) => k -> BsonValue.fromJava(v) }.toList)
-  def fromJava(document: JDocument): Document     = fromJava(document.toBsonDocument())
-   */
+  def fromJava(document: JBsonDocument): Document =
+    Document(asScala(document).map { case (k, v) => k -> BsonValueConverter.fromJava(v) }.toList)
 
   implicit val codecProvider: MongoCodecProvider[Document] = new MongoCodecProvider[Document] {
     override def get: CodecProvider = DocumentCodecProvider
