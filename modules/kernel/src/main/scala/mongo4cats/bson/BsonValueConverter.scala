@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Kirill5k
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mongo4cats.bson
 
 import mongo4cats.AsScala
@@ -73,9 +89,10 @@ object BsonValueConverter extends AsScala {
     case v: java.util.UUID          => BsonValue.uuid(v)
     case v: java.util.regex.Pattern => BsonValue.regex(v.pattern().r)
     case v: Array[Byte]             => BsonValue.binary(v)
-    case v: java.util.Map[_, _]     => BsonValue.document(Document(asScala(v).collect { case (k: String, vv) => k -> fromAny(vv) }.toList))
     case v: java.util.List[_]       => BsonValue.array(asScala(v).map(fromAny))
     case v: Iterable[_]             => BsonValue.array(v.map(fromAny))
+    case v: java.util.Map[_, _]     =>
+      BsonValue.document(Document(asScala(v).iterator.collect { case (k: String, vv) => k -> fromAny(vv) }.toList))
     case v: Product if v.productArity == 0 => BsonValue.string(v.toString)
     case other => throw new IllegalArgumentException(s"Unsupported value type in Java Document conversion: ${other.getClass.getName}")
   }
