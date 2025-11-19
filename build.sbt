@@ -1,5 +1,4 @@
 import xerial.sbt.Sonatype.GitHubHosting
-import ReleaseTransformations.*
 import sbtghactions.JavaSpec
 import Utils.*
 
@@ -26,20 +25,6 @@ ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
 ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  releaseStepCommandAndRemaining("publishSigned"),
-  releaseStepCommand("sonatypeBundleRelease"),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)
 
 val noPublish = Seq(
   publish         := {},
@@ -161,11 +146,10 @@ val website = project
 
 val root = project
   .in(file("."))
+  .settings(noPublish)
   .settings(
     name               := "mongo4cats",
-    crossScalaVersions := supportedScalaVersions,
-    publishArtifact    := false,
-    publish / skip     := false
+    crossScalaVersions := Nil
   )
   .aggregate(
     kernel,
