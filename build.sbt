@@ -1,4 +1,3 @@
-import xerial.sbt.Sonatype.GitHubHosting
 import sbtghactions.JavaSpec
 import Utils.*
 
@@ -7,18 +6,13 @@ val scala213               = "2.13.17"
 val scala3                 = "3.3.6"
 val supportedScalaVersions = List(scala212, scala213, scala3)
 
-ThisBuild / scalaVersion           := scala213
-ThisBuild / organization           := "io.github.kirill5k"
-ThisBuild / homepage               := Some(url("https://kirill5k.github.io/mongo4cats"))
-ThisBuild / scmInfo                := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
-ThisBuild / developers             := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
-ThisBuild / licenses               := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
-ThisBuild / sonatypeRepository     := "https://central.sonatype.com/service/local"
-ThisBuild / sonatypeProfileName    := "io.github.kirill5k"
-ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
-ThisBuild / publishTo              := sonatypePublishToBundle.value
-ThisBuild / versionScheme          := Some("early-semver")
+ThisBuild / scalaVersion  := scala213
+ThisBuild / organization  := "io.github.kirill5k"
+ThisBuild / homepage      := Some(url("https://kirill5k.github.io/mongo4cats"))
+ThisBuild / scmInfo       := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
+ThisBuild / developers    := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
+ThisBuild / licenses      := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
