@@ -18,9 +18,7 @@ ThisBuild / sonatypeRepository     := "https://central.sonatype.com/service/loca
 ThisBuild / sonatypeProfileName    := "io.github.kirill5k"
 ThisBuild / sonatypeProjectHosting := Some(GitHubHosting("kirill5k", "mongo4cats", "immotional@aol.com"))
 ThisBuild / publishTo              := sonatypePublishToBundle.value
-ThisBuild / releaseCrossBuild      := true
 ThisBuild / versionScheme          := Some("early-semver")
-ThisBuild / pomIncludeRepository   := { _ => false }
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
@@ -148,8 +146,7 @@ val root = project
   .in(file("."))
   .settings(noPublish)
   .settings(
-    name               := "mongo4cats",
-    crossScalaVersions := Nil
+    name := "mongo4cats"
   )
   .aggregate(
     kernel,
