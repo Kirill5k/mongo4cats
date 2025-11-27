@@ -61,8 +61,16 @@ package object collection {
         background: Boolean = false,
         unique: Boolean = false,
         sparse: Boolean = false,
-        hidden: Boolean = false
-    ): IndexOptions = new JIndexOptions().background(background).unique(unique).sparse(sparse).hidden(hidden)
+        hidden: Boolean = false,
+        expireAfter: Option[FiniteDuration] = None
+    ): IndexOptions = {
+      val options = new JIndexOptions()
+        .background(background)
+        .unique(unique)
+        .sparse(sparse)
+        .hidden(hidden)
+      expireAfter.fold(options)(duration => options.expireAfter(duration.toNanos, TimeUnit.NANOSECONDS))
+    }
   }
 
   type UpdateOptions = JUpdateOptions
