@@ -74,6 +74,7 @@ object BsonValueConverter extends AsScala {
     case v: ObjectId                => BsonValue.objectId(v)
     case v: JBsonValue              => fromJava(v)
     case v: BsonValue               => v
+    case v: org.bson.types.Binary   => BBinary(v.getData)
     case v: java.lang.String        => BsonValue.string(v)
     case v: java.lang.Integer       => BsonValue.int(v.intValue())
     case v: java.lang.Long          => BsonValue.long(v.longValue())
