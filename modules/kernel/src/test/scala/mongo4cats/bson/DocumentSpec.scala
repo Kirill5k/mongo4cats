@@ -261,6 +261,147 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         result.getNestedAs[String]("contact.address.street") mustBe Some("123 Main St")
         result.getNestedAs[String]("contact.address.city") mustBe Some("Springfield")
       }
+
+      "convert Java Document with org.bson.types.ObjectId" in {
+        val objectId = new org.bson.types.ObjectId()
+        val javaDoc  = new JDocument()
+          .append("_id", objectId)
+          .append("name", "Test")
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getObjectId("_id") mustBe Some(objectId)
+        result.getString("name") mustBe Some("Test")
+      }
+
+      "convert Java Document with org.bson.types.Decimal128" in {
+        val decimal = new org.bson.types.Decimal128(java.math.BigDecimal.valueOf(123.456))
+        val javaDoc = new JDocument()
+          .append("price", decimal)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getAs[BigDecimal]("price") mustBe Some(BigDecimal(123.456))
+      }
+
+      "convert Java Document with org.bson.types.Binary" in {
+        val binaryData = Array[Byte](1, 2, 3, 4, 5)
+        val binary     = new org.bson.types.Binary(binaryData)
+        val javaDoc    = new JDocument()
+          .append("data", binary)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.get("data") match {
+          case Some(BsonValue.BBinary(data)) => data mustBe binaryData
+          case other                         => fail(s"Expected BBinary but got $other")
+        }
+      }
+
+      "convert Java Document with org.bson.types.BSONTimestamp" in {
+        val timestamp = new org.bson.types.BSONTimestamp(1673600231, 1)
+        val javaDoc   = new JDocument()
+          .append("ts", timestamp)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.get("ts") mustBe Some(BsonValue.timestamp(1673600231L, 1))
+      }
+
+      "convert Java Document with org.bson.types.Code" in {
+        val code    = new org.bson.types.Code("function() { return 1; }")
+        val javaDoc = new JDocument()
+          .append("script", code)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("script") mustBe Some("function() { return 1; }")
+      }
+
+      "convert Java Document with org.bson.types.CodeWithScope" in {
+        val codeWithScope = new org.bson.types.CodeWithScope("function() { return x; }", new JDocument())
+        val javaDoc       = new JDocument()
+          .append("script", codeWithScope)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("script") mustBe Some("function() { return x; }")
+      }
+
+      "convert Java Document with org.bson.types.CodeWScope" in {
+        val scope      = new org.bson.types.BasicBSONList()
+        val codeWScope = new org.bson.types.CodeWScope("function() { return y; }", scope)
+        val javaDoc    = new JDocument()
+          .append("script", codeWScope)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("script") mustBe Some("function() { return y; }")
+      }
+
+      "convert Java Document with org.bson.types.Symbol" in {
+        val symbol  = new org.bson.types.Symbol("mySymbol")
+        val javaDoc = new JDocument()
+          .append("sym", symbol)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getString("sym") mustBe Some("mySymbol")
+      }
+
+      "convert Java Document with org.bson.types.MaxKey" in {
+        val maxKey  = new org.bson.types.MaxKey()
+        val javaDoc = new JDocument()
+          .append("max", maxKey)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.get("max") mustBe Some(BsonValue.MaxKey)
+      }
+
+      "convert Java Document with org.bson.types.MinKey" in {
+        val minKey  = new org.bson.types.MinKey()
+        val javaDoc = new JDocument()
+          .append("min", minKey)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.get("min") mustBe Some(BsonValue.MinKey)
+      }
+
+      "convert Java Document with org.bson.types.BasicBSONList" in {
+        val bsonList = new org.bson.types.BasicBSONList()
+        bsonList.add("item1")
+        bsonList.add("item2")
+        bsonList.add(42)
+        val javaDoc = new JDocument()
+          .append("list", bsonList)
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getAs[List[String]]("list") mustBe None // Mixed types
+        val list = result.getList("list")
+        list.map(_.size) mustBe Some(3)
+      }
+
+      "convert Java Document with mixed org.bson.types" in {
+        val objectId  = new org.bson.types.ObjectId()
+        val decimal   = new org.bson.types.Decimal128(java.math.BigDecimal.valueOf(99.99))
+        val timestamp = new org.bson.types.BSONTimestamp(1000000, 1)
+
+        val javaDoc = new JDocument()
+          .append("_id", objectId)
+          .append("price", decimal)
+          .append("created", timestamp)
+          .append("name", "Product")
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getObjectId("_id") mustBe Some(objectId)
+        result.getAs[BigDecimal]("price") mustBe Some(BigDecimal(99.99))
+        result.get("created") mustBe Some(BsonValue.timestamp(1000000L, 1))
+        result.getString("name") mustBe Some("Product")
+      }
     }
   }
 }
