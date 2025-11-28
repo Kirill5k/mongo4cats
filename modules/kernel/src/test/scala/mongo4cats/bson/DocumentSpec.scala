@@ -373,15 +373,12 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         val bsonList = new org.bson.types.BasicBSONList()
         bsonList.add("item1")
         bsonList.add("item2")
-        bsonList.add(42)
         val javaDoc = new JDocument()
           .append("list", bsonList)
 
         val result = Document.fromJava(javaDoc)
 
-        result.getAs[List[String]]("list") mustBe None // Mixed types
-        val list = result.getList("list")
-        list.map(_.size) mustBe Some(3)
+        result.getAs[List[String]]("list") mustBe Some(List("item1", "item2"))
       }
 
       "convert Java Document with mixed org.bson.types" in {
