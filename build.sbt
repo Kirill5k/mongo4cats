@@ -1,4 +1,5 @@
 import sbtghactions.JavaSpec
+import org.typelevel.scalacoptions.ScalacOptions
 import Utils.*
 
 val scala212               = "2.12.20"
@@ -40,7 +41,8 @@ val commonSettings = Seq(
   test / parallelExecution := false,
   mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
   scalacOptions ++= partialUnificationOption(scalaVersion.value),
-  scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wnonunit-statement")) }
+  scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wnonunit-statement")) },
+  Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
 )
 
 val embedded = project
