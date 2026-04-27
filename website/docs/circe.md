@@ -1,103 +1,175 @@
 ---
 id: circe
 title: Circe
-tags: ["Circe", "JSON"]
+tags: ["Circe", "JSON", "codecs"]
 ---
 
-Given that MongoDB stores data records as BSON documents, which bear a lot of similarities to a traditional JSON objects, [Circe](https://circe.github.io/circe/) (and other JSON libraries) can be used for deriving codecs for converting Scala case class into documents.
+The `mongo4cats-circe` module bridges [Circe](https://circe.github.io/circe/) and MongoDB's BSON encoding. It lets you use Circe's automatic codec derivation to read and write Scala case classes directly to and from MongoDB collections, without writing any BSON codec boilerplate.
 
-To enable Circe support, a dependency has to be added in the `build.sbt`:
+## Setup
+
 ```scala
 libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"
 ```
-Once the dependency is in, automatic derivation of MongoDB codecs can be enabled by including the following import:
+
+Enable the integration with a single import:
+
 ```scala
 import mongo4cats.circe._
 ```
 
-`mongo4cats.circe` includes several functions for deriving bson value encoders and decoders from provided Circe codecs, as well codecs for converting some special data types (ObjectId and dates) to MongoDB's specific bson representations.
+## Special type encodings
 
-### JSON to BSON conversions
+mongo4cats-circe registers custom BSON encoders for types that require non-standard JSON representations:
 
-Assuming there are instances of `Encoder[T]` and `Decoder[T]` available in the implicit scope, a class `T` can be converted to a bson value and back:
+| Scala type | BSON / Extended JSON encoding |
+|---|---|
+| `org.bson.types.ObjectId` | `{ "$oid": "..." }` |
+| `java.time.Instant` | `{ "$date": "..." }` |
+| `java.util.UUID` | `{ "$binary": { ... } }` |
+| `BigDecimal` | `{ "$numberDecimal": "..." }` |
+
+These encodings are compatible with MongoDB Extended JSON so that `doc.toJson` and `Document.fromJson` round-trip correctly.
+
+## Reading and writing BSON values
+
+With `Encoder[T]` and `Decoder[T]` in scope (e.g. via `io.circe.generic.auto._`), a value of type `T` can be converted to/from `BsonValue` directly:
 
 ```scala
 import io.circe.generic.auto._
 import mongo4cats.bson.{Document, ObjectId}
-import mongo4cats.circe._
 import mongo4cats.bson.syntax._
-
+import mongo4cats.circe._
 import java.time.Instant
 
-final case class MyClass(
+final case class User(
   _id: ObjectId,
-  dateField: Instant,
-  stringField: String,
-  intField: Int,
-  longField: Long,
-  arrayField: List[String],
-  optionField: Option[String]
+  name: String,
+  email: String,
+  createdAt: Instant,
+  tags: List[String],
+  score: Option[Double]
 )
 
-val myClass = MyClass(
-  _id = ObjectId.gen,
-  dateField = Instant.now(),
-  stringField = "string",
-  intField = 1,
-  longField = 1660999000L,
-  arrayField = List("item1", "item2"),
-  optionField = None
+val user = User(
+  _id       = ObjectId.gen,
+  name      = "Alice",
+  email     = "alice@example.com",
+  createdAt = Instant.now(),
+  tags      = List("admin", "user"),
+  score     = Some(9.5)
 )
 
-val doc = Document("_id" := ObjectId.gen, "myClasses" := List(myClass))
-val jsonString = doc.toJson
-//{
-//  "_id": {
-//    "$oid": "6300e54d64332103430291d3"
-//  },
-//  "myClasses": [
-//  {
-//    "_id": {
-//      "$oid": "6300e54d64332103430291d2"
-//    },
-//    "dateField": {
-//      "$date": "2022-08-20T13:44:45.736Z"
-//    },
-//    "stringField": "string",
-//    "intField": 1,
-//    "longField": 1660999000,
-//    "arrayField": [
-//    "item1",
-//    "item2"
-//    ],
-//    "optionField": null
-//  }
-//  ]
-//}
-val retrievedMyClasses = doc.getAs[List[MyClass]]("myClasses")
-//Some(List(MyClass(6300e54d64332103430291d2,2022-08-20T13:44:45.736633Z,string,1,1660999000,List(item1, item2),None)))
+// Embed the case class inside a Document field
+val doc = Document(
+  "_id"  := ObjectId.gen,
+  "user" := user
+)
+
+// Retrieve it back
+val retrieved: Option[User] = doc.getAs[User]("user")
+// Some(User(...))
 ```
 
-### Deriving codecs for collections
+## Typed collections
 
-In order to be able to derive codecs for case classes and use them with collections, we need to build an instance of `MongoCodecProvider[T]`. 
-This can be done automatically on the fly or manually by creating codec provider with `deriveCirceCodecProvider` function, assuming there are instances of `Encoder[T]` and `Decoder[T]` available in the implicit scope:
+To store and retrieve a case class as the collection's document type, derive a `MongoCodecProvider[T]` and use `getCollectionWithCodec`:
+
+### Automatic derivation (recommended)
 
 ```scala
 import io.circe.generic.auto._
 import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.circe._
 
-object MyClass {
-  implicit val myClassCodecProvider: MongoCodecProvider[MyClass] = deriveCirceCodecProvider
+// Place this in the companion object so it is always in scope
+object User {
+  implicit val codec: MongoCodecProvider[User] = deriveCirceCodecProvider[User]
 }
 ```
-
-To use it with `MongoCollection`, codec provider needs to be added to the codec registry:
 
 ```scala
 import cats.effect.IO
 import mongo4cats.collection.MongoCollection
 
-val collection: IO[MongoCollection[IO, MyClass]] = database.getCollectionWithCodec[MyClass]("mycoll")
+// The implicit MongoCodecProvider[User] is found automatically
+val collection: IO[MongoCollection[IO, User]] =
+  database.getCollectionWithCodec[User]("users")
+```
+
+### Full example with insert and find
+
+```scala
+import cats.effect.{IO, IOApp}
+import io.circe.generic.auto._
+import mongo4cats.bson.ObjectId
+import mongo4cats.circe._
+import mongo4cats.client.MongoClient
+import mongo4cats.codecs.MongoCodecProvider
+import mongo4cats.operations.Filter
+import java.time.Instant
+
+final case class User(
+  _id: ObjectId,
+  name: String,
+  email: String,
+  createdAt: Instant
+)
+
+object User {
+  implicit val codec: MongoCodecProvider[User] = deriveCirceCodecProvider[User]
+}
+
+object CirceExample extends IOApp.Simple {
+  override val run: IO[Unit] =
+    MongoClient.fromConnectionString[IO]("mongodb://localhost:27017").use { client =>
+      for {
+        db   <- client.getDatabase("mydb")
+        coll <- db.getCollectionWithCodec[User]("users")
+        _    <- coll.insertOne(User(ObjectId.gen, "Alice", "alice@example.com", Instant.now()))
+        users <- coll.find(Filter.eq("name", "Alice")).all
+        _    <- IO.println(s"Found: $users")
+      } yield ()
+    }
+}
+```
+
+## Custom Circe encoders
+
+You can provide your own `Encoder`/`Decoder` instances instead of relying on auto-derivation:
+
+```scala
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto._
+
+final case class Product(id: String, price: BigDecimal)
+
+object Product {
+  implicit val encoder: Encoder[Product] = deriveEncoder[Product]
+  implicit val decoder: Decoder[Product] = deriveDecoder[Product]
+  implicit val codec: MongoCodecProvider[Product] = deriveCirceCodecProvider[Product]
+}
+```
+
+## Nested case classes
+
+Nested case classes are handled automatically as long as each type has a Circe `Encoder`/`Decoder` in scope:
+
+```scala
+final case class Address(street: String, city: String)
+final case class Person(name: String, address: Address)
+
+// With io.circe.generic.auto._ all three types (Address, Person, MongoCodecProvider[Person]) are derived
+```
+
+## Handling ObjectId fields
+
+When the `_id` field is typed as `ObjectId`, mongo4cats-circe handles encoding to the `$oid` Extended JSON format automatically. If you prefer to use `String` for the id in your domain model, you can add a custom encoder/decoder:
+
+```scala
+import io.circe.{Decoder, Encoder}
+import org.bson.types.ObjectId
+
+implicit val objectIdEncoder: Encoder[ObjectId] = Encoder[String].contramap(_.toHexString)
+implicit val objectIdDecoder: Decoder[ObjectId] = Decoder[String].map(new ObjectId(_))
 ```

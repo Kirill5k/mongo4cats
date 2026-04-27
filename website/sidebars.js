@@ -35,7 +35,7 @@ const sidebars = {
         type: 'doc',
         id: 'operations',
       },
-      items: ['operations/indexes', 'operations/find', 'operations/update', 'operations/distinct', 'operations/aggregate', 'operations/watch'],
+      items: ['operations/indexes', 'operations/find', 'operations/update', 'operations/distinct', 'operations/aggregate', 'operations/watch', 'operations/transactions', 'operations/bulk'],
     },
     {
       type: 'doc',
