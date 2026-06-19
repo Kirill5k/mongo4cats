@@ -29,7 +29,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort = 12345
+  override val mongoPort = 12343
   private val username   = "username"
   private val password   = "password"
 
