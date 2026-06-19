@@ -39,7 +39,7 @@ val commonSettings = Seq(
     "-no-link-warnings" // Suppresses problems with Scaladoc links
   ),
   parallelExecution        := false,
-  test / parallelExecution := false,
+  Test / parallelExecution := false,
   mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
   scalacOptions ++= partialUnificationOption(scalaVersion.value),
   scalacOptions ~= { (options: Seq[String]) => options.filterNot(Set("-Wnonunit-statement")) },
