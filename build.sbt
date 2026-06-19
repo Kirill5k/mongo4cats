@@ -14,10 +14,11 @@ ThisBuild / scmInfo       := Some(ScmInfo(url("https://github.com/kirill5k/mongo
 ThisBuild / developers    := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
 ThisBuild / licenses      := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / versionScheme := Some("early-semver")
+ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
-ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+githubWorkflowDir                               := (LocalRootProject / baseDirectory).value / ".github"
 
 val noPublish = Seq(
   publish         := {},
