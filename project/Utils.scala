@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object Utils {
 
@@ -8,12 +8,12 @@ object Utils {
       case _                              => false
     }
 
-  def kindProjectorDependency(scalaVersion: String) =
+  def kindProjectorDependency(scalaVersion: String): List[ModuleID] =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, 12)) | Some((2, 13)) => List(compilerPlugin(Dependencies.kindProjector cross CrossVersion.full))
+      case Some((2, 12)) | Some((2, 13)) => List(compilerPlugin(Dependencies.kindProjector.cross(CrossVersion.full)))
       case _                             => Nil
     }
 
-  def partialUnificationOption(scalaVersion: String) =
+  def partialUnificationOption(scalaVersion: String): List[String] =
     if (priorTo213(scalaVersion)) List("-Ypartial-unification") else Nil
 }

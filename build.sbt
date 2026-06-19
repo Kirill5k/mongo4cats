@@ -42,7 +42,7 @@ val commonSettings = Seq(
   test / parallelExecution := false,
   mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
   scalacOptions ++= partialUnificationOption(scalaVersion.value),
-  scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wnonunit-statement")) },
+  scalacOptions ~= { (options: Seq[String]) => options.filterNot(Set("-Wnonunit-statement")) },
   Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
 )
 
@@ -133,7 +133,7 @@ val website = project
   .settings(noPublish)
   .settings(commonSettings)
   .settings(
-    moduleName    := "mongo4cats",
+    moduleName    := "mongo4cats-website",
     mdocVariables := Map(
       "VERSION" -> version.value
     )
