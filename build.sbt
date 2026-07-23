@@ -19,8 +19,7 @@ ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
 
-githubWorkflowDir        := (LocalRootProject / baseDirectory).value / ".github"
-Test / parallelExecution := false
+githubWorkflowDir := (LocalRootProject / baseDirectory).value / ".github"
 Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
 organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2"
 startYear        := Some(2020)

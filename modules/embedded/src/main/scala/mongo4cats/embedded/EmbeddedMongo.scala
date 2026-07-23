@@ -71,7 +71,7 @@ object EmbeddedMongo {
       password: Option[String],
       version: Version,
       remainingAttempts: Int = 10,
-      retryDelay: FiniteDuration = 1.second
+      retryDelay: FiniteDuration = 100.millis
   )(implicit F: Async[F]): Resource[F, Unit] =
     Resource
       .fromAutoCloseable(F.delay(startMongod(port, username, password, version)))

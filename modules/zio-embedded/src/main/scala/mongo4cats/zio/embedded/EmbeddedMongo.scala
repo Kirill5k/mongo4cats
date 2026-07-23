@@ -68,7 +68,7 @@ object EmbeddedMongo {
       password: Option[String],
       version: Version,
       remainingAttempts: Int = 10,
-      retryDelay: zio.Duration = 1.second
+      retryDelay: zio.Duration = 100.millis
   ): ZIO[Scope, Nothing, Unit] =
     ZIO
       .acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password, version)))(p => ZIO.attempt(p.close()).orDie)
