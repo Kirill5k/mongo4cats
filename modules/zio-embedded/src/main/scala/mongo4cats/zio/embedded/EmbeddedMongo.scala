@@ -24,7 +24,7 @@ import de.flapdoodle.embed.mongo.transitions.{Mongod, RunningMongodProcess}
 import de.flapdoodle.reverse.transitions.Start
 import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
 import org.bson.Document
-import zio.{Scope, ZIO}
+import zio.{durationInt, Scope, ZIO}
 
 trait EmbeddedMongo {
   protected val mongoVersion: Version         = Version.V7_0_0
@@ -67,14 +67,16 @@ object EmbeddedMongo {
       username: Option[String],
       password: Option[String],
       version: Version,
-      remainingAttempts: Int = 10
+      remainingAttempts: Int = 10,
+      retryDelay: zio.Duration = 1.second
   ): ZIO[Scope, Nothing, Unit] =
     ZIO
       .acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password, version)))(p => ZIO.attempt(p.close()).orDie)
       .unit
       .catchAll { error =>
         if (remainingAttempts <= 0) ZIO.fail(error)
-        else start(port, username, password, version, remainingAttempts - 1)
+        // the port may still be held by a previous instance that is shutting down, so wait before retrying
+        else ZIO.sleep(retryDelay) *> start(port, username, password, version, remainingAttempts - 1, retryDelay)
       }
       .orDie
 

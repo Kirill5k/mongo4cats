@@ -18,12 +18,10 @@ ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramewor
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
-ThisBuild / Test / parallelExecution            := false
 
-Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
-
-githubWorkflowDir := (LocalRootProject / baseDirectory).value / ".github"
-parallelExecution := false
+githubWorkflowDir        := (LocalRootProject / baseDirectory).value / ".github"
+parallelExecution        := false
+Test / parallelExecution := false
 Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
 organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2"
 startYear        := Some(2020)

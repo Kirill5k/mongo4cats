@@ -27,6 +27,8 @@ import de.flapdoodle.reverse.transitions.Start
 import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
 import org.bson.Document
 
+import scala.concurrent.duration._
+
 trait EmbeddedMongo {
   protected val mongoVersion: Version         = Version.V7_0_0
   protected val mongoPort: Int                = 27017
@@ -68,14 +70,16 @@ object EmbeddedMongo {
       username: Option[String],
       password: Option[String],
       version: Version,
-      remainingAttempts: Int = 10
+      remainingAttempts: Int = 10,
+      retryDelay: FiniteDuration = 1.second
   )(implicit F: Async[F]): Resource[F, Unit] =
     Resource
       .fromAutoCloseable(F.delay(startMongod(port, username, password, version)))
       .void
       .handleErrorWith[Unit] { error =>
         if (remainingAttempts <= 0) Resource.raiseError(error)
-        else start[F](port, username, password, version, remainingAttempts - 1)
+        // the port may still be held by a previous instance that is shutting down, so wait before retrying
+        else Resource.eval(F.sleep(retryDelay)).flatMap(_ => start[F](port, username, password, version, remainingAttempts - 1, retryDelay))
       }
 
   private def startMongod(
