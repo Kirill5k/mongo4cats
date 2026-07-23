@@ -22,6 +22,7 @@ import cats.syntax.parallel._
 import com.mongodb.{CursorType, ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.TestData
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.test.FreePort
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
@@ -36,8 +37,6 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks with Matchers with EmbeddedMongo {
-
-  override val mongoPort = 12347
 
   "A MongoCollection" when {
     "updating preferences" should {
@@ -637,10 +636,11 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
     }
   }
 
-  def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =
-    withRunningEmbeddedMongo {
+  def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] = {
+    val port = FreePort.next()
+    withRunningEmbeddedMongo(port) {
       MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
+        .fromConnectionString[IO](s"mongodb://localhost:$port")
         .use { client =>
           for {
             db    <- client.getDatabase("db")
@@ -652,5 +652,5 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
           } yield res
         }
     }.unsafeToFuture()(IORuntime.global)
-
+  }
 }

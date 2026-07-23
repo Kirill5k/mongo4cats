@@ -25,6 +25,7 @@ import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.database.MongoDatabase
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.test.FreePort
 import mongo4cats.models.collection.UnwindOptions
 import mongo4cats.operations._
 import org.scalatest.matchers.must.Matchers
@@ -33,12 +34,11 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-  override val mongoPort             = 12350
   override val mongoVersion: Version = Version.V7_0_0
 
   "A MongoCollection" when {
     "aggregate" should {
-      "join data from 2 collections" in withEmbeddedMongoDatabase { db =>
+      "join data from 2 collections" in withEmbeddedMongoDatabase { (_, db) =>
         val result = for {
           accs <- db.getCollection("accounts")
           res  <- accs
@@ -61,7 +61,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         }
       }
 
-      "group by field" in withEmbeddedMongoDatabase { db =>
+      "group by field" in withEmbeddedMongoDatabase { (_, db) =>
         val result = for {
           transactions <- db.getCollection("transactions")
           accumulator = Accumulator
@@ -86,7 +86,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         }
       }
 
-      "explain the pipeline in a form of a document" in withEmbeddedMongoDatabase { db =>
+      "explain the pipeline in a form of a document" in withEmbeddedMongoDatabase { (port, db) =>
         val result = for {
           accs <- db.getCollection("accounts")
           res  <- accs
@@ -102,13 +102,13 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
 
         result.map { expl =>
           expl.getDouble("ok") mustBe Some(1.0)
-          expl.getNestedAs[Int]("serverInfo.port") mustBe Some(mongoPort)
+          expl.getNestedAs[Int]("serverInfo.port") mustBe Some(port)
           expl.getList("stages").get must have size 2
         }
       }
 
       "processes multiple aggregation pipelines within a single stage on the same set of input documents" in
-        withEmbeddedMongoDatabase { db =>
+        withEmbeddedMongoDatabase { (_, db) =>
           val result = for {
             txs <- db.getCollection("transactions")
             accumulator = Accumulator
@@ -131,7 +131,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         }
 
       "collect all unique account currencies" in
-        withEmbeddedMongoDatabase { db =>
+        withEmbeddedMongoDatabase { (_, db) =>
           val result = for {
             accs <- db.getCollection("accounts")
             res  <- accs
@@ -158,7 +158,7 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
         }
 
       "using first, return none if no result is found" in
-        withEmbeddedMongoDatabase { db =>
+        withEmbeddedMongoDatabase { (_, db) =>
           val result = for {
             accs <- db.getCollection("accounts")
             res  <- accs
@@ -176,18 +176,20 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
     }
   }
 
-  def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =
-    withRunningEmbeddedMongo {
+  def withEmbeddedMongoDatabase[A](test: (Int, MongoDatabase[IO]) => IO[A]): Future[A] = {
+    val port = FreePort.next()
+    withRunningEmbeddedMongo(port) {
       MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
+        .fromConnectionString[IO](s"mongodb://localhost:$port")
         .use { client =>
           for {
             db  <- client.getDatabase("db")
             _   <- db.getCollection("accounts").flatMap(_.insertMany(TestData.accounts))
             _   <- db.getCollection("categories").flatMap(_.insertMany(TestData.categories))
             _   <- db.getCollection("transactions").flatMap(_.insertMany(TestData.transactions(250)))
-            res <- test(db)
+            res <- test(port, db)
           } yield res
         }
     }.unsafeToFuture()(IORuntime.global)
+  }
 }

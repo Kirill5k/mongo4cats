@@ -78,7 +78,6 @@ object EmbeddedMongo {
       .void
       .handleErrorWith[Unit] { error =>
         if (remainingAttempts <= 0) Resource.raiseError(error)
-        // the port may still be held by a previous instance that is shutting down, so wait before retrying
         else Resource.eval(F.sleep(retryDelay)).flatMap(_ => start[F](port, username, password, version, remainingAttempts - 1, retryDelay))
       }
 

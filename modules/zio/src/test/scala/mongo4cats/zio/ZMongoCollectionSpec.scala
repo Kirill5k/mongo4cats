@@ -23,6 +23,7 @@ import mongo4cats.bson.syntax._
 import mongo4cats.models.client.MongoConnection
 import mongo4cats.models.collection._
 import mongo4cats.operations.{Filter, Index, Sort, Update}
+import mongo4cats.test.FreePort
 import mongo4cats.zio.embedded.EmbeddedMongo
 import zio.stream.{ZSink, ZStream}
 import zio.{Scope, ZIO, ZLayer}
@@ -33,8 +34,6 @@ import zio.test.TestAspect.sequential
 import java.util.UUID
 
 object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
-
-  override val mongoPort: Int = 27000
 
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("A ZMongoCollection when")(
     suite("insertOne should")(
@@ -451,12 +450,14 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
   ) @@ sequential
 
   def withEmbeddedMongoDatabase[A](test: ZMongoDatabase => ZIO[Any, Throwable, A]): ZIO[Scope, Throwable, A] =
-    withRunningEmbeddedMongo {
-      ZIO
-        .serviceWithZIO[ZMongoDatabase](test(_))
-        .provide(
-          ZLayer.scoped[Any][Throwable, ZMongoClient](ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))),
-          ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("test-db")))
-        )
+    ZIO.succeed(FreePort.next()).flatMap { port =>
+      withRunningEmbeddedMongo(port) {
+        ZIO
+          .serviceWithZIO[ZMongoDatabase](test(_))
+          .provide(
+            ZLayer.scoped[Any][Throwable, ZMongoClient](ZMongoClient.fromConnection(MongoConnection.classic("localhost", port))),
+            ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("test-db")))
+          )
+      }
     }
 }

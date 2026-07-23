@@ -23,39 +23,46 @@ import com.mongodb.MongoTimeoutException
 import com.mongodb.connection.ClusterConnectionMode
 import mongo4cats.models.client._
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.test.FreePort
 import org.scalatest.Assertion
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  override val mongoPort = 12343
-  private val username   = "username"
-  private val password   = "password"
+  private val username = "username"
+  private val password = "password"
 
   "A MongoClient" should {
-    "connect to a db via connection string" in withRunningEmbeddedMongo {
-      MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
-        .use { client =>
-          val cluster = client.clusterDescription
+    "connect to a db via connection string" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo(port) {
+        MongoClient
+          .fromConnectionString[IO](s"mongodb://localhost:$port")
+          .use { client =>
+            val cluster = client.clusterDescription
 
-          IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
-        }
-    }.unsafeToFuture()(IORuntime.global)
+            IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
+          }
+      }.unsafeToFuture()(IORuntime.global)
+    }
 
-    "connect to a db via connection object" in withRunningEmbeddedMongo {
-      MongoClient
-        .fromConnection[IO](MongoConnection.classic("localhost", mongoPort))
-        .use { client =>
-          val cluster = client.clusterDescription
-          IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
-        }
-    }.unsafeToFuture()(IORuntime.global)
+    "connect to a db via connection object" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo(port) {
+        MongoClient
+          .fromConnection[IO](MongoConnection.classic("localhost", port))
+          .use { client =>
+            val cluster = client.clusterDescription
+            IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
+          }
+      }.unsafeToFuture()(IORuntime.global)
+    }
 
-    "connect to a db via connection object with authentication" in
-      withRunningEmbeddedMongo[IO, Assertion](mongoPort, username, password) {
-        val connection = MongoConnection.classic("localhost", mongoPort, Some(MongoCredential(username, password)))
+    "connect to a db via connection object with authentication" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo[IO, Assertion](port, username, password) {
+        val connection = MongoConnection.classic("localhost", port, Some(MongoCredential(username, password)))
         MongoClient
           .fromConnection[IO](connection)
           .use { client =>
@@ -63,66 +70,79 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
             IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
           }
       }.unsafeToFuture()(IORuntime.global)
+    }
 
-    "return current database names" in withRunningEmbeddedMongo {
-      MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
-        .use { client =>
-          for {
-            db1   <- client.getDatabase("db1")
-            _     <- db1.createCollection("coll")
-            db2   <- client.getDatabase("db2")
-            _     <- db2.createCollection("coll")
-            names <- client.listDatabaseNames
-          } yield names
-        }
-        .map(_ mustBe List("admin", "config", "db1", "db2", "local"))
-    }.unsafeToFuture()(IORuntime.global)
+    "return current database names" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo(port) {
+        MongoClient
+          .fromConnectionString[IO](s"mongodb://localhost:$port")
+          .use { client =>
+            for {
+              db1   <- client.getDatabase("db1")
+              _     <- db1.createCollection("coll")
+              db2   <- client.getDatabase("db2")
+              _     <- db2.createCollection("coll")
+              names <- client.listDatabaseNames
+            } yield names
+          }
+          .map(_ mustBe List("admin", "config", "db1", "db2", "local"))
+      }.unsafeToFuture()(IORuntime.global)
+    }
 
-    "return current databases" in withRunningEmbeddedMongo {
-      MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
-        .use { client =>
-          for {
-            db1 <- client.getDatabase("db1")
-            _   <- db1.createCollection("coll")
-            dbs <- client.listDatabases
-          } yield dbs
-        }
-        .map { dbs =>
-          dbs.flatMap(_.getString("name")) must contain allOf ("admin", "db1")
-          val adminDb = dbs.head
-          adminDb.getString("name") must contain("admin")
-          adminDb.getBoolean("empty") must contain(false)
-        }
-    }.unsafeToFuture()(IORuntime.global)
+    "return current databases" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo(port) {
+        MongoClient
+          .fromConnectionString[IO](s"mongodb://localhost:$port")
+          .use { client =>
+            for {
+              db1 <- client.getDatabase("db1")
+              _   <- db1.createCollection("coll")
+              dbs <- client.listDatabases
+            } yield dbs
+          }
+          .map { dbs =>
+            dbs.flatMap(_.getString("name")) must contain allOf ("admin", "db1")
+            val adminDb = dbs.head
+            adminDb.getString("name") must contain("admin")
+            adminDb.getBoolean("empty") must contain(false)
+          }
+      }.unsafeToFuture()(IORuntime.global)
+    }
 
-    "connect to a db via server address class" in withRunningEmbeddedMongo {
-      MongoClient
-        .fromServerAddress[IO](ServerAddress("localhost", mongoPort))
-        .use { client =>
-          for {
-            db    <- client.getDatabase("test-db")
-            names <- db.listCollectionNames
-          } yield names
-        }
-        .map(_ mustBe Nil)
-    }.unsafeToFuture()(IORuntime.global)
+    "connect to a db via server address class" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo(port) {
+        MongoClient
+          .fromServerAddress[IO](ServerAddress("localhost", port))
+          .use { client =>
+            for {
+              db    <- client.getDatabase("test-db")
+              names <- db.listCollectionNames
+            } yield names
+          }
+          .map(_ mustBe Nil)
+      }.unsafeToFuture()(IORuntime.global)
+    }
 
-    "return error when port is invalid" in withRunningEmbeddedMongo {
-      MongoClient
-        .fromServerAddress[IO](ServerAddress("localhost", 123))
-        .use { client =>
-          for {
-            db    <- client.getDatabase("test-db")
-            names <- db.listCollectionNames
-          } yield names
-        }
-        .attempt
-        .map { res =>
-          res.isLeft mustBe true
-          res.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe (Left(-3))
-        }
-    }.unsafeToFuture()(IORuntime.global)
+    "return error when port is invalid" in {
+      val port = FreePort.next()
+      withRunningEmbeddedMongo(port) {
+        MongoClient
+          .fromServerAddress[IO](ServerAddress("localhost", 123))
+          .use { client =>
+            for {
+              db    <- client.getDatabase("test-db")
+              names <- db.listCollectionNames
+            } yield names
+          }
+          .attempt
+          .map { res =>
+            res.isLeft mustBe true
+            res.leftMap(_.asInstanceOf[MongoTimeoutException].getCode) mustBe (Left(-3))
+          }
+      }.unsafeToFuture()(IORuntime.global)
+    }
   }
 }

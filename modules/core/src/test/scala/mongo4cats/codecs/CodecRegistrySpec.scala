@@ -25,6 +25,7 @@ import mongo4cats.client.MongoClient
 import mongo4cats.operations.{Filter, Update}
 import mongo4cats.database.MongoDatabase
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.test.FreePort
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -33,8 +34,6 @@ import java.util.UUID
 import scala.concurrent.Future
 
 class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-
-  override val mongoPort: Int = 12349
 
   "A CodecRegistry" should {
 
@@ -171,12 +170,14 @@ class CodecRegistrySpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       }
   }
 
-  def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] =
-    withRunningEmbeddedMongo {
+  def withEmbeddedMongoDatabase[A](test: MongoDatabase[IO] => IO[A]): Future[A] = {
+    val port = FreePort.next()
+    withRunningEmbeddedMongo(port) {
       MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
+        .fromConnectionString[IO](s"mongodb://localhost:$port")
         .use { client =>
           client.getDatabase("db").flatMap(test)
         }
     }.unsafeToFuture()(IORuntime.global)
+  }
 }

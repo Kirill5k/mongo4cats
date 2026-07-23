@@ -24,14 +24,13 @@ import mongo4cats.bson.syntax._
 import mongo4cats.client.MongoClient
 import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.test.FreePort
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
 class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-
-  override val mongoPort: Int = 12348
 
   "A MongoDatabase" when {
 
@@ -144,10 +143,12 @@ class MongoDatabaseSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
     }
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] =
-    withRunningEmbeddedMongo {
+  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] = {
+    val port = FreePort.next()
+    withRunningEmbeddedMongo(port) {
       MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
+        .fromConnectionString[IO](s"mongodb://localhost:$port")
         .use(test)
     }.unsafeToFuture()(IORuntime.global)
+  }
 }

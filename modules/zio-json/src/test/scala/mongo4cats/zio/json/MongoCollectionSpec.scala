@@ -23,6 +23,7 @@ import mongo4cats.bson.ObjectId
 import mongo4cats.client.MongoClient
 import mongo4cats.operations.Filter
 import mongo4cats.embedded.EmbeddedMongo
+import mongo4cats.test.FreePort
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import zio.json._
@@ -34,8 +35,6 @@ import java.util.UUID
 import scala.concurrent.Future
 
 class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-
-  override val mongoPort: Int = 12355
 
   implicit val gendDec: JsonDecoder[Gender]      = JsonDecoder.string.mapOrFail(Gender.from)
   implicit val gendEnc: JsonEncoder[Gender]      = JsonEncoder.string.contramap(_.value)
@@ -208,10 +207,12 @@ class MongoCollectionSpec extends AsyncWordSpec with Matchers with EmbeddedMongo
       )
   }
 
-  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] =
-    withRunningEmbeddedMongo {
+  def withEmbeddedMongoClient[A](test: MongoClient[IO] => IO[A]): Future[A] = {
+    val port = FreePort.next()
+    withRunningEmbeddedMongo(port) {
       MongoClient
-        .fromConnectionString[IO](s"mongodb://localhost:$mongoPort")
+        .fromConnectionString[IO](s"mongodb://localhost:$port")
         .use(test)
     }.unsafeToFuture()(IORuntime.global)
+  }
 }

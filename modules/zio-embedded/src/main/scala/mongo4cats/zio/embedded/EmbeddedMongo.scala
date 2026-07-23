@@ -75,7 +75,6 @@ object EmbeddedMongo {
       .unit
       .catchAll { error =>
         if (remainingAttempts <= 0) ZIO.fail(error)
-        // the port may still be held by a previous instance that is shutting down, so wait before retrying
         else ZIO.sleep(retryDelay) *> start(port, username, password, version, remainingAttempts - 1, retryDelay)
       }
       .orDie

@@ -21,6 +21,7 @@ import mongo4cats.bson.Document
 import mongo4cats.models.client.MongoConnection
 import mongo4cats.models.collection.MongoNamespace
 import mongo4cats.models.database.CreateCollectionOptions
+import mongo4cats.test.FreePort
 import mongo4cats.zio.embedded.EmbeddedMongo
 import zio.{Scope, ZIO, ZLayer}
 import zio.test._
@@ -28,8 +29,6 @@ import zio.test.Assertion._
 import zio.test.TestAspect.sequential
 
 object ZMongoDatabaseSpec extends ZIOSpecDefault with EmbeddedMongo {
-
-  override val mongoPort: Int = 27001
 
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("A ZMongoDatabase when")(
     suite("updating preferences should")(
@@ -116,13 +115,15 @@ object ZMongoDatabaseSpec extends ZIOSpecDefault with EmbeddedMongo {
   ) @@ sequential
 
   def withEmbeddedMongoClient[A](test: ZMongoClient => ZIO[Any, Throwable, A]): ZIO[Scope, Throwable, A] =
-    withRunningEmbeddedMongo[Scope, Throwable, A] {
-      ZIO
-        .serviceWithZIO[ZMongoClient](test(_))
-        .provide(
-          ZLayer.scoped[Any][Throwable, ZMongoClient] {
-            ZMongoClient.fromConnection(MongoConnection.classic("localhost", mongoPort))
-          }
-        )
+    ZIO.succeed(FreePort.next()).flatMap { port =>
+      withRunningEmbeddedMongo[Scope, Throwable, A](port) {
+        ZIO
+          .serviceWithZIO[ZMongoClient](test(_))
+          .provide(
+            ZLayer.scoped[Any][Throwable, ZMongoClient] {
+              ZMongoClient.fromConnection(MongoConnection.classic("localhost", port))
+            }
+          )
+      }
     }
 }
