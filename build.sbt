@@ -18,7 +18,24 @@ ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramewor
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
-githubWorkflowDir                               := (LocalRootProject / baseDirectory).value / ".github"
+
+githubWorkflowDir        := (LocalRootProject / baseDirectory).value / ".github"
+parallelExecution        := false
+Test / parallelExecution := false
+Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
+organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2"
+startYear        := Some(2020)
+licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt"))
+headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k"))
+resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/"
+scalafmtOnCompile  := true
+crossScalaVersions := supportedScalaVersions
+Compile / doc / scalacOptions ++= Seq(
+  "-no-link-warnings" // Suppresses problems with Scaladoc links
+)
+mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "0.5.0")
+scalacOptions ++= partialUnificationOption(scalaVersion.value)
+scalacOptions ~= { (options: Seq[String]) => options.filterNot(Set("-Wnonunit-statement")) }
 
 val noPublish = Seq(
   publish         := {},
@@ -27,28 +44,8 @@ val noPublish = Seq(
   publish / skip  := true
 )
 
-val commonSettings = Seq(
-  organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2",
-  startYear        := Some(2020),
-  licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-  headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k")),
-  resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
-  scalafmtOnCompile  := true,
-  crossScalaVersions := supportedScalaVersions,
-  Compile / doc / scalacOptions ++= Seq(
-    "-no-link-warnings" // Suppresses problems with Scaladoc links
-  ),
-  parallelExecution        := false,
-  Test / parallelExecution := false,
-  mimaPreviousArtifacts    := Set(organization.value %% moduleName.value % "0.5.0"),
-  scalacOptions ++= partialUnificationOption(scalaVersion.value),
-  scalacOptions ~= { (options: Seq[String]) => options.filterNot(Set("-Wnonunit-statement")) },
-  Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
-)
-
 val embedded = project
   .in(file("modules/embedded"))
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-embedded",
     libraryDependencies ++= Dependencies.embedded
@@ -57,7 +54,6 @@ val embedded = project
 
 val `zio-embedded` = project
   .in(file("modules/zio-embedded"))
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio-embedded",
     libraryDependencies ++= Dependencies.zioEmbedded
@@ -66,7 +62,6 @@ val `zio-embedded` = project
 
 val kernel = project
   .in(file("modules/kernel"))
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-kernel",
     libraryDependencies ++= Dependencies.kernel
@@ -76,7 +71,6 @@ val kernel = project
 val core = project
   .in(file("modules/core"))
   .dependsOn(kernel % "test->test;compile->compile", embedded % "test->compile")
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-core",
     libraryDependencies ++= Dependencies.core,
@@ -87,7 +81,6 @@ val core = project
 val zio = project
   .in(file("modules/zio"))
   .dependsOn(kernel % "test->test;compile->compile", `zio-embedded` % "test->compile")
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio",
     libraryDependencies ++= Dependencies.zio,
@@ -98,7 +91,6 @@ val zio = project
 val circe = project
   .in(file("modules/circe"))
   .dependsOn(kernel % "test->test;compile->compile", core % "test->compile", embedded % "test->compile")
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-circe",
     libraryDependencies ++= Dependencies.circe
@@ -108,7 +100,6 @@ val circe = project
 val `zio-json` = project
   .in(file("modules/zio-json"))
   .dependsOn(kernel % "test->test;compile->compile", core % "test->compile", embedded % "test->compile")
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-zio-json",
     libraryDependencies ++= Dependencies.zioJson
@@ -119,7 +110,6 @@ val examples = project
   .in(file("examples"))
   .dependsOn(core, circe, embedded, zio, `zio-embedded`, `zio-json`)
   .settings(noPublish)
-  .settings(commonSettings)
   .settings(
     name := "mongo4cats-examples",
     libraryDependencies ++= Dependencies.examples
@@ -131,7 +121,6 @@ val website = project
   .dependsOn(kernel, core, circe, embedded, zio, `zio-embedded`, `zio-json`)
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
   .settings(noPublish)
-  .settings(commonSettings)
   .settings(
     moduleName    := "mongo4cats-website",
     mdocVariables := Map(
