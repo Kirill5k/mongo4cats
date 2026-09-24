@@ -17,7 +17,7 @@
 package mongo4cats.bson
 
 import mongo4cats.bson.syntax._
-import org.bson.{Document => JDocument}
+import org.bson.{BsonArray, BsonBinary, BsonDocument, BsonValue => JBsonValue, Document => JDocument, UuidRepresentation}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -154,7 +154,31 @@ class DocumentSpec extends AnyWordSpec with Matchers {
       }
     }
 
+    "when converting from Java BSON Document" should {
+      "preserve UUIDs in fields, nested documents and arrays" in {
+        val uuid    = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
+        val binary  = new BsonBinary(uuid, UuidRepresentation.STANDARD)
+        val javaDoc = new BsonDocument("uuid", binary)
+          .append("nested", new BsonDocument("uuid", binary))
+          .append("uuids", new BsonArray(java.util.Arrays.asList[JBsonValue](binary)))
+
+        val result = Document.fromJava(javaDoc)
+
+        result.getAs[UUID]("uuid") mustBe Some(uuid)
+        result.getNestedAs[UUID]("nested.uuid") mustBe Some(uuid)
+        result.getAs[List[UUID]]("uuids") mustBe Some(List(uuid))
+        result.toBsonDocument mustBe javaDoc
+      }
+    }
+
     "when converting from Java Document" should {
+      "preserve standard BSON UUID binary values" in {
+        val uuid    = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
+        val javaDoc = new JDocument("uuid", new BsonBinary(uuid, UuidRepresentation.STANDARD))
+
+        Document.fromJava(javaDoc).getAs[UUID]("uuid") mustBe Some(uuid)
+      }
+
       "convert simple Java Document with basic types" in {
         val javaDoc = new JDocument()
           .append("name", "John")

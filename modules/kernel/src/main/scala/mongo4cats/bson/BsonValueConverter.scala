@@ -40,7 +40,6 @@ import mongo4cats.bson.BsonValue.{
 import org.bson.{BsonBinarySubType, BsonDocument => JBsonDocument, BsonType, BsonValue => JBsonValue, Document => JDocument}
 
 import java.time.Instant
-import java.util.UUID
 
 object BsonValueConverter extends AsScala {
   def fromJava(jv: JBsonValue): BsonValue =
@@ -56,7 +55,7 @@ object BsonValueConverter extends AsScala {
       case BsonType.DATE_TIME => BDateTime(Instant.ofEpochMilli(jv.asDateTime.getValue))
       case BsonType.BINARY    =>
         val bin = jv.asBinary()
-        if (bin.getType == BsonBinarySubType.UUID_STANDARD.getValue) BUuid(UUID.nameUUIDFromBytes(bin.getData)) else BBinary(bin.getData)
+        if (bin.getType == BsonBinarySubType.UUID_STANDARD.getValue) BUuid(bin.asUuid()) else BBinary(bin.getData)
       case BsonType.BOOLEAN            => BBoolean(jv.asBoolean.getValue)
       case BsonType.DECIMAL128         => BDecimal(jv.asDecimal128.getValue.bigDecimalValue())
       case BsonType.STRING             => BString(jv.asString.getValue)
