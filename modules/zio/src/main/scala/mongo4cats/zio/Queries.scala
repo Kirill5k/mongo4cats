@@ -22,8 +22,8 @@ import mongo4cats.bson.Document
 import mongo4cats.models.collection.ChangeStreamDocument
 import mongo4cats.queries.{AggregateQueryBuilder, DistinctQueryBuilder, FindQueryBuilder, QueryCommand, WatchQueryBuilder}
 import mongo4cats.zio.syntax._
-import zio.stream.Stream
-import zio.Task
+import zio.stream.{Stream, ZStream}
+import zio.{Task, ZIO}
 
 import scala.reflect.ClassTag
 
@@ -33,65 +33,80 @@ private[zio] object Queries {
   type Find[T]      = FindQueryBuilder[Task, T, Stream[Throwable, *]]
   type Distinct[T]  = DistinctQueryBuilder[Task, T, Stream[Throwable, *]]
 
-  def watch[T: ClassTag](observable: ChangeStreamPublisher[T]): Watch[T]      = ZWatchQueryBuilder(observable, Nil)
-  def find[T: ClassTag](observable: FindPublisher[T]): Find[T]                = ZFindQueryBuilder(observable, Nil)
-  def distinct[T: ClassTag](observable: DistinctPublisher[T]): Distinct[T]    = ZDistinctQueryBuilder(observable, Nil)
-  def aggregate[T: ClassTag](observable: AggregatePublisher[T]): Aggregate[T] = ZAggregateQueryBuilder(observable, Nil)
+  def watch[T: ClassTag](observable: => ChangeStreamPublisher[T]): Watch[T]      = ZWatchQueryBuilder(() => observable, Nil)
+  def find[T: ClassTag](observable: => FindPublisher[T]): Find[T]                = ZFindQueryBuilder(() => observable, Nil)
+  def distinct[T: ClassTag](observable: => DistinctPublisher[T]): Distinct[T]    = ZDistinctQueryBuilder(() => observable, Nil)
+  def aggregate[T: ClassTag](observable: => AggregatePublisher[T]): Aggregate[T] = ZAggregateQueryBuilder(() => observable, Nil)
 
   final private case class ZWatchQueryBuilder[T: ClassTag](
-      protected val observable: ChangeStreamPublisher[T],
+      publisherFactory: () => ChangeStreamPublisher[T],
       protected val queries: List[QueryCommand]
   ) extends WatchQueryBuilder[Task, T, Stream[Throwable, *]] {
 
-    def stream: Stream[Throwable, ChangeStreamDocument[T]] =
-      applyQueries().stream.map(ChangeStreamDocument.fromJava)
-    def boundedStream(capacity: Int): Stream[Throwable, ChangeStreamDocument[T]] =
-      applyQueries().boundedStream(capacity).map(ChangeStreamDocument.fromJava)
+    override protected def observable: ChangeStreamPublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Watch[T] = ZWatchQueryBuilder(observable, command :: queries)
+    def stream: Stream[Throwable, ChangeStreamDocument[T]] =
+      ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.stream).map(ChangeStreamDocument.fromJava)
+    def boundedStream(capacity: Int): Stream[Throwable, ChangeStreamDocument[T]] =
+      ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.boundedStream(capacity)).map(ChangeStreamDocument.fromJava)
+
+    override protected def withQuery(command: QueryCommand): Watch[T] = ZWatchQueryBuilder(publisherFactory, command :: queries)
   }
 
   final private case class ZFindQueryBuilder[T: ClassTag](
-      protected val observable: FindPublisher[T],
+      publisherFactory: () => FindPublisher[T],
       protected val queries: List[QueryCommand]
   ) extends FindQueryBuilder[Task, T, Stream[Throwable, *]] {
 
-    def first: Task[Option[T]]                               = applyQueries().first().asyncSingle
-    def all: Task[Iterable[T]]                               = applyQueries().asyncIterable
-    def stream: Stream[Throwable, T]                         = applyQueries().stream
-    def boundedStream(capacity: Int): Stream[Throwable, T]   = applyQueries().boundedStream(capacity)
-    def explain: Task[Document]                              = applyQueries().explain().asyncSingle.unNone.map(Document.fromJava)
-    def explain(verbosity: ExplainVerbosity): Task[Document] = applyQueries().explain(verbosity).asyncSingle.unNone.map(Document.fromJava)
+    override protected def observable: FindPublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Find[T] = ZFindQueryBuilder[T](observable, command :: queries)
+    def first: Task[Option[T]]                             = ZIO.attempt(applyQueries().first()).flatMap(_.asyncSingle)
+    def all: Task[Iterable[T]]                             = ZIO.attempt(applyQueries()).flatMap(_.asyncIterable)
+    def stream: Stream[Throwable, T]                       = ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.stream)
+    def boundedStream(capacity: Int): Stream[Throwable, T] =
+      ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.boundedStream(capacity))
+    def explain: Task[Document] =
+      ZIO.attempt(applyQueries().explain()).flatMap(_.asyncSingle).unNone.map(Document.fromJava)
+    def explain(verbosity: ExplainVerbosity): Task[Document] =
+      ZIO.attempt(applyQueries().explain(verbosity)).flatMap(_.asyncSingle).unNone.map(Document.fromJava)
+
+    override protected def withQuery(command: QueryCommand): Find[T] = ZFindQueryBuilder[T](publisherFactory, command :: queries)
   }
 
   final private case class ZDistinctQueryBuilder[T: ClassTag](
-      protected val observable: DistinctPublisher[T],
+      publisherFactory: () => DistinctPublisher[T],
       protected val queries: List[QueryCommand]
   ) extends DistinctQueryBuilder[Task, T, Stream[Throwable, *]] {
 
-    def first: Task[Option[T]]                             = applyQueries().first().asyncSingle
-    def all: Task[Iterable[T]]                             = applyQueries().asyncIterable
-    def stream: Stream[Throwable, T]                       = applyQueries().stream
-    def boundedStream(capacity: Int): Stream[Throwable, T] = applyQueries().boundedStream(capacity)
+    override protected def observable: DistinctPublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Distinct[T] = ZDistinctQueryBuilder(observable, command :: queries)
+    def first: Task[Option[T]]                             = ZIO.attempt(applyQueries().first()).flatMap(_.asyncSingle)
+    def all: Task[Iterable[T]]                             = ZIO.attempt(applyQueries()).flatMap(_.asyncIterable)
+    def stream: Stream[Throwable, T]                       = ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.stream)
+    def boundedStream(capacity: Int): Stream[Throwable, T] =
+      ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.boundedStream(capacity))
+
+    override protected def withQuery(command: QueryCommand): Distinct[T] = ZDistinctQueryBuilder(publisherFactory, command :: queries)
   }
 
   final private case class ZAggregateQueryBuilder[T: ClassTag](
-      protected val observable: AggregatePublisher[T],
+      publisherFactory: () => AggregatePublisher[T],
       protected val queries: List[QueryCommand]
   ) extends AggregateQueryBuilder[Task, T, Stream[Throwable, *]] {
 
-    def toCollection: Task[Unit]                             = applyQueries().toCollection.asyncVoid
-    def first: Task[Option[T]]                               = applyQueries().first().asyncSingle
-    def all: Task[Iterable[T]]                               = applyQueries().asyncIterable
-    def stream: Stream[Throwable, T]                         = applyQueries().stream
-    def boundedStream(capacity: Int): Stream[Throwable, T]   = applyQueries().boundedStream(capacity)
-    def explain: Task[Document]                              = applyQueries().explain().asyncSingle.unNone.map(Document.fromJava)
-    def explain(verbosity: ExplainVerbosity): Task[Document] = applyQueries().explain(verbosity).asyncSingle.unNone.map(Document.fromJava)
+    override protected def observable: AggregatePublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Aggregate[T] = ZAggregateQueryBuilder(observable, command :: queries)
+    def toCollection: Task[Unit]                           = ZIO.attempt(applyQueries().toCollection()).flatMap(_.asyncVoid)
+    def first: Task[Option[T]]                             = ZIO.attempt(applyQueries().first()).flatMap(_.asyncSingle)
+    def all: Task[Iterable[T]]                             = ZIO.attempt(applyQueries()).flatMap(_.asyncIterable)
+    def stream: Stream[Throwable, T]                       = ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.stream)
+    def boundedStream(capacity: Int): Stream[Throwable, T] =
+      ZStream.fromZIO(ZIO.attempt(applyQueries())).flatMap(_.boundedStream(capacity))
+    def explain: Task[Document] =
+      ZIO.attempt(applyQueries().explain()).flatMap(_.asyncSingle).unNone.map(Document.fromJava)
+    def explain(verbosity: ExplainVerbosity): Task[Document] =
+      ZIO.attempt(applyQueries().explain(verbosity)).flatMap(_.asyncSingle).unNone.map(Document.fromJava)
+
+    override protected def withQuery(command: QueryCommand): Aggregate[T] = ZAggregateQueryBuilder(publisherFactory, command :: queries)
   }
 }

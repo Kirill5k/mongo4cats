@@ -379,6 +379,25 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
       }
 
       "find" should {
+        "isolate reused queries when effects are assembled before execution" in
+          withEmbeddedMongoDatabase { db =>
+            for {
+              coll <- db.getCollection("coll")
+              _    <- coll.insertMany(TestData.accounts)
+              base    = coll.find.sortBy("name")
+              limited = base.limit(1).all
+              all     = base.all
+              first    <- limited
+              second   <- all
+              repeated <- (limited, all).parTupled
+            } yield {
+              first mustBe List(TestData.eurAccount)
+              second.toSet mustBe TestData.accounts.toSet
+              repeated._1 mustBe first
+              repeated._2 mustBe second
+            }
+          }
+
         "find docs by field" in
           withEmbeddedMongoDatabase { db =>
             val result = for {

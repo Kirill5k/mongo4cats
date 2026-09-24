@@ -34,72 +34,83 @@ private[collection] object Queries {
   type Find[F[_], T]      = FindQueryBuilder[F, T, Stream[F, *]]
   type Distinct[F[_], T]  = DistinctQueryBuilder[F, T, Stream[F, *]]
 
-  def watch[F[_]: Async, T: ClassTag](observable: ChangeStreamPublisher[T]): Watch[F, T] =
-    Fs2WatchQueryBuilder(observable, Nil)
+  def watch[F[_]: Async, T: ClassTag](observable: => ChangeStreamPublisher[T]): Watch[F, T] =
+    Fs2WatchQueryBuilder(() => observable, Nil)
 
-  def find[F[_]: Async, T: ClassTag](observable: FindPublisher[T]): Find[F, T] =
-    Fs2FindQueryBuilder(observable, Nil)
+  def find[F[_]: Async, T: ClassTag](observable: => FindPublisher[T]): Find[F, T] =
+    Fs2FindQueryBuilder(() => observable, Nil)
 
-  def distinct[F[_]: Async, T: ClassTag](observable: DistinctPublisher[T]): Distinct[F, T] =
-    Fs2DistinctQueryBuilder(observable, Nil)
+  def distinct[F[_]: Async, T: ClassTag](observable: => DistinctPublisher[T]): Distinct[F, T] =
+    Fs2DistinctQueryBuilder(() => observable, Nil)
 
-  def aggregate[F[_]: Async, T: ClassTag](observable: AggregatePublisher[T]): Aggregate[F, T] =
-    Fs2AggregateQueryBuilder(observable, Nil)
+  def aggregate[F[_]: Async, T: ClassTag](observable: => AggregatePublisher[T]): Aggregate[F, T] =
+    Fs2AggregateQueryBuilder(() => observable, Nil)
 
   final private case class Fs2WatchQueryBuilder[F[_]: Async, T: ClassTag](
-      protected val observable: ChangeStreamPublisher[T],
+      publisherFactory: () => ChangeStreamPublisher[T],
       protected val queries: List[QueryCommand]
   ) extends WatchQueryBuilder[F, T, Stream[F, *]] {
 
-    def stream: Stream[F, ChangeStreamDocument[T]] =
-      applyQueries().stream[F].map(ChangeStreamDocument.fromJava)
-    def boundedStream(capacity: Int): Stream[F, ChangeStreamDocument[T]] =
-      applyQueries().boundedStream[F](capacity).map(ChangeStreamDocument.fromJava)
+    override protected def observable: ChangeStreamPublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Watch[F, T] = Fs2WatchQueryBuilder(observable, command :: queries)
+    def stream: Stream[F, ChangeStreamDocument[T]] =
+      Stream.eval(Async[F].delay(applyQueries())).flatMap(_.stream[F]).map(ChangeStreamDocument.fromJava)
+    def boundedStream(capacity: Int): Stream[F, ChangeStreamDocument[T]] =
+      Stream.eval(Async[F].delay(applyQueries())).flatMap(_.boundedStream[F](capacity)).map(ChangeStreamDocument.fromJava)
+
+    override protected def withQuery(command: QueryCommand): Watch[F, T] = Fs2WatchQueryBuilder(publisherFactory, command :: queries)
   }
 
   final private case class Fs2FindQueryBuilder[F[_]: Async, T: ClassTag](
-      protected val observable: FindPublisher[T],
+      publisherFactory: () => FindPublisher[T],
       protected val queries: List[QueryCommand]
   ) extends FindQueryBuilder[F, T, Stream[F, *]] {
 
-    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F]
-    def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
-    def stream: Stream[F, T]                              = applyQueries().stream[F]
-    def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
-    def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].unNone.map(Document.fromJava)
-    def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].unNone.map(Document.fromJava)
+    override protected def observable: FindPublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Find[F, T] = Fs2FindQueryBuilder[F, T](observable, command :: queries)
+    def first: F[Option[T]]                        = Async[F].defer(applyQueries().first().asyncSingle[F])
+    def all: F[Iterable[T]]                        = Async[F].defer(applyQueries().asyncIterable[F])
+    def stream: Stream[F, T]                       = Stream.eval(Async[F].delay(applyQueries())).flatMap(_.stream[F])
+    def boundedStream(capacity: Int): Stream[F, T] = Stream.eval(Async[F].delay(applyQueries())).flatMap(_.boundedStream[F](capacity))
+    def explain: F[Document]                       = Async[F].defer(applyQueries().explain().asyncSingle[F].unNone.map(Document.fromJava))
+    def explain(verbosity: ExplainVerbosity): F[Document] =
+      Async[F].defer(applyQueries().explain(verbosity).asyncSingle[F].unNone.map(Document.fromJava))
+
+    override protected def withQuery(command: QueryCommand): Find[F, T] = Fs2FindQueryBuilder[F, T](publisherFactory, command :: queries)
   }
 
   final private case class Fs2DistinctQueryBuilder[F[_]: Async, T: ClassTag](
-      protected val observable: DistinctPublisher[T],
+      publisherFactory: () => DistinctPublisher[T],
       protected val queries: List[QueryCommand]
   ) extends DistinctQueryBuilder[F, T, Stream[F, *]] {
 
-    def first: F[Option[T]]                        = applyQueries().first().asyncSingle[F]
-    def all: F[Iterable[T]]                        = applyQueries().asyncIterable[F]
-    def stream: Stream[F, T]                       = applyQueries().stream[F]
-    def boundedStream(capacity: Int): Stream[F, T] = applyQueries().boundedStream[F](capacity)
+    override protected def observable: DistinctPublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Distinct[F, T] = Fs2DistinctQueryBuilder(observable, command :: queries)
+    def first: F[Option[T]]                        = Async[F].defer(applyQueries().first().asyncSingle[F])
+    def all: F[Iterable[T]]                        = Async[F].defer(applyQueries().asyncIterable[F])
+    def stream: Stream[F, T]                       = Stream.eval(Async[F].delay(applyQueries())).flatMap(_.stream[F])
+    def boundedStream(capacity: Int): Stream[F, T] = Stream.eval(Async[F].delay(applyQueries())).flatMap(_.boundedStream[F](capacity))
+
+    override protected def withQuery(command: QueryCommand): Distinct[F, T] = Fs2DistinctQueryBuilder(publisherFactory, command :: queries)
   }
 
   final private case class Fs2AggregateQueryBuilder[F[_]: Async, T: ClassTag](
-      protected val observable: AggregatePublisher[T],
+      publisherFactory: () => AggregatePublisher[T],
       protected val queries: List[QueryCommand]
   ) extends AggregateQueryBuilder[F, T, Stream[F, *]] {
 
-    def toCollection: F[Unit]                             = applyQueries().toCollection.asyncVoid[F]
-    def first: F[Option[T]]                               = applyQueries().first().asyncSingle[F]
-    def all: F[Iterable[T]]                               = applyQueries().asyncIterable[F]
-    def stream: Stream[F, T]                              = applyQueries().stream[F]
-    def boundedStream(capacity: Int): Stream[F, T]        = applyQueries().boundedStream[F](capacity)
-    def explain: F[Document]                              = applyQueries().explain().asyncSingle[F].unNone.map(Document.fromJava)
-    def explain(verbosity: ExplainVerbosity): F[Document] = applyQueries().explain(verbosity).asyncSingle[F].unNone.map(Document.fromJava)
+    override protected def observable: AggregatePublisher[T] = publisherFactory()
 
-    override protected def withQuery(command: QueryCommand): Aggregate[F, T] = Fs2AggregateQueryBuilder(observable, command :: queries)
+    def toCollection: F[Unit]                      = Async[F].defer(applyQueries().toCollection.asyncVoid[F])
+    def first: F[Option[T]]                        = Async[F].defer(applyQueries().first().asyncSingle[F])
+    def all: F[Iterable[T]]                        = Async[F].defer(applyQueries().asyncIterable[F])
+    def stream: Stream[F, T]                       = Stream.eval(Async[F].delay(applyQueries())).flatMap(_.stream[F])
+    def boundedStream(capacity: Int): Stream[F, T] = Stream.eval(Async[F].delay(applyQueries())).flatMap(_.boundedStream[F](capacity))
+    def explain: F[Document]                       = Async[F].defer(applyQueries().explain().asyncSingle[F].unNone.map(Document.fromJava))
+    def explain(verbosity: ExplainVerbosity): F[Document] =
+      Async[F].defer(applyQueries().explain(verbosity).asyncSingle[F].unNone.map(Document.fromJava))
+
+    override protected def withQuery(command: QueryCommand): Aggregate[F, T] =
+      Fs2AggregateQueryBuilder(publisherFactory, command :: queries)
   }
 }

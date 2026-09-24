@@ -19,6 +19,7 @@ package mongo4cats.queries
 import org.reactivestreams.Publisher
 
 private[mongo4cats] trait QueryBuilder[O[_] <: Publisher[_], T, QB] {
+  // Driver publishers are mutable: each execution must obtain a fresh instance before applying commands.
   protected def observable: O[T]
   protected def queries: List[QueryCommand]
   protected def withQuery(command: QueryCommand): QB
