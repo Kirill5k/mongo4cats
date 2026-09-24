@@ -24,7 +24,7 @@ import de.flapdoodle.embed.mongo.transitions.{Mongod, RunningMongodProcess}
 import de.flapdoodle.reverse.transitions.Start
 import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
 import org.bson.Document
-import zio.{durationInt, Scope, ZIO}
+import zio.{durationInt, Cause, Scope, ZIO}
 
 trait EmbeddedMongo {
   protected val mongoVersion: Version         = Version.V7_0_0
@@ -33,7 +33,7 @@ trait EmbeddedMongo {
   protected val mongoPassword: Option[String] = None
 
   def withRunningEmbeddedMongo[R, E, A](test: => ZIO[R, E, A]): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, mongoVersion) *> test
+    ZIO.scoped[R](EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, mongoVersion) *> test)
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoUsername: String,
@@ -41,14 +41,14 @@ trait EmbeddedMongo {
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), mongoVersion) *> test
+    ZIO.scoped[R](EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), mongoVersion) *> test)
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoPort: Int
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, mongoVersion) *> test
+    ZIO.scoped[R](EmbeddedMongo.start(mongoPort, mongoUsername, mongoPassword, mongoVersion) *> test)
 
   def withRunningEmbeddedMongo[R, E, A](
       mongoPort: Int,
@@ -57,7 +57,7 @@ trait EmbeddedMongo {
   )(
       test: => ZIO[R, E, A]
   ): ZIO[R with Scope, E, A] =
-    EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), mongoVersion) *> test
+    ZIO.scoped[R](EmbeddedMongo.start(mongoPort, Some(mongoUsername), Some(mongoPassword), mongoVersion) *> test)
 }
 
 object EmbeddedMongo {
@@ -71,11 +71,15 @@ object EmbeddedMongo {
       retryDelay: zio.Duration = 100.millis
   ): ZIO[Scope, Nothing, Unit] =
     ZIO
-      .acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password, version)))(p => ZIO.attempt(p.close()).orDie)
+      .acquireRelease(ZIO.attemptBlocking(startMongod(port, username, password, version)))(p => ZIO.attemptBlocking(p.close()).orDie)
       .unit
       .catchAll { error =>
         if (remainingAttempts <= 0) ZIO.fail(error)
-        else ZIO.sleep(retryDelay) *> start(port, username, password, version, remainingAttempts - 1, retryDelay)
+        else
+          ZIO.logWarningCause(
+            s"Failed to start embedded MongoDB on port $port; retrying in $retryDelay ($remainingAttempts retries remaining)",
+            Cause.fail(error)
+          ) *> ZIO.sleep(retryDelay) *> start(port, username, password, version, remainingAttempts - 1, retryDelay)
       }
       .orDie
 

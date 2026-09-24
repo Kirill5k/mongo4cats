@@ -21,10 +21,10 @@ import com.mongodb.connection.ClusterConnectionMode
 import mongo4cats.models.client.{MongoConnection, MongoCredential, ServerAddress}
 import mongo4cats.test.FreePort
 import mongo4cats.zio.embedded.EmbeddedMongo
-import zio.{Scope, ZIO}
+import zio.{durationInt, Scope, ZIO}
 import zio.test._
 import zio.test.Assertion._
-import zio.test.TestAspect.sequential
+import zio.test.TestAspect.{sequential, timeout, withLiveClock}
 
 object ZMongoClientSpec extends ZIOSpecDefault with EmbeddedMongo {
 
@@ -127,5 +127,5 @@ object ZMongoClientSpec extends ZIOSpecDefault with EmbeddedMongo {
         }
       }
     }
-  ) @@ sequential
+  ) @@ sequential @@ withLiveClock @@ timeout(2.minutes)
 }

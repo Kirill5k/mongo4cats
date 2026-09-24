@@ -97,6 +97,18 @@ class MyMunitSpec extends CatsEffectSuite with EmbeddedMongo {
 
 For ZIO-based test suites use the `mongo4cats-zio-embedded` module instead. See the [ZIO](zio) section for details.
 
+Each `withRunningEmbeddedMongo` call uses its own scope. The resources acquired inside the block are released before MongoDB stops, including when the block fails or is interrupted. Cleanup finishes before the helper returns, so successive calls can reuse the same port even inside a longer-lived outer scope. The lower-level `EmbeddedMongo.start` instead keeps the process alive until its caller's scope closes.
+
+When using `ZIOSpecDefault`, run embedded MongoDB tests with a live clock so startup retries can advance, and set a timeout to bound failed tests:
+
+```scala
+import zio.durationInt
+import zio.test.TestAspect
+
+// Apply these aspects to your integration test suite:
+// suite(...) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.timeout(2.minutes)
+```
+
 ## Notes
 
 - Each call to `withRunningEmbeddedMongo` starts a **fresh** instance. Data does not persist between calls.

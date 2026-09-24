@@ -26,10 +26,10 @@ import mongo4cats.operations.{Filter, Index, Sort, Update}
 import mongo4cats.test.FreePort
 import mongo4cats.zio.embedded.EmbeddedMongo
 import zio.stream.{ZSink, ZStream}
-import zio.{Scope, ZIO, ZLayer}
+import zio.{durationInt, Scope, ZIO, ZLayer}
 import zio.test._
 import zio.test.Assertion._
-import zio.test.TestAspect.sequential
+import zio.test.TestAspect.{sequential, timeout, withLiveClock}
 
 import java.util.UUID
 
@@ -447,7 +447,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
         }
       }
     )
-  ) @@ sequential
+  ) @@ sequential @@ withLiveClock @@ timeout(2.minutes)
 
   def withEmbeddedMongoDatabase[A](test: ZMongoDatabase => ZIO[Any, Throwable, A]): ZIO[Scope, Throwable, A] =
     ZIO.succeed(FreePort.next()).flatMap { port =>

@@ -74,7 +74,7 @@ object EmbeddedMongo {
       retryDelay: FiniteDuration = 100.millis
   )(implicit F: Async[F]): Resource[F, Unit] =
     Resource
-      .fromAutoCloseable(F.delay(startMongod(port, username, password, version)))
+      .fromAutoCloseable(F.blocking(startMongod(port, username, password, version)))
       .void
       .handleErrorWith[Unit] { error =>
         if (remainingAttempts <= 0) Resource.raiseError(error)
