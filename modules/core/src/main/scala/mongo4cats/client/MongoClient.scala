@@ -34,14 +34,12 @@ import mongo4cats.models.client.{
 }
 import org.bson.UuidRepresentation
 
-import scala.util.Try
-
 final private class LiveClientSession[F[_]](
     val underlying: JClientSession
 )(implicit
     F: Async[F]
 ) extends ClientSession[F] {
-  def startTransaction(options: TransactionOptions): F[Unit] = F.fromTry(Try(underlying.startTransaction(options)))
+  def startTransaction(options: TransactionOptions): F[Unit] = F.delay(underlying.startTransaction(options))
   def commitTransaction: F[Unit]                             = underlying.commitTransaction().asyncVoid[F]
   def abortTransaction: F[Unit]                              = underlying.abortTransaction().asyncVoid[F]
 }
