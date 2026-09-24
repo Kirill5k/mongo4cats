@@ -22,7 +22,9 @@ import zio.interop.reactivestreams._
 import zio.stream.Stream
 import zio.{Task, ZIO}
 
+import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable.ListBuffer
+import scala.util.control.NonFatal
 
 private[zio] object syntax {
 
@@ -30,38 +32,70 @@ private[zio] object syntax {
     def unNone: Task[T] = task.map(_.toRight(MongoEmptyStreamException)).flatMap(ZIO.fromEither(_))
   }
 
-  // TODO: Replace ZIO.async call with ZIO.greenThreadOrElse in ZIO 2.1
+  private object CancelledSubscription extends Subscription {
+    override def request(n: Long): Unit = ()
+    override def cancel(): Unit         = ()
+  }
 
-  implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {
-    def asyncVoid: Task[Unit] = ZIO.async { callback =>
-      publisher.subscribe(new Subscriber[T] {
-        override def onSubscribe(s: Subscription): Unit = s.request(1)
-        override def onNext(t: T): Unit                 = ()
-        override def onError(t: Throwable): Unit        = callback(ZIO.fail(t))
-        override def onComplete(): Unit                 = callback(ZIO.unit)
-      })
+  abstract private class CancelableSubscriber[T](demand: Long) extends Subscriber[T] {
+    private val subscription     = new AtomicReference[Subscription]()
+    private val subscriptionLock = new Object
+
+    final override def onSubscribe(s: Subscription): Unit =
+      if (subscription.compareAndSet(null, s)) {
+        subscriptionLock.synchronized {
+          if (subscription.get() != CancelledSubscription) s.request(demand)
+        }
+      } else subscriptionLock.synchronized(s.cancel())
+
+    final def cancel(): Unit = {
+      // Keep the cancelled state even when onSubscribe has not arrived yet.
+      val previous = subscription.getAndSet(CancelledSubscription)
+      if (previous != null && previous != CancelledSubscription) subscriptionLock.synchronized(previous.cancel())
+    }
+  }
+
+  private def subscribe[T](publisher: Publisher[T], subscriber: CancelableSubscriber[T]): Unit =
+    try publisher.subscribe(subscriber)
+    catch {
+      case NonFatal(error) =>
+        subscriber.cancel()
+        throw error
     }
 
-    def asyncSingle: Task[Option[T]] = ZIO.async { callback =>
-      publisher.subscribe(new Subscriber[T] {
-        private var result: Option[T]                   = None
-        override def onSubscribe(s: Subscription): Unit = s.request(1)
-        override def onNext(t: T): Unit                 = result = Option(t)
-        override def onError(t: Throwable): Unit        = callback(ZIO.fail(t))
-        override def onComplete(): Unit                 = callback(ZIO.succeed(result))
-      })
+  implicit final class PublisherSyntax[T](private val publisher: Publisher[T]) extends AnyVal {
+    def asyncVoid: Task[Unit] = ZIO.asyncInterrupt { callback =>
+      val subscriber = new CancelableSubscriber[T](1) {
+        override def onNext(t: T): Unit          = ()
+        override def onError(t: Throwable): Unit = callback(ZIO.fail(t))
+        override def onComplete(): Unit          = callback(ZIO.unit)
+      }
+      subscribe(publisher, subscriber)
+      Left(ZIO.succeed(subscriber.cancel()))
+    }
+
+    def asyncSingle: Task[Option[T]] = ZIO.asyncInterrupt { callback =>
+      val subscriber = new CancelableSubscriber[T](1) {
+        private var result: Option[T]            = None
+        override def onNext(t: T): Unit          = result = Option(t)
+        override def onError(t: Throwable): Unit = callback(ZIO.fail(t))
+        override def onComplete(): Unit          = callback(ZIO.succeed(result))
+      }
+      subscribe(publisher, subscriber)
+      Left(ZIO.succeed(subscriber.cancel()))
     }
 
     def asyncIterable: Task[Iterable[T]] = asyncIterableF(identity)
 
-    def asyncIterableF[Y](f: T => Y): Task[Iterable[Y]] = ZIO.async { callback =>
-      publisher.subscribe(new Subscriber[T] {
-        private val result: ListBuffer[Y]               = ListBuffer.empty
-        override def onSubscribe(s: Subscription): Unit = s.request(Long.MaxValue)
-        override def onNext(t: T): Unit                 = result += f(t)
-        override def onError(t: Throwable): Unit        = callback(ZIO.fail(t))
-        override def onComplete(): Unit                 = callback(ZIO.succeed(result.toList))
-      })
+    def asyncIterableF[Y](f: T => Y): Task[Iterable[Y]] = ZIO.asyncInterrupt { callback =>
+      val subscriber = new CancelableSubscriber[T](Long.MaxValue) {
+        private val result: ListBuffer[Y]        = ListBuffer.empty
+        override def onNext(t: T): Unit          = result += f(t)
+        override def onError(t: Throwable): Unit = callback(ZIO.fail(t))
+        override def onComplete(): Unit          = callback(ZIO.succeed(result.toList))
+      }
+      subscribe(publisher, subscriber)
+      Left(ZIO.succeed(subscriber.cancel()))
     }
 
     def stream: Stream[Throwable, T]                       = publisher.toZIOStream(512)
