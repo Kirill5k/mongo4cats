@@ -56,8 +56,10 @@ class BsonValueConverterSpec extends AnyWordSpec with Matchers {
 
         List(BsonBinarySubType.BINARY, BsonBinarySubType.UUID_LEGACY).foreach { subtype =>
           BsonValueConverter.fromJava(new BsonBinary(subtype, bytes)) match {
-            case BsonValue.BBinary(data) => data mustBe bytes
-            case other                  => fail(s"Expected BBinary for $subtype but got $other")
+            case BsonValue.BBinary(data, actualSubtype) =>
+              data mustBe bytes
+              actualSubtype mustBe subtype.getValue
+            case other => fail(s"Expected BBinary for $subtype but got $other")
           }
         }
       }

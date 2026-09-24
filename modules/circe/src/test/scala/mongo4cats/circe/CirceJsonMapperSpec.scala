@@ -22,7 +22,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
 
@@ -91,6 +91,35 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
 
         CirceJsonMapper.fromBson(bson) mustBe Right(json)
         CirceJsonMapper.toBson(json) mustBe bson
+      }
+
+      List("03" -> 3, "05" -> 5, "80" -> 128, "ff" -> 255).foreach { case (hex, subtype) =>
+        s"preserve binary subtype $hex through json conversion" in {
+          val base64     = "z7ynKE45RhOWvPkgtcN+Fg=="
+          val bsonBinary = BsonValue.binary(Base64.getDecoder.decode(base64), subtype.toByte)
+          val json       = Json.obj(
+            "$binary" -> Json.obj("base64" -> Json.fromString(base64), "subType" -> Json.fromString(hex))
+          )
+
+          CirceJsonMapper.fromBson(bsonBinary) mustBe Right(json)
+          CirceJsonMapper.toBson(json) mustBe bsonBinary
+
+          val nestedBson = BsonValue.document(
+            "values" -> BsonValue.array(bsonBinary, BsonValue.document("binary" -> bsonBinary))
+          )
+          val nestedJson = Json.obj("values" -> Json.arr(json, Json.obj("binary" -> json)))
+
+          CirceJsonMapper.fromBson(nestedBson) mustBe Right(nestedJson)
+          CirceJsonMapper.toBson(nestedJson) mustBe nestedBson
+        }
+      }
+
+      "accept uppercase binary subtype hex digits" in {
+        val json = Json.obj(
+          "$binary" -> Json.obj("base64" -> Json.fromString("AQID"), "subType" -> Json.fromString("FF"))
+        )
+
+        CirceJsonMapper.toBson(json) mustBe BsonValue.binary(Array[Byte](1, 2, 3), 255.toByte)
       }
 
       "handle numeric conversions" in {

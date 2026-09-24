@@ -215,7 +215,7 @@ object BsonValue extends AsScala {
 
     override def asJava: JBsonValue = new BsonDateTime(value.toEpochMilli)
   }
-  final case class BBinary(value: Array[Byte]) extends BsonValue {
+  final case class BBinary(value: Array[Byte], subtype: Byte = 0) extends BsonValue {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
@@ -230,7 +230,14 @@ object BsonValue extends AsScala {
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
 
-    override def asJava: JBsonValue = new BsonBinary(value)
+    override def asJava: JBsonValue = new BsonBinary(subtype, value)
+
+    override def equals(other: Any): Boolean = other match {
+      case that: BBinary => subtype == that.subtype && java.util.Arrays.equals(value, that.value)
+      case _             => false
+    }
+
+    override def hashCode(): Int = 31 * java.util.Arrays.hashCode(value) + subtype.toInt
   }
   final case class BBoolean(value: Boolean) extends BsonValue {
     override def isNull: Boolean                  = false
@@ -334,7 +341,7 @@ object BsonValue extends AsScala {
 
     override def asJava: JBsonValue = new BsonArray(asJava(value.map(_.asJava).toList))
   }
-  final case class BRegex(value: Regex) extends BsonValue {
+  final case class BRegex(value: Regex, options: String = "") extends BsonValue {
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
@@ -349,7 +356,7 @@ object BsonValue extends AsScala {
     override def asString: Option[String]         = None
     override def asUuid: Option[UUID]             = None
 
-    override def asJava: JBsonValue = new BsonRegularExpression(value.pattern.pattern())
+    override def asJava: JBsonValue = new BsonRegularExpression(value.pattern.pattern(), options)
   }
 
   final case class BUuid(value: UUID) extends BsonValue {
@@ -392,8 +399,10 @@ object BsonValue extends AsScala {
   def boolean(value: Boolean): BsonValue                   = BBoolean(value)
   def double(value: Double): BsonValue                     = BDouble(value)
   def binary(value: Array[Byte]): BsonValue                = BBinary(value)
+  def binary(value: Array[Byte], subtype: Byte): BsonValue = BBinary(value, subtype)
   def instant(value: Instant): BsonValue                   = BDateTime(value)
   def regex(value: Regex): BsonValue                       = BRegex(value)
+  def regex(value: Regex, options: String): BsonValue      = BRegex(value, options)
   def timestamp(seconds: Long, inc: Int = 1): BsonValue    = BTimestamp(seconds, inc)
   def uuid(value: UUID): BsonValue                         = BUuid(value)
 }

@@ -37,11 +37,35 @@ import mongo4cats.bson.BsonValue.{
   BUndefined,
   BUuid
 }
-import org.bson.{BsonBinarySubType, BsonDocument => JBsonDocument, BsonType, BsonValue => JBsonValue, Document => JDocument}
+import org.bson.{
+  BsonBinarySubType,
+  BsonDocument => JBsonDocument,
+  BsonDocumentWriter,
+  BsonType,
+  BsonValue => JBsonValue,
+  Document => JDocument
+}
+import org.bson.codecs.{EncoderContext, PatternCodec}
 
 import java.time.Instant
+import java.util.regex.Pattern
 
 object BsonValueConverter extends AsScala {
+  private val patternCodec   = new PatternCodec()
+  private val encoderContext = EncoderContext.builder().build()
+
+  private def fromPattern(pattern: Pattern): BsonValue = {
+    val document = new JBsonDocument()
+    val writer   = new BsonDocumentWriter(document)
+    try {
+      writer.writeStartDocument()
+      writer.writeName("value")
+      patternCodec.encode(writer, pattern, encoderContext)
+      writer.writeEndDocument()
+      fromJava(document.get("value"))
+    } finally writer.close()
+  }
+
   def fromJava(jv: JBsonValue): BsonValue =
     jv.getBsonType match {
       case BsonType.NULL      => BNull
@@ -55,15 +79,17 @@ object BsonValueConverter extends AsScala {
       case BsonType.DATE_TIME => BDateTime(Instant.ofEpochMilli(jv.asDateTime.getValue))
       case BsonType.BINARY    =>
         val bin = jv.asBinary()
-        if (bin.getType == BsonBinarySubType.UUID_STANDARD.getValue) BUuid(bin.asUuid()) else BBinary(bin.getData)
+        if (bin.getType == BsonBinarySubType.UUID_STANDARD.getValue) BUuid(bin.asUuid()) else BBinary(bin.getData, bin.getType)
       case BsonType.BOOLEAN            => BBoolean(jv.asBoolean.getValue)
       case BsonType.DECIMAL128         => BDecimal(jv.asDecimal128.getValue.bigDecimalValue())
       case BsonType.STRING             => BString(jv.asString.getValue)
       case BsonType.OBJECT_ID          => BObjectId(jv.asObjectId.getValue)
       case BsonType.DOCUMENT           => BDocument(Document.fromJava(jv.asDocument))
       case BsonType.ARRAY              => BArray(asScala(jv.asArray.getValues).map(fromJava))
-      case BsonType.REGULAR_EXPRESSION => BRegex(jv.asRegularExpression.getPattern.r)
-      case bsonType                    => throw new IllegalArgumentException(s"unsupported bson type $bsonType")
+      case BsonType.REGULAR_EXPRESSION =>
+        val regex = jv.asRegularExpression()
+        BRegex(regex.getPattern.r, regex.getOptions)
+      case bsonType => throw new IllegalArgumentException(s"unsupported bson type $bsonType")
     }
 
   def fromAny(value: Any): BsonValue = value match {
@@ -73,7 +99,7 @@ object BsonValueConverter extends AsScala {
     case v: ObjectId                     => BsonValue.objectId(v)
     case v: JBsonValue                   => fromJava(v)
     case v: BsonValue                    => v
-    case v: org.bson.types.Binary        => BBinary(v.getData)
+    case v: org.bson.types.Binary        => BBinary(v.getData, v.getType)
     case v: org.bson.types.BasicBSONList => BsonValue.array(asScala(v).map(fromAny))
     case v: org.bson.types.BSONTimestamp => BsonValue.timestamp(v.getTime.toLong, v.getInc)
     case v: org.bson.types.CodeWScope    => BsonValue.string(v.getCode)
@@ -96,7 +122,7 @@ object BsonValueConverter extends AsScala {
     case v: java.math.BigInteger         => BsonValue.bigInt(BigInt(v))
     case v: java.util.Date               => BsonValue.instant(v.toInstant)
     case v: java.util.UUID               => BsonValue.uuid(v)
-    case v: java.util.regex.Pattern      => BsonValue.regex(v.pattern().r)
+    case v: java.util.regex.Pattern      => fromPattern(v)
     case v: Array[Byte]                  => BsonValue.binary(v)
     case v: java.util.List[_]            => BsonValue.array(asScala(v).map(fromAny))
     case v: Iterable[_]                  => BsonValue.array(v.map(fromAny))

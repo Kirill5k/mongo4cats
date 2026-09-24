@@ -92,9 +92,9 @@ object PublisherSyntaxSpec extends ZIOSpecDefault {
   ) @@ TestAspect.timeout(10.seconds)
 
   final private class ControlledPublisher(immediate: Boolean, registrationError: Option[Throwable] = None) extends Publisher[Int] {
-    val subscribed                = new CompletableFuture[Subscriber[_ >: Int]]()
-    val cancelCount               = new AtomicInteger()
-    val requested                 = new AtomicLong()
+    val subscribed                 = new CompletableFuture[Subscriber[_ >: Int]]()
+    val cancelCount                = new AtomicInteger()
+    val requested                  = new AtomicLong()
     val subscription: Subscription = new Subscription {
       override def request(n: Long): Unit = {
         requested.addAndGet(n)

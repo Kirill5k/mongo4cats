@@ -23,7 +23,7 @@ import zio.json.ast.Json
 import zio.json.JsonEncoder
 
 import java.time.Instant
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
 
@@ -106,6 +106,35 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
 
         ZioJsonMapper.fromBson(bson) mustBe Right(json)
         ZioJsonMapper.toBson(json) mustBe bson
+      }
+
+      List("03" -> 3, "05" -> 5, "80" -> 128, "ff" -> 255).foreach { case (hex, subtype) =>
+        s"preserve binary subtype $hex through json conversion" in {
+          val base64     = "z7ynKE45RhOWvPkgtcN+Fg=="
+          val bsonBinary = BsonValue.binary(Base64.getDecoder.decode(base64), subtype.toByte)
+          val json       = Json.Obj(
+            "$binary" -> Json.Obj("base64" -> Json.Str(base64), "subType" -> Json.Str(hex))
+          )
+
+          ZioJsonMapper.fromBson(bsonBinary) mustBe Right(json)
+          ZioJsonMapper.toBson(json) mustBe bsonBinary
+
+          val nestedBson = BsonValue.document(
+            "values" -> BsonValue.array(bsonBinary, BsonValue.document("binary" -> bsonBinary))
+          )
+          val nestedJson = Json.Obj("values" -> Json.Arr(json, Json.Obj("binary" -> json)))
+
+          ZioJsonMapper.fromBson(nestedBson) mustBe Right(nestedJson)
+          ZioJsonMapper.toBson(nestedJson) mustBe nestedBson
+        }
+      }
+
+      "accept uppercase binary subtype hex digits" in {
+        val json = Json.Obj(
+          "$binary" -> Json.Obj("base64" -> Json.Str("AQID"), "subType" -> Json.Str("FF"))
+        )
+
+        ZioJsonMapper.toBson(json) mustBe BsonValue.binary(Array[Byte](1, 2, 3), 255.toByte)
       }
 
       "handle numeric conversions" in {

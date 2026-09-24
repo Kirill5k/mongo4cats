@@ -39,8 +39,8 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
       case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
       case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
-      case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
+      case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get), jsonToBinarySubtype(j).get)
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
@@ -62,8 +62,8 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       }
     }
 
-    def isBinaryArray: Boolean = isBinary("00")
-    def isUuid: Boolean        = isBinary("0(3|4)")
+    def isBinaryArray: Boolean = isBinary("[0-9a-fA-F]{2}")
+    def isUuid: Boolean        = isBinary("04")
 
     def asEpochMillis: Long =
       (for {
@@ -89,18 +89,18 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     def rightEmptyList[A]: Either[MongoJsonParsingException, List[A]] = Right(List.empty[A])
 
     bson match {
-      case BsonValue.BNull            => Right(Json.Null)
-      case BsonValue.BObjectId(value) => Right(objectIdToJson(value))
-      case BsonValue.BDateTime(value) => Right(instantToJson(value))
-      case BsonValue.BInt32(value)    => Right(Json.Num(value))
-      case BsonValue.BInt64(value)    => Right(Json.Num(value))
-      case BsonValue.BBoolean(value)  => Right(Json.Bool(value))
-      case BsonValue.BDecimal(value)  => Right(Json.Num(value))
-      case BsonValue.BString(value)   => Right(Json.Str(value))
-      case BsonValue.BDouble(value)   => Right(Json.Num(value))
-      case BsonValue.BUuid(value)     => Right(uuidToJson(value))
-      case BsonValue.BBinary(value)   => Right(binaryArrayToJson(value))
-      case BsonValue.BArray(value)    =>
+      case BsonValue.BNull                   => Right(Json.Null)
+      case BsonValue.BObjectId(value)        => Right(objectIdToJson(value))
+      case BsonValue.BDateTime(value)        => Right(instantToJson(value))
+      case BsonValue.BInt32(value)           => Right(Json.Num(value))
+      case BsonValue.BInt64(value)           => Right(Json.Num(value))
+      case BsonValue.BBoolean(value)         => Right(Json.Bool(value))
+      case BsonValue.BDecimal(value)         => Right(Json.Num(value))
+      case BsonValue.BString(value)          => Right(Json.Str(value))
+      case BsonValue.BDouble(value)          => Right(Json.Num(value))
+      case BsonValue.BUuid(value)            => Right(uuidToJson(value))
+      case BsonValue.BBinary(value, subtype) => Right(binaryArrayToJson(value, subtype))
+      case BsonValue.BArray(value)           =>
         value.toList
           .foldRight(rightEmptyList[Json]) { case (a, acc) => (fromBson(a), acc).mapN(_ :: _) }
           .map(xs => Json.Arr(xs: _*))
@@ -130,7 +130,10 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     binaryBase64ToJson(Uuid.toBase64(uuid), "04")
 
   def binaryArrayToJson(binary: Array[Byte]): Json =
-    binaryBase64ToJson(Base64.getEncoder.encodeToString(binary), "00")
+    binaryArrayToJson(binary, 0)
+
+  def binaryArrayToJson(binary: Array[Byte], subtype: Byte): Json =
+    binaryBase64ToJson(Base64.getEncoder.encodeToString(binary), f"${subtype & 0xff}%02x")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
     for {
@@ -140,6 +143,15 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       base64    <- binObj.get("base64")
       base64Str <- base64.asString
     } yield base64Str
+
+  private def jsonToBinarySubtype(json: Json): Option[Byte] =
+    for {
+      obj     <- json.asObject
+      bin     <- obj.get(Tag.binary)
+      binObj  <- bin.asObject
+      subtype <- binObj.get("subType")
+      hex     <- subtype.asString
+    } yield Integer.parseInt(hex, 16).toByte
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(jsonToBinaryBase64(json).get)

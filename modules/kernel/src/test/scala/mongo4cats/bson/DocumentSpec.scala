@@ -372,8 +372,10 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         val result = Document.fromJava(javaDoc)
 
         result.get("data") match {
-          case Some(BsonValue.BBinary(data)) => data mustBe binaryData
-          case other                         => fail(s"Expected BBinary but got $other")
+          case Some(BsonValue.BBinary(data, subtype)) =>
+            data mustBe binaryData
+            subtype mustBe 0.toByte
+          case other => fail(s"Expected BBinary but got $other")
         }
       }
 
