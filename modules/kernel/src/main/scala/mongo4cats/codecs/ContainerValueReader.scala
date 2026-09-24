@@ -57,7 +57,7 @@ private[mongo4cats] object ContainerValueReader {
         reader.readMinKey()
         Some(BsonValue.MinKey)
       case BsonType.MAX_KEY =>
-        reader.readMinKey()
+        reader.readMaxKey()
         Some(BsonValue.MaxKey)
       case BsonType.NULL =>
         reader.readNull()

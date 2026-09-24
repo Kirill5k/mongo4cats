@@ -37,7 +37,7 @@ object ZClientSessionSpec extends ZIOSpecDefault {
       suite(name)(
         test("does not call the driver when the effect is constructed") {
           val calls = new AtomicInteger()
-          val _ = start(session { _ =>
+          val _     = start(session { _ =>
             calls.incrementAndGet()
             ()
           })
@@ -45,7 +45,7 @@ object ZClientSessionSpec extends ZIOSpecDefault {
           assertTrue(calls.get() == 0)
         },
         test("waits until execution reaches the transaction effect") {
-          val calls = new AtomicInteger()
+          val calls       = new AtomicInteger()
           val transaction = start(session { _ =>
             calls.incrementAndGet()
             ()
@@ -62,8 +62,8 @@ object ZClientSessionSpec extends ZIOSpecDefault {
           } yield assertTrue(before == 0, calls.get() == 1)
         },
         test("calls the driver with the options on every execution of the same effect") {
-          val calls    = new AtomicInteger()
-          val observed = new AtomicReference[TransactionOptions]()
+          val calls       = new AtomicInteger()
+          val observed    = new AtomicReference[TransactionOptions]()
           val transaction = start(session { options =>
             observed.set(options)
             calls.incrementAndGet()
@@ -77,8 +77,8 @@ object ZClientSessionSpec extends ZIOSpecDefault {
           } yield assertTrue(first == 1, calls.get() == 2, observed.get() == expectedOptions)
         },
         test("captures driver errors only when the effect is executed") {
-          val calls = new AtomicInteger()
-          val error = new IllegalStateException("cannot start transaction")
+          val calls       = new AtomicInteger()
+          val error       = new IllegalStateException("cannot start transaction")
           val transaction = start(session { _ =>
             calls.incrementAndGet()
             throw error
@@ -88,8 +88,8 @@ object ZClientSessionSpec extends ZIOSpecDefault {
           transaction.either.map(result => assertTrue(before == 0, result == Left(error), calls.get() == 1))
         },
         test("retries the driver call after a failed execution") {
-          val calls = new AtomicInteger()
-          val error = new IllegalStateException("cannot start transaction")
+          val calls       = new AtomicInteger()
+          val error       = new IllegalStateException("cannot start transaction")
           val transaction = start(session { _ =>
             if (calls.incrementAndGet() == 1) throw error
           })

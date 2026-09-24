@@ -35,6 +35,61 @@ class DocumentSpec extends AnyWordSpec with Matchers {
     val testDocument = Document("name" := nameDoc, "tags" -> tags.toBson)
 
     "dealing with json" should {
+      val supportedValues = List[(String, String, BsonValue)](
+        ("MIN_KEY", """{"$minKey": 1}""", BsonValue.MinKey),
+        ("MAX_KEY", """{"$maxKey": 1}""", BsonValue.MaxKey),
+        ("NULL", "null", BsonValue.Null),
+        ("UNDEFINED", """{"$undefined": true}""", BsonValue.Undefined),
+        (
+          "DOCUMENT",
+          """{"max": {"$maxKey": 1}, "after": 42}""",
+          BsonValue.document("max" -> BsonValue.MaxKey, "after" -> BsonValue.int(42))
+        ),
+        (
+          "ARRAY",
+          """[{"$minKey": 1}, {"$maxKey": 1}, 42]""",
+          BsonValue.array(BsonValue.MinKey, BsonValue.MaxKey, BsonValue.int(42))
+        ),
+        ("DOUBLE", """{"$numberDouble": "3.5"}""", BsonValue.double(3.5)),
+        ("STRING", """"hello"""", BsonValue.string("hello")),
+        ("INT32", """{"$numberInt": "42"}""", BsonValue.int(42)),
+        ("INT64", """{"$numberLong": "9876543210"}""", BsonValue.long(9876543210L)),
+        ("DECIMAL128", """{"$numberDecimal": "123.456"}""", BsonValue.bigDecimal(BigDecimal("123.456"))),
+        (
+          "BINARY",
+          """{"$binary": {"base64": "AQID", "subType": "00"}}""",
+          BsonValue.binary(Array[Byte](1, 2, 3))
+        ),
+        (
+          "BINARY UUID",
+          """{"$binary": {"base64": "z7ynKE45RhOWvPkgtcN+Fg==", "subType": "04"}}""",
+          BsonValue.uuid(UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16"))
+        ),
+        (
+          "OBJECT_ID",
+          """{"$oid": "507f1f77bcf86cd799439011"}""",
+          BsonValue.objectId(new ObjectId("507f1f77bcf86cd799439011"))
+        ),
+        ("BOOLEAN", "true", BsonValue.True),
+        ("TIMESTAMP", """{"$timestamp": {"t": 1673600231, "i": 7}}""", BsonValue.timestamp(1673600231L, 7)),
+        (
+          "DATE_TIME",
+          """{"$date": {"$numberLong": "1640995200123"}}""",
+          BsonValue.instant(Instant.parse("2022-01-01T00:00:00.123Z"))
+        ),
+        ("REGULAR_EXPRESSION", """{"$regularExpression": {"pattern": "^hello.*", "options": ""}}""", BsonValue.regex("^hello.*".r))
+      )
+
+      supportedValues.foreach { case (tag, json, expected) =>
+        s"decode the supported BSON tag $tag and continue reading" in {
+          val result = Document.parse(s"""{"value": $json, "after": 42}""")
+
+          // Java BSON equality compares binary bytes and regex patterns by value.
+          result.get("value").map(_.asJava) mustBe Some(expected.asJava)
+          result.getInt("after") mustBe Some(42)
+        }
+      }
+
       "create itself from json string" in {
         val result = Document.parse(jsonString)
 

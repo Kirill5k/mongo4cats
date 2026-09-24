@@ -36,7 +36,7 @@ class ClientSessionSpec extends AsyncWordSpec with Matchers {
   starts.foreach { case (name, start, expectedOptions) =>
     name should {
       "leave the driver untouched when the effect is never executed" in {
-        val calls = new AtomicInteger(0)
+        val calls   = new AtomicInteger(0)
         val session = new LiveClientSession[IO](ClientSessionStub { _ =>
           calls.incrementAndGet()
           ()
@@ -48,7 +48,7 @@ class ClientSessionSpec extends AsyncWordSpec with Matchers {
       }
 
       "wait until execution reaches the transaction effect" in {
-        val calls = new AtomicInteger(0)
+        val calls   = new AtomicInteger(0)
         val session = new LiveClientSession[IO](ClientSessionStub { _ =>
           calls.incrementAndGet()
           ()
@@ -72,7 +72,7 @@ class ClientSessionSpec extends AsyncWordSpec with Matchers {
       "call the driver with the options on every execution of a saved program" in {
         val calls    = new AtomicInteger(0)
         val received = new AtomicReference[TransactionOptions]()
-        val session = new LiveClientSession[IO](ClientSessionStub { options =>
+        val session  = new LiveClientSession[IO](ClientSessionStub { options =>
           calls.incrementAndGet()
           received.set(options)
         })
