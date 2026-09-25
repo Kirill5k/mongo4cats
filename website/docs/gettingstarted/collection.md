@@ -46,6 +46,8 @@ val collection: IO[MongoCollection[IO, MyClass]] =
   database.getCollectionWithCodec[MyClass]("mycoll")
 ```
 
+Collections inherit the database's codecs, including those added with `withAddedCodec`. A registry supplied to `getCollection` or a provider supplied to `getCollectionWithCodec` takes precedence for the types it supports; other types use the inherited codecs. This applies to both Cats Effect and ZIO, and leaves the database's registry unchanged.
+
 More information on codecs can be found in the [official documentation](https://docs.mongodb.com/drivers/java/sync/current/fundamentals/data-formats/codecs/) and in the [Circe](../circe) section.
 
 ## Creating collections explicitly

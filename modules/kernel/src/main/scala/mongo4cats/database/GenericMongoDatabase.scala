@@ -54,10 +54,15 @@ abstract class GenericMongoDatabase[F[_], S[_]] {
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
 
+  /** Gets a collection with the supplied codecs taking precedence over the database's codecs. Codecs not supplied for the collection are
+    * inherited from the database.
+    */
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[GenericMongoCollection[F, T, S]]
-  def getCollection(name: String): F[GenericMongoCollection[F, Document, S]] = getCollection[Document](name, CodecRegistry.Default)
+  def getCollection(name: String): F[GenericMongoCollection[F, Document, S]] = getCollection[Document](name, codecs)
+
+  /** Gets a collection with the supplied provider taking precedence over the database's codecs. */
   def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[GenericMongoCollection[F, T, S]] =
-    getCollection[T](name, CodecRegistry.mergeWithDefault(CodecRegistry.from(cp.get)))
+    getCollection[T](name, CodecRegistry.from(cp.get))
 
   /** Executes command in the context of the current database.
     *

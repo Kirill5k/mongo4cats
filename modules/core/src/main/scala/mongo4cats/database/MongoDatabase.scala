@@ -62,7 +62,7 @@ final private class LiveMongoDatabase[F[_]](
     F.delay {
       underlying
         .getCollection[T](name, Clazz.tag[T])
-        .withCodecRegistry(codecRegistry)
+        .withCodecRegistry(CodecRegistry.merge(codecRegistry, codecs))
         .withDocumentClass[T](Clazz.tag[T])
     }.flatMap(MongoCollection.make[F, T])
 
