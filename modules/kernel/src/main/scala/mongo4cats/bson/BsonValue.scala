@@ -215,7 +215,14 @@ object BsonValue extends AsScala {
 
     override def asJava: JBsonValue = new BsonDateTime(value.toEpochMilli)
   }
-  final case class BBinary(value: Array[Byte], subtype: Byte = 0) extends BsonValue {
+  final class BBinary private (val subtype: Byte, private val bytes: Array[Byte]) extends BsonValue with Product with Serializable {
+    def this(value: Array[Byte], subtype: Byte = 0) = this(subtype, value.clone())
+
+    // Keep the owned bytes private so values remain stable when used as hash keys.
+    def value: Array[Byte] = bytes.clone()
+
+    def copy(value: Array[Byte] = this.value, subtype: Byte = this.subtype): BBinary = new BBinary(value, subtype)
+
     override def isNull: Boolean                  = false
     override def isUndefined: Boolean             = false
     override def asInt: Option[Int]               = None
@@ -233,11 +240,29 @@ object BsonValue extends AsScala {
     override def asJava: JBsonValue = new BsonBinary(subtype, value)
 
     override def equals(other: Any): Boolean = other match {
-      case that: BBinary => subtype == that.subtype && java.util.Arrays.equals(value, that.value)
+      case that: BBinary => subtype == that.subtype && java.util.Arrays.equals(bytes, that.bytes)
       case _             => false
     }
 
-    override def hashCode(): Int = 31 * java.util.Arrays.hashCode(value) + subtype.toInt
+    override def hashCode(): Int = 31 * java.util.Arrays.hashCode(bytes) + subtype.toInt
+
+    override def canEqual(other: Any): Boolean = other.isInstanceOf[BBinary]
+    override def productArity: Int             = 2
+    override def productPrefix: String         = "BBinary"
+    override def productElement(n: Int): Any   = n match {
+      case 0 => value
+      case 1 => subtype
+      case _ => throw new IndexOutOfBoundsException(n.toString)
+    }
+
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+  object BBinary extends ((Array[Byte], Byte) => BBinary) {
+    def apply(value: Array[Byte], subtype: Byte = 0): BBinary = new BBinary(value, subtype)
+
+    def unapply(binary: BBinary): Some[(Array[Byte], Byte)] = Some((binary.value, binary.subtype))
+
+    override def toString: String = "BBinary"
   }
   final case class BBoolean(value: Boolean) extends BsonValue {
     override def isNull: Boolean                  = false
