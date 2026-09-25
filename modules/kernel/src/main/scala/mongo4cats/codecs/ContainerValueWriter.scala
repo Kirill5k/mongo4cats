@@ -89,6 +89,7 @@ private[mongo4cats] object ContainerValueWriter {
       registry: CodecRegistry
   ): Unit =
     value match {
+      case null         => writer.writeNull()
       case v: BsonValue => writeBsonValue(v, writer)
       case v            => context.encodeWithChildContext(registry.get(v.getClass).asInstanceOf[Encoder[Any]], writer, v)
     }
