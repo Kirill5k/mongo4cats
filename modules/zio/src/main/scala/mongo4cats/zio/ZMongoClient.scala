@@ -53,7 +53,7 @@ final private class ZMongoClientLive(
 
 object ZMongoClient extends AsJava {
   def fromConnection(connection: MongoConnection): RIO[Scope, ZMongoClient] =
-    fromConnectionString(connection.toString)
+    fromConnectionString(connection.toConnectionString)
 
   def fromConnectionString(connectionString: String): RIO[Scope, ZMongoClient] =
     mkClient {

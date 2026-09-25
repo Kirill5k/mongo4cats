@@ -16,6 +16,9 @@
 
 package mongo4cats.models.client
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 sealed abstract class MongoConnectionType(val `type`: String)
 
 object MongoConnectionType {
@@ -24,7 +27,9 @@ object MongoConnectionType {
   case object Srv extends MongoConnectionType("mongodb+srv")
 }
 
-final case class MongoCredential(username: String, password: String)
+final case class MongoCredential(username: String, password: String) {
+  override def toString: String = s"MongoCredential($username,<redacted>)"
+}
 
 /** A data model representation of a MongoDB Connection String
   *
@@ -43,14 +48,29 @@ sealed abstract class MongoConnection(
     val credential: Option[MongoCredential],
     val connectionType: MongoConnectionType
 ) {
-  override def toString: String = {
-    val credentialString = credential.fold("")(cred => s"${cred.username}:${cred.password}@")
-    val portString       = port.fold("")(p => s":$p")
+  import MongoConnection.encodeCredential
+
+  /** Returns a connection string with percent-encoded credentials for the MongoDB driver.
+    *
+    * This string contains the password and must not be used for logging. Use [[toString]] for diagnostics.
+    */
+  def toConnectionString: String =
+    render(credential.fold("")(cred => s"${encodeCredential(cred.username)}:${encodeCredential(cred.password)}@"))
+
+  /** Returns a diagnostic representation with the password redacted. */
+  override def toString: String =
+    render(credential.fold("")(cred => s"${encodeCredential(cred.username)}:<redacted>@"))
+
+  private def render(credentialString: String): String = {
+    val portString = port.fold("")(p => s":$p")
     s"${connectionType.`type`}://$credentialString$host$portString"
   }
 }
 
 object MongoConnection {
+
+  private def encodeCredential(value: String): String =
+    URLEncoder.encode(value, StandardCharsets.UTF_8.name()).replace("+", "%20").replace("*", "%2A").replace("%7E", "~")
 
   def classic(
       host: String,

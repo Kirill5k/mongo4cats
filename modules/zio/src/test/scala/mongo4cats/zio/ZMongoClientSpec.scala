@@ -28,8 +28,8 @@ import zio.test.TestAspect.{sequential, timeout, withLiveClock}
 
 object ZMongoClientSpec extends ZIOSpecDefault with EmbeddedMongo {
 
-  val username = "username"
-  val password = "password"
+  val username = "user@name:+% "
+  val password = "pass@word:/?#[]$%+ "
 
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("A ZMongoClient should")(
     test("connect to a db via connection string") {
@@ -54,14 +54,13 @@ object ZMongoClientSpec extends ZIOSpecDefault with EmbeddedMongo {
         }
       }
     },
-    test("connect to a db via connection object with authentication") {
+    test("authenticate via connection object with URI delimiters in credentials") {
       ZIO.succeed(FreePort.next()).flatMap { port =>
         withRunningEmbeddedMongo(port, username, password) {
           ZMongoClient
             .fromConnection(MongoConnection.classic("localhost", port, Some(MongoCredential(username, password))))
-            .map { client =>
-              assert(client.clusterDescription.getConnectionMode)(equalTo(ClusterConnectionMode.SINGLE))
-            }
+            .flatMap(_.listDatabaseNames)
+            .map(names => assert(names)(contains("admin")))
         }
       }
     },

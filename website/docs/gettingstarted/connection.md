@@ -24,7 +24,7 @@ val client2 = MongoClient.fromServerAddress[IO](ServerAddress("localhost", 27017
 // With credentials
 val connection = MongoConnection(
   host = "localhost",
-  port = 27017,
+  port = Some(27017),
   credential = Some(MongoCredential("username", "password")),
   connectionType = MongoConnectionType.Classic
 )
@@ -37,6 +37,8 @@ val settings = MongoClientSettings.builder()
   .build()
 val client4 = MongoClient.create[IO](settings)
 ```
+
+Pass the original username and password to `MongoCredential`; `MongoConnection` percent-encodes them when building the driver URI. Both `MongoConnection.toString` and `MongoCredential.toString` redact the password for diagnostics. If you need the actual URI, use `connection.toConnectionString` instead of `connection.toString`; it contains the password and should not be logged.
 
 ### Replica sets and Atlas
 

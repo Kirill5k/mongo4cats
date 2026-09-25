@@ -30,8 +30,8 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
-  private val username = "username"
-  private val password = "password"
+  private val username = "user@name:+% "
+  private val password = "pass@word:/?#[]$%+ "
 
   "A MongoClient" should {
     "connect to a db via connection string" in {
@@ -59,16 +59,14 @@ class MongoClientSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
       }.unsafeToFuture()(IORuntime.global)
     }
 
-    "connect to a db via connection object with authentication" in {
+    "authenticate via connection object with URI delimiters in credentials" in {
       val port = FreePort.next()
       withRunningEmbeddedMongo[IO, Assertion](port, username, password) {
         val connection = MongoConnection.classic("localhost", port, Some(MongoCredential(username, password)))
         MongoClient
           .fromConnection[IO](connection)
-          .use { client =>
-            val cluster = client.clusterDescription
-            IO.pure(cluster.getConnectionMode mustBe ClusterConnectionMode.SINGLE)
-          }
+          .use(_.listDatabaseNames)
+          .map(_ must contain("admin"))
       }.unsafeToFuture()(IORuntime.global)
     }
 
