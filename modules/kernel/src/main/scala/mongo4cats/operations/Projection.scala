@@ -180,9 +180,9 @@ class Projection(
     * @param fieldName
     *   the field name
     * @param skip
-    *   the number of elements to skip before applying the limit
+    *   the starting position in the array; negative values count from the end
     * @param limit
-    *   the number of elements to project
+    *   the positive number of elements to project
     * @return
     *   the projection
     */
@@ -197,12 +197,15 @@ class Projection(
     * @param fieldName
     *   the field name
     * @param limit
-    *   the number of elements to project.
+    *   the number of elements to project; positive values select from the start, negative values select from the end, and zero selects none
     * @return
     *   the projection
     */
-  def slice(fieldName: String, limit: Int): Projection =
-    slice(fieldName, 0, limit)
+  def slice(fieldName: String, limit: Int): Projection = {
+    val sliceCommand    = Document("$slice" := BsonValue.array(BsonValue.string("$" + fieldName), BsonValue.int(limit)))
+    val sliceProjection = Document(fieldName := sliceCommand)
+    withProjection(sliceProjection.toBsonDocument)
+  }
 
   /** Creates a projection to the given field name of the vectorSearchScore, for use with
     * Aggregate.vectorSearch(FieldSearchPath,Seq,String,Long,Long,VectorSearchOptions). Calling this method is equivalent to calling

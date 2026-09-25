@@ -157,6 +157,28 @@ class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with Embe
           }
         }
 
+      "slice arrays from the beginning, end, and an explicit position" in
+        withEmbeddedMongoDatabase { (_, db) =>
+          val result = for {
+            coll <- db.getCollection("array-slices")
+            _    <- coll.insertOne(Document("items" := List(1, 2, 3, 4)))
+            res  <- coll
+              .aggregate[Document](
+                Aggregate
+                  .addFields("firstItems" -> "$items", "middleItems" -> "$items", "emptyItems" -> "$items")
+                  .project(Projection.slice("items", -2).slice("firstItems", 2).slice("middleItems", 1, 2).slice("emptyItems", 0))
+              )
+              .first
+          } yield res
+
+          result.map { res =>
+            res.flatMap(_.getAs[List[Int]]("items")) mustBe Some(List(3, 4))
+            res.flatMap(_.getAs[List[Int]]("firstItems")) mustBe Some(List(1, 2))
+            res.flatMap(_.getAs[List[Int]]("middleItems")) mustBe Some(List(2, 3))
+            res.flatMap(_.getAs[List[Int]]("emptyItems")) mustBe Some(List.empty[Int])
+          }
+        }
+
       "using first, return none if no result is found" in
         withEmbeddedMongoDatabase { (_, db) =>
           val result = for {

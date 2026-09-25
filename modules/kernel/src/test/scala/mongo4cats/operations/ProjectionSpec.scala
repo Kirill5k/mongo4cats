@@ -17,6 +17,7 @@
 package mongo4cats.operations
 
 import com.mongodb.client.model.Projections
+import org.bson.BsonDocument
 import org.bson.conversions.Bson
 import org.scalatest.Assertion
 import org.scalatest.matchers.must.Matchers
@@ -27,6 +28,35 @@ class ProjectionSpec extends AnyWordSpec with Matchers {
   "A Projection" should {
     "excludeId" in {
       Projection.excludeId isTheSameAs Projections.excludeId()
+    }
+
+    "slice" should {
+      "use the two-argument expression for negative limits" in {
+        Projection.slice("items", -2).toBson.toBsonDocument mustBe
+          BsonDocument.parse("""{"items": {"$slice": ["$items", -2]}}""")
+      }
+
+      "use the two-argument expression for positive limits" in {
+        Projection.slice("items", 2).toBson.toBsonDocument mustBe
+          BsonDocument.parse("""{"items": {"$slice": ["$items", 2]}}""")
+      }
+
+      "use the two-argument expression for a zero limit" in {
+        Projection.slice("items", 0).toBson.toBsonDocument mustBe
+          BsonDocument.parse("""{"items": {"$slice": ["$items", 0]}}""")
+      }
+
+      "preserve an explicit starting position" in {
+        Projection.slice("items", 1, 2).toBson.toBsonDocument mustBe
+          BsonDocument.parse("""{"items": {"$slice": ["$items", 1, 2]}}""")
+        Projection.slice("items", -3, 2).toBson.toBsonDocument mustBe
+          BsonDocument.parse("""{"items": {"$slice": ["$items", -3, 2]}}""")
+      }
+
+      "combine slices with other projections" in {
+        Projection.include("name").slice("items", -2).excludeId.toBson.toBsonDocument mustBe
+          BsonDocument.parse("""{"name": 1, "items": {"$slice": ["$items", -2]}, "_id": 0}""")
+      }
     }
 
     "combinedWith" should {
