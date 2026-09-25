@@ -4,7 +4,7 @@ title: ZIO
 tags: ["ZIO", "ZIO 2"]
 ---
 
-The `mongo4cats-zio` module provides `ZMongoClient`, `ZMongoDatabase`, and `ZMongoCollection` — type aliases that replace Cats Effect's `IO` with `Task` and FS2 streams with `ZStream`. The entire API surface is identical to the Cats Effect module; only the effect type changes.
+The `mongo4cats-zio` module provides `ZMongoClient`, `ZMongoDatabase`, and `ZMongoCollection` — type aliases that use `Task` for operations and `ZStream` for streaming results. Client and session acquisition use ZIO's `Scope` for resource management.
 
 ## Setup
 
@@ -26,7 +26,7 @@ import mongo4cats.zio._
 
 | Alias | Expands to |
 |---|---|
-| `ZMongoClient` | `GenericMongoClient[Task, ZStream[Any, Throwable, *], Scope]` |
+| `ZMongoClient` | `GenericMongoClient[Task, ZStream[Any, Throwable, *], RIO[Scope, *]]` |
 | `ZMongoDatabase` | `GenericMongoDatabase[Task, ZStream[Any, Throwable, *]]` |
 | `ZMongoCollection[T]` | `GenericMongoCollection[Task, T, ZStream[Any, Throwable, *]]` |
 
@@ -35,6 +35,7 @@ import mongo4cats.zio._
 `ZMongoClient.fromConnectionString` returns a `ZIO[Scope, Throwable, ZMongoClient]`, making it easy to wire it into the ZIO layer system:
 
 ```scala
+import mongo4cats.bson.Document
 import mongo4cats.zio._
 import zio._
 
@@ -88,7 +89,8 @@ import zio.stream.ZStream
 val stream: ZStream[Any, Throwable, Document] =
   collection.find(Filter.gte("score", 50)).stream
 
-stream.foreach(doc => Console.printLine(doc.toString)).provide(...)
+val printDocuments: Task[Unit] =
+  stream.runForeach(doc => Console.printLine(doc.toString))
 ```
 
 ## ZIO JSON integration
@@ -100,6 +102,7 @@ libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "<version
 ```
 
 ```scala
+import mongo4cats.codecs.MongoCodecProvider
 import mongo4cats.zio.json._
 import zio.json._
 
@@ -156,7 +159,7 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
 
   override def spec = suite("ZMongoCollection")(
     test("inserts and retrieves documents") {
-      withRunningEmbeddedMongo("localhost", 27017) {
+      withRunningEmbeddedMongo(27017) {
         ZIO
           .serviceWithZIO[ZMongoDatabase] { db =>
             for {
@@ -167,13 +170,13 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
             } yield assert(result)(equalTo(List(doc)))
           }
           .provide(
-            ZLayer.scoped(ZMongoClient.fromConnectionString("mongodb://localhost:27017")),
+            ZLayer.scoped[Any](ZMongoClient.fromConnectionString("mongodb://localhost:27017")),
             ZLayer.fromZIO(ZIO.serviceWithZIO[ZMongoClient](_.getDatabase("testdb")))
           )
       }
     }
-  )
+  ) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.timeout(2.minutes)
 }
 ```
 
-The `withRunningEmbeddedMongo` method starts an embedded MongoDB instance, executes the provided ZIO effect, then shuts the instance down. You can override `mongoPort` (default 27017) at the class level or pass host/port explicitly.
+The `withRunningEmbeddedMongo` method starts an embedded MongoDB instance, executes the provided ZIO effect, then shuts the instance down. You can override `mongoPort` (default 27017) at the class level or pass the port explicitly. Connect to `localhost` using that port; there is no host/port overload. The live-clock aspect lets startup retries advance, and the timeout bounds failed tests.

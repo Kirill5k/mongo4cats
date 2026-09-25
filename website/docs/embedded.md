@@ -51,17 +51,19 @@ class MyRepoSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
 `withRunningEmbeddedMongo` starts the instance before the block runs and stops it after, regardless of whether the block succeeds or fails.
 
-## Specifying host and port explicitly
+## Specifying a port explicitly
 
 If you need to run multiple embedded instances or a specific port:
 
 ```scala
-"use a custom port" in withRunningEmbeddedMongo("localhost", 27099) {
-  MongoClient.fromConnectionString[IO]("mongodb://localhost:27099").use { client =>
-    // ...
-  }
+"use a custom port" in withRunningEmbeddedMongo(27099) {
+  MongoClient.fromConnectionString[IO]("mongodb://localhost:27099")
+    .use(_.listDatabaseNames)
+    .map(_ must contain("admin"))
 }.unsafeToFuture()
 ```
+
+The helper accepts a port, not a host/port pair. Connect to the embedded instance on `localhost` using the same port.
 
 ## Using with Cats Effect IOApp / munit-cats-effect
 

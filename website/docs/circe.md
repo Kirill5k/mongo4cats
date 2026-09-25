@@ -29,7 +29,7 @@ mongo4cats-circe registers custom BSON encoders for types that require non-stand
 | `java.util.UUID` | `{ "$binary": { ... } }` |
 | `BigDecimal` | `{ "$numberDecimal": "..." }` |
 
-These encodings are compatible with MongoDB Extended JSON so that `doc.toJson` and `Document.fromJson` round-trip correctly.
+These encodings use MongoDB Extended JSON. Use `doc.toJson` to serialize a `Document` and `Document.parse(json)` to read it back.
 
 ## Reading and writing BSON values
 
@@ -69,6 +69,9 @@ val doc = Document(
 // Retrieve it back
 val retrieved: Option[User] = doc.getAs[User]("user")
 // Some(User(...))
+
+// Parse the document's Extended JSON representation
+val parsed: Document = Document.parse(doc.toJson)
 ```
 
 ## Typed collections
