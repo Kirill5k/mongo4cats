@@ -16,10 +16,12 @@
 
 package mongo4cats.circe
 
+import io.circe.Json
 import io.circe.syntax._
 import io.circe.parser._
 import mongo4cats.bson.json._
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.errors.MongoJsonParsingException
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -46,6 +48,28 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
       inst.asJson.noSpaces mustBe json
       decode[Instant](json) mustBe Right(inst)
     }
+
+    "decode canonical, numeric and local-date representations" in {
+      List(Long.MinValue, -1L, 0L, Long.MaxValue).foreach { millis =>
+        val canonical = Json.obj("$date" -> Json.obj("$numberLong" -> Json.fromString(millis.toString)))
+        val numeric   = Json.obj("$date" -> Json.fromLong(millis))
+
+        canonical.as[Instant] mustBe Right(Instant.ofEpochMilli(millis))
+        numeric.as[Instant] mustBe Right(Instant.ofEpochMilli(millis))
+      }
+
+      decode[Instant]("""{"$date":"2022-01-01"}""") mustBe Right(Instant.parse("2022-01-01T00:00:00Z"))
+    }
+
+    "return decoding failures for malformed dates" in
+      List(
+        """{"$date":1.5}""",
+        """{"$date":9223372036854775808}""",
+        """{"$date":{"$numberLong":"invalid"}}""",
+        """{"$date":{"$numberLong":1}}""",
+        """{"$date":0,"extra":true}""",
+        """{"$date":"2022-99-99"}"""
+      ).foreach(json => decode[Instant](json).isLeft mustBe true)
   }
 
   "LocalDate codec" should {
@@ -79,6 +103,42 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   }
 
   "Document codec" should {
+    "fail explicitly when encoding unsupported BSON values" in {
+      val document = Document("timestamp" -> BsonValue.timestamp(4294967295L))
+
+      intercept[MongoJsonParsingException](document.asJson)
+    }
+
+    "decode nested canonical dates and decimals" in {
+      val json     = """{"values":[{"$date":{"$numberLong":"-1"}},{"amount":{"$numberDecimal":"12.50"}}]}"""
+      val expected = Document(
+        "values" -> BsonValue.array(
+          BsonValue.instant(Instant.ofEpochMilli(-1L)),
+          BsonValue.document("amount" -> BsonValue.bigDecimal(BigDecimal("12.50")))
+        )
+      )
+
+      decode[Document](json) mustBe Right(expected)
+    }
+
+    "return decoding failures rather than throw for invalid nested wrappers" in
+      List(
+        """{"$date":1.5}""",
+        """{"$date":9223372036854775808}""",
+        """{"$date":{"$numberLong":"invalid"}}""",
+        """{"$date":{"$numberLong":1}}""",
+        """{"$date":0,"extra":true}""",
+        """{"$numberDecimal":"NaN"}""",
+        """{"$numberDecimal":"-0"}""",
+        """{"$numberDecimal":"1E+6145"}""",
+        """{"$numberDecimal":1}""",
+        """{"$numberDecimal":"1","extra":true}"""
+      ).foreach { wrapper =>
+        List(s"""{"value":$wrapper}""", s"""{"values":[$wrapper]}""").foreach { json =>
+          withClue(json)(decode[Document](json).isLeft mustBe true)
+        }
+      }
+
     "encode and decode Document to json and back" in {
       val id       = ObjectId.gen
       val ts       = Instant.now

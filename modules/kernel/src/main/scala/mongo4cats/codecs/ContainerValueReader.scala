@@ -83,7 +83,7 @@ private[mongo4cats] object ContainerValueReader {
       case BsonType.BOOLEAN   => Some(BsonValue.boolean(reader.readBoolean()))
       case BsonType.TIMESTAMP =>
         val ts = reader.readTimestamp()
-        Some(BsonValue.timestamp(ts.getTime.toLong, ts.getInc))
+        Some(BsonValue.timestamp(java.lang.Integer.toUnsignedLong(ts.getTime), ts.getInc))
       case BsonType.DATE_TIME          => Some(BsonValue.instant(Instant.ofEpochMilli(reader.readDateTime())))
       case BsonType.REGULAR_EXPRESSION =>
         val regex = reader.readRegularExpression()

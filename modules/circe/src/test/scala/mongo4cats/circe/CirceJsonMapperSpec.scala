@@ -18,6 +18,7 @@ package mongo4cats.circe
 
 import io.circe.Json
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.errors.MongoJsonParsingException
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -140,6 +141,106 @@ class CirceJsonMapperSpec extends AnyWordSpec with Matchers {
 
         CirceJsonMapper.fromBson(bson) mustBe Right(json)
         CirceJsonMapper.toBson(json) mustBe bson
+      }
+
+      "decode canonical dates at the signed millisecond boundaries" in {
+        List(Long.MinValue, -1L, 0L, 1L, Long.MaxValue).foreach { millis =>
+          val expected  = BsonValue.instant(Instant.ofEpochMilli(millis))
+          val canonical = Json.obj("$date" -> Json.obj("$numberLong" -> Json.fromString(millis.toString)))
+
+          CirceJsonMapper.toBson(canonical) mustBe expected
+          CirceJsonMapper.toBson(Json.obj("$date" -> Json.fromLong(millis))) mustBe expected
+          CirceJsonMapper.fromBson(expected) mustBe Right(Json.obj("$date" -> Json.fromString(Instant.ofEpochMilli(millis).toString)))
+        }
+
+        CirceJsonMapper.toBson(Json.obj("$date" -> Json.fromBigDecimal(BigDecimal("1.0")))) mustBe
+          BsonValue.instant(Instant.ofEpochMilli(1L))
+      }
+
+      "decode finite Decimal128 wrappers without changing decimal output" in
+        List("0", "-1", "123.4500", "1234567890123456789012345678901234", "1E-6176", "9.999999999999999999999999999999999E+6144")
+          .foreach { decimal =>
+            val value    = BigDecimal(decimal)
+            val expected = BsonValue.bigDecimal(value)
+
+            CirceJsonMapper.toBson(Json.obj("$numberDecimal" -> Json.fromString(decimal))) mustBe expected
+            CirceJsonMapper.fromBson(expected) mustBe Right(Json.fromBigDecimal(value))
+          }
+
+      "decode date and decimal wrappers recursively in arrays and documents" in {
+        val json = Json.obj(
+          "values" -> Json.arr(
+            Json.obj("$date"  -> Json.obj("$numberLong" -> Json.fromString("-1"))),
+            Json.obj("amount" -> Json.obj("$numberDecimal" -> Json.fromString("12.50")))
+          )
+        )
+        val expected = BsonValue.document(
+          "values" -> BsonValue.array(
+            BsonValue.instant(Instant.ofEpochMilli(-1L)),
+            BsonValue.document("amount" -> BsonValue.bigDecimal(BigDecimal("12.50")))
+          )
+        )
+
+        CirceJsonMapper.toBson(json) mustBe expected
+      }
+
+      "reject malformed date wrappers with a typed parsing error" in {
+        val invalidValues = List(
+          Json.Null,
+          Json.True,
+          Json.arr(),
+          Json.fromString("not-a-date"),
+          Json.fromString("2022-99-99"),
+          Json.fromString("+1000000000-12-31T23:59:59.999999999Z"),
+          Json.fromBigDecimal(BigDecimal("1.5")),
+          Json.fromBigInt(BigInt(Long.MaxValue) + 1),
+          Json.fromBigInt(BigInt(Long.MinValue) - 1),
+          Json.obj(),
+          Json.obj("$numberLong" -> Json.fromLong(1L)),
+          Json.obj("$numberLong" -> Json.fromString("1"), "extra" -> Json.Null)
+        ) ++ List("9223372036854775808", "-9223372036854775809", "1.5", "1e3", "", "invalid").map { millis =>
+          Json.obj("$numberLong" -> Json.fromString(millis))
+        }
+        val invalid = invalidValues.map(value => Json.obj("$date" -> value)) ++ List(
+          Json.obj("$date" -> Json.fromLong(0L), "extra"               -> Json.Null),
+          Json.obj("$oid"  -> Json.fromString(id.toHexString), "$date" -> Json.fromLong(0L))
+        )
+
+        invalid.foreach { json =>
+          withClue(json.noSpaces) {
+            intercept[MongoJsonParsingException](CirceJsonMapper.toBson(json))
+            CirceJsonMapper.toBsonEither(json).isLeft mustBe true
+          }
+        }
+      }
+
+      "reject malformed or unrepresentable decimal wrappers with a typed parsing error" in {
+        val invalidValues = List(Json.Null, Json.True, Json.fromInt(1), Json.arr(), Json.obj()) ++
+          List("", "invalid", "NaN", "Infinity", "-Infinity", "-0", "-0.000", "1E-6177", "1E+6145", "12345678901234567890123456789012345")
+            .map(Json.fromString)
+        val invalid = invalidValues.map(value => Json.obj("$numberDecimal" -> value)) ++ List(
+          Json.obj("$numberDecimal" -> Json.fromString("1"), "extra"                     -> Json.Null),
+          Json.obj("$oid"           -> Json.fromString(id.toHexString), "$numberDecimal" -> Json.fromString("1"))
+        )
+
+        invalid.foreach { json =>
+          withClue(json.noSpaces) {
+            intercept[MongoJsonParsingException](CirceJsonMapper.toBson(json))
+            CirceJsonMapper.toBsonEither(json).isLeft mustBe true
+          }
+        }
+      }
+
+      "continue treating unsupported Extended JSON wrappers as ordinary documents" in {
+        val json = Json.obj(
+          "integer"   -> Json.obj("$numberLong" -> Json.fromString("42")),
+          "timestamp" -> Json.obj("$timestamp" -> Json.obj("t" -> Json.fromInt(1), "i" -> Json.fromInt(2)))
+        )
+
+        CirceJsonMapper.toBson(json) mustBe BsonValue.document(
+          "integer"   -> BsonValue.document("$numberLong" -> BsonValue.string("42")),
+          "timestamp" -> BsonValue.document("$timestamp" -> BsonValue.document("t" -> BsonValue.int(1), "i" -> BsonValue.int(2)))
+        )
       }
     }
   }

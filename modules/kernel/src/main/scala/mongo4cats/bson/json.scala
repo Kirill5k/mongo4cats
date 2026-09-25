@@ -22,19 +22,53 @@ import mongo4cats.errors.MongoJsonParsingException
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
+import org.bson.types.Decimal128
 
+import java.time.{Instant, LocalDate, ZoneOffset}
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 private[mongo4cats] object json {
 
   object Tag {
-    val id     = "$" + "oid"
-    val date   = "$" + "date"
-    val binary = "$" + "binary"
+    val id            = "$" + "oid"
+    val date          = "$" + "date"
+    val binary        = "$" + "binary"
+    val numberLong    = "$" + "numberLong"
+    val numberDecimal = "$" + "numberDecimal"
+  }
+
+  object ExtendedJson {
+    def parseDateString(value: String): Instant = {
+      val instant =
+        if (value.length == 10) LocalDate.parse(value).atStartOfDay().toInstant(ZoneOffset.UTC)
+        else Instant.parse(value)
+      // BSON dates must fit into signed 64-bit milliseconds.
+      val _ = instant.toEpochMilli
+      instant
+    }
+
+    def parseDateMillis(value: String): Instant =
+      Instant.ofEpochMilli(java.lang.Long.parseLong(value))
+
+    def parseDecimal(value: String): BigDecimal = {
+      val decimal = Decimal128.parse(value)
+      require(decimal.isFinite, "Non-finite Decimal128 values cannot be represented as BigDecimal")
+      // bigDecimalValue also rejects negative zero, whose sign BigDecimal cannot preserve.
+      BigDecimal(decimal.bigDecimalValue())
+    }
   }
 
   trait JsonMapper[J] {
     def toBson(json: J): BsonValue
+
+    def toBsonEither(json: J): Either[MongoJsonParsingException, BsonValue] =
+      try Right(toBson(json))
+      catch {
+        case error: MongoJsonParsingException => Left(error)
+        case NonFatal(error)                  =>
+          Left(MongoJsonParsingException(Option(error.getMessage).getOrElse(error.getClass.getSimpleName), Some(json.toString)))
+      }
 
     def fromBson(bson: BsonValue): Either[MongoJsonParsingException, J]
   }

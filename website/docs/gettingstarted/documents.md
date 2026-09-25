@@ -140,11 +140,11 @@ val ts: java.util.Date = id.getDate
 
 ## JSON serialization
 
-A `Document` can be serialized to Extended JSON and back:
+`Document.toJson` and `Document.parse` use the MongoDB driver's JSON writer and reader with mongo4cats BSON codecs:
 
 ```scala
 val json: String   = doc.toJson
-val doc2: Document = Document.fromJson(json)
+val doc2: Document = Document.parse(json)
 ```
 
 Extended JSON encodes BSON-specific types (ObjectId, dates, etc.) using standard `$`-prefixed fields:
@@ -156,4 +156,26 @@ Extended JSON encodes BSON-specific types (ObjectId, dates, etc.) using standard
 }
 ```
 
+`toJson` uses the driver's relaxed output mode. This does not guarantee that every BSON type or numeric width survives a JSON round trip. The `BsonValue` model also cannot represent Decimal128 infinities, NaN, or negative zero.
 
+### JSON integration compatibility
+
+The Circe and ZIO JSON integrations support a subset of [MongoDB Extended JSON](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/). Their JSON-to-BSON mappers now accept these date and decimal inputs, including inside arrays and documents:
+
+| JSON input | BSON interpretation |
+|---|---|
+| `{"$date":{"$numberLong":"1640995200123"}}` | Canonical date: signed 64-bit epoch milliseconds |
+| `{"$date":"2022-01-01T00:00:00.123Z"}` | ISO instant within the BSON date range |
+| `{"$date":1640995200123}` | Legacy numeric date: an exact integer within the signed 64-bit range |
+| `{"$date":"2022-01-01"}` | Existing date-only extension: midnight UTC |
+| `{"$numberDecimal":"123.4500"}` | A finite Decimal128 value represented by `BigDecimal` |
+
+Date and decimal wrappers must contain exactly the indicated keys. Wrong value types, invalid dates, fractional or overflowing epoch milliseconds, and unrepresentable Decimal128 values are errors. Decimal NaN, infinities, and negative zero are explicitly rejected because `BigDecimal` cannot preserve them. Encoding these malformed wrappers to BSON throws `MongoJsonParsingException`; the public JSON `Document` decoders return a decoding failure instead of letting the exception escape. The `Instant` decoders accept the date forms above and also report invalid inputs as decoding failures.
+
+Existing output formats are preserved: dates are emitted as `{"$date":"<ISO instant>"}`, and decimals as ordinary JSON numbers. Canonical date and decimal wrapper spelling is therefore not preserved, and a numeric BSON type need not survive serialization and reparsing. BSON dates have millisecond precision; finer ISO input precision is lost when written to BSON. ISO date output is retained even outside the years where Extended JSON specifies the relaxed string form. This is not a complete canonical Extended JSON serializer.
+
+This adds a deliberate input interpretation change: a valid `$numberDecimal` wrapper now becomes a BSON decimal instead of an embedded document. Objects using `$date` or `$numberDecimal` alongside other fields are rejected rather than discarding fields. Other special forms, such as standalone `$numberLong`, `$numberInt`, `$numberDouble`, and `$timestamp`, are not added by this change and remain ordinary documents on JSON input. Values rejected by the BSON-to-JSON mapper, such as BSON timestamps, fail explicitly; the ZIO JSON `Document` encoder now throws `MongoJsonParsingException` instead of silently returning `{}`. Undefined document fields continue to be omitted.
+
+### BSON timestamp boundaries
+
+BSON timestamps are distinct from BSON dates. Decoding timestamp seconds now preserves the unsigned 32-bit range, `0` through `4294967295`, in `BTimestamp.seconds: Long`. Values above `2147483647` previously decoded as negative seconds. The increment remains an `Int` carrying its original 32-bit pattern; its API and the timestamp wire format are unchanged. This correction covers Java BSON conversion, document codecs, and change-stream cluster times. Timestamp values are still unsupported by the Circe and ZIO JSON mappers; use the core `Document` JSON reader/writer when working with them.

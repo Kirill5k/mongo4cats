@@ -17,14 +17,15 @@
 package mongo4cats.zio.json
 
 import mongo4cats.Uuid
-import mongo4cats.bson.json.{JsonMapper, Tag}
+import mongo4cats.bson.json.{ExtendedJson, JsonMapper, Tag}
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 import zio.json.ast.Json
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.{Instant, LocalDate}
 import java.util.{Base64, UUID}
 import scala.math.BigDecimal._
+import scala.util.control.NonFatal
 
 private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
@@ -35,26 +36,65 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
       case j if j.isString      => BsonValue.string(j.asString.get)
       case j if j.isNumber      => j.asNumber.get.toBsonValue
+      case j if j.isDate        => BsonValue.instant(jsonToDate(j))
+      case j if j.isDecimal     => BsonValue.bigDecimal(jsonToDecimal(j))
       case j if j.isId          => BsonValue.objectId(ObjectId(jsonToObjectIdString(json).get))
-      case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
-      case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
-      case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
       case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get), jsonToBinarySubtype(j).get)
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
+  private def wrapperValue(json: Json, tag: String): Json =
+    json.asObject.filter(_.fields.size == 1).flatMap(_.get(tag)).getOrElse {
+      throw MongoJsonParsingException(s"$tag wrapper must contain exactly one field", Some(json.toString))
+    }
+
+  private def parseWrapper[A](json: Json)(parse: => A): A =
+    try parse
+    catch {
+      case error: MongoJsonParsingException => throw error
+      case NonFatal(error)                  =>
+        throw MongoJsonParsingException(Option(error.getMessage).getOrElse(error.getClass.getSimpleName), Some(json.toString))
+    }
+
+  private def jsonToDate(json: Json): Instant = parseWrapper(json) {
+    wrapperValue(json, Tag.date) match {
+      case Json.Str(value)  => ExtendedJson.parseDateString(value)
+      case number: Json.Num =>
+        val millis =
+          try number.value.longValueExact()
+          catch {
+            case _: ArithmeticException =>
+              throw MongoJsonParsingException("$date milliseconds must be an integral signed 64-bit number", Some(json.toString))
+          }
+        Instant.ofEpochMilli(millis)
+      case obj: Json.Obj if obj.fields.size == 1 =>
+        obj.get(Tag.numberLong).flatMap(_.asString).map(ExtendedJson.parseDateMillis).getOrElse {
+          throw MongoJsonParsingException("Canonical $date must contain a $numberLong string", Some(json.toString))
+        }
+      case _ =>
+        throw MongoJsonParsingException(
+          "$date must contain a date string, integral milliseconds, or a $numberLong object",
+          Some(json.toString)
+        )
+    }
+  }
+
+  private def jsonToDecimal(json: Json): BigDecimal = parseWrapper(json) {
+    wrapperValue(json, Tag.numberDecimal).asString.map(ExtendedJson.parseDecimal).getOrElse {
+      throw MongoJsonParsingException("$numberDecimal must contain a string", Some(json.toString))
+    }
+  }
+
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
-    def isNull: Boolean        = json.asNull.nonEmpty
-    def isArray: Boolean       = json.asArray.nonEmpty
-    def isBoolean: Boolean     = json.asBoolean.nonEmpty
-    def isString: Boolean      = json.asString.nonEmpty
-    def isNumber: Boolean      = json.asNumber.nonEmpty
-    def isId: Boolean          = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
-    def isDate: Boolean        = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
-    def isEpochMillis: Boolean = isDate && json.asObject.exists(_.get(Tag.date).exists(_.isNumber))
-    def isLocalDate: Boolean   =
-      isDate && json.asObject.exists(o => o.get(Tag.date).exists(_.isString) && o.get(Tag.date).exists(_.asString.get.length == 10))
+    def isNull: Boolean    = json.asNull.nonEmpty
+    def isArray: Boolean   = json.asArray.nonEmpty
+    def isBoolean: Boolean = json.asBoolean.nonEmpty
+    def isString: Boolean  = json.asString.nonEmpty
+    def isNumber: Boolean  = json.asNumber.nonEmpty
+    def isId: Boolean      = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
+    def isDate: Boolean    = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
+    def isDecimal: Boolean = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.numberDecimal))
 
     private def isBinary(subTypeMatch: String): Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
       o.asObject.exists(_.contains(Tag.binary)) && o.asObject.get.get(Tag.binary).get.asObject.exists { b =>
@@ -64,14 +104,6 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
     def isBinaryArray: Boolean = isBinary("[0-9a-fA-F]{2}")
     def isUuid: Boolean        = isBinary("04")
-
-    def asEpochMillis: Long =
-      (for {
-        obj  <- json.asObject
-        date <- obj.get(Tag.date)
-        num  <- date.asNumber
-        ts = num.value.toLong
-      } yield ts).get
   }
 
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {

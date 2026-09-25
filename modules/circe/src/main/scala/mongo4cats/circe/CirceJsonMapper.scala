@@ -19,37 +19,56 @@ package mongo4cats.circe
 import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
 import mongo4cats.Uuid
-import mongo4cats.bson.json.{JsonMapper, Tag}
+import mongo4cats.bson.json.{ExtendedJson, JsonMapper, Tag}
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.{Instant, LocalDate}
 import java.util.{Base64, UUID}
+import scala.util.control.NonFatal
 
 private[circe] object CirceJsonMapper extends JsonMapper[Json] {
 
   def toBson(json: Json): BsonValue =
     json match {
-      case j if j.isNull        => BsonValue.Null
-      case j if j.isArray       => BsonValue.array(j.asArray.get.map(toBson))
-      case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
-      case j if j.isString      => BsonValue.string(j.asString.get)
-      case j if j.isNumber      => j.asNumber.get.toBsonValue
+      case j if j.isNull           => BsonValue.Null
+      case j if j.isArray          => BsonValue.array(j.asArray.get.map(toBson))
+      case j if j.isBoolean        => BsonValue.boolean(j.asBoolean.get)
+      case j if j.isString         => BsonValue.string(j.asString.get)
+      case j if j.isNumber         => j.asNumber.get.toBsonValue
+      case j if j.hasTag(Tag.date) =>
+        parseExtendedJson(Tag.date, j) {
+          val value   = wrapperValue(j, Tag.date)
+          val instant = value.asString match {
+            case Some(date)             => ExtendedJson.parseDateString(date)
+            case None if value.isNumber =>
+              val millis = value.asNumber
+                .flatMap(_.toBigDecimal)
+                .filter(n => n.isWhole && n.isValidLong)
+                .getOrElse(throw MongoJsonParsingException("$date must contain exact signed 64-bit epoch milliseconds"))
+              Instant.ofEpochMilli(millis.toLong)
+            case None =>
+              val millis = wrapperValue(value, Tag.numberLong).asString
+                .getOrElse(throw MongoJsonParsingException("Canonical $date must contain a $numberLong string"))
+              ExtendedJson.parseDateMillis(millis)
+          }
+          BsonValue.instant(instant)
+        }
+      case j if j.hasTag(Tag.numberDecimal) =>
+        parseExtendedJson(Tag.numberDecimal, j) {
+          val decimal = wrapperValue(j, Tag.numberDecimal).asString
+            .getOrElse(throw MongoJsonParsingException("$numberDecimal must contain a string"))
+          BsonValue.bigDecimal(ExtendedJson.parseDecimal(decimal))
+        }
       case j if j.isId          => BsonValue.objectId(ObjectId(jsonToObjectIdString(j).get))
-      case j if j.isEpochMillis => BsonValue.instant(Instant.ofEpochMilli(j.asEpochMillis))
-      case j if j.isLocalDate   => BsonValue.instant(LocalDate.parse(jsonToDateString(j).get).atStartOfDay().toInstant(ZoneOffset.UTC))
-      case j if j.isDate        => BsonValue.instant(Instant.parse(jsonToDateString(j).get))
       case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
       case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get), jsonToBinarySubtype(j).get)
       case j                    => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
-    def isId: Boolean          = json.isObject && json.asObject.exists(_.contains(Tag.id))
-    def isDate: Boolean        = json.isObject && json.asObject.exists(_.contains(Tag.date))
-    def isEpochMillis: Boolean = isDate && json.asObject.exists(_(Tag.date).exists(_.isNumber))
-    def isLocalDate: Boolean   =
-      isDate && json.asObject.exists(o => o(Tag.date).exists(_.isString) && o(Tag.date).exists(_.asString.get.length == 10))
+    def hasTag(tag: String): Boolean = json.asObject.exists(_.contains(tag))
+    def isId: Boolean                = hasTag(Tag.id)
 
     private def isBinary(subTypeMatch: String): Boolean = json.isObject && json.asObject.exists { o =>
       o(Tag.binary).exists(_.isObject) && o(Tag.binary).get.asObject.exists { b =>
@@ -59,9 +78,20 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
 
     def isBinaryArray: Boolean = isBinary("[0-9a-fA-F]{2}")
     def isUuid: Boolean        = isBinary("04")
-
-    def asEpochMillis: Long = json.asObject.flatMap(_(Tag.date)).flatMap(_.asNumber).flatMap(_.toLong).get
   }
+
+  private def wrapperValue(json: Json, tag: String): Json =
+    json.asObject
+      .filter(_.size == 1)
+      .flatMap(_(tag))
+      .getOrElse(throw MongoJsonParsingException(s"Extended JSON $tag must be an object containing only $tag"))
+
+  private def parseExtendedJson(tag: String, json: Json)(parse: => BsonValue): BsonValue =
+    try parse
+    catch {
+      case error: MongoJsonParsingException => throw error
+      case NonFatal(error) => throw MongoJsonParsingException(s"Invalid $tag value: ${error.getMessage}", Some(json.noSpaces))
+    }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
     def toBsonValue: BsonValue =

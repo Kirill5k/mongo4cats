@@ -22,14 +22,14 @@ import mongo4cats.circe._
 
 mongo4cats-circe registers custom BSON encoders for types that require non-standard JSON representations:
 
-| Scala type | BSON / Extended JSON encoding |
+| Scala type | JSON output |
 |---|---|
 | `org.bson.types.ObjectId` | `{ "$oid": "..." }` |
 | `java.time.Instant` | `{ "$date": "..." }` |
 | `java.util.UUID` | `{ "$binary": { ... } }` |
-| `BigDecimal` | `{ "$numberDecimal": "..." }` |
+| `BigDecimal` | An ordinary JSON number |
 
-These encodings use MongoDB Extended JSON. Use `doc.toJson` to serialize a `Document` and `Document.parse(json)` to read it back.
+The integration accepts canonical date and finite `$numberDecimal` wrappers on input while preserving these output formats. See [JSON integration compatibility](gettingstarted/documents.md#json-integration-compatibility) for supported forms, decoding errors, and round-trip limitations. The core `doc.toJson` / `Document.parse(json)` path uses the driver's JSON reader/writer and is separate from Circe conversion.
 
 ## Reading and writing BSON values
 

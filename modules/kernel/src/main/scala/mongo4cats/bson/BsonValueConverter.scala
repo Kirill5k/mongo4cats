@@ -75,7 +75,7 @@ object BsonValueConverter extends AsScala {
       case BsonType.INT32     => BInt32(jv.asInt32.getValue)
       case BsonType.INT64     => BInt64(jv.asInt64.getValue)
       case BsonType.DOUBLE    => BDouble(jv.asDouble.getValue)
-      case BsonType.TIMESTAMP => BTimestamp(jv.asTimestamp.getTime.toLong, jv.asTimestamp.getInc)
+      case BsonType.TIMESTAMP => BTimestamp(java.lang.Integer.toUnsignedLong(jv.asTimestamp.getTime), jv.asTimestamp.getInc)
       case BsonType.DATE_TIME => BDateTime(Instant.ofEpochMilli(jv.asDateTime.getValue))
       case BsonType.BINARY    =>
         val bin = jv.asBinary()
@@ -101,7 +101,7 @@ object BsonValueConverter extends AsScala {
     case v: BsonValue                    => v
     case v: org.bson.types.Binary        => BBinary(v.getData, v.getType)
     case v: org.bson.types.BasicBSONList => BsonValue.array(asScala(v).map(fromAny))
-    case v: org.bson.types.BSONTimestamp => BsonValue.timestamp(v.getTime.toLong, v.getInc)
+    case v: org.bson.types.BSONTimestamp => BsonValue.timestamp(java.lang.Integer.toUnsignedLong(v.getTime), v.getInc)
     case v: org.bson.types.CodeWScope    => BsonValue.string(v.getCode)
     case v: org.bson.types.CodeWithScope => BsonValue.string(v.getCode)
     case v: org.bson.types.Code          => BsonValue.string(v.getCode)

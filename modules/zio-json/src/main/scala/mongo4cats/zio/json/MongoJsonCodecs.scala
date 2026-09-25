@@ -30,8 +30,6 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 trait MongoJsonCodecs {
-  private val emptyJsonObject = Json.Obj()
-
   implicit def deriveJsonBsonValueEncoder[A](implicit e: JsonEncoder[A]): BsonValueEncoder[A] =
     value => ZioJsonMapper.toBson(e.toJsonAST(value).toOption.get)
 
@@ -39,10 +37,12 @@ trait MongoJsonCodecs {
     bson => ZioJsonMapper.fromBson(bson).flatMap(d.fromJsonAST).toOption
 
   implicit val documentEncoder: JsonEncoder[Document] =
-    Json.encoder.contramap[Document](d => ZioJsonMapper.fromBson(BsonValue.document(d)).getOrElse(emptyJsonObject))
+    Json.encoder.contramap[Document](d => ZioJsonMapper.fromBson(BsonValue.document(d)).fold(throw _, identity))
 
   implicit val documentDecoder: JsonDecoder[Document] =
-    Json.decoder.mapOrFail(j => ZioJsonMapper.toBson(j).asDocument.toRight(s"$j is not a valid document"))
+    Json.decoder.mapOrFail(j =>
+      ZioJsonMapper.toBsonEither(j).left.map(_.getMessage).flatMap(_.asDocument.toRight(s"$j is not a valid document"))
+    )
 
   implicit val objectIdEncoder: JsonEncoder[ObjectId] =
     Json.encoder.contramap[ObjectId](ZioJsonMapper.objectIdToJson)
@@ -58,9 +58,10 @@ trait MongoJsonCodecs {
   implicit val instantDecoder: JsonDecoder[Instant] =
     Json.decoder.mapOrFail[Instant] { dateObj =>
       ZioJsonMapper
-        .jsonToDateString(dateObj)
-        .flatMap(tsStr => Try(Instant.parse(tsStr)).toOption)
-        .toRight(s"$dateObj is not a valid instant object")
+        .toBsonEither(dateObj)
+        .left
+        .map(_.getMessage)
+        .flatMap(_.asInstant.toRight(s"$dateObj is not a valid instant object"))
     }
 
   implicit val localDateEncoder: JsonEncoder[LocalDate] =

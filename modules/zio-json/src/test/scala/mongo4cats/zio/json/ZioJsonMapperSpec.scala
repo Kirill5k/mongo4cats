@@ -17,6 +17,7 @@
 package mongo4cats.zio.json
 
 import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.errors.MongoJsonParsingException
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import zio.json.ast.Json
@@ -153,6 +154,119 @@ class ZioJsonMapperSpec extends AnyWordSpec with Matchers {
 
         ZioJsonMapper.fromBson(bson) mustBe Right(json)
         ZioJsonMapper.toBson(json) mustBe bson
+      }
+
+      "decode canonical dates and numeric milliseconds across the signed 64-bit range" in {
+        List(Long.MinValue, -1L, 0L, 1L, Long.MaxValue).foreach { millis =>
+          val canonical = Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Str(millis.toString)))
+          val numeric   = Json.Obj("$date" -> Json.Num(millis))
+          val expected  = BsonValue.instant(Instant.ofEpochMilli(millis))
+
+          ZioJsonMapper.toBson(canonical) mustBe expected
+          ZioJsonMapper.toBson(numeric) mustBe expected
+          ZioJsonMapper.toBson(canonical).asJava.asDateTime().getValue mustBe millis
+        }
+        ZioJsonMapper.toBson(Json.Obj("$date" -> Json.Num(BigDecimal("1.0")))) mustBe BsonValue.instant(Instant.ofEpochMilli(1L))
+      }
+
+      "decode canonical dates and decimals nested in documents and arrays" in {
+        val json = Json.Obj(
+          "values" -> Json.Arr(
+            Json.Obj("$date"  -> Json.Obj("$numberLong" -> Json.Str("-1"))),
+            Json.Obj("amount" -> Json.Obj("$numberDecimal" -> Json.Str("12.50")))
+          )
+        )
+        val bson = BsonValue.document(
+          "values" -> BsonValue.array(
+            BsonValue.instant(Instant.ofEpochMilli(-1L)),
+            BsonValue.document("amount" -> BsonValue.bigDecimal(BigDecimal("12.50")))
+          )
+        )
+
+        ZioJsonMapper.toBson(json) mustBe bson
+      }
+
+      "reject malformed date wrappers with typed parsing errors" in {
+        val invalidDates = List(
+          Json.Obj("$date" -> Json.Null),
+          Json.Obj("$date" -> Json.Bool(true)),
+          Json.Obj("$date" -> Json.Arr()),
+          Json.Obj("$date" -> Json.Str("not-a-date")),
+          Json.Obj("$date" -> Json.Str("+999999999-12-31T23:59:59Z")),
+          Json.Obj("$date" -> Json.Num(BigDecimal("1.5"))),
+          Json.Obj("$date" -> Json.Num(BigDecimal("9223372036854775808"))),
+          Json.Obj("$date" -> Json.Num(BigDecimal("-9223372036854775809"))),
+          Json.Obj("$date" -> Json.Obj()),
+          Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Num(1))),
+          Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Str("1.5"))),
+          Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Str("9223372036854775808"))),
+          Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Str("-9223372036854775809"))),
+          Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Str("0"), "extra" -> Json.Null)),
+          Json.Obj("$date" -> Json.Num(0), "extra"              -> Json.Null),
+          Json.Obj("$oid"  -> Json.Str(id.toHexString), "$date" -> Json.Num(0))
+        )
+
+        invalidDates.foreach { json =>
+          withClue(json.toString) {
+            intercept[MongoJsonParsingException](ZioJsonMapper.toBson(json))
+            intercept[MongoJsonParsingException](ZioJsonMapper.toBson(Json.Obj("nested" -> Json.Arr(json))))
+          }
+        }
+      }
+
+      "decode finite Decimal128 wrappers within precision and exponent limits" in
+        List("0", "-12.50", "1234567890123456789012345678901234", "1E-6176", "1E+6144", "9.999999999999999999999999999999999E+6144")
+          .foreach { value =>
+            val json = Json.Obj("$numberDecimal" -> Json.Str(value))
+            val bson = ZioJsonMapper.toBson(json)
+
+            bson mustBe BsonValue.bigDecimal(BigDecimal(value))
+            BigDecimal(bson.asJava.asDecimal128().getValue.bigDecimalValue()) mustBe BigDecimal(value)
+          }
+
+      "reject malformed or unrepresentable Decimal128 wrappers with typed parsing errors" in {
+        val invalidValues = List(
+          "",
+          "not-a-decimal",
+          "12345678901234567890123456789012345",
+          "1E-6177",
+          "1E+6145",
+          "NaN",
+          "Infinity",
+          "-Infinity",
+          "-0",
+          "-0.00"
+        ).map(value => Json.Obj("$numberDecimal" -> Json.Str(value)))
+        val invalidShapes = List(
+          Json.Obj("$numberDecimal" -> Json.Null),
+          Json.Obj("$numberDecimal" -> Json.Num(1)),
+          Json.Obj("$numberDecimal" -> Json.Obj()),
+          Json.Obj("$numberDecimal" -> Json.Str("1"), "extra"                     -> Json.Null),
+          Json.Obj("$oid"           -> Json.Str(id.toHexString), "$numberDecimal" -> Json.Str("1"))
+        )
+
+        (invalidValues ++ invalidShapes).foreach { json =>
+          withClue(json.toString) {
+            intercept[MongoJsonParsingException](ZioJsonMapper.toBson(json))
+            intercept[MongoJsonParsingException](ZioJsonMapper.toBson(Json.Obj("nested" -> Json.Arr(json))))
+          }
+        }
+      }
+
+      "retain the existing date and decimal JSON output" in {
+        val canonicalDate = Json.Obj("$date" -> Json.Obj("$numberLong" -> Json.Str("0")))
+        val decimal       = Json.Obj("$numberDecimal" -> Json.Str("12.50"))
+
+        ZioJsonMapper.fromBson(ZioJsonMapper.toBson(canonicalDate)) mustBe Right(Json.Obj("$date" -> Json.Str("1970-01-01T00:00:00Z")))
+        ZioJsonMapper.fromBson(ZioJsonMapper.toBson(decimal)) mustBe Right(Json.Num(BigDecimal("12.50")))
+      }
+
+      "leave unsupported Extended JSON wrappers as ordinary documents" in {
+        val json = Json.Obj("$numberLong" -> Json.Str("1"))
+        val bson = BsonValue.document("$numberLong" -> BsonValue.string("1"))
+
+        ZioJsonMapper.toBson(json) mustBe bson
+        ZioJsonMapper.fromBson(bson) mustBe Right(json)
       }
     }
   }

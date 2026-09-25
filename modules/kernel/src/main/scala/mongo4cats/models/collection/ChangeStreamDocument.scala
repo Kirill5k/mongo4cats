@@ -119,7 +119,7 @@ object ChangeStreamDocument {
       lsid = Option(cst.getLsid).map(Document.fromJava),
       splitEvent = Option(cst.getSplitEvent),
       extraElements = Option(cst.getExtraElements).map(Document.fromJava),
-      clusterTime = Option(cst.getClusterTime).map(ct => BsonValue.timestamp(ct.getTime.toLong, ct.getInc)),
+      clusterTime = Option(cst.getClusterTime).map(ct => BsonValue.timestamp(java.lang.Integer.toUnsignedLong(ct.getTime), ct.getInc)),
       wallTime = Option(cst.getWallTime).map(wt => BsonValue.instant(Instant.ofEpochMilli(wt.getValue)))
     )
 }

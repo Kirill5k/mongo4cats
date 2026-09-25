@@ -16,7 +16,7 @@
 
 package mongo4cats.models.client
 
-import com.mongodb.ConnectionString
+import com.mongodb.{ConnectionString => JConnectionString}
 import com.mongodb.spi.dns.DnsClient
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -42,7 +42,7 @@ class MongoConnectionSpec extends AnyWordSpec with Matchers {
       connections.foreach { case (connection, expected) =>
         connection.toConnectionString mustBe expected
         connection.toString mustBe expected
-        new ConnectionString(connection.toConnectionString, noDnsRecords).getCredential mustBe null
+        new JConnectionString(connection.toConnectionString, noDnsRecords).getCredential mustBe null
       }
     }
 
@@ -86,7 +86,7 @@ class MongoConnectionSpec extends AnyWordSpec with Matchers {
         )
 
         connections.foreach { connection =>
-          val parsed = new ConnectionString(connection.toConnectionString, noDnsRecords).getCredential
+          val parsed = new JConnectionString(connection.toConnectionString, noDnsRecords).getCredential
 
           parsed.getUserName mustBe credential.username
           new String(parsed.getPassword) mustBe credential.password

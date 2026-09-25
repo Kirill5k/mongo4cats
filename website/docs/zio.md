@@ -116,6 +116,8 @@ object User {
 val coll: Task[ZMongoCollection[User]] = db.getCollectionWithCodec[User]("users")
 ```
 
+The integration accepts canonical dates and finite `$numberDecimal` wrappers, with the same [JSON compatibility and error behavior](gettingstarted/documents.md#json-integration-compatibility) as Circe. Output remains ISO date wrappers and plain decimal numbers; not all Extended JSON forms or BSON types can round-trip through these codecs.
+
 ## Transactions
 
 ```scala
