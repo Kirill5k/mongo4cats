@@ -34,7 +34,14 @@ import org.bson.conversions.Bson
 import scala.reflect.ClassTag
 import scala.util.Try
 
-abstract class GenericMongoCollection[F[_], T, S[_]] {
+// Inheriting the generic overload gives the Document overload priority when no result type is supplied on Scala 2.
+private[mongo4cats] trait TypedSearchIndexListing[F[_]] {
+
+  /** Lists metadata for a named index using the collection's codec registry to decode the result type. */
+  def listSearchIndexes[Y: ClassTag](name: String): F[Iterable[Y]]
+}
+
+abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexListing[F] {
   def underlying: JMongoCollection[T]
 
   def namespace: MongoNamespace      = MongoNamespace.fromJava(underlying.getNamespace)
@@ -274,6 +281,38 @@ abstract class GenericMongoCollection[F[_], T, S[_]] {
   def listIndexes[Y: ClassTag]: F[Iterable[Y]]
   def listIndexes: F[Iterable[Document]]
   def listIndexes[Y: ClassTag](cs: ClientSession[F]): F[Iterable[Y]]
+
+  /** Creates a Search index named `default`. For Vector Search indexes, use `createSearchIndexes` with an explicit vector index type.
+    *
+    * Requires a Search-enabled deployment. Completion acknowledges the request; use `listSearchIndexes` to inspect build status and
+    * queryability before querying the index. These operations do not accept a client session.
+    */
+  def createSearchIndex(definition: Bson): F[String]
+
+  /** Creates a named Search index. Completion acknowledges the request and does not wait for the index to become queryable. */
+  def createSearchIndex(name: String, definition: Bson): F[String]
+
+  /** Creates Search or Vector Search indexes, returning their names in input order. Use an explicit `SearchIndexType.vectorSearch` for
+    * vector definitions. Completion acknowledges the request and does not wait for the indexes to become queryable.
+    */
+  def createSearchIndexes(indexes: Seq[SearchIndexModel]): F[Iterable[String]]
+
+  /** Lists Search and Vector Search index metadata, including definitions, build status and queryability. */
+  def listSearchIndexes: F[Iterable[Document]]
+
+  /** Lists metadata for the named Search or Vector Search index; a missing index produces an empty iterable. */
+  def listSearchIndexes(name: String): F[Iterable[Document]]
+
+  /** Lists Search and Vector Search index metadata using the collection's codec registry to decode the result type. */
+  def listSearchIndexes[Y: ClassTag]: F[Iterable[Y]]
+
+  /** Replaces the complete definition of a named Search or Vector Search index without changing its type. Completion acknowledges the
+    * request; the previous definition may remain queryable while the replacement is built. Inspect `listSearchIndexes` for readiness.
+    */
+  def updateSearchIndex(name: String, definition: Bson): F[Unit]
+
+  /** Requests removal of a named Search or Vector Search index. Use `listSearchIndexes` to confirm it is absent after completion. */
+  def dropSearchIndex(name: String): F[Unit]
 
   /** Update all documents in the collection according to the specified arguments.
     *

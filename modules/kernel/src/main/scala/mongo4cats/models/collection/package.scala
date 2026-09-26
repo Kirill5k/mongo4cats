@@ -30,6 +30,7 @@ import com.mongodb.client.model.{
   RenameCollectionOptions => JRenameCollectionOptions,
   ReplaceOptions => JReplaceOptions,
   ReturnDocument,
+  SearchIndexType => JSearchIndexType,
   UnwindOptions => JUnwindOptions,
   UpdateOptions => JUpdateOptions
 }
@@ -39,6 +40,12 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 package object collection {
+
+  type SearchIndexType = JSearchIndexType
+  object SearchIndexType {
+    def search: SearchIndexType       = JSearchIndexType.search()
+    def vectorSearch: SearchIndexType = JSearchIndexType.vectorSearch()
+  }
 
   type BulkWriteOptions = JBulkWriteOptions
   object BulkWriteOptions {

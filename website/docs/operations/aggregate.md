@@ -207,19 +207,17 @@ val combined = stage1.combinedWith(stage2)
 
 ## Atlas Search and Vector Search
 
-These stages require a MongoDB Atlas cluster with Atlas Search enabled.
+These stages require a Search-enabled deployment and a compatible Search or vector-search index. See [Search and vector-search index management](indexes.md#search-and-vector-search-indexes) for creation, readiness checks, listing, updates, and deletion.
 
 ```scala
-import com.mongodb.client.model.search.{SearchOperator, SearchOptions}
+import com.mongodb.client.model.search.{FieldSearchPath, SearchOperator, SearchOptions, VectorSearchOptions}
 
 // Full-text Atlas Search
 Aggregate.search(
   SearchOperator.text(FieldSearchPath.fieldPath("description"), "functional programming")
 )
 
-// Vector search (requires a vector index)
-import com.mongodb.client.model.search.{FieldSearchPath, VectorSearchOptions}
-
+// Vector search (requires a ready vector index)
 Aggregate.vectorSearch(
   path        = FieldSearchPath.fieldPath("embedding"),
   queryVector = queryEmbedding,

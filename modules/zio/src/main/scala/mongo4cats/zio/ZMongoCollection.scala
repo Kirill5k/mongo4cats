@@ -42,8 +42,8 @@ final private class ZMongoCollectionLive[T: ClassTag](
   def withAddedCodec(newCodecRegistry: CodecRegistry): ZMongoCollection[T] =
     new ZMongoCollectionLive[T](underlying.withCodecRegistry(CodecRegistry.from(codecs, newCodecRegistry)))
 
-  def drop: Task[Unit]                     = underlying.drop().asyncVoid
-  def drop(cs: ZClientSession): Task[Unit] = underlying.drop(cs.underlying).asyncVoid
+  def drop: Task[Unit]                     = ZIO.attempt(underlying.drop()).flatMap(_.asyncVoid)
+  def drop(cs: ZClientSession): Task[Unit] = ZIO.attempt(underlying.drop(cs.underlying)).flatMap(_.asyncVoid)
 
   def aggregate[Y: ClassTag](pipeline: Seq[Bson]): Queries.Aggregate[Y] =
     Queries.aggregate(underlying.aggregate(asJava(pipeline), Clazz.tag[Y]))
@@ -68,12 +68,12 @@ final private class ZMongoCollectionLive[T: ClassTag](
     Queries.find(underlying.find(cs.underlying, filter.toBson))
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): Task[Option[T]] =
-    underlying.findOneAndDelete(filter, options).asyncSingle
+    ZIO.attempt(underlying.findOneAndDelete(filter, options)).flatMap(_.asyncSingle)
   def findOneAndDelete(cs: ZClientSession, filter: Filter, options: FindOneAndDeleteOptions): Task[Option[T]] =
-    underlying.findOneAndDelete(cs.underlying, filter.toBson, options).asyncSingle
+    ZIO.attempt(underlying.findOneAndDelete(cs.underlying, filter.toBson, options)).flatMap(_.asyncSingle)
 
   def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): Task[Option[T]] =
-    underlying.findOneAndUpdate(filter, update, options).asyncSingle
+    ZIO.attempt(underlying.findOneAndUpdate(filter, update, options)).flatMap(_.asyncSingle)
 
   def findOneAndUpdate(
       cs: ZClientSession,
@@ -81,10 +81,10 @@ final private class ZMongoCollectionLive[T: ClassTag](
       update: Update,
       options: FindOneAndUpdateOptions
   ): Task[Option[T]] =
-    underlying.findOneAndUpdate(cs.underlying, filter.toBson, update.toBson, options).asyncSingle
+    ZIO.attempt(underlying.findOneAndUpdate(cs.underlying, filter.toBson, update.toBson, options)).flatMap(_.asyncSingle)
 
   def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): Task[Option[T]] =
-    underlying.findOneAndReplace(filter, replacement, options).asyncSingle
+    ZIO.attempt(underlying.findOneAndReplace(filter, replacement, options)).flatMap(_.asyncSingle)
 
   def findOneAndReplace(
       cs: ZClientSession,
@@ -92,109 +92,136 @@ final private class ZMongoCollectionLive[T: ClassTag](
       replacement: T,
       options: FindOneAndReplaceOptions
   ): Task[Option[T]] =
-    underlying.findOneAndReplace(cs.underlying, filter.toBson, replacement, options).asyncSingle
+    ZIO.attempt(underlying.findOneAndReplace(cs.underlying, filter.toBson, replacement, options)).flatMap(_.asyncSingle)
 
   def dropIndex(name: String, options: DropIndexOptions): Task[Unit] =
-    underlying.dropIndex(name, options).asyncVoid
+    ZIO.attempt(underlying.dropIndex(name, options)).flatMap(_.asyncVoid)
 
   def dropIndex(cs: ZClientSession, name: String, options: DropIndexOptions): Task[Unit] =
-    underlying.dropIndex(cs.underlying, name, options).asyncVoid
+    ZIO.attempt(underlying.dropIndex(cs.underlying, name, options)).flatMap(_.asyncVoid)
 
   def dropIndex(keys: Bson, options: DropIndexOptions): Task[Unit] =
-    underlying.dropIndex(keys, options).asyncVoid
+    ZIO.attempt(underlying.dropIndex(keys, options)).flatMap(_.asyncVoid)
 
   def dropIndex(cs: ZClientSession, index: Index, options: DropIndexOptions): Task[Unit] =
-    underlying.dropIndex(cs.underlying, index.toBson, options).asyncVoid
+    ZIO.attempt(underlying.dropIndex(cs.underlying, index.toBson, options)).flatMap(_.asyncVoid)
 
   def dropIndexes(options: DropIndexOptions): Task[Unit] =
-    underlying.dropIndexes(options).asyncVoid
+    ZIO.attempt(underlying.dropIndexes(options)).flatMap(_.asyncVoid)
 
   def dropIndexes(cs: ZClientSession, options: DropIndexOptions): Task[Unit] =
-    underlying.dropIndexes(cs.underlying, options).asyncVoid
+    ZIO.attempt(underlying.dropIndexes(cs.underlying, options)).flatMap(_.asyncVoid)
 
   def createIndex(key: Bson, options: IndexOptions): Task[String] =
-    underlying.createIndex(key, options).asyncSingle.unNone
+    ZIO.attempt(underlying.createIndex(key, options)).flatMap(_.asyncSingle.unNone)
 
   def createIndex(cs: ZClientSession, index: Index, options: IndexOptions): Task[String] =
-    underlying.createIndex(cs.underlying, index.toBson, options).asyncSingle.unNone
+    ZIO.attempt(underlying.createIndex(cs.underlying, index.toBson, options)).flatMap(_.asyncSingle.unNone)
 
   def listIndexes(cs: ZClientSession): Task[Iterable[Document]] =
-    underlying.listIndexes(cs.underlying).asyncIterableF(Document.fromJava)
+    ZIO.attempt(underlying.listIndexes(cs.underlying)).flatMap(_.asyncIterableF(Document.fromJava))
 
   def listIndexes[Y: ClassTag]: Task[Iterable[Y]] =
-    underlying.listIndexes(Clazz.tag[Y]).asyncIterable
+    ZIO.attempt(underlying.listIndexes(Clazz.tag[Y])).flatMap(_.asyncIterable)
 
   def listIndexes: Task[Iterable[Document]] =
-    underlying.listIndexes().asyncIterableF(Document.fromJava)
+    ZIO.attempt(underlying.listIndexes()).flatMap(_.asyncIterableF(Document.fromJava))
 
   def listIndexes[Y: ClassTag](cs: ZClientSession): Task[Iterable[Y]] =
-    underlying.listIndexes(cs.underlying, Clazz.tag[Y]).asyncIterable
+    ZIO.attempt(underlying.listIndexes(cs.underlying, Clazz.tag[Y])).flatMap(_.asyncIterable)
+
+  def createSearchIndex(definition: Bson): Task[String] =
+    ZIO.attempt(underlying.createSearchIndex(definition)).flatMap(_.asyncSingle.unNone)
+
+  def createSearchIndex(name: String, definition: Bson): Task[String] =
+    ZIO.attempt(underlying.createSearchIndex(name, definition)).flatMap(_.asyncSingle.unNone)
+
+  def createSearchIndexes(indexes: Seq[SearchIndexModel]): Task[Iterable[String]] =
+    ZIO.attempt(underlying.createSearchIndexes(asJava(indexes.map(_.toJava)))).flatMap(_.asyncIterable)
+
+  def listSearchIndexes: Task[Iterable[Document]] =
+    ZIO.attempt(underlying.listSearchIndexes()).flatMap(_.asyncIterableF(Document.fromJava))
+
+  def listSearchIndexes(name: String): Task[Iterable[Document]] =
+    ZIO.attempt(underlying.listSearchIndexes().name(name)).flatMap(_.asyncIterableF(Document.fromJava))
+
+  def listSearchIndexes[Y: ClassTag]: Task[Iterable[Y]] =
+    ZIO.attempt(underlying.listSearchIndexes(Clazz.tag[Y])).flatMap(_.asyncIterable)
+
+  def listSearchIndexes[Y: ClassTag](name: String): Task[Iterable[Y]] =
+    ZIO.attempt(underlying.listSearchIndexes(Clazz.tag[Y]).name(name)).flatMap(_.asyncIterable)
+
+  def updateSearchIndex(name: String, definition: Bson): Task[Unit] =
+    ZIO.attempt(underlying.updateSearchIndex(name, definition)).flatMap(_.asyncVoid)
+
+  def dropSearchIndex(name: String): Task[Unit] =
+    ZIO.attempt(underlying.dropSearchIndex(name)).flatMap(_.asyncVoid)
 
   def updateMany(filter: Bson, update: Bson, options: UpdateOptions): Task[UpdateResult] =
-    underlying.updateMany(filter, update, options).asyncSingle.unNone
+    ZIO.attempt(underlying.updateMany(filter, update, options)).flatMap(_.asyncSingle.unNone)
 
   def updateMany(cs: ZClientSession, filter: Filter, update: Update, options: UpdateOptions): Task[UpdateResult] =
-    underlying.updateMany(cs.underlying, filter.toBson, update.toBson, options).asyncSingle.unNone
+    ZIO.attempt(underlying.updateMany(cs.underlying, filter.toBson, update.toBson, options)).flatMap(_.asyncSingle.unNone)
 
   def updateMany(filter: Bson, update: Seq[Bson], options: UpdateOptions): Task[UpdateResult] =
-    underlying.updateMany(filter, asJava(update), options).asyncSingle.unNone
+    ZIO.attempt(underlying.updateMany(filter, asJava(update), options)).flatMap(_.asyncSingle.unNone)
 
   def updateOne(filter: Bson, update: Bson, options: UpdateOptions): Task[UpdateResult] =
-    underlying.updateOne(filter, update, options).asyncSingle.unNone
+    ZIO.attempt(underlying.updateOne(filter, update, options)).flatMap(_.asyncSingle.unNone)
 
   def updateOne(cs: ZClientSession, filter: Filter, update: Update, options: UpdateOptions): Task[UpdateResult] =
-    underlying.updateOne(cs.underlying, filter.toBson, update.toBson, options).asyncSingle.unNone
+    ZIO.attempt(underlying.updateOne(cs.underlying, filter.toBson, update.toBson, options)).flatMap(_.asyncSingle.unNone)
 
   def updateOne(filter: Bson, update: Seq[Bson], options: UpdateOptions): Task[UpdateResult] =
-    underlying.updateOne(filter, asJava(update), options).asyncSingle.unNone
+    ZIO.attempt(underlying.updateOne(filter, asJava(update), options)).flatMap(_.asyncSingle.unNone)
 
   def replaceOne(filter: Bson, replacement: T, options: ReplaceOptions): Task[UpdateResult] =
-    underlying.replaceOne(filter, replacement, options).asyncSingle.unNone
+    ZIO.attempt(underlying.replaceOne(filter, replacement, options)).flatMap(_.asyncSingle.unNone)
 
   def replaceOne(cs: ZClientSession, filter: Filter, replacement: T, options: ReplaceOptions): Task[UpdateResult] =
-    underlying.replaceOne(cs.underlying, filter.toBson, replacement, options).asyncSingle.unNone
+    ZIO.attempt(underlying.replaceOne(cs.underlying, filter.toBson, replacement, options)).flatMap(_.asyncSingle.unNone)
 
   def deleteOne(filter: Bson, options: DeleteOptions): Task[DeleteResult] =
-    underlying.deleteOne(filter, options).asyncSingle.unNone
+    ZIO.attempt(underlying.deleteOne(filter, options)).flatMap(_.asyncSingle.unNone)
 
   def deleteOne(cs: ZClientSession, filter: Filter, options: DeleteOptions): Task[DeleteResult] =
-    underlying.deleteOne(cs.underlying, filter.toBson, options).asyncSingle.unNone
+    ZIO.attempt(underlying.deleteOne(cs.underlying, filter.toBson, options)).flatMap(_.asyncSingle.unNone)
 
   def deleteMany(filter: Bson, options: DeleteOptions): Task[DeleteResult] =
-    underlying.deleteMany(filter, options).asyncSingle.unNone
+    ZIO.attempt(underlying.deleteMany(filter, options)).flatMap(_.asyncSingle.unNone)
 
   def deleteMany(cs: ZClientSession, filter: Filter, options: DeleteOptions): Task[DeleteResult] =
-    underlying.deleteMany(cs.underlying, filter.toBson, options).asyncSingle.unNone
+    ZIO.attempt(underlying.deleteMany(cs.underlying, filter.toBson, options)).flatMap(_.asyncSingle.unNone)
 
   def insertOne(document: T, options: InsertOneOptions): Task[InsertOneResult] =
-    underlying.insertOne(document, options).asyncSingle.unNone
+    ZIO.attempt(underlying.insertOne(document, options)).flatMap(_.asyncSingle.unNone)
 
   def insertOne(cs: ZClientSession, document: T, options: InsertOneOptions): Task[InsertOneResult] =
-    underlying.insertOne(cs.underlying, document, options).asyncSingle.unNone
+    ZIO.attempt(underlying.insertOne(cs.underlying, document, options)).flatMap(_.asyncSingle.unNone)
 
   def insertMany(documents: Seq[T], options: InsertManyOptions): Task[InsertManyResult] =
-    underlying.insertMany(asJava(documents), options).asyncSingle.unNone
+    ZIO.attempt(underlying.insertMany(asJava(documents), options)).flatMap(_.asyncSingle.unNone)
 
   def insertMany(cs: ZClientSession, documents: Seq[T], options: InsertManyOptions): Task[InsertManyResult] =
-    underlying.insertMany(cs.underlying, asJava(documents), options).asyncSingle.unNone
+    ZIO.attempt(underlying.insertMany(cs.underlying, asJava(documents), options)).flatMap(_.asyncSingle.unNone)
 
   def count(filter: Bson, options: CountOptions): Task[Long] =
-    underlying.countDocuments(filter, options).asyncSingle.unNone.map(_.longValue())
+    ZIO.attempt(underlying.countDocuments(filter, options)).flatMap(_.asyncSingle.unNone).map(_.longValue())
 
   def count(cs: ZClientSession, filter: Filter, options: CountOptions): Task[Long] =
-    underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle.unNone.map(_.longValue())
+    ZIO.attempt(underlying.countDocuments(cs.underlying, filter.toBson, options)).flatMap(_.asyncSingle.unNone).map(_.longValue())
 
   def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): Task[BulkWriteResult] =
-    underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle.unNone
+    ZIO.attempt(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options)).flatMap(_.asyncSingle.unNone)
 
   def bulkWrite[T1 <: T](cs: ZClientSession, commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): Task[BulkWriteResult] =
-    underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle.unNone
+    ZIO.attempt(underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options)).flatMap(_.asyncSingle.unNone)
 
   def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): Task[Unit] =
-    underlying.renameCollection(target.toJava, options).asyncVoid
+    ZIO.attempt(underlying.renameCollection(target.toJava, options)).flatMap(_.asyncVoid)
 
   def renameCollection(cs: ZClientSession, target: MongoNamespace, options: RenameCollectionOptions): Task[Unit] =
-    underlying.renameCollection(cs.underlying, target.toJava, options).asyncVoid
+    ZIO.attempt(underlying.renameCollection(cs.underlying, target.toJava, options)).flatMap(_.asyncVoid)
 }
 
 object ZMongoCollection {

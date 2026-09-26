@@ -84,110 +84,143 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     Queries.find(underlying.find(cs.underlying, filter.toBson))
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
-    underlying.findOneAndDelete(filter, options).asyncSingle[F]
+    Async[F].defer(underlying.findOneAndDelete(filter, options).asyncSingle[F])
 
   def findOneAndDelete(cs: ClientSession[F], filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]] =
-    underlying.findOneAndDelete(cs.underlying, filter.toBson, options).asyncSingle[F]
+    Async[F].defer(underlying.findOneAndDelete(cs.underlying, filter.toBson, options).asyncSingle[F])
 
   def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]] =
-    underlying.findOneAndUpdate(filter, update, options).asyncSingle[F]
+    Async[F].defer(underlying.findOneAndUpdate(filter, update, options).asyncSingle[F])
 
   def findOneAndUpdate(cs: ClientSession[F], filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[Option[T]] =
-    underlying.findOneAndUpdate(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F]
+    Async[F].defer(underlying.findOneAndUpdate(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F])
 
   def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
-    underlying.findOneAndReplace(filter, replacement, options).asyncSingle[F]
+    Async[F].defer(underlying.findOneAndReplace(filter, replacement, options).asyncSingle[F])
 
   def findOneAndReplace(cs: ClientSession[F], filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
-    underlying.findOneAndReplace(cs.underlying, filter.toBson, replacement, options).asyncSingle[F]
+    Async[F].defer(underlying.findOneAndReplace(cs.underlying, filter.toBson, replacement, options).asyncSingle[F])
 
-  def dropIndex(name: String, options: DropIndexOptions): F[Unit]                       = underlying.dropIndex(name, options).asyncVoid[F]
+  def dropIndex(name: String, options: DropIndexOptions): F[Unit] =
+    Async[F].defer(underlying.dropIndex(name, options).asyncVoid[F])
   def dropIndex(cs: ClientSession[F], name: String, options: DropIndexOptions): F[Unit] =
-    underlying.dropIndex(cs.underlying, name, options).asyncVoid[F]
-  def dropIndex(keys: Bson, options: DropIndexOptions): F[Unit]                         = underlying.dropIndex(keys, options).asyncVoid[F]
+    Async[F].defer(underlying.dropIndex(cs.underlying, name, options).asyncVoid[F])
+  def dropIndex(keys: Bson, options: DropIndexOptions): F[Unit] =
+    Async[F].defer(underlying.dropIndex(keys, options).asyncVoid[F])
   def dropIndex(cs: ClientSession[F], index: Index, options: DropIndexOptions): F[Unit] =
-    underlying.dropIndex(cs.underlying, index.toBson, options).asyncVoid[F]
+    Async[F].defer(underlying.dropIndex(cs.underlying, index.toBson, options).asyncVoid[F])
 
-  def dropIndexes(options: DropIndexOptions): F[Unit]                       = underlying.dropIndexes(options).asyncVoid[F]
-  def dropIndexes(cs: ClientSession[F], options: DropIndexOptions): F[Unit] = underlying.dropIndexes(cs.underlying, options).asyncVoid[F]
+  def dropIndexes(options: DropIndexOptions): F[Unit] =
+    Async[F].defer(underlying.dropIndexes(options).asyncVoid[F])
+  def dropIndexes(cs: ClientSession[F], options: DropIndexOptions): F[Unit] =
+    Async[F].defer(underlying.dropIndexes(cs.underlying, options).asyncVoid[F])
 
-  def drop: F[Unit]                       = underlying.drop().asyncVoid[F]
-  def drop(cs: ClientSession[F]): F[Unit] = underlying.drop(cs.underlying).asyncVoid[F]
+  def drop: F[Unit] =
+    Async[F].defer(underlying.drop().asyncVoid[F])
+  def drop(cs: ClientSession[F]): F[Unit] =
+    Async[F].defer(underlying.drop(cs.underlying).asyncVoid[F])
 
   def createIndex(key: Bson, options: IndexOptions): F[String] =
-    underlying.createIndex(key, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.createIndex(key, options).asyncSingle[F].unNone)
   def createIndex(cs: ClientSession[F], index: Index, options: IndexOptions): F[String] =
-    underlying.createIndex(cs.underlying, index.toBson, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.createIndex(cs.underlying, index.toBson, options).asyncSingle[F].unNone)
 
   def listIndexes: F[Iterable[Document]] =
-    underlying.listIndexes().asyncIterableF[F, Document](Document.fromJava)
+    Async[F].defer(underlying.listIndexes().asyncIterableF[F, Document](Document.fromJava))
   def listIndexes[Y: ClassTag]: F[Iterable[Y]] =
-    underlying.listIndexes(Clazz.tag[Y]).asyncIterable[F]
+    Async[F].defer(underlying.listIndexes(Clazz.tag[Y]).asyncIterable[F])
   def listIndexes(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listIndexes(cs.underlying).asyncIterableF[F, Document](Document.fromJava)
+    Async[F].defer(underlying.listIndexes(cs.underlying).asyncIterableF[F, Document](Document.fromJava))
   def listIndexes[Y: ClassTag](cs: ClientSession[F]): F[Iterable[Y]] =
-    underlying.listIndexes(cs.underlying, Clazz.tag[Y]).asyncIterable[F]
+    Async[F].defer(underlying.listIndexes(cs.underlying, Clazz.tag[Y]).asyncIterable[F])
+
+  def createSearchIndex(definition: Bson): F[String] =
+    Async[F].defer(underlying.createSearchIndex(definition).asyncSingle[F].unNone)
+
+  def createSearchIndex(name: String, definition: Bson): F[String] =
+    Async[F].defer(underlying.createSearchIndex(name, definition).asyncSingle[F].unNone)
+
+  def createSearchIndexes(indexes: Seq[SearchIndexModel]): F[Iterable[String]] =
+    Async[F].defer(underlying.createSearchIndexes(asJava(indexes.map(_.toJava))).asyncIterable[F])
+
+  def listSearchIndexes: F[Iterable[Document]] =
+    Async[F].defer(underlying.listSearchIndexes().asyncIterableF[F, Document](Document.fromJava))
+
+  def listSearchIndexes(name: String): F[Iterable[Document]] =
+    Async[F].defer(underlying.listSearchIndexes().name(name).asyncIterableF[F, Document](Document.fromJava))
+
+  def listSearchIndexes[Y: ClassTag]: F[Iterable[Y]] =
+    Async[F].defer(underlying.listSearchIndexes(Clazz.tag[Y]).asyncIterable[F])
+
+  def listSearchIndexes[Y: ClassTag](name: String): F[Iterable[Y]] =
+    Async[F].defer(underlying.listSearchIndexes(Clazz.tag[Y]).name(name).asyncIterable[F])
+
+  def updateSearchIndex(name: String, definition: Bson): F[Unit] =
+    Async[F].defer(underlying.updateSearchIndex(name, definition).asyncVoid[F])
+
+  def dropSearchIndex(name: String): F[Unit] =
+    Async[F].defer(underlying.dropSearchIndex(name).asyncVoid[F])
 
   def updateMany(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
-    underlying.updateMany(filter, update, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.updateMany(filter, update, options).asyncSingle[F].unNone)
 
   def updateMany(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    underlying.updateMany(filter, asJava(update), options).asyncSingle[F].unNone
+    Async[F].defer(underlying.updateMany(filter, asJava(update), options).asyncSingle[F].unNone)
 
   def updateMany(cs: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
-    underlying.updateMany(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.updateMany(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F].unNone)
 
   def updateOne(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
-    underlying.updateOne(filter, update, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.updateOne(filter, update, options).asyncSingle[F].unNone)
 
   def updateOne(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
-    underlying.updateOne(filter, asJava(update), options).asyncSingle[F].unNone
+    Async[F].defer(underlying.updateOne(filter, asJava(update), options).asyncSingle[F].unNone)
 
   def updateOne(cs: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
-    underlying.updateOne(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.updateOne(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F].unNone)
 
   def replaceOne(filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult] =
-    underlying.replaceOne(filter, replacement, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.replaceOne(filter, replacement, options).asyncSingle[F].unNone)
 
   def replaceOne(cs: ClientSession[F], filter: Filter, replacement: T, options: ReplaceOptions): F[UpdateResult] =
-    underlying.replaceOne(cs.underlying, filter.toBson, replacement, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.replaceOne(cs.underlying, filter.toBson, replacement, options).asyncSingle[F].unNone)
 
   def deleteOne(filter: Bson, options: DeleteOptions): F[DeleteResult] =
-    underlying.deleteOne(filter, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.deleteOne(filter, options).asyncSingle[F].unNone)
   def deleteOne(cs: ClientSession[F], filter: Filter, options: DeleteOptions): F[DeleteResult] =
-    underlying.deleteOne(cs.underlying, filter.toBson, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.deleteOne(cs.underlying, filter.toBson, options).asyncSingle[F].unNone)
 
   def deleteMany(filter: Bson, options: DeleteOptions): F[DeleteResult] =
-    underlying.deleteMany(filter, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.deleteMany(filter, options).asyncSingle[F].unNone)
   def deleteMany(cs: ClientSession[F], filter: Filter, options: DeleteOptions): F[DeleteResult] =
-    underlying.deleteMany(cs.underlying, filter.toBson, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.deleteMany(cs.underlying, filter.toBson, options).asyncSingle[F].unNone)
 
   def insertOne(document: T, options: InsertOneOptions): F[InsertOneResult] =
-    underlying.insertOne(document, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.insertOne(document, options).asyncSingle[F].unNone)
   def insertOne(cs: ClientSession[F], document: T, options: InsertOneOptions): F[InsertOneResult] =
-    underlying.insertOne(cs.underlying, document, options).asyncSingle[F].unNone
+    Async[F].defer(underlying.insertOne(cs.underlying, document, options).asyncSingle[F].unNone)
 
   def insertMany(docs: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
-    underlying.insertMany(asJava(docs), options).asyncSingle[F].unNone
+    Async[F].defer(underlying.insertMany(asJava(docs), options).asyncSingle[F].unNone)
   def insertMany(cs: ClientSession[F], docs: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
-    underlying.insertMany(cs.underlying, asJava(docs), options).asyncSingle[F].unNone
+    Async[F].defer(underlying.insertMany(cs.underlying, asJava(docs), options).asyncSingle[F].unNone)
 
   def count(filter: Bson, options: CountOptions): F[Long] =
-    underlying.countDocuments(filter, options).asyncSingle[F].unNone.map(_.longValue())
+    Async[F].defer(underlying.countDocuments(filter, options).asyncSingle[F].unNone.map(_.longValue()))
   def count(cs: ClientSession[F], filter: Filter, options: CountOptions): F[Long] =
-    underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].unNone.map(_.longValue())
+    Async[F].defer(underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].unNone.map(_.longValue()))
 
   def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
-    underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone
+    Async[F].defer(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)
 
   def bulkWrite[T1 <: T](cs: ClientSession[F], commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
-    underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone
+    Async[F].defer(underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)
 
   def renameCollection(target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
-    underlying.renameCollection(target.toJava, options).asyncVoid[F]
+    Async[F].defer(underlying.renameCollection(target.toJava, options).asyncVoid[F])
 
   def renameCollection(session: ClientSession[F], target: MongoNamespace, options: RenameCollectionOptions): F[Unit] =
-    underlying.renameCollection(session.underlying, target.toJava, options).asyncVoid[F]
+    Async[F].defer(underlying.renameCollection(session.underlying, target.toJava, options).asyncVoid[F])
 }
 
 object MongoCollection {

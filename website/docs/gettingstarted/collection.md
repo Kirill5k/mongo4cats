@@ -8,6 +8,8 @@ tags: ["MongoCollection"]
 
 `MongoCollection[F, T]` is the main abstraction for interacting with a MongoDB collection. The type parameter `T` is the document type — by default `Document`, but it can be any type that has a registered BSON codec.
 
+Collection operations returning `F` (or `Task` for ZIO) defer driver invocation until the effect runs. Synchronous driver validation errors and asynchronous operation failures are reported through the effect's error channel. Running the same effect again invokes the driver again; results are not cached. Query builders likewise defer execution until a terminal operation such as `all`, `first`, or `stream` is run.
+
 ## Untyped collections (Document)
 
 The simplest way to get a collection works with the generic `Document` type:
@@ -104,6 +106,7 @@ Once you have a collection, the following operations are available:
 | **Aggregate** | `aggregate`, `aggregateWithCodec` |
 | **Distinct** | `distinct`, `distinctWithCodec` |
 | **Indexes** | `createIndex`, `listIndexes`, `dropIndex`, `dropIndexes` |
+| **Search indexes** | `createSearchIndex`, `createSearchIndexes`, `listSearchIndexes`, `updateSearchIndex`, `dropSearchIndex` |
 | **Bulk** | `bulkWrite` |
 | **Watch** | `watch` |
 | **Admin** | `drop`, `renameCollection` |
