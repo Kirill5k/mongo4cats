@@ -103,6 +103,47 @@ class DocumentSpec extends AnyWordSpec with Matchers {
         testDocument.toJson mustBe jsonString
       }
 
+      "offer canonical JSON without changing the existing relaxed default" in {
+        val document = Document("int" := 42, "long" := 42L, "double" := 42.5)
+
+        document.toJson(BsonJsonMode.Canonical) mustBe
+          """{"int": {"$numberInt": "42"}, "long": {"$numberLong": "42"}, "double": {"$numberDouble": "42.5"}}"""
+        document.toJson(BsonJsonMode.Relaxed) mustBe document.toJson
+        Document.parse(document.toJson(BsonJsonMode.Canonical)) mustBe document
+        Document.parse(document.toJson(BsonJsonMode.Relaxed)).get("long") mustBe Some(BsonValue.int(42))
+      }
+
+      "retain undefined fields and decimal wrappers in either explicit mode" in {
+        val document = Document("undefined" -> BsonValue.Undefined, "decimal" -> BsonValue.bigDecimal(BigDecimal("1.25")))
+
+        List(BsonJsonMode.Canonical, BsonJsonMode.Relaxed).foreach { mode =>
+          document.toJson(mode) mustBe """{"undefined": {"$undefined": true}, "decimal": {"$numberDecimal": "1.25"}}"""
+          Document.parse(document.toJson(mode)) mustBe document
+        }
+      }
+
+      "fall back to canonical dates outside the relaxed date range" in
+        List(Instant.ofEpochMilli(-1L), Instant.parse("+10000-01-01T00:00:00Z")).foreach { instant =>
+          val document = Document("time" := instant)
+          document.toJson(BsonJsonMode.Relaxed) mustBe document.toJson(BsonJsonMode.Canonical)
+          Document.parse(document.toJson(BsonJsonMode.Canonical)) mustBe document
+        }
+
+      "reject lossy values in explicit modes while leaving legacy serialization available" in {
+        val document = Document("time" := Instant.parse("2022-01-01T00:00:00.123456Z"))
+
+        val errors = intercept[BsonErrors](document.toJson(BsonJsonMode.Canonical))
+        errors.head.path mustBe Vector(BsonPathSegment.Field("time"))
+        document.toJson mustBe """{"time": {"$date": "2022-01-01T00:00:00.123Z"}}"""
+      }
+
+      "reject ambiguous reserved fields when explicit Extended JSON is requested" in {
+        val document = Document("value" -> BsonValue.document("$numberInt" -> BsonValue.string("42")))
+
+        intercept[BsonErrors](document.toJson(BsonJsonMode.Canonical)).head.kind mustBe BsonError.Kind.InvalidValue
+        document.toJson mustBe """{"value": {"$numberInt": "42"}}"""
+      }
+
       "handle arrays with json" in {
         val result = Document.parse(s"""{"people": [$jsonString]}""")
 

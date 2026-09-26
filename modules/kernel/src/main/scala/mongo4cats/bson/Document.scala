@@ -53,7 +53,12 @@ sealed abstract class Document extends Bson {
   def getDouble(key: String): Option[Double]                            = apply(key).flatMap(_.asDouble)
   def getLong(key: String): Option[Long]                                = apply(key).flatMap(_.asLong)
   def getInt(key: String): Option[Int]                                  = apply(key).flatMap(_.asInt)
-  def getAs[A](key: String)(implicit d: BsonValueDecoder[A]): Option[A] = apply(key).flatMap(d.decode)
+  def getAs[A](key: String)(implicit d: BsonValueDecoder[A]): Option[A] = getAsEither[A](key).toOption
+
+  def getAsEither[A](key: String)(implicit d: BsonValueDecoder[A]): Either[BsonErrors, A] = apply(key) match {
+    case Some(value) => BsonValueDecoder.attempt(d.decode(value)).left.map(_.prepend(BsonPathSegment.Field(key)))
+    case None => Left(BsonErrors(BsonError(BsonError.Kind.MissingField, s"Missing field '$key'", Vector(BsonPathSegment.Field(key)))))
+  }
 
   def getNested(jsonPath: String): Option[BsonValue] = {
     @tailrec
@@ -69,7 +74,18 @@ sealed abstract class Document extends Bson {
     go(paths.head, paths.tail, this)
   }
 
-  def getNestedAs[A](jsonPath: String)(implicit d: BsonValueDecoder[A]): Option[A] = getNested(jsonPath).flatMap(d.decode)
+  def getNestedAs[A](jsonPath: String)(implicit d: BsonValueDecoder[A]): Option[A] = getNestedAsEither[A](jsonPath).toOption
+
+  /** Decode a dotted field path, reporting the first invalid parent or the leaf decoder's failures. */
+  def getNestedAsEither[A](jsonPath: String)(implicit d: BsonValueDecoder[A]): Either[BsonErrors, A] = {
+    def go(document: Document, remaining: List[String]): Either[BsonErrors, A] = remaining match {
+      case key :: Nil  => document.getAsEither[A](key)
+      case key :: rest => document.getAsEither[Document](key).flatMap(go(_, rest).left.map(_.prepend(BsonPathSegment.Field(key))))
+      case Nil         => Left(BsonErrors(BsonError(BsonError.Kind.InvalidValue, "A nested field path must not be empty")))
+    }
+
+    go(this, jsonPath.split("\\.", -1).toList)
+  }
 
   def toList: List[(String, BsonValue)]
   def toMap: Map[String, BsonValue]
@@ -77,6 +93,19 @@ sealed abstract class Document extends Bson {
 
   def toJson: String = {
     val writerSettings = JsonWriterSettings.builder.outputMode(JsonMode.RELAXED).build
+    val writer         = new JsonWriter(new StringWriter(), writerSettings)
+    DocumentCodecProvider.DefaultCodec.encode(writer, this, EncoderContext.builder.build)
+    writer.getWriter.toString
+  }
+
+  /** Serialize using an explicit Extended JSON representation, rejecting values that would lose information. */
+  def toJson(mode: BsonJsonMode): String = {
+    ExtendedJsonCodec.validate(BsonValue.document(this)).fold(throw _, identity)
+    val outputMode = mode match {
+      case BsonJsonMode.Canonical => JsonMode.EXTENDED
+      case BsonJsonMode.Relaxed   => JsonMode.RELAXED
+    }
+    val writerSettings = JsonWriterSettings.builder.outputMode(outputMode).build
     val writer         = new JsonWriter(new StringWriter(), writerSettings)
     DocumentCodecProvider.DefaultCodec.encode(writer, this, EncoderContext.builder.build)
     writer.getWriter.toString

@@ -31,7 +31,14 @@ import scala.util.Try
 
 trait MongoJsonCodecs {
   implicit def deriveJsonBsonValueDecoder[A](implicit d: Decoder[A]): BsonValueDecoder[A] =
-    bson => CirceJsonMapper.fromBson(bson).flatMap(d.decodeJson).toOption
+    BsonValueDecoder.fromEither { bson =>
+      CirceJsonMapper.fromBsonDiagnostic(bson).flatMap { json =>
+        d.decodeAccumulating(json.hcursor).toEither.left.map { failures =>
+          val errors = failures.toList.map(CirceDiagnosticDecoder.error).toVector
+          BsonErrors(errors.head, errors.tail)
+        }
+      }
+    }
 
   implicit def deriveJsonBsonValueEncoder[A](implicit e: Encoder[A]): BsonValueEncoder[A] =
     value => CirceJsonMapper.toBson(e(value))

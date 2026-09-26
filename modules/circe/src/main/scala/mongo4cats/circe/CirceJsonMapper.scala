@@ -20,7 +20,7 @@ import cats.syntax.traverse._
 import io.circe.{Json, JsonNumber}
 import mongo4cats.Uuid
 import mongo4cats.bson.json.{ExtendedJson, JsonMapper, Tag}
-import mongo4cats.bson.{BsonValue, Document, ObjectId}
+import mongo4cats.bson.{BsonError, BsonErrors, BsonPathSegment, BsonValue, Document, ObjectId}
 import mongo4cats.errors.MongoJsonParsingException
 
 import java.time.{Instant, LocalDate}
@@ -123,6 +123,42 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
           .map(Json.fromFields)
       case value => Left(MongoJsonParsingException(s"Cannot map $value bson value to json"))
     }
+
+  // Retain the historical JSON representation while collecting mapping failures before domain decoding.
+  def fromBsonDiagnostic(bson: BsonValue): Either[BsonErrors, Json] = bson match {
+    case BsonValue.BArray(values) =>
+      accumulate(values.toVector.zipWithIndex) { case (value, index) =>
+        fromBsonDiagnostic(value).left.map(_.prepend(BsonPathSegment.Index(index)))
+      }.map(Json.fromValues)
+    case BsonValue.BDocument(document) =>
+      accumulate(document.toList.toVector.filterNot(_._2.isUndefined)) { case (key, value) =>
+        fromBsonDiagnostic(value).left.map(_.prepend(BsonPathSegment.Field(key))).map(key -> _)
+      }.map(Json.fromFields)
+    case value =>
+      fromBson(value).left.map { failure =>
+        val kind = value match {
+          case BsonValue.BDouble(_) => BsonError.Kind.InvalidValue
+          case _                    => BsonError.Kind.UnsupportedType
+        }
+        BsonErrors(BsonError(kind, failure.getMessage, cause = Some(failure)))
+      }
+  }
+
+  private def accumulate[A, B](values: Vector[A])(f: A => Either[BsonErrors, B]): Either[BsonErrors, Vector[B]] = {
+    val results  = Vector.newBuilder[B]
+    val failures = Vector.newBuilder[BsonError]
+    values.foreach { value =>
+      f(value) match {
+        case Right(result) => results += result
+        case Left(errors)  => failures ++= errors.errors
+      }
+    }
+    val errors = failures.result()
+    errors.headOption match {
+      case Some(head) => Left(BsonErrors(head, errors.tail))
+      case None       => Right(results.result())
+    }
+  }
 
   def binaryBase64ToJson(base64: String, subType: String): Json =
     Json.obj(Tag.binary -> Json.obj("base64" -> Json.fromString(base64), "subType" -> Json.fromString(subType)))

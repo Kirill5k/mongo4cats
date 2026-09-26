@@ -118,6 +118,59 @@ val coll: Task[ZMongoCollection[User]] = db.getCollectionWithCodec[User]("users"
 
 The integration accepts canonical dates and finite `$numberDecimal` wrappers, with the same [JSON compatibility and error behavior](gettingstarted/documents.md#json-integration-compatibility) as Circe. Output remains ISO date wrappers and plain decimal numbers; not all Extended JSON forms or BSON types can round-trip through these codecs.
 
+### Explicit Extended JSON
+
+Use `ZioExtendedJson` for canonical or relaxed BSON interchange without changing the implicit domain codecs:
+
+```scala mdoc:reset
+import mongo4cats.bson.{BsonErrors, BsonValue, BsonJsonMode}
+import mongo4cats.zio.json.ZioExtendedJson
+import zio.json.ast.Json
+
+val value = BsonValue.document(
+  "count" -> BsonValue.long(1L),
+  "pattern" -> BsonValue.regex("a.*".r, "im")
+)
+
+val json: Either[BsonErrors, Json] =
+  ZioExtendedJson.fromBson(value, BsonJsonMode.Canonical)
+val restored: Either[BsonErrors, BsonValue] = json.flatMap(ZioExtendedJson.toBson)
+val parsed: Either[BsonErrors, BsonValue] =
+  ZioExtendedJson.parse("""{"count":{"$numberLong":"1"}}""")
+assert(restored.map(_.asJava) == Right(value.asJava))
+```
+
+Canonical output preserves supported BSON types and metadata. `BsonJsonMode.Relaxed` favors ordinary JSON numbers and can lose numeric type information when reparsed. Both readers accept canonical and relaxed forms, accumulating independent wrapper errors with typed field/index paths. Invalid JSON syntax, including trailing non-whitespace after a value, returns one `SyntaxError`. See [shared output semantics and supported boundaries](gettingstarted/documents.md#explicit-extended-json) for differences from `Document.toJson(mode)` and the Decimal128, regex, date precision, and reserved-key constraints.
+
+`ZioExtendedJson.parse(String)` preserves original numeric tokens, including the sign of `-0.0` and the exponent in `1e0`, after the native parser validates the input. `toBson(existingJson)` cannot recover numeric information already erased by ZIO's `Json.Num` representation. Relaxed export of BSON double negative zero therefore returns an `InvalidValue` error at its field/index path; choose canonical output, whose `$numberDouble` string preserves the sign.
+
+### Diagnostic domain decoding
+
+Derived BSON decoders use a single `decode` method returning `Either[BsonErrors, A]`:
+
+```scala mdoc:reset
+import mongo4cats.bson.{BsonErrors, BsonValue, BsonValueDecoder}
+import mongo4cats.zio.json._
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
+
+final case class User(name: String, score: Int)
+implicit val userDecoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
+
+val decoder: BsonValueDecoder[User] = deriveJsonBsonValueDecoder[User]
+val input = BsonValue.document(
+  "name" -> BsonValue.string("Alice"),
+  "score" -> BsonValue.string("wrong")
+)
+
+val detailed: Either[BsonErrors, User] = decoder.decode(input)
+// The error path is Vector(BsonPathSegment.Field("score")).
+val convenient: Option[User] = decoder.decode(input).toOption
+assert(detailed.left.map(_.head.renderPath) == Left("$.score"))
+assert(convenient.isEmpty)
+```
+
+`Document.getAsEither` and `getNestedAsEither` add the enclosing document fields to those paths. BSON-to-JSON mapping failures accumulate across documents and arrays. Native ZIO JSON decoders return their first domain-decoding failure; the integration preserves its typed field/index trace, including punctuation in field names. Core BSON `field`/`zip`/list decoders and explicit Extended JSON validation can accumulate independent failures. Custom decoders that discard their trace cannot provide the discarded path.
+
 ## Transactions
 
 ```scala

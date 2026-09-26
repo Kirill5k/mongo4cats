@@ -34,7 +34,7 @@ trait MongoJsonCodecs {
     value => ZioJsonMapper.toBson(e.toJsonAST(value).toOption.get)
 
   implicit def deriveJsonBsonValueDecoder[A](implicit d: JsonDecoder[A]): BsonValueDecoder[A] =
-    bson => ZioJsonMapper.fromBson(bson).flatMap(d.fromJsonAST).toOption
+    bson => ZioJsonDiagnostics.decode(bson, d)
 
   implicit val documentEncoder: JsonEncoder[Document] =
     Json.encoder.contramap[Document](d => ZioJsonMapper.fromBson(BsonValue.document(d)).fold(throw _, identity))
