@@ -4,26 +4,29 @@ import Utils.*
 
 val scala212               = "2.12.21"
 val scala213               = "2.13.18"
-val scala3                 = "3.3.7"
+val scala3                 = "3.9.0"
 val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalaVersion  := scala213
 ThisBuild / organization  := "io.github.kirill5k"
-ThisBuild / homepage      := Some(url("https://kirill5k.github.io/mongo4cats"))
-ThisBuild / scmInfo       := Some(ScmInfo(url("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
-ThisBuild / developers    := List(Developer("kirill5k", "Kirill", "immotional@aol.com", url("https://github.com/kirill5k")))
-ThisBuild / licenses      := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / homepage      := Some(uri("https://kirill5k.github.io/mongo4cats"))
+ThisBuild / scmInfo       := Some(ScmInfo(uri("https://github.com/kirill5k/mongo4cats"), "git@github.com:kirill5k/mongo4cats.git"))
+ThisBuild / developers    := List(Developer("kirill5k", "Kirill", "immotional@aol.com", uri("https://github.com/kirill5k")))
+ThisBuild / licenses      := List("Apache-2.0" -> uri("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
 
+// sbt-ci-release uses sbt-dynver for versioning, leaving these sbt-git metadata keys unused.
+Global / excludeLintKeys ++= Set(git.gitDescribedVersion, git.gitUncommittedChanges)
+
 githubWorkflowDir := (LocalRootProject / baseDirectory).value / ".github"
 Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
 organizationName := "MongoDB Java client wrapper for Cats-Effect & FS2"
 startYear        := Some(2020)
-licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt"))
+licenses += ("Apache-2.0", uri("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 headerLicense := Some(HeaderLicense.ALv2("2020", "Kirill5k"))
 resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/"
 scalafmtOnCompile  := true
@@ -33,6 +36,8 @@ Compile / doc / scalacOptions ++= Seq(
 )
 mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "0.5.0")
 scalacOptions ++= partialUnificationOption(scalaVersion.value)
+// Retain the shared Scala 2 source syntax when compiling with Scala 3.
+scalacOptions ++= (if (scalaBinaryVersion.value == "3") Seq("-source:3.3") else Nil)
 scalacOptions ~= { (options: Seq[String]) => options.filterNot(Set("-Wnonunit-statement")) }
 
 val noPublish = Seq(
@@ -82,7 +87,9 @@ val zio = project
   .settings(
     name := "mongo4cats-zio",
     libraryDependencies ++= Dependencies.zio,
-    libraryDependencies ++= kindProjectorDependency(scalaVersion.value)
+    libraryDependencies ++= kindProjectorDependency(scalaVersion.value),
+    // ZIO specs are runnable entry points; the test jar has no default main class.
+    Test / packageBin / mainClass := None
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -110,7 +117,9 @@ val examples = project
   .settings(noPublish)
   .settings(
     name := "mongo4cats-examples",
-    libraryDependencies ++= Dependencies.examples
+    libraryDependencies ++= Dependencies.examples,
+    // The examples have multiple entry points, so their jar has no default main class.
+    Compile / packageBin / mainClass := None
   )
   .enablePlugins(AutomateHeaderPlugin)
 

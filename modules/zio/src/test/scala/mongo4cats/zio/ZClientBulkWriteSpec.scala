@@ -54,10 +54,10 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
           ClientWriteCommand.DeleteMany(second, Filter.gte("_id", 2))
         )
         for {
-          result <- client.bulkWrite(commands, ClientBulkWriteOptions(verboseResults = true))
-          firstDocs <- documents(client, first)
+          result     <- client.bulkWrite(commands, ClientBulkWriteOptions(verboseResults = true))
+          firstDocs  <- documents(client, first)
           secondDocs <- documents(client, second)
-          auditDocs <- documents(client, audit)
+          auditDocs  <- documents(client, audit)
         } yield {
           val verbose = result.getVerboseResults.get()
           assertTrue(
@@ -101,7 +101,7 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
             ),
             ClientBulkWriteOptions(verboseResults = true)
           )
-          firstDocs <- documents(client, first)
+          firstDocs  <- documents(client, first)
           secondDocs <- documents(client, second)
         } yield assertTrue(
           result.getInsertedCount == 0L,
@@ -125,7 +125,7 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
               ClientWriteCommand.ReplaceOne(first, Filter.eq("_id", 1), ClientBulkWriteFixture.Record(1, "after"))
             )
           )
-          firstDocs <- documents(client, first)
+          firstDocs  <- documents(client, first)
           secondDocs <- documents(client, second)
         } yield assertTrue(
           result.getInsertedCount == 2L,
@@ -139,15 +139,17 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
     test("stop ordered writes after an error and retain successful partial results") {
       withClient() { client =>
         for {
-          result <- client.bulkWrite(
-            List(
-              ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
-              ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
-              ClientWriteCommand.InsertOne(second, Document("_id" := 2))
-            ),
-            ClientBulkWriteOptions(verboseResults = true)
-          ).either
-          firstDocs <- documents(client, first)
+          result <- client
+            .bulkWrite(
+              List(
+                ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
+                ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
+                ClientWriteCommand.InsertOne(second, Document("_id" := 2))
+              ),
+              ClientBulkWriteOptions(verboseResults = true)
+            )
+            .either
+          firstDocs  <- documents(client, first)
           secondDocs <- documents(client, second)
         } yield result match {
           case Left(error: ClientBulkWriteException) =>
@@ -174,16 +176,18 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
               ClientWriteCommand.InsertOne(second, Document("_id" := 2))
             )
           )
-          result <- client.bulkWrite(
-            List(
-              ClientWriteCommand.InsertOne(first, Document("_id" := 3)),
-              ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
-              ClientWriteCommand.InsertOne(second, Document("_id" := 4)),
-              ClientWriteCommand.InsertOne(second, Document("_id" := 2))
-            ),
-            ClientBulkWriteOptions(ordered = false, verboseResults = true)
-          ).either
-          firstDocs <- documents(client, first)
+          result <- client
+            .bulkWrite(
+              List(
+                ClientWriteCommand.InsertOne(first, Document("_id" := 3)),
+                ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
+                ClientWriteCommand.InsertOne(second, Document("_id" := 4)),
+                ClientWriteCommand.InsertOne(second, Document("_id" := 2))
+              ),
+              ClientBulkWriteOptions(ordered = false, verboseResults = true)
+            )
+            .either
+          firstDocs  <- documents(client, first)
           secondDocs <- documents(client, second)
         } yield result match {
           case Left(error: ClientBulkWriteException) =>
@@ -207,13 +211,15 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
     test("return no partial result when the first ordered operation fails") {
       withClient() { client =>
         for {
-          _ <- client.bulkWrite(List(ClientWriteCommand.InsertOne(first, Document("_id" := 1))))
-          result <- client.bulkWrite(
-            List(
-              ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
-              ClientWriteCommand.InsertOne(second, Document("_id" := 2))
+          _      <- client.bulkWrite(List(ClientWriteCommand.InsertOne(first, Document("_id" := 1))))
+          result <- client
+            .bulkWrite(
+              List(
+                ClientWriteCommand.InsertOne(first, Document("_id" := 1)),
+                ClientWriteCommand.InsertOne(second, Document("_id" := 2))
+              )
             )
-          ).either
+            .either
           secondDocs <- documents(client, second)
         } yield result match {
           case Left(error: ClientBulkWriteException) =>
@@ -224,14 +230,17 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
     },
     test("reject an empty batch inside the effect") {
       withClient() { client =>
-        client.bulkWrite(List.empty[ClientWriteCommand]).either.map(result => assertTrue(result.left.exists(_.isInstanceOf[IllegalArgumentException])))
+        client
+          .bulkWrite(List.empty[ClientWriteCommand])
+          .either
+          .map(result => assertTrue(result.left.exists(_.isInstanceOf[IllegalArgumentException])))
       }
     },
     test("support unacknowledged unordered writes and reject incompatible options inside the effect") {
       withClient(writeConcern = WriteConcern.UNACKNOWLEDGED) { client =>
         val writes = List(ClientWriteCommand.InsertOne(first, Document("_id" := 1)))
         for {
-          result <- client.bulkWrite(writes, ClientBulkWriteOptions(ordered = false))
+          result  <- client.bulkWrite(writes, ClientBulkWriteOptions(ordered = false))
           ordered <- client.bulkWrite(writes).either
           verbose <- client.bulkWrite(writes, ClientBulkWriteOptions(ordered = false, verboseResults = true)).either
         } yield assertTrue(
@@ -259,8 +268,8 @@ object ZClientBulkWriteSpec extends ZIOSpecDefault with EmbeddedMongo {
 
   private def documents(client: ZMongoClient, namespace: MongoNamespace): zio.Task[Iterable[Document]] =
     for {
-      database <- client.getDatabase(namespace.databaseName)
+      database   <- client.getDatabase(namespace.databaseName)
       collection <- database.getCollection(namespace.collectionName)
-      result <- collection.find.all
+      result     <- collection.find.all
     } yield result
 }

@@ -23,7 +23,7 @@ import mongo4cats.bson.syntax._
 
 import java.time.Instant
 
-object DocumentsWithCirce extends App {
+object DocumentsWithCirce {
 
   final case class MyClass(
       _id: ObjectId,
@@ -49,6 +49,8 @@ object DocumentsWithCirce extends App {
 
   val retrievedMyClasses = doc.getAs[List[MyClass]]("myClasses")
 
-  println(doc.toJson)
-  println(retrievedMyClasses)
+  def main(args: Array[String]): Unit = {
+    println(doc.toJson)
+    println(retrievedMyClasses)
+  }
 }

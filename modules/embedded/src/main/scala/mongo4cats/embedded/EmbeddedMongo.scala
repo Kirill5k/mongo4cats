@@ -19,12 +19,12 @@ package mongo4cats.embedded
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
 import com.mongodb.client.MongoClients
+import de.flapdoodle.commons.reverse.transitions.Start
+import de.flapdoodle.commons.reverse.{Listener, StateID, TransitionWalker}
 import de.flapdoodle.embed.mongo.commands.MongodArguments
 import de.flapdoodle.embed.mongo.config.Net
 import de.flapdoodle.embed.mongo.distribution.Version
 import de.flapdoodle.embed.mongo.transitions.{Mongod, RunningMongodProcess}
-import de.flapdoodle.reverse.transitions.Start
-import de.flapdoodle.reverse.{Listener, StateID, TransitionWalker}
 import org.bson.Document
 
 import scala.concurrent.duration._

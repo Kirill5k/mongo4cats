@@ -31,10 +31,11 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 class ClientBulkWriteEffectSpec extends AsyncWordSpec with Matchers {
   private val namespace = MongoNamespace("db", "items")
-  private val commands = List(ClientWriteCommand.InsertOne(namespace, Document("_id" := 1)))
-  private val options = ClientBulkWriteOptions(ordered = false, verboseResults = true)
-  private val session = new LiveClientSession[IO](ClientSessionStub(_ => ()))
-  private val writers: List[(String, Boolean, ClientBulkWriteOptions, (MongoClient[IO], Seq[ClientWriteCommand]) => IO[ClientBulkWriteResult])] = List(
+  private val commands  = List(ClientWriteCommand.InsertOne(namespace, Document("_id" := 1)))
+  private val options   = ClientBulkWriteOptions(ordered = false, verboseResults = true)
+  private val session   = new LiveClientSession[IO](ClientSessionStub(_ => ()))
+  private val writers
+      : List[(String, Boolean, ClientBulkWriteOptions, (MongoClient[IO], Seq[ClientWriteCommand]) => IO[ClientBulkWriteResult])] = List(
     ("default options", false, ClientBulkWriteOptions(), (client, writes) => client.bulkWrite(writes)),
     ("explicit options", false, options, (client, writes) => client.bulkWrite(writes, options)),
     ("session with default options", true, ClientBulkWriteOptions(), (client, writes) => client.bulkWrite(session, writes)),
@@ -44,7 +45,7 @@ class ClientBulkWriteEffectSpec extends AsyncWordSpec with Matchers {
   writers.foreach { case (name, hasSession, expectedOptions, write) =>
     s"Client bulk writes with $name" should {
       "defer the driver call and repeat it on every execution" in {
-        val calls = new AtomicInteger()
+        val calls  = new AtomicInteger()
         val client = new LiveMongoClient[IO](ClientBulkWriteFixture.client { _ =>
           calls.incrementAndGet()
           ClientBulkWriteFixture.succeed(ClientBulkWriteFixture.result)
@@ -52,9 +53,9 @@ class ClientBulkWriteEffectSpec extends AsyncWordSpec with Matchers {
         val program = write(client, commands)
         calls.get() mustBe 0
         (for {
-          first <- program
+          first      <- program
           afterFirst <- IO(calls.get())
-          second <- program
+          second     <- program
         } yield {
           afterFirst mustBe 1
           calls.get() mustBe 2
@@ -65,60 +66,68 @@ class ClientBulkWriteEffectSpec extends AsyncWordSpec with Matchers {
 
       "forward converted models, options and session" in {
         val observed = new AtomicReference[Array[AnyRef]]()
-        val client = new LiveMongoClient[IO](ClientBulkWriteFixture.client { args =>
+        val client   = new LiveMongoClient[IO](ClientBulkWriteFixture.client { args =>
           observed.set(args)
           ClientBulkWriteFixture.succeed(ClientBulkWriteFixture.result)
         })
-        write(client, commands).map { result =>
-          val args = observed.get()
-          val offset = if (hasSession) 1 else 0
-          result must be theSameInstanceAs ClientBulkWriteFixture.result
-          args.length mustBe offset + 2
-          args(offset).toString mustBe Collections.singletonList(commands.head.writeModel).toString
-          args(offset + 1).toString mustBe expectedOptions.toString
-          if (hasSession) args(0) must be theSameInstanceAs session.underlying
-          else succeed
-        }.unsafeToFuture()
+        write(client, commands)
+          .map { result =>
+            val args   = observed.get()
+            val offset = if (hasSession) 1 else 0
+            result must be theSameInstanceAs ClientBulkWriteFixture.result
+            args.length mustBe offset + 2
+            args(offset).toString mustBe Collections.singletonList(commands.head.writeModel).toString
+            args(offset + 1).toString mustBe expectedOptions.toString
+            if (hasSession) args(0) must be theSameInstanceAs session.underlying
+            else succeed
+          }
+          .unsafeToFuture()
       }
 
       "capture synchronous driver failures inside the effect" in {
-        val calls = new AtomicInteger()
-        val error = new IllegalStateException("driver invocation failed")
+        val calls  = new AtomicInteger()
+        val error  = new IllegalStateException("driver invocation failed")
         val client = new LiveMongoClient[IO](ClientBulkWriteFixture.client { _ =>
           calls.incrementAndGet()
           throw error
         })
         val program = write(client, commands)
         calls.get() mustBe 0
-        program.attempt.map { result =>
-          result mustBe Left(error)
-          calls.get() mustBe 1
-        }.unsafeToFuture()
+        program.attempt
+          .map { result =>
+            result mustBe Left(error)
+            calls.get() mustBe 1
+          }
+          .unsafeToFuture()
       }
 
       "capture invalid command conversion without calling the driver" in {
-        val calls = new AtomicInteger()
+        val calls  = new AtomicInteger()
         val client = new LiveMongoClient[IO](ClientBulkWriteFixture.client { _ =>
           calls.incrementAndGet()
           ClientBulkWriteFixture.succeed(ClientBulkWriteFixture.result)
         })
         val program = write(client, List(ClientWriteCommand.InsertOne[Document](namespace, null)))
-        program.attempt.map { result =>
-          result.swap.toOption.get mustBe a[IllegalArgumentException]
-          calls.get() mustBe 0
-        }.unsafeToFuture()
+        program.attempt
+          .map { result =>
+            result.swap.toOption.get mustBe a[IllegalArgumentException]
+            calls.get() mustBe 0
+          }
+          .unsafeToFuture()
       }
 
       "preserve publisher exceptions including cause, concern errors and partial results" in {
-        val error = ClientBulkWriteFixture.failure
+        val error  = ClientBulkWriteFixture.failure
         val client = new LiveMongoClient[IO](ClientBulkWriteFixture.client(_ => ClientBulkWriteFixture.fail(error)))
-        write(client, commands).attempt.map { result =>
-          result.swap.toOption.get must be theSameInstanceAs error
-          error.getCause.getCode mustBe 91
-          error.getWriteConcernErrors.get(0).getCode mustBe 64
-          error.getWriteErrors.get(1).getCode mustBe 11000
-          error.getPartialResult.get() must be theSameInstanceAs ClientBulkWriteFixture.result
-        }.unsafeToFuture()
+        write(client, commands).attempt
+          .map { result =>
+            result.swap.toOption.get must be theSameInstanceAs error
+            error.getCause.getCode mustBe 91
+            error.getWriteConcernErrors.get(0).getCode mustBe 64
+            error.getWriteErrors.get(1).getCode mustBe 11000
+            error.getPartialResult.get() must be theSameInstanceAs ClientBulkWriteFixture.result
+          }
+          .unsafeToFuture()
       }
     }
   }

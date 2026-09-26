@@ -32,11 +32,11 @@ import org.scalatest.wordspec.AnyWordSpec
 class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
   private val firstNamespace  = MongoNamespace("first-db", "first-coll")
   private val secondNamespace = MongoNamespace("second-db", "second-coll")
-  private val filter         = Filter.eq("name", "original")
-  private val update         = Update.set("name", "updated")
-  private val pipeline       = List[Bson](Document("$set" := Document("name" := "updated")))
-  private val collation      = Collation.builder().locale("en").build()
-  private val hint           = Document("name" := 1)
+  private val filter          = Filter.eq("name", "original")
+  private val update          = Update.set("name", "updated")
+  private val pipeline        = List[Bson](Document("$set" := Document("name" := "updated")))
+  private val collation       = Collation.builder().locale("en").build()
+  private val hint            = Document("name" := 1)
 
   // The public driver model and options interfaces are opaque; only tests use their concrete accessors.
   private def model(command: ClientWriteCommand): AbstractClientNamespacedWriteModel =
@@ -46,9 +46,9 @@ class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
 
   "ClientWriteCommand" should {
     "preserve heterogeneous documents and target namespaces without encoding them" in {
-      val document    = Document("name" := "first")
-      val replacement = ClientWriteCommandSpec.Record("second")
-      val options     = ClientReplaceOneOptions(upsert = true)
+      val document                           = Document("name" := "first")
+      val replacement                        = ClientWriteCommandSpec.Record("second")
+      val options                            = ClientReplaceOneOptions(upsert = true)
       val commands: List[ClientWriteCommand] = List(
         ClientWriteCommand.InsertOne(firstNamespace, document),
         ClientWriteCommand.InsertOne(secondNamespace, replacement),
@@ -84,8 +84,8 @@ class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
     }
 
     "preserve update pipelines without supplying array filters by default" in {
-      val one  = model(ClientWriteCommand.PipelinedUpdateOne(firstNamespace, filter, pipeline))
-      val many = model(ClientWriteCommand.PipelinedUpdateMany(secondNamespace, filter, pipeline))
+      val one        = model(ClientWriteCommand.PipelinedUpdateOne(firstNamespace, filter, pipeline))
+      val many       = model(ClientWriteCommand.PipelinedUpdateMany(secondNamespace, filter, pipeline))
       val oneUpdate  = one.getModel.asInstanceOf[ConcreteClientUpdateOneModel]
       val manyUpdate = many.getModel.asInstanceOf[ConcreteClientUpdateManyModel]
 
@@ -129,7 +129,7 @@ class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
 
     "preserve bulk settings and allow BSON comments through the Java fluent interface" in {
       val variables = Document("name" := "replacement")
-      val options = ClientBulkWriteOptions(
+      val options   = ClientBulkWriteOptions(
         ordered = false,
         verboseResults = true,
         bypassDocumentValidation = true,
@@ -149,7 +149,7 @@ class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
 
     "preserve sort, collation, upsert, hint and array filters on updates" in {
       val arrayFilters = List[Bson](Document("item.active" := true))
-      val one = ClientUpdateOneOptions(
+      val one          = ClientUpdateOneOptions(
         upsert = true,
         sort = Some(Sort.desc("name")),
         collation = Some(collation),
@@ -180,7 +180,7 @@ class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
         collation = Some(collation),
         hint = Some(hint)
       ).asInstanceOf[ConcreteClientReplaceOneOptions]
-      val one = ClientDeleteOneOptions(collation = Some(collation), hint = Some(hint)).asInstanceOf[ConcreteClientDeleteOneOptions]
+      val one  = ClientDeleteOneOptions(collation = Some(collation), hint = Some(hint)).asInstanceOf[ConcreteClientDeleteOneOptions]
       val many = ClientDeleteManyOptions(collation = Some(collation), hint = Some(hint)).asInstanceOf[ConcreteClientDeleteManyOptions]
 
       replacement.isUpsert.get() mustBe true
@@ -196,7 +196,7 @@ class ClientWriteCommandSpec extends AnyWordSpec with Matchers with AsScala {
     }
 
     "give a supplied hint string precedence and retain fluent option setters" in {
-      val one = ClientUpdateOneOptions(hint = Some(hint), hintString = Some("name_1")).asInstanceOf[ConcreteClientUpdateOneOptions]
+      val one  = ClientUpdateOneOptions(hint = Some(hint), hintString = Some("name_1")).asInstanceOf[ConcreteClientUpdateOneOptions]
       val many = ClientUpdateManyOptions(hint = Some(hint), hintString = Some("name_1")).asInstanceOf[ConcreteClientUpdateManyOptions]
       val replacement =
         ClientReplaceOneOptions(hint = Some(hint), hintString = Some("name_1")).asInstanceOf[ConcreteClientReplaceOneOptions]

@@ -20,7 +20,7 @@ import mongo4cats.bson.{BsonValue, Document, ObjectId}
 
 import java.time.Instant
 
-object Documents extends App {
+object Documents {
 
   val ts: Instant  = Instant.now()
   val id: ObjectId = ObjectId.gen
@@ -72,6 +72,8 @@ object Documents extends App {
   val nestedField1: Option[BsonValue] = doc1.getNested("nestedDocument.field")
   val nestedField2: Option[String]    = doc1.getNestedAs[String]("nestedDocument.field")
 
-  println(doc1 == doc2)
-  println(doc1.toJson)
+  def main(args: Array[String]): Unit = {
+    println(doc1 == doc2)
+    println(doc1.toJson)
+  }
 }

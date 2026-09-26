@@ -2,18 +2,18 @@ import sbt.*
 
 object Dependencies {
   private object Versions {
-    val mongodb            = "5.8.0"
-    val fs2                = "3.13.0"
+    val mongodb            = "5.13.0"
+    val fs2                = "3.14.0"
     val kindProjector      = "0.13.4"
-    val circe              = "0.14.15"
+    val circe              = "0.14.16"
     val zio                = "2.1.26"
     val zioInteropReactive = "2.0.2"
-    val zioJson            = "0.9.2"
+    val zioJson            = "1.1.0"
 
-    val logback   = "1.5.34"
+    val logback   = "1.6.4"
     val scalaTest = "3.2.20"
 
-    val embeddedMongo   = "4.33.0"
+    val embeddedMongo   = "5.0.0"
     val immutableValue  = "2.12.2"
     val commonsCompress = "1.28.0"
     val jsr305          = "3.0.2"
@@ -54,6 +54,7 @@ object Dependencies {
     Libraries.mongodbDriverCore,
     Libraries.mongodbDriverStreams,
     Libraries.jsr305    % Optional,
+    Libraries.logback   % Test,
     Libraries.scalaTest % Test
   )
 
@@ -87,7 +88,7 @@ object Dependencies {
     Libraries.zio,
     Libraries.zioStreams,
     Libraries.zioInteropReactive,
-    Libraries.jsr305    % Test,
+    Libraries.jsr305     % Test,
     Libraries.zioTest    % Test,
     Libraries.zioTestSbt % Test
   )

@@ -33,8 +33,8 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-  private val people = MongoNamespace("first", "people")
-  private val logs = MongoNamespace("first", "logs")
+  private val people      = MongoNamespace("first", "people")
+  private val logs        = MongoNamespace("first", "logs")
   private val otherPeople = MongoNamespace("second", "people")
 
   private def withClient(test: MongoClient[IO] => IO[Assertion]): Future[Assertion] = {
@@ -47,30 +47,35 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
   "Client bulk writes" should {
     "execute every command variant across collections and databases with indexed verbose results" in withClient { client =>
       for {
-        seed <- client.bulkWrite(List(
-          ClientWriteCommand.InsertOne(people, Document("_id" := 1, "n" := 0)),
-          ClientWriteCommand.InsertOne(people, Document("_id" := 2, "n" := 0)),
-          ClientWriteCommand.InsertOne(logs, Document("_id" := 3)),
-          ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 4, "n" := 0)),
-          ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 5, "n" := 0))
-        ))
-        result <- client.bulkWrite(List(
-          ClientWriteCommand.InsertOne(people, Document("_id" := 6, "n" := 0)),
-          ClientWriteCommand.UpdateOne(people, Filter.eq("_id", 1), Update.inc("n", 1)),
-          ClientWriteCommand.UpdateMany(otherPeople, Filter.empty, Update.inc("n", 2)),
-          ClientWriteCommand.ReplaceOne(people, Filter.eq("_id", 2), Document("_id" := 2, "n" := 10)),
-          ClientWriteCommand.PipelinedUpdateOne(people, Filter.eq("_id", 6), List(Document("$set" := Document("n" := 3)))),
-          ClientWriteCommand.PipelinedUpdateMany(otherPeople, Filter.empty, List(Document("$set" := Document("done" := true)))),
-          ClientWriteCommand.DeleteOne(logs, Filter.eq("_id", 3)),
-          ClientWriteCommand.DeleteMany(otherPeople, Filter.eq("done", true))
-        ), ClientBulkWriteOptions(verboseResults = true))
-        db1 <- client.getDatabase("first")
-        coll <- db1.getCollection("people")
-        remaining <- coll.find.sort(Sort.asc("_id")).all
-        logColl <- db1.getCollection("logs")
-        logCount <- logColl.count
-        db2 <- client.getDatabase("second")
-        other <- db2.getCollection("people")
+        seed <- client.bulkWrite(
+          List(
+            ClientWriteCommand.InsertOne(people, Document("_id" := 1, "n" := 0)),
+            ClientWriteCommand.InsertOne(people, Document("_id" := 2, "n" := 0)),
+            ClientWriteCommand.InsertOne(logs, Document("_id" := 3)),
+            ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 4, "n" := 0)),
+            ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 5, "n" := 0))
+          )
+        )
+        result <- client.bulkWrite(
+          List(
+            ClientWriteCommand.InsertOne(people, Document("_id" := 6, "n" := 0)),
+            ClientWriteCommand.UpdateOne(people, Filter.eq("_id", 1), Update.inc("n", 1)),
+            ClientWriteCommand.UpdateMany(otherPeople, Filter.empty, Update.inc("n", 2)),
+            ClientWriteCommand.ReplaceOne(people, Filter.eq("_id", 2), Document("_id" := 2, "n" := 10)),
+            ClientWriteCommand.PipelinedUpdateOne(people, Filter.eq("_id", 6), List(Document("$set" := Document("n" := 3)))),
+            ClientWriteCommand.PipelinedUpdateMany(otherPeople, Filter.empty, List(Document("$set" := Document("done" := true)))),
+            ClientWriteCommand.DeleteOne(logs, Filter.eq("_id", 3)),
+            ClientWriteCommand.DeleteMany(otherPeople, Filter.eq("done", true))
+          ),
+          ClientBulkWriteOptions(verboseResults = true)
+        )
+        db1        <- client.getDatabase("first")
+        coll       <- db1.getCollection("people")
+        remaining  <- coll.find.sort(Sort.asc("_id")).all
+        logColl    <- db1.getCollection("logs")
+        logCount   <- logColl.count
+        db2        <- client.getDatabase("second")
+        other      <- db2.getCollection("people")
         otherCount <- other.count
       } yield {
         seed.getInsertedCount mustBe 5L
@@ -96,13 +101,17 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
 
     "apply upsert options and bulk let variables to pipeline updates" in withClient { client =>
       for {
-        result <- client.bulkWrite(List(
-          ClientWriteCommand.UpdateOne(people, Filter.eq("_id", 10), Update.set("n", 1), ClientUpdateOneOptions(upsert = true)),
-          ClientWriteCommand.ReplaceOne(otherPeople, Filter.eq("_id", 11), Document("_id" := 11, "n" := 2), ClientReplaceOneOptions(upsert = true)),
-          ClientWriteCommand.PipelinedUpdateOne(people, Filter.eq("_id", 10), List(Document("$set" := Document("n" := "$$number"))))
-        ), ClientBulkWriteOptions(verboseResults = true, comment = Some("client bulk test"), let = Some(Document("number" := 42))))
-        db <- client.getDatabase("first")
-        coll <- db.getCollection("people")
+        result <- client.bulkWrite(
+          List(
+            ClientWriteCommand.UpdateOne(people, Filter.eq("_id", 10), Update.set("n", 1), ClientUpdateOneOptions(upsert = true)),
+            ClientWriteCommand
+              .ReplaceOne(otherPeople, Filter.eq("_id", 11), Document("_id" := 11, "n" := 2), ClientReplaceOneOptions(upsert = true)),
+            ClientWriteCommand.PipelinedUpdateOne(people, Filter.eq("_id", 10), List(Document("$set" := Document("n" := "$$number"))))
+          ),
+          ClientBulkWriteOptions(verboseResults = true, comment = Some("client bulk test"), let = Some(Document("number" := 42)))
+        )
+        db     <- client.getDatabase("first")
+        coll   <- db.getCollection("people")
         stored <- coll.find.first
       } yield {
         result.getUpsertedCount mustBe 2L
@@ -115,14 +124,19 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
     List(true, false).foreach { ordered =>
       s"preserve partial results and original error indexes when ordered=$ordered" in withClient { client =>
         for {
-          _ <- client.bulkWrite(List(ClientWriteCommand.InsertOne(people, Document("_id" := 1))))
-          attempted <- client.bulkWrite(List(
-            ClientWriteCommand.InsertOne(people, Document("_id" := 2)),
-            ClientWriteCommand.InsertOne(people, Document("_id" := 1)),
-            ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 3))
-          ), ClientBulkWriteOptions(ordered = ordered, verboseResults = true)).attempt
-          db <- client.getDatabase("second")
-          coll <- db.getCollection("people")
+          _         <- client.bulkWrite(List(ClientWriteCommand.InsertOne(people, Document("_id" := 1))))
+          attempted <- client
+            .bulkWrite(
+              List(
+                ClientWriteCommand.InsertOne(people, Document("_id" := 2)),
+                ClientWriteCommand.InsertOne(people, Document("_id" := 1)),
+                ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 3))
+              ),
+              ClientBulkWriteOptions(ordered = ordered, verboseResults = true)
+            )
+            .attempt
+          db    <- client.getDatabase("second")
+          coll  <- db.getCollection("people")
           count <- coll.count
         } yield attempted match {
           case Left(error: ClientBulkWriteException) =>
@@ -143,11 +157,15 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
 
     "report no partial result when the first ordered write fails" in withClient { client =>
       for {
-        _ <- client.bulkWrite(List(ClientWriteCommand.InsertOne(people, Document("_id" := 1))))
-        attempted <- client.bulkWrite(List(
-          ClientWriteCommand.InsertOne(people, Document("_id" := 1)),
-          ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 2))
-        )).attempt
+        _         <- client.bulkWrite(List(ClientWriteCommand.InsertOne(people, Document("_id" := 1))))
+        attempted <- client
+          .bulkWrite(
+            List(
+              ClientWriteCommand.InsertOne(people, Document("_id" := 1)),
+              ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 2))
+            )
+          )
+          .attempt
       } yield attempted match {
         case Left(error: ClientBulkWriteException) =>
           error.getWriteErrors.get(0).getCode mustBe 11000
@@ -157,23 +175,27 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
     }
 
     "encode heterogeneous inserts and replacements using the client registry" in {
-      val port = FreePort.next()
-      val settings = MongoClientSettings.builder(codecRegistry = ClientBulkWriteFixture.registry)
-        .applyConnectionString(ConnectionString(s"mongodb://localhost:$port")).build()
+      val port     = FreePort.next()
+      val settings = MongoClientSettings
+        .builder(codecRegistry = ClientBulkWriteFixture.registry)
+        .applyConnectionString(ConnectionString(s"mongodb://localhost:$port"))
+        .build()
       withRunningEmbeddedMongo(port) {
         MongoClient.create[IO](settings).use { client =>
           for {
-            result <- client.bulkWrite(List(
-              ClientWriteCommand.InsertOne(people, ClientBulkWriteFixture.Record(1, "before")),
-              ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 2, "name" := "document")),
-              ClientWriteCommand.ReplaceOne(people, Filter.eq("_id", 1), ClientBulkWriteFixture.Record(1, "after"))
-            ))
-            db <- client.getDatabase("first")
-            coll <- db.getCollection("people")
+            result <- client.bulkWrite(
+              List(
+                ClientWriteCommand.InsertOne(people, ClientBulkWriteFixture.Record(1, "before")),
+                ClientWriteCommand.InsertOne(otherPeople, Document("_id" := 2, "name" := "document")),
+                ClientWriteCommand.ReplaceOne(people, Filter.eq("_id", 1), ClientBulkWriteFixture.Record(1, "after"))
+              )
+            )
+            db     <- client.getDatabase("first")
+            coll   <- db.getCollection("people")
             stored <- coll.find.first
-            db2 <- client.getDatabase("second")
-            coll2 <- db2.getCollection("people")
-            other <- coll2.find.first
+            db2    <- client.getDatabase("second")
+            coll2  <- db2.getCollection("people")
+            other  <- coll2.find.first
           } yield {
             result.getInsertedCount mustBe 2L
             result.getModifiedCount mustBe 1L
@@ -185,14 +207,16 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
     }
 
     "support unacknowledged results and reject incompatible options inside the effect" in {
-      val port = FreePort.next()
-      val settings = MongoClientSettings.builder(writeConcern = WriteConcern.UNACKNOWLEDGED)
-        .applyConnectionString(ConnectionString(s"mongodb://localhost:$port")).build()
+      val port     = FreePort.next()
+      val settings = MongoClientSettings
+        .builder(writeConcern = WriteConcern.UNACKNOWLEDGED)
+        .applyConnectionString(ConnectionString(s"mongodb://localhost:$port"))
+        .build()
       withRunningEmbeddedMongo(port) {
         MongoClient.create[IO](settings).use { client =>
           val commands = List(ClientWriteCommand.InsertOne(people, Document("_id" := 1)))
           for {
-            result <- client.bulkWrite(commands, ClientBulkWriteOptions(ordered = false))
+            result  <- client.bulkWrite(commands, ClientBulkWriteOptions(ordered = false))
             ordered <- client.bulkWrite(commands).attempt
             verbose <- client.bulkWrite(commands, ClientBulkWriteOptions(ordered = false, verboseResults = true)).attempt
           } yield {
@@ -205,10 +229,10 @@ class MongoClientBulkWriteSpec extends AsyncWordSpec with Matchers with Embedded
     }
 
     "reject an empty batch and invalid command through the effect" in withClient { client =>
-      val empty = client.bulkWrite(Nil)
+      val empty   = client.bulkWrite(Nil)
       val invalid = client.bulkWrite(List(ClientWriteCommand.InsertOne(people, null: Document)))
       for {
-        emptyResult <- empty.attempt
+        emptyResult   <- empty.attempt
         invalidResult <- invalid.attempt
       } yield {
         emptyResult.swap.toOption.get mustBe a[IllegalArgumentException]

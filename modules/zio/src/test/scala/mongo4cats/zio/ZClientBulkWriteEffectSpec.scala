@@ -29,10 +29,11 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 object ZClientBulkWriteEffectSpec extends ZIOSpecDefault {
   private val namespace = MongoNamespace("db", "items")
-  private val commands = List(ClientWriteCommand.InsertOne(namespace, Document("_id" := 1)))
-  private val options = ClientBulkWriteOptions(ordered = false, verboseResults = true)
-  private val session = new ZClientSessionLive(ClientSessionStub(_ => ()))
-  private val writers: List[(String, Boolean, ClientBulkWriteOptions, (ZMongoClient, Seq[ClientWriteCommand]) => Task[ClientBulkWriteResult])] = List(
+  private val commands  = List(ClientWriteCommand.InsertOne(namespace, Document("_id" := 1)))
+  private val options   = ClientBulkWriteOptions(ordered = false, verboseResults = true)
+  private val session   = new ZClientSessionLive(ClientSessionStub(_ => ()))
+  private val writers
+      : List[(String, Boolean, ClientBulkWriteOptions, (ZMongoClient, Seq[ClientWriteCommand]) => Task[ClientBulkWriteResult])] = List(
     ("default options", false, ClientBulkWriteOptions(), (client, writes) => client.bulkWrite(writes)),
     ("explicit options", false, options, (client, writes) => client.bulkWrite(writes, options)),
     ("session with default options", true, ClientBulkWriteOptions(), (client, writes) => client.bulkWrite(session, writes)),
@@ -43,7 +44,7 @@ object ZClientBulkWriteEffectSpec extends ZIOSpecDefault {
     writers.map { case (name, hasSession, expectedOptions, write) =>
       suite(name)(
         test("defer the driver call and repeat it on every execution") {
-          val calls = new AtomicInteger()
+          val calls  = new AtomicInteger()
           val client = new ZMongoClientLive(ClientBulkWriteFixture.client { _ =>
             calls.incrementAndGet()
             ClientBulkWriteFixture.succeed(ClientBulkWriteFixture.result)
@@ -51,20 +52,20 @@ object ZClientBulkWriteEffectSpec extends ZIOSpecDefault {
           val effect = write(client, commands)
           val before = calls.get()
           for {
-            first <- effect
+            first      <- effect
             afterFirst <- ZIO.succeed(calls.get())
-            second <- effect
+            second     <- effect
           } yield assertTrue(before == 0, afterFirst == 1, calls.get() == 2, first eq ClientBulkWriteFixture.result, second eq first)
         },
         test("forward the converted models, options and session") {
           val observed = new AtomicReference[Array[AnyRef]]()
-          val client = new ZMongoClientLive(ClientBulkWriteFixture.client { args =>
+          val client   = new ZMongoClientLive(ClientBulkWriteFixture.client { args =>
             observed.set(args)
             ClientBulkWriteFixture.succeed(ClientBulkWriteFixture.result)
           })
           write(client, commands).map { result =>
-            val args = observed.get()
-            val offset = if (hasSession) 1 else 0
+            val args           = observed.get()
+            val offset         = if (hasSession) 1 else 0
             val receivedModels = args(offset).asInstanceOf[java.util.List[ClientNamespacedWriteModel]]
             assertTrue(
               result eq ClientBulkWriteFixture.result,
@@ -77,8 +78,8 @@ object ZClientBulkWriteEffectSpec extends ZIOSpecDefault {
           }
         },
         test("capture synchronous driver errors without changing the exception") {
-          val calls = new AtomicInteger()
-          val error = new IllegalStateException("driver invocation failed")
+          val calls  = new AtomicInteger()
+          val error  = new IllegalStateException("driver invocation failed")
           val client = new ZMongoClientLive(ClientBulkWriteFixture.client { _ =>
             calls.incrementAndGet()
             throw error
@@ -88,17 +89,17 @@ object ZClientBulkWriteEffectSpec extends ZIOSpecDefault {
           effect.either.map(result => assertTrue(before == 0, result == Left(error), calls.get() == 1))
         },
         test("capture model validation failures inside the effect") {
-          val calls = new AtomicInteger()
+          val calls  = new AtomicInteger()
           val client = new ZMongoClientLive(ClientBulkWriteFixture.client { _ =>
             calls.incrementAndGet()
             ClientBulkWriteFixture.succeed(ClientBulkWriteFixture.result)
           })
           val invalid = List(ClientWriteCommand.InsertOne[Document](namespace, null))
-          val effect = write(client, invalid)
+          val effect  = write(client, invalid)
           effect.either.map(result => assertTrue(result.left.exists(_.isInstanceOf[IllegalArgumentException]), calls.get() == 0))
         },
         test("preserve publisher bulk errors including cause, write concern errors and partial results") {
-          val error = ClientBulkWriteFixture.failure
+          val error  = ClientBulkWriteFixture.failure
           val client = new ZMongoClientLive(ClientBulkWriteFixture.client(_ => ClientBulkWriteFixture.fail(error)))
           write(client, commands).either.map { result =>
             assertTrue(

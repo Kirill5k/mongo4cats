@@ -33,7 +33,7 @@ object ClientBulkWriteFixture {
   final case class Record(id: Int, name: String)
 
   private val recordCodec: Codec[Record] = new Codec[Record] {
-    override def getEncoderClass: Class[Record] = classOf[Record]
+    override def getEncoderClass: Class[Record]                                           = classOf[Record]
     override def encode(writer: BsonWriter, value: Record, context: EncoderContext): Unit = {
       writer.writeStartDocument()
       writer.writeInt32("_id", value.id)
@@ -42,7 +42,7 @@ object ClientBulkWriteFixture {
     }
     override def decode(reader: BsonReader, context: DecoderContext): Record = {
       reader.readStartDocument()
-      val id = reader.readInt32("_id")
+      val id   = reader.readInt32("_id")
       val name = reader.readString("name")
       reader.readEndDocument()
       Record(id, name)
@@ -52,12 +52,12 @@ object ClientBulkWriteFixture {
   val registry: CodecRegistry = CodecRegistry.mergeWithDefault(CodecRegistries.fromCodecs(recordCodec))
 
   val result: ClientBulkWriteResult = new ClientBulkWriteResult {
-    override def isAcknowledged: Boolean = true
-    override def getInsertedCount: Long = 1L
-    override def getUpsertedCount: Long = 0L
-    override def getMatchedCount: Long = 0L
-    override def getModifiedCount: Long = 0L
-    override def getDeletedCount: Long = 0L
+    override def isAcknowledged: Boolean                                           = true
+    override def getInsertedCount: Long                                            = 1L
+    override def getUpsertedCount: Long                                            = 0L
+    override def getMatchedCount: Long                                             = 0L
+    override def getModifiedCount: Long                                            = 0L
+    override def getDeletedCount: Long                                             = 0L
     override def getVerboseResults: Optional[ClientBulkWriteResult.VerboseResults] = Optional.empty()
   }
 
@@ -75,17 +75,19 @@ object ClientBulkWriteFixture {
         if (method.getName == "bulkWrite") onBulkWrite(args)
         else throw new UnsupportedOperationException(s"Unexpected client call: ${method.getName}")
     }
-    classOf[JMongoClient].cast(Proxy.newProxyInstance(classOf[JMongoClient].getClassLoader, Array[Class[_]](classOf[JMongoClient]), handler))
+    classOf[JMongoClient].cast(
+      Proxy.newProxyInstance(classOf[JMongoClient].getClassLoader, Array[Class[_]](classOf[JMongoClient]), handler)
+    )
   }
 
   def succeed(value: ClientBulkWriteResult): Publisher[ClientBulkWriteResult] = publisher(Right(value))
-  def fail(error: Throwable): Publisher[ClientBulkWriteResult] = publisher(Left(error))
+  def fail(error: Throwable): Publisher[ClientBulkWriteResult]                = publisher(Left(error))
 
   private def publisher(value: Either[Throwable, ClientBulkWriteResult]): Publisher[ClientBulkWriteResult] =
     new Publisher[ClientBulkWriteResult] {
       override def subscribe(subscriber: Subscriber[_ >: ClientBulkWriteResult]): Unit =
         subscriber.onSubscribe(new Subscription {
-          private var completed = false
+          private var completed               = false
           override def request(n: Long): Unit =
             if (!completed) {
               completed = true

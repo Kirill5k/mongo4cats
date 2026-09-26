@@ -168,10 +168,10 @@ class ZioExtendedJsonSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
     }
 
     "retain the location of custom validation errors" in {
-      val decoder = deriveJsonBsonValueDecoder[List[String]](
-        JsonDecoder.list[String](JsonDecoder.string.mapOrFail(_ => Left("rejected by custom validation")))
-      )
-      val errors = decoder.decode(BsonValue.array(BsonValue.string("value"))).left.toOption.get.errors
+      implicit val stringDecoder: JsonDecoder[String] =
+        JsonDecoder.string.mapOrFail(_ => Left("rejected by custom validation"))
+      val decoder = deriveJsonBsonValueDecoder[List[String]]
+      val errors  = decoder.decode(BsonValue.array(BsonValue.string("value"))).left.toOption.get.errors
 
       errors.head.path mustBe Vector(Index(0))
       errors.head.message must include("rejected by custom validation")
