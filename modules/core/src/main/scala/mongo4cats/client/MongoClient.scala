@@ -18,13 +18,16 @@ package mongo4cats.client
 
 import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
+import com.mongodb.client.model.bulk.ClientBulkWriteResult
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession, MongoClient => JMongoClient, MongoClients}
 import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.database.MongoDatabase
 import mongo4cats.syntax._
 import mongo4cats.models.client.{
+  ClientBulkWriteOptions,
   ClientSessionOptions,
+  ClientWriteCommand,
   ConnectionString,
   MongoClientSettings,
   MongoConnection,
@@ -48,7 +51,7 @@ final private class LiveMongoClient[F[_]](
     val underlying: JMongoClient
 )(implicit
     F: Async[F]
-) extends MongoClient[F] {
+) extends MongoClient[F] with AsJava {
   def getDatabase(name: String): F[MongoDatabase[F]] =
     F.delay(underlying.getDatabase(name)).flatMap(MongoDatabase.make[F])
 
@@ -60,6 +63,12 @@ final private class LiveMongoClient[F[_]](
 
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
     underlying.listDatabases(cs.underlying).asyncIterableF[F, Document](Document.fromJava)
+
+  def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): F[ClientBulkWriteResult] =
+    F.defer(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)
+
+  def bulkWrite(cs: ClientSession[F], commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): F[ClientBulkWriteResult] =
+    F.defer(underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)
 
   def startSession(options: ClientSessionOptions): Resource[F, ClientSession[F]] =
     Resource.fromAutoCloseable(underlying.startSession(options).asyncSingle[F].unNone).map(new LiveClientSession(_))

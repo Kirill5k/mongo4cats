@@ -18,7 +18,6 @@ package mongo4cats.collection
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
-import de.flapdoodle.embed.mongo.distribution.Version
 import mongo4cats.TestData
 import mongo4cats.bson.Document
 import mongo4cats.bson.syntax._
@@ -34,7 +33,6 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 class MongoCollectionAggregateSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
-  override val mongoVersion: Version = Version.V7_0_0
 
   "A MongoCollection" when {
     "aggregate" should {

@@ -30,11 +30,11 @@ object EmbeddedMongoSpec extends ZIOSpecDefault with EmbeddedMongo {
     test("releases each invocation and its body resources before reusing the same port") {
       ZIO.scoped[Any] {
         for {
-          port      <- ZIO.succeed(FreePort.next())
-          finalized <- Ref.make(List.empty[Boolean])
-          first     <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> isListening(port))
-          afterFirst <- isListening(port)
-          second     <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> isListening(port))
+          port        <- ZIO.succeed(FreePort.next())
+          finalized   <- Ref.make(List.empty[Boolean])
+          first       <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> isListening(port))
+          afterFirst  <- isListening(port)
+          second      <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> isListening(port))
           afterSecond <- isListening(port)
           releases    <- finalized.get
         } yield assertTrue(first, !afterFirst, second, !afterSecond, releases == List(true, true))
@@ -46,7 +46,7 @@ object EmbeddedMongoSpec extends ZIOSpecDefault with EmbeddedMongo {
         for {
           port      <- ZIO.succeed(FreePort.next())
           finalized <- Ref.make(List.empty[Boolean])
-          result <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> ZIO.fail(error)).either
+          result    <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> ZIO.fail(error)).either
           listening <- isListening(port)
           releases  <- finalized.get
         } yield assertTrue(result == Left(error), !listening, releases == List(true))
@@ -58,7 +58,7 @@ object EmbeddedMongoSpec extends ZIOSpecDefault with EmbeddedMongo {
           port      <- ZIO.succeed(FreePort.next())
           finalized <- Ref.make(List.empty[Boolean])
           started   <- Promise.make[Nothing, Unit]
-          fiber <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> started.succeed(()) *> ZIO.never).fork
+          fiber     <- withRunningEmbeddedMongo(port)(bodyResource(port, finalized) *> started.succeed(()) *> ZIO.never).fork
           _         <- started.await
           exit      <- fiber.interrupt
           listening <- isListening(port)

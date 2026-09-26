@@ -33,7 +33,7 @@ class BinaryValueSpec extends AnyWordSpec with Matchers {
     )
 
   "BSON binary values" should {
-    "compare byte contents and subtype consistently in hash collections" in {
+    "compare byte contents and subtype consistently in hash collections" in
       List(Array.emptyByteArray, Array[Byte](1, -1, 0, 127)).foreach { bytes =>
         val first        = BBinary(bytes, 0x80.toByte)
         val equal        = BBinary(bytes.clone(), 0x80.toByte)
@@ -50,7 +50,6 @@ class BinaryValueSpec extends AnyWordSpec with Matchers {
         HashSet(first, equal, otherSubtype, otherBytes).size mustBe 3
         HashMap(first -> "found").get(equal) mustBe Some("found")
       }
-    }
 
     "give nested arrays and documents matching equality and hash codes" in {
       val firstBinary = BBinary(Array[Byte](1, 2, 3), 5.toByte)

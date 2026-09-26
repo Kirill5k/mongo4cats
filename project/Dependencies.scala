@@ -59,6 +59,7 @@ object Dependencies {
 
   val core = Seq(
     Libraries.fs2Core,
+    Libraries.jsr305    % Test,
     Libraries.logback   % Test,
     Libraries.scalaTest % Test
   )
@@ -86,6 +87,7 @@ object Dependencies {
     Libraries.zio,
     Libraries.zioStreams,
     Libraries.zioInteropReactive,
+    Libraries.jsr305    % Test,
     Libraries.zioTest    % Test,
     Libraries.zioTestSbt % Test
   )

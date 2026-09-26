@@ -17,9 +17,10 @@
 package mongo4cats.client
 
 import com.mongodb.connection.ClusterDescription
+import com.mongodb.client.model.bulk.ClientBulkWriteResult
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient}
 import mongo4cats.bson.Document
-import mongo4cats.models.client.ClientSessionOptions
+import mongo4cats.models.client.{ClientBulkWriteOptions, ClientSessionOptions, ClientWriteCommand}
 import mongo4cats.database.GenericMongoDatabase
 
 abstract class GenericMongoClient[F[_], S[_], R[_]] {
@@ -29,6 +30,18 @@ abstract class GenericMongoClient[F[_], S[_], R[_]] {
   def listDatabaseNames: F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
+
+  /** Writes to multiple collections and databases in the same cluster. Requires MongoDB 8.0 or later.
+    *
+    * Commands use the client's codec registry. The driver handles batching and retries; the operation is not automatically atomic. Failures
+    * are raised in the effect, preserving [[com.mongodb.ClientBulkWriteException]] and any available partial result.
+    */
+  def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): F[ClientBulkWriteResult]
+  def bulkWrite(commands: Seq[ClientWriteCommand]): F[ClientBulkWriteResult] = bulkWrite(commands, ClientBulkWriteOptions())
+  def bulkWrite(session: ClientSession[F], commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): F[ClientBulkWriteResult]
+  def bulkWrite(session: ClientSession[F], commands: Seq[ClientWriteCommand]): F[ClientBulkWriteResult] =
+    bulkWrite(session, commands, ClientBulkWriteOptions())
+
   def startSession(options: ClientSessionOptions): R[ClientSession[F]]
   def startSession: R[ClientSession[F]] = startSession(ClientSessionOptions.apply())
 }

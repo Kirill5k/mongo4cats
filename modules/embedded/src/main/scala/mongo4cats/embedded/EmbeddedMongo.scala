@@ -30,7 +30,7 @@ import org.bson.Document
 import scala.concurrent.duration._
 
 trait EmbeddedMongo {
-  protected val mongoVersion: Version         = Version.V7_0_0
+  protected val mongoVersion: Version         = Version.V8_0_23
   protected val mongoPort: Int                = 27017
   protected val mongoUsername: Option[String] = None
   protected val mongoPassword: Option[String] = None

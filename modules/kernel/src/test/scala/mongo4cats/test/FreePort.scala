@@ -16,15 +16,16 @@
 
 package mongo4cats.test
 
-import java.net.ServerSocket
+import java.net.{InetAddress, ServerSocket}
 
 object FreePort {
 
-  // Allocates a currently-free OS-assigned port. Must be called right before starting mongod (at test-run
+  // Probe the same IPv4 loopback address as mongod, rather than a wildcard listener that can
+  // select a port already occupied on that interface. Must be called right before starting mongod (at test-run
   // time, not spec-construction time) so each embedded instance binds a distinct, currently-available port
   // instead of reusing a fixed one, which was causing "Address already in use" flakiness on CI.
   def next(): Int = {
-    val socket = new ServerSocket(0)
+    val socket = new ServerSocket(0, 0, InetAddress.getByName("127.0.0.1"))
     try socket.getLocalPort
     finally socket.close()
   }

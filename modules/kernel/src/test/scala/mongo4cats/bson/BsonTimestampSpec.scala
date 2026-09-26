@@ -43,7 +43,7 @@ class BsonTimestampSpec extends AnyWordSpec with Matchers {
     } withClue(s"seconds=$seconds, increment=$inc: ")(check(seconds, inc))
 
   "BSON timestamps" should {
-    "decode Java timestamp seconds as unsigned while preserving increment bits" in {
+    "decode Java timestamp seconds as unsigned while preserving increment bits" in
       forEachTimestamp { (seconds, inc) =>
         val timestamp = new BsonTimestamp(seconds.toInt, inc)
         val decoded   = BsonValueConverter.fromJava(timestamp)
@@ -53,26 +53,23 @@ class BsonTimestampSpec extends AnyWordSpec with Matchers {
         decoded.asInstant mustBe Some(Instant.ofEpochSecond(seconds))
         decoded.asJava mustBe timestamp
       }
-    }
 
-    "preserve all unsigned seconds through Java BSON round trips" in {
+    "preserve all unsigned seconds through Java BSON round trips" in
       forEachTimestamp { (seconds, inc) =>
         val original = BsonValue.timestamp(seconds, inc)
 
         BsonValueConverter.fromJava(original.asJava) mustBe original
       }
-    }
 
-    "decode unsigned seconds from legacy Java document timestamps" in {
+    "decode unsigned seconds from legacy Java document timestamps" in
       forEachTimestamp { (seconds, inc) =>
         val timestamp = new org.bson.types.BSONTimestamp(seconds.toInt, inc)
         val original  = new JDocument("ts", timestamp)
 
         Document.fromJava(original).get("ts") mustBe Some(BsonValue.timestamp(seconds, inc))
       }
-    }
 
-    "preserve timestamp values through document encoding and decoding" in {
+    "preserve timestamp values through document encoding and decoding" in
       forEachTimestamp { (seconds, inc) =>
         val original = Document("ts" -> BsonValue.timestamp(seconds, inc))
         val encoded  = new BsonDocument()
@@ -82,17 +79,15 @@ class BsonTimestampSpec extends AnyWordSpec with Matchers {
         documentCodec.decode(new BsonDocumentReader(encoded), decoderContext) mustBe original
         Document.fromJava(encoded) mustBe original
       }
-    }
 
-    "preserve unsigned seconds and increment bits through Extended JSON" in {
+    "preserve unsigned seconds and increment bits through Extended JSON" in
       forEachTimestamp { (seconds, inc) =>
         val original = Document("ts" -> BsonValue.timestamp(seconds, inc))
 
         Document.parse(original.toJson) mustBe original
       }
-    }
 
-    "decode unsigned cluster times in change stream events" in {
+    "decode unsigned cluster times in change stream events" in
       forEachTimestamp { (seconds, inc) =>
         val event = new BsonDocument("_id", new BsonDocument())
           .append("operationType", new BsonString("insert"))
@@ -101,6 +96,5 @@ class BsonTimestampSpec extends AnyWordSpec with Matchers {
 
         ChangeStreamDocument.fromJava(decoded).clusterTime mustBe Some(BsonValue.timestamp(seconds, inc))
       }
-    }
   }
 }

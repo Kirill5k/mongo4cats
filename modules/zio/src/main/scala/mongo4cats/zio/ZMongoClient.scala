@@ -17,6 +17,7 @@
 package mongo4cats.zio
 
 import com.mongodb.reactivestreams.client.{ClientSession, MongoClient, MongoClients}
+import com.mongodb.client.model.bulk.ClientBulkWriteResult
 import mongo4cats.AsJava
 import mongo4cats.bson.Document
 import mongo4cats.models.client._
@@ -34,7 +35,7 @@ final private class ZClientSessionLive(
 
 final private class ZMongoClientLive(
     val underlying: MongoClient
-) extends ZMongoClient {
+) extends ZMongoClient with AsJava {
   def getDatabase(name: String): Task[ZMongoDatabase] =
     ZIO.attempt(underlying.getDatabase(name)).flatMap(ZMongoDatabase.make)
 
@@ -46,6 +47,12 @@ final private class ZMongoClientLive(
 
   def listDatabases(session: ZClientSession): Task[Iterable[Document]] =
     underlying.listDatabases(session.underlying).asyncIterableF(Document.fromJava)
+
+  def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): Task[ClientBulkWriteResult] =
+    ZIO.attempt(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options)).flatMap(_.asyncSingle.unNone)
+
+  def bulkWrite(session: ZClientSession, commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): Task[ClientBulkWriteResult] =
+    ZIO.attempt(underlying.bulkWrite(session.underlying, asJava(commands.map(_.writeModel)), options)).flatMap(_.asyncSingle.unNone)
 
   def startSession(options: ClientSessionOptions): RIO[Scope, ZClientSession] =
     ZIO.fromAutoCloseable(underlying.startSession(options).asyncSingle.unNone).map(new ZClientSessionLive(_))

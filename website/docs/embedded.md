@@ -51,6 +51,18 @@ class MyRepoSpec extends AsyncWordSpec with Matchers with EmbeddedMongo {
 
 `withRunningEmbeddedMongo` starts the instance before the block runs and stops it after, regardless of whether the block succeeds or fails.
 
+## Choosing a MongoDB version
+
+Both the Cats Effect and ZIO embedded helpers default to **MongoDB 8.0.23**. Override `mongoVersion` in your suite to run against another supported version:
+
+```scala
+import de.flapdoodle.embed.mongo.distribution.Version
+
+override protected val mongoVersion: Version = Version.V8_0_23
+```
+
+Client-level bulk writes require MongoDB 8.0 or later. Changing the embedded default does not change the server requirement of existing collection operations. Flapdoodle determines which server binaries are available for your operating system; mongo4cats chooses the default version above.
+
 ## Specifying a port explicitly
 
 If you need to run multiple embedded instances or a specific port:
@@ -116,4 +128,4 @@ import zio.test.TestAspect
 - Each call to `withRunningEmbeddedMongo` starts a **fresh** instance. Data does not persist between calls.
 - The embedded instance is a real MongoDB process — queries behave identically to a real deployment.
 - The binary is downloaded from the internet on first use. Subsequent runs use the cached binary.
-- The default MongoDB version downloaded is determined by the version of `de.flapdoodle.embed.mongo` bundled with the library. Check the `build.sbt` dependencies if you need a specific version.
+- The default MongoDB version is pinned by mongo4cats. Override `mongoVersion` to select a different version supported by the bundled Flapdoodle dependency.
