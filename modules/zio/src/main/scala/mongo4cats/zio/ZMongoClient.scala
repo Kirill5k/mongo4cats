@@ -29,8 +29,10 @@ final private class ZClientSessionLive(
     val underlying: ClientSession
 ) extends ZClientSession {
   def startTransaction(options: TransactionOptions): Task[Unit] = ZIO.attempt(underlying.startTransaction(options)).unit
-  def abortTransaction: Task[Unit]                              = underlying.abortTransaction().asyncVoid
-  def commitTransaction: Task[Unit]                             = underlying.commitTransaction().asyncVoid
+  def abortTransaction: Task[Unit]                              = ZIO.attempt(underlying.abortTransaction()).flatMap(_.asyncVoid)
+  def commitTransaction: Task[Unit]                             = ZIO.attempt(underlying.commitTransaction()).flatMap(_.asyncVoid)
+  def withTransaction[A](options: TransactionOptions, retryPolicy: TransactionRetryPolicy)(body: => Task[A]): Task[A] =
+    ManagedTransaction.run(this, options, retryPolicy)(body)
 }
 
 final private class ZMongoClientLive(
@@ -58,7 +60,14 @@ final private class ZMongoClientLive(
     ZIO.attempt(underlying.bulkWrite(session.underlying, asJava(commands.map(_.writeModel)), options)).flatMap(_.asyncSingle.unNone)
 
   def startSession(options: ClientSessionOptions): RIO[Scope, ZClientSession] =
-    ZIO.fromAutoCloseable(underlying.startSession(options).asyncSingle.unNone).map(new ZClientSessionLive(_))
+    ZIO.fromAutoCloseable(ZIO.attempt(underlying.startSession(options)).flatMap(_.asyncSingle.unNone)).map(new ZClientSessionLive(_))
+
+  def transact[A](
+      options: TransactionOptions,
+      retryPolicy: TransactionRetryPolicy,
+      sessionOptions: ClientSessionOptions
+  )(body: ZClientSession => Task[A]): Task[A] =
+    ManagedTransaction.transact(this, options, retryPolicy, sessionOptions)(body)
 }
 
 object ZMongoClient extends AsJava {

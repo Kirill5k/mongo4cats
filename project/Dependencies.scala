@@ -4,6 +4,7 @@ object Dependencies {
   private object Versions {
     val mongodb            = "5.13.0"
     val fs2                = "3.14.0"
+    val catsEffect         = "3.7.1"
     val kindProjector      = "0.13.4"
     val circe              = "0.14.16"
     val zio                = "2.1.26"
@@ -25,7 +26,8 @@ object Dependencies {
     val mongodbDriverStreams = "org.mongodb" % "mongodb-driver-reactivestreams" % Versions.mongodb
     val mongodbDriverSync    = "org.mongodb" % "mongodb-driver-sync"            % Versions.mongodb
 
-    val fs2Core = "co.fs2" %% "fs2-core" % Versions.fs2
+    val fs2Core           = "co.fs2"        %% "fs2-core"            % Versions.fs2
+    val catsEffectTestkit = "org.typelevel" %% "cats-effect-testkit" % Versions.catsEffect
 
     val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -60,9 +62,10 @@ object Dependencies {
 
   val core = Seq(
     Libraries.fs2Core,
-    Libraries.jsr305    % Test,
-    Libraries.logback   % Test,
-    Libraries.scalaTest % Test
+    Libraries.catsEffectTestkit % Test,
+    Libraries.jsr305            % Test,
+    Libraries.logback           % Test,
+    Libraries.scalaTest         % Test
   )
 
   val examples = Seq(

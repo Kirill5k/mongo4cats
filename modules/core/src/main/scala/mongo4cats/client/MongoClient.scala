@@ -33,7 +33,8 @@ import mongo4cats.models.client.{
   MongoConnection,
   MongoDriverInformation,
   ServerAddress,
-  TransactionOptions
+  TransactionOptions,
+  TransactionRetryPolicy
 }
 import org.bson.UuidRepresentation
 
@@ -43,8 +44,11 @@ final private class LiveClientSession[F[_]](
     F: Async[F]
 ) extends ClientSession[F] {
   def startTransaction(options: TransactionOptions): F[Unit] = F.delay(underlying.startTransaction(options))
-  def commitTransaction: F[Unit]                             = underlying.commitTransaction().asyncVoid[F]
-  def abortTransaction: F[Unit]                              = underlying.abortTransaction().asyncVoid[F]
+  def commitTransaction: F[Unit]                             = F.defer(underlying.commitTransaction().asyncVoid[F])
+  def abortTransaction: F[Unit]                              = F.defer(underlying.abortTransaction().asyncVoid[F])
+
+  def withTransaction[A](options: TransactionOptions, retryPolicy: TransactionRetryPolicy)(body: => F[A]): F[A] =
+    ManagedTransaction.run(this, options, retryPolicy)(body)
 }
 
 final private class LiveMongoClient[F[_]](
@@ -74,7 +78,16 @@ final private class LiveMongoClient[F[_]](
     F.defer(underlying.bulkWrite(cs.underlying, asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)
 
   def startSession(options: ClientSessionOptions): Resource[F, ClientSession[F]] =
-    Resource.fromAutoCloseable(underlying.startSession(options).asyncSingle[F].unNone).map(new LiveClientSession(_))
+    Resource.fromAutoCloseable(F.defer(underlying.startSession(options).asyncSingle[F].unNone)).map(new LiveClientSession(_))
+
+  def transact[A](
+      options: TransactionOptions,
+      retryPolicy: TransactionRetryPolicy,
+      sessionOptions: ClientSessionOptions
+  )(
+      body: ClientSession[F] => F[A]
+  ): F[A] =
+    F.defer(startSession(sessionOptions).use(session => session.withTransaction(options, retryPolicy)(body(session))))
 }
 
 object MongoClient extends AsJava {

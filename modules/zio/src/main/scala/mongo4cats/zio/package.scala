@@ -19,7 +19,8 @@ package mongo4cats
 import mongo4cats.client.{ClientSession, GenericMongoClient}
 import mongo4cats.collection.GenericMongoCollection
 import mongo4cats.database.GenericMongoDatabase
-import _root_.zio.{RIO, Scope, Task}
+import mongo4cats.models.client.{ClientSessionOptions, TransactionOptions, TransactionRetryPolicy}
+import _root_.zio.{RIO, Scope, Task, ZIO}
 import _root_.zio.stream.Stream
 
 package object zio {
@@ -27,4 +28,45 @@ package object zio {
   type ZMongoClient        = GenericMongoClient[Task, Stream[Throwable, *], RIO[Scope, *]]
   type ZMongoDatabase      = GenericMongoDatabase[Task, Stream[Throwable, *]]
   type ZMongoCollection[T] = GenericMongoCollection[Task, T, Stream[Throwable, *]]
+
+  implicit final class ClientTransactionOps(private val client: ZMongoClient) extends AnyVal {
+
+    /** Adapt this client's native transaction method to a callback that requires a ZIO environment. */
+    def transactR[R, A](body: ZClientSession => RIO[R, A]): RIO[R, A] =
+      transactR()(body)
+
+    /** Acquire a session, run the environment-dependent callback in a managed transaction and close the session. The callback can execute
+      * more than once after a transient transaction failure.
+      */
+    def transactR[R, A](
+        options: TransactionOptions = TransactionOptions(),
+        retryPolicy: TransactionRetryPolicy = TransactionRetryPolicy.default,
+        sessionOptions: ClientSessionOptions = ClientSessionOptions()
+    )(body: ZClientSession => RIO[R, A]): RIO[R, A] =
+      ZIO.environment[R].flatMap { environment =>
+        ZIO
+          .attempt(client.transact[A](options, retryPolicy, sessionOptions) { session =>
+            ZIO.attempt(body(session)).flatten.provideEnvironment(environment)
+          })
+          .flatten
+      }
+  }
+
+  implicit final class SessionTransactionOps(private val session: ZClientSession) extends AnyVal {
+
+    /** Adapt this session's native transaction method to a body that requires a ZIO environment. */
+    def withTransactionR[R, A](body: => RIO[R, A]): RIO[R, A] =
+      withTransactionR()(body)
+
+    /** Run a transaction without closing this session. The retry budget limits starting retries, not running operations. Transaction
+      * startup, abort and each commit attempt are uninterruptible; the body and retry delays are interruptible.
+      */
+    def withTransactionR[R, A](
+        options: TransactionOptions = TransactionOptions(),
+        retryPolicy: TransactionRetryPolicy = TransactionRetryPolicy.default
+    )(body: => RIO[R, A]): RIO[R, A] =
+      ZIO.environment[R].flatMap { environment =>
+        ZIO.attempt(session.withTransaction[A](options, retryPolicy)(ZIO.attempt(body).flatten.provideEnvironment(environment))).flatten
+      }
+  }
 }

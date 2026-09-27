@@ -27,6 +27,20 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 class ClientSessionSpec extends AsyncWordSpec with Matchers {
 
+  "withTransaction" should {
+    "be available directly on ClientSession without importing transaction syntax" in {
+      val fixture                    = new TransactionFixture
+      val session: ClientSession[IO] = new LiveClientSession[IO](fixture.session)
+      session
+        .withTransaction(IO.pure(42))
+        .map { result =>
+          result mustBe 42
+          fixture.events mustBe List("start", "commit")
+        }
+        .unsafeToFuture()
+    }
+  }
+
   private val options = TransactionOptions.builder.readConcern(ReadConcern.SNAPSHOT).build()
   private val starts: List[(String, ClientSession[IO] => IO[Unit], TransactionOptions)] = List(
     ("startTransaction", _.startTransaction, TransactionOptions()),

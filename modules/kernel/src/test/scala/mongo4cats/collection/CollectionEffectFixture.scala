@@ -30,7 +30,7 @@ import mongo4cats.bson.Document
 import mongo4cats.client.{ClientSession, ClientSessionStub}
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
 import mongo4cats.database.CodecInheritanceFixture
-import mongo4cats.models.client.TransactionOptions
+import mongo4cats.models.client.{TransactionOptions, TransactionRetryPolicy}
 import mongo4cats.models.collection._
 import mongo4cats.operations.{Filter, Index, Update}
 import org.bson.{Document => JDocument}
@@ -68,6 +68,8 @@ object CollectionEffectFixture {
     def startTransaction(options: TransactionOptions): F[Unit] = throw new UnsupportedOperationException("startTransaction")
     def abortTransaction: F[Unit]                              = throw new UnsupportedOperationException("abortTransaction")
     def commitTransaction: F[Unit]                             = throw new UnsupportedOperationException("commitTransaction")
+    def withTransaction[A](options: TransactionOptions, retryPolicy: TransactionRetryPolicy)(body: => F[A]): F[A] =
+      throw new UnsupportedOperationException("withTransaction")
   }
 
   def collection(onCall: (String, Array[AnyRef]) => AnyRef): JMongoCollection[Document] = {

@@ -20,7 +20,13 @@ import com.mongodb.connection.ClusterDescription
 import com.mongodb.client.model.bulk.ClientBulkWriteResult
 import com.mongodb.reactivestreams.client.{MongoClient => JMongoClient}
 import mongo4cats.bson.Document
-import mongo4cats.models.client.{ClientBulkWriteOptions, ClientSessionOptions, ClientWriteCommand}
+import mongo4cats.models.client.{
+  ClientBulkWriteOptions,
+  ClientSessionOptions,
+  ClientWriteCommand,
+  TransactionOptions,
+  TransactionRetryPolicy
+}
 import mongo4cats.database.GenericMongoDatabase
 
 abstract class GenericMongoClient[F[_], S[_], R[_]] {
@@ -45,4 +51,18 @@ abstract class GenericMongoClient[F[_], S[_], R[_]] {
 
   def startSession(options: ClientSessionOptions): R[ClientSession[F]]
   def startSession: R[ClientSession[F]] = startSession(ClientSessionOptions.apply())
+
+  /** Acquires one session, runs a managed transaction, and closes the session on every outcome. The callback may run more than once.
+    */
+  def transact[A](body: ClientSession[F] => F[A]): F[A] =
+    transact()(body)
+
+  /** Runs a managed transaction with the given options and retry policy, reusing one session across all attempts. Every transactional
+    * operation must explicitly use the supplied session, and external effects in the callback must be safe to repeat.
+    */
+  def transact[A](
+      options: TransactionOptions = TransactionOptions(),
+      retryPolicy: TransactionRetryPolicy = TransactionRetryPolicy.default,
+      sessionOptions: ClientSessionOptions = ClientSessionOptions()
+  )(body: ClientSession[F] => F[A]): F[A]
 }

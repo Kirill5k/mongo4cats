@@ -29,6 +29,7 @@ import mongo4cats.zio._
 | `ZMongoClient` | `GenericMongoClient[Task, ZStream[Any, Throwable, *], RIO[Scope, *]]` |
 | `ZMongoDatabase` | `GenericMongoDatabase[Task, ZStream[Any, Throwable, *]]` |
 | `ZMongoCollection[T]` | `GenericMongoCollection[Task, T, ZStream[Any, Throwable, *]]` |
+| `ZClientSession` | `ClientSession[Task]` |
 
 ## Connecting to MongoDB
 
@@ -173,9 +174,84 @@ assert(convenient.isEmpty)
 
 ## Transactions
 
+`client.transact` and `session.withTransaction` are native methods and require no transaction syntax imports. Transactions require a replica set or sharded cluster; a standalone embedded MongoDB instance cannot run them.
+
+```scala
+import mongo4cats.bson.Document
+import mongo4cats.bson.syntax._
+import mongo4cats.zio._
+import zio._
+
+val insert: Task[String] = ZIO.scoped {
+  ZMongoClient.fromConnectionString("mongodb://localhost:27017/?retryWrites=false").flatMap { client =>
+    for {
+      db   <- client.getDatabase("mydb")
+      coll <- db.getCollection("docs")
+      name <- client.transact { session =>
+        coll.insertOne(session, Document("name" := "test")).as("test")
+      }
+    } yield name
+  }
+}
+```
+
+`client.transact` owns one session across all attempts, commits successful callbacks, and closes the session on completion. For a session owned by the caller, use `withTransaction`; it leaves that session's scope unchanged:
+
+```scala
+ZIO.scoped {
+  client.startSession.flatMap { session =>
+    session.withTransaction {
+      coll.insertOne(session, Document("name" := "test"))
+    }
+  }
+}
+```
+
+The native `client.transact` and `session.withTransaction` methods accept `Task` callbacks. For callbacks that require services, use `client.transactR` or `session.withTransactionR`, available through the standard `mongo4cats.zio._` import. These adapters capture the required environment and delegate to the native methods, preserving `RIO[R, A]` so dependencies can be provided normally with ZIO layers:
+
 ```scala
 import mongo4cats.zio._
 
+final case class InsertConfig(name: String)
+
+def insertConfigured(session: ZClientSession, coll: ZMongoCollection[Document]): RIO[InsertConfig, Unit] =
+  ZIO.serviceWithZIO[InsertConfig] { config =>
+    coll.insertOne(session, Document("name" := config.name)).unit
+  }
+
+def transactConfigured(client: ZMongoClient, coll: ZMongoCollection[Document]): RIO[InsertConfig, Unit] =
+  client.transactR[InsertConfig, Unit](session => insertConfigured(session, coll))
+
+def withTransactionConfigured(session: ZClientSession, coll: ZMongoCollection[Document]): RIO[InsertConfig, Unit] =
+  session.withTransactionR[InsertConfig, Unit](insertConfigured(session, coll))
+```
+
+The adapters accept the same configuration as their native methods: `options` and `retryPolicy`, plus `sessionOptions` for `transactR`.
+
+Use the shared `mongo4cats.models.client.TransactionRetryPolicy` to configure retries:
+
+```scala
+import mongo4cats.models.client.{TransactionOptions, TransactionRetryPolicy}
+
+client.transact(
+  options = TransactionOptions(),
+  retryPolicy = TransactionRetryPolicy.none
+) { session =>
+  coll.insertOne(session, Document("name" := "test"))
+}
+```
+
+The default policy uses one 120-second budget and exponential delays from 10 milliseconds up to one second. A `TransientTransactionError` retries the whole transaction; `UnknownTransactionCommitResult` retries only commit, even if both labels occur. Operation timeouts and commit `MaxTimeMSExpired` failures are terminal. The budget bounds retries, not in-flight operations. See [transaction retry configuration](operations/transactions.md#retry-policy) for custom durations and session options.
+
+**Callbacks can run more than once.** Make external actions safe to repeat, pass the session explicitly to each transactional operation, and execute those operations sequentially. Propagate database operation failures: swallowing them prevents managed retries and can leave the transaction unusable. Do not share sessions concurrently or nest managed transactions. An already-active transaction is rejected without being aborted. Leave commit and abort to the helper; it skips automatic commit if the callback already ended the transaction.
+
+Typed failures, defects, and interruption trigger rollback when applicable and preserve the original outcome. Rollback failures are suppressed on the original throwable for typed failures and defects, and stop retries. For interruption alone, there is no original throwable; rollback or session-close failures are logged while interruption is preserved. The helper does not abort after an uncertain commit.
+
+Startup, rollback, and each commit attempt are uninterruptible, while callbacks and retry delays remain interruptible. A transaction can commit despite interruption requested during commit; configure driver timeouts because an outer ZIO timeout cannot interrupt a masked driver operation. Exhausted or interrupted commit retries can leave the commit outcome unknown.
+
+The manual API remains available when you need to control the lifecycle yourself. This example shows the success path; manual code is responsible for rollback, interruption handling, and retries:
+
+```scala
 ZIO.scoped {
   ZMongoClient.fromConnectionString("mongodb://localhost:27017/?retryWrites=false").flatMap { client =>
     for {

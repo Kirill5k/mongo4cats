@@ -17,7 +17,7 @@
 package mongo4cats.client
 
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession}
-import mongo4cats.models.client.{ClientSessionOptions, TransactionOptions}
+import mongo4cats.models.client.{ClientSessionOptions, TransactionOptions, TransactionRetryPolicy}
 
 abstract class ClientSession[F[_]] {
   def underlying: JClientSession
@@ -47,6 +47,23 @@ abstract class ClientSession[F[_]] {
   /** Commit a transaction in the context of this session. A transaction can only be commmited if one has first been started.
     */
   def commitTransaction: F[Unit]
+
+  /** Runs a managed transaction without closing this session. The body may run more than once after a transient failure.
+    */
+  def withTransaction[A](body: => F[A]): F[A] = withTransaction()(body)
+
+  /** Starts a transaction, commits a successful body, and attempts rollback on body failure or cancellation. The original error is
+    * preserved if rollback also fails. Transient transaction errors can rerun the body; uncertain commit results retry only commit.
+    *
+    * Startup, rollback, and individual commit attempts are masked from cancellation. The body and retry delays remain cancelable, so a
+    * cancellation requested during commit can still result in a committed transaction. The retry budget limits new attempts rather than
+    * interrupting running operations. Every transactional operation must explicitly use this session, and external effects must be safe to
+    * repeat. An existing transaction is rejected without being aborted.
+    */
+  def withTransaction[A](
+      options: TransactionOptions = TransactionOptions(),
+      retryPolicy: TransactionRetryPolicy = TransactionRetryPolicy.default
+  )(body: => F[A]): F[A]
 
   /** Get the options for this session.
     */
