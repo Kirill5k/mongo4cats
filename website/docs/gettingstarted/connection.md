@@ -77,6 +77,11 @@ val dbs: IO[Iterable[Document]] = client.listDatabases
 
 // Get the cluster topology description
 val desc = client.clusterDescription
+
+// List database names using a client session
+val namesInSession: IO[Iterable[String]] = client.startSession.use { session =>
+  client.listDatabaseNames(session)
+}
 ```
 
 ## MongoDatabase
@@ -104,7 +109,10 @@ Key `MongoDatabase[F]` methods:
 | `getCollectionWithCodec[T](name)` | Get a typed collection using an implicit `MongoCodecProvider[T]` |
 | `createCollection(name)` | Explicitly create a collection |
 | `createCollection(name, options)` | Create a collection with options (e.g. capped, time series) |
+| `createCollection(session, name, options)` | Create a collection using a session; options may be omitted |
 | `listCollectionNames` | List all collection names in the database |
+| `withTimeout(duration)` | Create a database wrapper with an operation timeout inherited by its collections |
+| `timeout` | Read the configured operation timeout as `Option[FiniteDuration]` |
 | `runCommand(command)` | Execute a raw database command |
 | `drop` | Drop the entire database |
 

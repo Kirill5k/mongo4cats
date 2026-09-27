@@ -94,7 +94,7 @@ Use bounded attempts with backoff and an overall deadline. Keep retryable bodies
 
 ## Passing the session to collection operations
 
-Every CRUD method on `MongoCollection[F, T]` has a session-aware overload. Pass the `ClientSession[F]` as the first argument:
+Pass the `ClientSession[F]` as the first argument to session-aware collection methods:
 
 ```scala
 // Insert within a transaction
@@ -109,6 +109,8 @@ coll.updateMany(session, Filter.eq("status", "pending"), Update.set("status", "p
 // Delete within a transaction
 coll.deleteOne(session, Filter.eq("_id", docId))
 ```
+
+Session overloads accept raw `Bson` filters and update documents as well as the `Filter` and `Update` builders. Aggregation and change-stream pipelines accept `Seq[Bson]` alongside `Aggregate`; `aggregateWithCodec` and `distinctWithCodec` also support sessions with raw BSON inputs. Index creation and removal, replacements, exact counts, and atomic find-and-modify operations follow the same session-first convention. Estimated document counts have no session overload.
 
 ## Full example: abort vs commit
 

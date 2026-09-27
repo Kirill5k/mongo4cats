@@ -56,13 +56,16 @@ final private class LiveMongoClient[F[_]](
     F.delay(underlying.getDatabase(name)).flatMap(MongoDatabase.make[F])
 
   def listDatabaseNames: F[Iterable[String]] =
-    underlying.listDatabaseNames().asyncIterable[F]
+    F.defer(underlying.listDatabaseNames().asyncIterable[F])
+
+  def listDatabaseNames(cs: ClientSession[F]): F[Iterable[String]] =
+    F.defer(underlying.listDatabaseNames(cs.underlying).asyncIterable[F])
 
   def listDatabases: F[Iterable[Document]] =
-    underlying.listDatabases().asyncIterableF[F, Document](Document.fromJava)
+    F.defer(underlying.listDatabases().asyncIterableF[F, Document](Document.fromJava))
 
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listDatabases(cs.underlying).asyncIterableF[F, Document](Document.fromJava)
+    F.defer(underlying.listDatabases(cs.underlying).asyncIterableF[F, Document](Document.fromJava))
 
   def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): F[ClientBulkWriteResult] =
     F.defer(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)

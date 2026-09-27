@@ -89,6 +89,18 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
         }
       }
     ),
+    suite("estimatedDocumentCount should")(
+      test("count empty and populated collections using collection metadata") {
+        withEmbeddedMongoDatabase { db =>
+          for {
+            coll      <- db.getCollection("coll")
+            empty     <- coll.estimatedDocumentCount
+            _         <- coll.insertMany(TestData.accounts)
+            populated <- coll.estimatedDocumentCount(EstimatedDocumentCountOptions().comment("estimated count"))
+          } yield assertTrue(empty == 0L, populated == 3L)
+        }
+      }
+    ),
     suite("deleteMany should")(
       test("delete multiple docs in coll") {
         withEmbeddedMongoDatabase { db =>
@@ -227,6 +239,32 @@ object ZMongoCollectionSpec extends ZIOSpecDefault with EmbeddedMongo {
       }
     ),
     suite("findOneAndUpdate should")(
+      test("apply pipeline stages in order and support before, after and missing results") {
+        withEmbeddedMongoDatabase { db =>
+          val original = Document.parse("""{"_id":1,"amount":2}""")
+          val pipeline = List(
+            Document.parse("""{"$set":{"amount":{"$add":["$amount",3]}}}"""),
+            Document.parse("""{"$set":{"copiedAmount":"$amount"}}""")
+          )
+          for {
+            coll   <- db.getCollection("coll")
+            _      <- coll.insertOne(original)
+            before <- coll.findOneAndUpdate(Filter.idEq(1), pipeline)
+            after  <- coll.findOneAndUpdate(
+              Filter.idEq(1).toBson,
+              pipeline,
+              FindOneAndUpdateOptions().returnDocument(com.mongodb.client.model.ReturnDocument.AFTER)
+            )
+            missing <- coll.findOneAndUpdate(Filter.idEq(2), pipeline)
+            stored  <- coll.find(Filter.idEq(1)).first
+          } yield assertTrue(
+            before.contains(original),
+            after.contains(Document.parse("""{"_id":1,"amount":8,"copiedAmount":8}""")),
+            missing.isEmpty,
+            stored == after
+          )
+        }
+      },
       test("find and update doc in coll") {
         withEmbeddedMongoDatabase { db =>
           for {

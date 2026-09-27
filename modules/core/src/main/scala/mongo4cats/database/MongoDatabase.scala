@@ -16,7 +16,6 @@
 
 package mongo4cats.database
 
-import cats.Monad
 import cats.effect.Async
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -25,12 +24,13 @@ import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import mongo4cats.Clazz
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
-import mongo4cats.codecs.CodecRegistry
+import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
 import mongo4cats.collection.MongoCollection
 import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.syntax._
 import org.bson.conversions.Bson
 
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 final private class LiveMongoDatabase[F[_]](
@@ -38,6 +38,9 @@ final private class LiveMongoDatabase[F[_]](
 )(implicit
     val F: Async[F]
 ) extends MongoDatabase[F] {
+  def withTimeout(timeout: FiniteDuration): MongoDatabase[F] =
+    new LiveMongoDatabase[F](underlying.withTimeout(timeout.length, timeout.unit))
+
   def withReadPreference(readPreference: ReadPreference): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withReadPreference(readPreference))
 
@@ -50,13 +53,21 @@ final private class LiveMongoDatabase[F[_]](
   def withAddedCodec(codecRegistry: CodecRegistry): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
-  def listCollectionNames: F[Iterable[String]]                       = underlying.listCollectionNames().asyncIterable[F]
-  def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] = underlying.listCollectionNames(cs.underlying).asyncIterable[F]
+  def listCollectionNames: F[Iterable[String]] =
+    F.defer(underlying.listCollectionNames().asyncIterable[F])
+  def listCollectionNames(cs: ClientSession[F]): F[Iterable[String]] =
+    F.defer(underlying.listCollectionNames(cs.underlying).asyncIterable[F])
 
   def listCollections: F[Iterable[Document]] =
-    underlying.listCollections.asyncIterableF[F, Document](Document.fromJava)
+    F.defer(underlying.listCollections().asyncIterableF[F, Document](Document.fromJava))
   def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
-    underlying.listCollections(cs.underlying).asyncIterableF[F, Document](Document.fromJava)
+    F.defer(underlying.listCollections(cs.underlying).asyncIterableF[F, Document](Document.fromJava))
+
+  override def getCollection(name: String): F[MongoCollection[F, Document]] =
+    F.defer(super.getCollection(name))
+
+  override def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): F[MongoCollection[F, T]] =
+    F.defer(super.getCollectionWithCodec[T](name))
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): F[MongoCollection[F, T]] =
     F.delay {
@@ -67,19 +78,24 @@ final private class LiveMongoDatabase[F[_]](
     }.flatMap(MongoCollection.make[F, T])
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit] =
-    underlying.createCollection(name, options).asyncVoid[F]
+    F.defer(underlying.createCollection(name, options).asyncVoid[F])
+
+  def createCollection(cs: ClientSession[F], name: String, options: CreateCollectionOptions): F[Unit] =
+    F.defer(underlying.createCollection(cs.underlying, name, options).asyncVoid[F])
 
   def runCommand(cs: ClientSession[F], command: Bson, readPreference: ReadPreference): F[Document] =
-    underlying.runCommand(cs.underlying, command, readPreference).asyncSingle[F].unNone.map(Document.fromJava)
+    F.defer(underlying.runCommand(cs.underlying, command, readPreference).asyncSingle[F].unNone.map(Document.fromJava))
 
   def runCommand(command: Bson, readPreference: ReadPreference): F[Document] =
-    underlying.runCommand(command, readPreference).asyncSingle[F].unNone.map(Document.fromJava)
+    F.defer(underlying.runCommand(command, readPreference).asyncSingle[F].unNone.map(Document.fromJava))
 
-  def drop: F[Unit]                       = underlying.drop().asyncVoid[F]
-  def drop(cs: ClientSession[F]): F[Unit] = underlying.drop(cs.underlying).asyncVoid[F]
+  def drop: F[Unit] =
+    F.defer(underlying.drop().asyncVoid[F])
+  def drop(cs: ClientSession[F]): F[Unit] =
+    F.defer(underlying.drop(cs.underlying).asyncVoid[F])
 }
 
 object MongoDatabase {
   private[mongo4cats] def make[F[_]: Async](database: JMongoDatabase): F[MongoDatabase[F]] =
-    Monad[F].pure(new LiveMongoDatabase[F](database).withAddedCodec(CodecRegistry.Default))
+    Async[F].delay(new LiveMongoDatabase[F](database).withAddedCodec(CodecRegistry.Default))
 }

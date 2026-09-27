@@ -28,6 +28,7 @@ abstract class GenericMongoClient[F[_], S[_], R[_]] {
   def clusterDescription: ClusterDescription = underlying.getClusterDescription
   def getDatabase(name: String): F[GenericMongoDatabase[F, S]]
   def listDatabaseNames: F[Iterable[String]]
+  def listDatabaseNames(session: ClientSession[F]): F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
 

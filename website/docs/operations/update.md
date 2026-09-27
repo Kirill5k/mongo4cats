@@ -135,13 +135,41 @@ For complex updates that reference the document's own fields, you can use an agg
 
 ```scala
 import org.bson.conversions.Bson
-import com.mongodb.client.model.Aggregates
+import mongo4cats.bson.Document
 
 val pipeline: Seq[Bson] = Seq(
-  Aggregates.set("fullName", Document("$concat" := List("$firstName", " ", "$lastName")))
+  Document.parse("""{"$set": {"fullName": {"$concat": ["$firstName", " ", "$lastName"]}}}"""),
+  Document.parse("""{"$set": {"displayName": "$fullName"}}""")
 )
 collection.updateMany(Filter.empty, pipeline)
 ```
+
+Stages run in order, so the second stage can use `fullName` from the first. `updateOne`, `updateMany`, and `findOneAndUpdate` all accept pipelines with either `Filter` or raw `Bson` filters, with or without a session, and with explicit options or their defaults.
+
+Use `findOneAndUpdate` to return the matching document atomically with the update:
+
+```scala
+import com.mongodb.client.model.ReturnDocument
+import mongo4cats.models.collection.FindOneAndUpdateOptions
+
+val updated: IO[Option[Document]] = collection.findOneAndUpdate(
+  Filter.eq("name", "Alice"),
+  pipeline,
+  FindOneAndUpdateOptions(returnDocument = ReturnDocument.AFTER)
+)
+
+val rawFilter: Bson = Document.parse("""{"name": "Alice"}""")
+val updatedInSession: IO[Option[Document]] = client.startSession.use { session =>
+  collection.findOneAndUpdate(
+    session,
+    rawFilter,
+    pipeline,
+    FindOneAndUpdateOptions(returnDocument = ReturnDocument.AFTER)
+  )
+}
+```
+
+The default returns the document before the update. `ReturnDocument.AFTER` returns it after the update, and an unmatched update without upsert returns `None`.
 
 ## Inspecting UpdateResult
 

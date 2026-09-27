@@ -53,6 +53,24 @@ class QueriesSpec extends AsyncWordSpec with Matchers {
   )
 
   "Query definitions" should {
+    "isolate find batch size and disk use settings with the last setting taking precedence" in {
+      val source  = new MutableQueryPublisher
+      val base    = Queries.find[IO, String](source.find())
+      val derived = base.batchSize(1).batchSize(7).allowDiskUse(true).allowDiskUse(false).all
+      val sibling = base.batchSize(3).allowDiskUse(true).all
+      val all     = base.all
+
+      List(derived, all, sibling, derived, all).sequence.unsafeToFuture().map { _ =>
+        source.snapshots.map(_.options) mustBe List(
+          Map[String, Any]("batchSize" -> 7, "allowDiskUse" -> false),
+          Map.empty,
+          Map[String, Any]("batchSize" -> 3, "allowDiskUse" -> true),
+          Map[String, Any]("batchSize" -> 7, "allowDiskUse" -> false),
+          Map.empty
+        )
+      }
+    }
+
     "keep a derived limit from contaminating an already assembled base effect" in {
       val source  = new MutableQueryPublisher
       val base    = Queries.find[IO, String](source.find())

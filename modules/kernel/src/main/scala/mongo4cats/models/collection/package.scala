@@ -21,6 +21,7 @@ import com.mongodb.client.model.{
   CountOptions => JCountOptions,
   DeleteOptions => JDeleteOptions,
   DropIndexOptions => JDropIndexOptions,
+  EstimatedDocumentCountOptions => JEstimatedDocumentCountOptions,
   FindOneAndDeleteOptions => JFindOneAndDeleteOptions,
   FindOneAndReplaceOptions => JFindOneAndReplaceOptions,
   FindOneAndUpdateOptions => JFindOneAndUpdateOptions,
@@ -148,6 +149,15 @@ package object collection {
         maxTime: FiniteDuration = Duration.Zero,
         comment: Option[String] = None
     ): CountOptions = new JCountOptions().limit(limit).skip(skip).maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS).comment(comment.orNull)
+  }
+
+  type EstimatedDocumentCountOptions = JEstimatedDocumentCountOptions
+  object EstimatedDocumentCountOptions {
+    def apply(
+        maxTime: FiniteDuration = Duration.Zero,
+        comment: Option[String] = None
+    ): EstimatedDocumentCountOptions =
+      new JEstimatedDocumentCountOptions().maxTime(maxTime.toMillis, TimeUnit.MILLISECONDS).comment(comment.orNull)
   }
 
   type InsertManyOptions = JInsertManyOptions

@@ -29,6 +29,12 @@ import scala.concurrent.duration.Duration
 
 private[mongo4cats] trait FindQueries[T, QB] extends QueryBuilder[FindPublisher, T, QB] {
 
+  /** Sets the number of documents requested in each batch from the server. */
+  def batchSize(size: Int): QB = withQuery(QueryCommand.BatchSize(size))
+
+  /** Allows the server to use temporary files for a blocking sort that exceeds its memory limit. */
+  def allowDiskUse(allowDiskUse: Boolean): QB = withQuery(QueryCommand.AllowDiskUse(allowDiskUse))
+
   def cursorType(cursorType: CursorType): QB = withQuery(QueryCommand.CursorType(cursorType))
 
   /** The server normally times out idle cursors after an inactivity period (10 minutes) to prevent excess memory use. Set this option to

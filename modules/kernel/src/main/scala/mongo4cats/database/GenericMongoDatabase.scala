@@ -26,6 +26,8 @@ import mongo4cats.collection.GenericMongoCollection
 import mongo4cats.models.database.CreateCollectionOptions
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -37,6 +39,13 @@ abstract class GenericMongoDatabase[F[_], S[_]] {
   def writeConcern: WriteConcern     = underlying.getWriteConcern
   def readConcern: ReadConcern       = underlying.getReadConcern
   def codecs: CodecRegistry          = underlying.getCodecRegistry
+
+  /** The operation timeout inherited by collections: None uses the driver's legacy timeout settings; zero means unlimited. */
+  def timeout: Option[FiniteDuration] =
+    Option(underlying.getTimeout(TimeUnit.MILLISECONDS)).map(value => FiniteDuration(value.longValue(), TimeUnit.MILLISECONDS))
+
+  /** Returns a database with an operation timeout inherited by its collections. Zero means unlimited; negative values are rejected. */
+  def withTimeout(timeout: FiniteDuration): GenericMongoDatabase[F, S]
 
   def withReadPreference(readPreference: ReadPreference): GenericMongoDatabase[F, S]
   def withWriteConcern(writeConcert: WriteConcern): GenericMongoDatabase[F, S]
@@ -53,6 +62,10 @@ abstract class GenericMongoDatabase[F[_], S[_]] {
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())
+
+  /** Creates a collection associated with the supplied client session. */
+  def createCollection(session: ClientSession[F], name: String, options: CreateCollectionOptions): F[Unit]
+  def createCollection(session: ClientSession[F], name: String): F[Unit] = createCollection(session, name, CreateCollectionOptions())
 
   /** Gets a collection with the supplied codecs taking precedence over the database's codecs. Codecs not supplied for the collection are
     * inherited from the database.

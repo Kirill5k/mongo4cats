@@ -69,6 +69,8 @@ val options = CreateCollectionOptions().capped(true).sizeInBytes(1024L * 1024L)
 database.createCollection("mycoll", options)
 ```
 
+Both forms also accept a session as their first argument: `database.createCollection(session, "mycoll")` and `database.createCollection(session, "mycoll", options)`.
+
 ## Collection properties
 
 `MongoCollection[F, T]` exposes several read-only properties:
@@ -92,6 +94,42 @@ val strictCollection = collection
   .withReadConcern(ReadConcern.MAJORITY)
 ```
 
+## Operation timeouts
+
+Databases inherit the client's operation timeout, and collections inherit their database's timeout. Use `withTimeout` to create a wrapper with an override:
+
+```scala
+import scala.concurrent.duration._
+
+val timedDatabase = database.withTimeout(5.seconds)
+val configuredCollection = timedDatabase.getCollection("mycoll").map { inherited =>
+  val timeout: Option[FiniteDuration] = inherited.timeout // Some(5.seconds)
+  inherited.withTimeout(2.seconds)
+}
+
+val unlimitedCollection = collection.withTimeout(Duration.Zero)
+```
+
+`database.timeout` and `collection.timeout` return `None` when no timeout is configured, or `Some(Duration.Zero)` when explicitly unlimited. A configured operation timeout, including zero, takes precedence over `maxTime` and the driver's legacy timeout settings. The driver validates durations. Configuring a timeout preserves codecs and other settings; obtaining typed collections or adding codecs preserves the timeout. The original database and collection wrappers remain unchanged.
+
+## Counting documents
+
+Use `count` for an accurate count, optionally with a filter, and `estimatedDocumentCount` for a metadata-based estimate of the whole collection:
+
+```scala
+import mongo4cats.models.collection.EstimatedDocumentCountOptions
+import mongo4cats.operations.Filter
+import scala.concurrent.duration._
+
+val matching: IO[Long] = collection.count(Filter.eq("status", "active"))
+val estimated: IO[Long] = collection.estimatedDocumentCount
+val boundedEstimate: IO[Long] = collection.estimatedDocumentCount(
+  EstimatedDocumentCountOptions(maxTime = 2.seconds, comment = Some("dashboard total"))
+)
+```
+
+Estimated counts have no filter or session overload. Use `count(session, filter)` when a count needs to participate in a session.
+
 ## Available operations
 
 Once you have a collection, the following operations are available:
@@ -102,7 +140,7 @@ Once you have a collection, the following operations are available:
 | **Find** | `find`, `findOneAndDelete`, `findOneAndUpdate`, `findOneAndReplace` |
 | **Update** | `updateOne`, `updateMany`, `replaceOne` |
 | **Delete** | `deleteOne`, `deleteMany` |
-| **Count** | `count` |
+| **Count** | `count`, `estimatedDocumentCount` |
 | **Aggregate** | `aggregate`, `aggregateWithCodec` |
 | **Distinct** | `distinct`, `distinctWithCodec` |
 | **Indexes** | `createIndex`, `listIndexes`, `dropIndex`, `dropIndexes` |

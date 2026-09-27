@@ -156,6 +156,21 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
           }
       }
 
+      "estimatedDocumentCount" should {
+        "count empty and populated collections using collection metadata" in
+          withEmbeddedMongoDatabase { db =>
+            for {
+              coll      <- db.getCollection("coll")
+              empty     <- coll.estimatedDocumentCount
+              _         <- coll.insertMany(TestData.accounts)
+              populated <- coll.estimatedDocumentCount(EstimatedDocumentCountOptions().comment("estimated count"))
+            } yield {
+              empty mustBe 0L
+              populated mustBe 3L
+            }
+          }
+      }
+
       "deleteMany" should {
         "delete multiple docs in coll" in
           withEmbeddedMongoDatabase { db =>
@@ -344,6 +359,32 @@ class MongoCollectionSpec extends AsyncWordSpec with TableDrivenPropertyChecks w
       }
 
       "findOneAndUpdate" should {
+        "apply pipeline stages in order and support before, after and missing results" in
+          withEmbeddedMongoDatabase { db =>
+            val original = Document.parse("""{"_id":1,"amount":2}""")
+            val pipeline = List(
+              Document.parse("""{"$set":{"amount":{"$add":["$amount",3]}}}"""),
+              Document.parse("""{"$set":{"copiedAmount":"$amount"}}""")
+            )
+            for {
+              coll   <- db.getCollection("coll")
+              _      <- coll.insertOne(original)
+              before <- coll.findOneAndUpdate(Filter.idEq(1), pipeline)
+              after  <- coll.findOneAndUpdate(
+                Filter.idEq(1).toBson,
+                pipeline,
+                FindOneAndUpdateOptions().returnDocument(com.mongodb.client.model.ReturnDocument.AFTER)
+              )
+              missing <- coll.findOneAndUpdate(Filter.idEq(2), pipeline)
+              stored  <- coll.find(Filter.idEq(1)).first
+            } yield {
+              before mustBe Some(original)
+              after mustBe Some(Document.parse("""{"_id":1,"amount":8,"copiedAmount":8}"""))
+              missing mustBe None
+              stored mustBe after
+            }
+          }
+
         "find and update doc in coll" in
           withEmbeddedMongoDatabase { db =>
             val result = for {

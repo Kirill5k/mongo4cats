@@ -20,17 +20,21 @@ import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.MongoDatabase
 import mongo4cats.Clazz
 import mongo4cats.bson.Document
-import mongo4cats.codecs.CodecRegistry
+import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
 import mongo4cats.models.database.CreateCollectionOptions
 import mongo4cats.zio.syntax._
 import org.bson.conversions.Bson
-import zio.{Task, UIO, ZIO}
+import zio.{Task, ZIO}
 
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 final private class ZMongoDatabaseLive(
     val underlying: MongoDatabase
 ) extends ZMongoDatabase {
+  def withTimeout(timeout: FiniteDuration): ZMongoDatabase =
+    new ZMongoDatabaseLive(underlying.withTimeout(timeout.length, timeout.unit))
+
   def withReadPreference(readPreference: ReadPreference): ZMongoDatabase =
     new ZMongoDatabaseLive(underlying.withReadPreference(readPreference))
 
@@ -44,17 +48,26 @@ final private class ZMongoDatabaseLive(
     new ZMongoDatabaseLive(underlying.withCodecRegistry(CodecRegistry.from(codecs, codecRegistry)))
 
   def listCollectionNames: Task[Iterable[String]] =
-    underlying.listCollectionNames().asyncIterable
+    ZIO.attempt(underlying.listCollectionNames()).flatMap(_.asyncIterable)
   def listCollectionNames(session: ZClientSession): Task[Iterable[String]] =
-    underlying.listCollectionNames(session.underlying).asyncIterable
+    ZIO.attempt(underlying.listCollectionNames(session.underlying)).flatMap(_.asyncIterable)
 
   def listCollections: Task[Iterable[Document]] =
-    underlying.listCollections().asyncIterableF(Document.fromJava)
+    ZIO.attempt(underlying.listCollections()).flatMap(_.asyncIterableF(Document.fromJava))
   def listCollections(session: ZClientSession): Task[Iterable[Document]] =
-    underlying.listCollections(session.underlying).asyncIterableF(Document.fromJava)
+    ZIO.attempt(underlying.listCollections(session.underlying)).flatMap(_.asyncIterableF(Document.fromJava))
 
   def createCollection(name: String, options: CreateCollectionOptions): Task[Unit] =
-    underlying.createCollection(name, options).asyncVoid
+    ZIO.attempt(underlying.createCollection(name, options)).flatMap(_.asyncVoid)
+
+  def createCollection(session: ZClientSession, name: String, options: CreateCollectionOptions): Task[Unit] =
+    ZIO.attempt(underlying.createCollection(session.underlying, name, options)).flatMap(_.asyncVoid)
+
+  override def getCollection(name: String): Task[ZMongoCollection[Document]] =
+    ZIO.attempt(super.getCollection(name)).flatten
+
+  override def getCollectionWithCodec[T: ClassTag](name: String)(implicit cp: MongoCodecProvider[T]): Task[ZMongoCollection[T]] =
+    ZIO.attempt(super.getCollectionWithCodec[T](name)).flatten
 
   def getCollection[T: ClassTag](name: String, codecRegistry: CodecRegistry): Task[ZMongoCollection[T]] =
     ZIO
@@ -67,15 +80,17 @@ final private class ZMongoDatabaseLive(
       .flatMap(ZMongoCollection.make)
 
   def runCommand(command: Bson, readPreference: ReadPreference): Task[Document] =
-    underlying.runCommand(command, readPreference).asyncSingle.unNone.map(Document.fromJava)
+    ZIO.attempt(underlying.runCommand(command, readPreference)).flatMap(_.asyncSingle.unNone).map(Document.fromJava)
   def runCommand(session: ZClientSession, command: Bson, readPreference: ReadPreference): Task[Document] =
-    underlying.runCommand(session.underlying, command, readPreference).asyncSingle.unNone.map(Document.fromJava)
+    ZIO.attempt(underlying.runCommand(session.underlying, command, readPreference)).flatMap(_.asyncSingle.unNone).map(Document.fromJava)
 
-  def drop: Task[Unit]                                = underlying.drop().asyncVoid
-  def drop(clientSession: ZClientSession): Task[Unit] = underlying.drop(clientSession.underlying).asyncVoid
+  def drop: Task[Unit] =
+    ZIO.attempt(underlying.drop()).flatMap(_.asyncVoid)
+  def drop(clientSession: ZClientSession): Task[Unit] =
+    ZIO.attempt(underlying.drop(clientSession.underlying)).flatMap(_.asyncVoid)
 }
 
 object ZMongoDatabase {
-  private[zio] def make(database: MongoDatabase): UIO[ZMongoDatabase] =
-    ZIO.succeed(new ZMongoDatabaseLive(database).withAddedCodec(CodecRegistry.Default))
+  private[zio] def make(database: MongoDatabase): Task[ZMongoDatabase] =
+    ZIO.attempt(new ZMongoDatabaseLive(database).withAddedCodec(CodecRegistry.Default))
 }

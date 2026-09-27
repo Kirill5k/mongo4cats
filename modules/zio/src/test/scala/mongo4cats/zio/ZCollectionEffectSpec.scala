@@ -25,16 +25,19 @@ import zio.test._
 import java.util.concurrent.atomic.AtomicInteger
 
 object ZCollectionEffectSpec extends ZIOSpecDefault {
-  private val clientSession = session[Task]
+  private val clientSession     = session[Task]
+  private val checkedOperations = operations[Task, Stream[Throwable, *]](clientSession) ++
+    queryOperations[Task, Stream[Throwable, *]](clientSession, _.runDrain)
 
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("Collection effects")(
     suite("operation contracts")(
-      operations[Task, Stream[Throwable, *]](clientSession).map { operation =>
+      checkedOperations.map { operation =>
         suite(operation.label)(
           test("defer invocation, create a new publisher on each execution and preserve results") {
             val calls = new AtomicInteger()
             val coll  = new ZMongoCollectionLive[Document](collection { (method, arguments) =>
               require(method == operation.method, s"Unexpected driver method: $method")
+              operation.verifyArguments(arguments)
               require(!operation.hasSession || (arguments(0) eq clientSession.underlying), "Expected session was not forwarded")
               calls.incrementAndGet()
               operation.response()

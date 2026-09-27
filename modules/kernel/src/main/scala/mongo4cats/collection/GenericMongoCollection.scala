@@ -31,6 +31,8 @@ import org.bson.codecs.configuration.CodecRegistries.fromProviders
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -51,9 +53,16 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
   def codecs: CodecRegistry          = underlying.getCodecRegistry
   def writeConcern: WriteConcern     = underlying.getWriteConcern
 
+  /** The inherited or explicitly configured client-side operation timeout. None means no timeout is configured; zero disables it. */
+  def timeout: Option[FiniteDuration] =
+    Option(underlying.getTimeout(TimeUnit.MILLISECONDS)).map(value => FiniteDuration(value.longValue(), TimeUnit.MILLISECONDS))
+
   def withReadPreference(readPreference: ReadPreference): GenericMongoCollection[F, T, S]
   def withWriteConcern(writeConcert: WriteConcern): GenericMongoCollection[F, T, S]
   def withReadConcern(readConcern: ReadConcern): GenericMongoCollection[F, T, S]
+
+  /** Returns a collection with the given client-side operation timeout. Zero disables the timeout; negative values are rejected. */
+  def withTimeout(timeout: FiniteDuration): GenericMongoCollection[F, T, S]
 
   def as[Y: ClassTag]: GenericMongoCollection[F, Y, S]
 
@@ -74,11 +83,14 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     */
   def aggregate[Y: ClassTag](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y, S]
   def aggregate[Y: ClassTag](pipeline: Aggregate): AggregateQueryBuilder[F, Y, S]
+  def aggregate[Y: ClassTag](session: ClientSession[F], pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y, S]
   def aggregate[Y: ClassTag](session: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y, S]
   def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y, S] =
     withAddedCodec[Y].aggregate[Y](pipeline)
   def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](pipeline: Aggregate): AggregateQueryBuilder[F, Y, S] =
     withAddedCodec[Y].aggregate[Y](pipeline)
+  def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](session: ClientSession[F], pipeline: Seq[Bson]): AggregateQueryBuilder[F, Y, S] =
+    withAddedCodec[Y].aggregate[Y](session, pipeline)
   def aggregateWithCodec[Y: ClassTag: MongoCodecProvider](session: ClientSession[F], pipeline: Aggregate): AggregateQueryBuilder[F, Y, S] =
     withAddedCodec[Y].aggregate[Y](session, pipeline)
 
@@ -92,6 +104,7 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     */
   def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, T, S]
   def watch(pipeline: Aggregate): WatchQueryBuilder[F, T, S]
+  def watch(session: ClientSession[F], pipeline: Seq[Bson]): WatchQueryBuilder[F, T, S]
   def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, T, S]
 
   /** Creates a change stream for this collection.
@@ -112,6 +125,7 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     */
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y, S]
   def distinct[Y: ClassTag](fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y, S] = distinct(fieldName, filter.toBson)
+  def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y, S]
   def distinct[Y: ClassTag](session: ClientSession[F], fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y, S]
 
   def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Bson): DistinctQueryBuilder[F, Y, S] =
@@ -119,6 +133,13 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
 
   def distinctWithCodec[Y: MongoCodecProvider: ClassTag](fieldName: String, filter: Filter): DistinctQueryBuilder[F, Y, S] =
     distinctWithCodec(fieldName, filter.toBson)
+
+  def distinctWithCodec[Y: MongoCodecProvider: ClassTag](
+      session: ClientSession[F],
+      fieldName: String,
+      filter: Bson
+  ): DistinctQueryBuilder[F, Y, S] =
+    withAddedCodec[Y].distinct[Y](session, fieldName, filter)
 
   def distinctWithCodec[Y: MongoCodecProvider: ClassTag](
       session: ClientSession[F],
@@ -149,6 +170,7 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     */
   def find(filter: Bson): FindQueryBuilder[F, T, S]
   def find(filter: Filter): FindQueryBuilder[F, T, S] = find(filter.toBson)
+  def find(session: ClientSession[F], filter: Bson): FindQueryBuilder[F, T, S]
   def find(session: ClientSession[F], filter: Filter): FindQueryBuilder[F, T, S]
 
   /** Finds all documents in the collection.
@@ -168,6 +190,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   If no documents matched the query filter, then None will be returned
     */
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]]
+  def findOneAndDelete(session: ClientSession[F], filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]]
+  def findOneAndDelete(session: ClientSession[F], filter: Bson): F[Option[T]] =
+    findOneAndDelete(session, filter, FindOneAndDeleteOptions())
   def findOneAndDelete(filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]] = findOneAndDelete(filter.toBson, options)
   def findOneAndDelete(session: ClientSession[F], filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]]
   def findOneAndDelete(filter: Bson): F[Option[T]]                              = findOneAndDelete(filter, FindOneAndDeleteOptions())
@@ -189,12 +214,31 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   after the update. If no documents matched the query filter, then None will be returned
     */
   def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(session: ClientSession[F], filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(session: ClientSession[F], filter: Bson, update: Bson): F[Option[T]] =
+    findOneAndUpdate(session, filter, update, FindOneAndUpdateOptions())
   def findOneAndUpdate(filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[Option[T]] =
     findOneAndUpdate(filter.toBson, update.toBson, options)
   def findOneAndUpdate(session: ClientSession[F], filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[Option[T]]
   def findOneAndUpdate(filter: Bson, update: Bson): F[Option[T]]     = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
   def findOneAndUpdate(filter: Filter, update: Update): F[Option[T]] = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
   def findOneAndUpdate(session: ClientSession[F], filter: Filter, update: Update): F[Option[T]] =
+    findOneAndUpdate(session, filter, update, FindOneAndUpdateOptions())
+
+  /** Atomically finds a document and updates it using an aggregation pipeline. Requires MongoDB 4.2 or greater.
+    *
+    * The options determine whether the original or updated document is returned. If no document matches and upsert is disabled, None is
+    * returned.
+    */
+  def findOneAndUpdate(filter: Bson, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(filter: Filter, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(session: ClientSession[F], filter: Bson, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(session: ClientSession[F], filter: Filter, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]]
+  def findOneAndUpdate(filter: Bson, update: Seq[Bson]): F[Option[T]]   = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
+  def findOneAndUpdate(filter: Filter, update: Seq[Bson]): F[Option[T]] = findOneAndUpdate(filter, update, FindOneAndUpdateOptions())
+  def findOneAndUpdate(session: ClientSession[F], filter: Bson, update: Seq[Bson]): F[Option[T]] =
+    findOneAndUpdate(session, filter, update, FindOneAndUpdateOptions())
+  def findOneAndUpdate(session: ClientSession[F], filter: Filter, update: Seq[Bson]): F[Option[T]] =
     findOneAndUpdate(session, filter, update, FindOneAndUpdateOptions())
 
   /** Atomically find a document and replace it.
@@ -210,6 +254,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   after the update. If no documents matched the query filter, then None will be returned
     */
   def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]]
+  def findOneAndReplace(session: ClientSession[F], filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]]
+  def findOneAndReplace(session: ClientSession[F], filter: Bson, replacement: T): F[Option[T]] =
+    findOneAndReplace(session, filter, replacement, FindOneAndReplaceOptions())
   def findOneAndReplace(filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
     findOneAndReplace(filter.toBson, replacement, options)
   def findOneAndReplace(session: ClientSession[F], filter: Filter, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]]
@@ -240,6 +287,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     * @since 2.2
     */
   def dropIndex(keys: Bson, options: DropIndexOptions): F[Unit]
+  def dropIndex(session: ClientSession[F], keys: Bson, options: DropIndexOptions): F[Unit]
+  def dropIndex(session: ClientSession[F], keys: Bson): F[Unit] =
+    dropIndex(session, keys, DropIndexOptions())
   def dropIndex(index: Index, options: DropIndexOptions): F[Unit] = dropIndex(index.toBson, options)
   def dropIndex(session: ClientSession[F], index: Index, options: DropIndexOptions): F[Unit]
   def dropIndex(keys: Bson): F[Unit]                              = dropIndex(keys, DropIndexOptions())
@@ -265,6 +315,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   the options for the index
     */
   def createIndex(key: Bson, options: IndexOptions): F[String]
+  def createIndex(session: ClientSession[F], key: Bson, options: IndexOptions): F[String]
+  def createIndex(session: ClientSession[F], key: Bson): F[String] =
+    createIndex(session, key, IndexOptions())
   def createIndex(index: Index, options: IndexOptions): F[String] = createIndex(index.toBson, options)
   def createIndex(session: ClientSession[F], index: Index, options: IndexOptions): F[String]
   def createIndex(key: Bson): F[String]                               = createIndex(key, IndexOptions())
@@ -326,6 +379,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   the options to apply to the update operation
     */
   def updateMany(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult]
+  def updateMany(session: ClientSession[F], filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult]
+  def updateMany(session: ClientSession[F], filter: Bson, update: Bson): F[UpdateResult] =
+    updateMany(session, filter, update, UpdateOptions())
   def updateMany(filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
     updateMany(filter.toBson, update.toBson, options)
   def updateMany(session: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult]
@@ -348,6 +404,15 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   Requires MongoDB 4.2 or greater
     */
   def updateMany(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateMany(filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateMany(session: ClientSession[F], filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateMany(session: ClientSession[F], filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateMany(filter: Bson, update: Seq[Bson]): F[UpdateResult]                            = updateMany(filter, update, UpdateOptions())
+  def updateMany(filter: Filter, update: Seq[Bson]): F[UpdateResult]                          = updateMany(filter, update, UpdateOptions())
+  def updateMany(session: ClientSession[F], filter: Bson, update: Seq[Bson]): F[UpdateResult] =
+    updateMany(session, filter, update, UpdateOptions())
+  def updateMany(session: ClientSession[F], filter: Filter, update: Seq[Bson]): F[UpdateResult] =
+    updateMany(session, filter, update, UpdateOptions())
 
   /** Update a single document in the collection according to the specified arguments.
     *
@@ -361,6 +426,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   the options to apply to the update operation
     */
   def updateOne(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult]
+  def updateOne(session: ClientSession[F], filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult]
+  def updateOne(session: ClientSession[F], filter: Bson, update: Bson): F[UpdateResult] =
+    updateOne(session, filter, update, UpdateOptions())
   def updateOne(filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] = updateOne(filter.toBson, update.toBson, options)
   def updateOne(session: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult]
   def updateOne(filters: Bson, update: Bson): F[UpdateResult]                                = updateOne(filters, update, UpdateOptions())
@@ -382,7 +450,15 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   Requires MongoDB 4.2 or greater
     */
   def updateOne(filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
-  def updateOne(filters: Bson, update: Seq[Bson]): F[UpdateResult] = updateOne(filters, update, UpdateOptions())
+  def updateOne(filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateOne(session: ClientSession[F], filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateOne(session: ClientSession[F], filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult]
+  def updateOne(filters: Bson, update: Seq[Bson]): F[UpdateResult]                           = updateOne(filters, update, UpdateOptions())
+  def updateOne(filter: Filter, update: Seq[Bson]): F[UpdateResult]                          = updateOne(filter, update, UpdateOptions())
+  def updateOne(session: ClientSession[F], filter: Bson, update: Seq[Bson]): F[UpdateResult] =
+    updateOne(session, filter, update, UpdateOptions())
+  def updateOne(session: ClientSession[F], filter: Filter, update: Seq[Bson]): F[UpdateResult] =
+    updateOne(session, filter, update, UpdateOptions())
 
   /** Replace a document in the collection according to the specified arguments.
     *
@@ -395,6 +471,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   the options to apply to the replace operation
     */
   def replaceOne(filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult]
+  def replaceOne(session: ClientSession[F], filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult]
+  def replaceOne(session: ClientSession[F], filter: Bson, replacement: T): F[UpdateResult] =
+    replaceOne(session, filter, replacement, ReplaceOptions())
   def replaceOne(filter: Filter, replacement: T, options: ReplaceOptions): F[UpdateResult] = replaceOne(filter.toBson, replacement, options)
   def replaceOne(session: ClientSession[F], filter: Filter, replacement: T, options: ReplaceOptions): F[UpdateResult]
   def replaceOne(filters: Bson, replacement: T): F[UpdateResult]   = replaceOne(filters, replacement, ReplaceOptions())
@@ -410,6 +489,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   the options to apply to the delete operation \@since 1.2
     */
   def deleteOne(filter: Bson, options: DeleteOptions): F[DeleteResult]
+  def deleteOne(session: ClientSession[F], filter: Bson, options: DeleteOptions): F[DeleteResult]
+  def deleteOne(session: ClientSession[F], filter: Bson): F[DeleteResult] =
+    deleteOne(session, filter, DeleteOptions())
   def deleteOne(filter: Filter, options: DeleteOptions): F[DeleteResult] = deleteOne(filter.toBson, options)
   def deleteOne(session: ClientSession[F], filter: Filter, options: DeleteOptions): F[DeleteResult]
   def deleteOne(filters: Bson): F[DeleteResult]                             = deleteOne(filters, DeleteOptions())
@@ -424,6 +506,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     *   the options to apply to the delete operation \@since 1.2
     */
   def deleteMany(filter: Bson, options: DeleteOptions): F[DeleteResult]
+  def deleteMany(session: ClientSession[F], filter: Bson, options: DeleteOptions): F[DeleteResult]
+  def deleteMany(session: ClientSession[F], filter: Bson): F[DeleteResult] =
+    deleteMany(session, filter, DeleteOptions())
   def deleteMany(filter: Filter, options: DeleteOptions): F[DeleteResult] = deleteMany(filter.toBson, options)
   def deleteMany(session: ClientSession[F], filter: Filter, options: DeleteOptions): F[DeleteResult]
   def deleteMany(filters: Bson): F[DeleteResult]                              = deleteMany(filters, DeleteOptions())
@@ -464,6 +549,9 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     * @since 2.4
     */
   def count(filter: Bson, options: CountOptions): F[Long]
+  def count(session: ClientSession[F], filter: Bson, options: CountOptions): F[Long]
+  def count(session: ClientSession[F], filter: Bson): F[Long] =
+    count(session, filter, CountOptions())
   def count(filter: Filter, options: CountOptions): F[Long] = count(filter.toBson, options)
   def count(session: ClientSession[F], filter: Filter, options: CountOptions): F[Long]
   def count(filter: Bson): F[Long]                              = count(filter, CountOptions())
@@ -476,6 +564,13 @@ abstract class GenericMongoCollection[F[_], T, S[_]] extends TypedSearchIndexLis
     */
   def count: F[Long]                            = count(Filter.empty, CountOptions())
   def count(session: ClientSession[F]): F[Long] = count(session, Filter.empty, CountOptions())
+
+  /** Estimates the number of documents using collection metadata. This is faster than count, but is not an exact filtered count.
+    *
+    * This operation does not support client sessions.
+    */
+  def estimatedDocumentCount(options: EstimatedDocumentCountOptions): F[Long]
+  def estimatedDocumentCount: F[Long] = estimatedDocumentCount(EstimatedDocumentCountOptions())
 
   /** Executes a mix of inserts, updates, replaces, and deletes.
     *

@@ -152,10 +152,16 @@ Use `.stream` instead of `.all` to process documents one at a time without loadi
 import fs2.Stream
 
 val stream: fs2.Stream[IO, Document] =
-  collection.find(Filter.gte("score", 0)).sort(Sort.desc("score")).stream
+  collection.find(Filter.gte("score", 0))
+    .sort(Sort.desc("score"))
+    .batchSize(256)
+    .allowDiskUse(true)
+    .stream
 
 stream.evalMap(doc => IO.println(doc)).compile.drain
 ```
+
+`batchSize` controls how many documents the server returns in each batch; use `limit` to cap the total number of results. `allowDiskUse(true)` allows the server to use temporary files when a sort needs more memory than its in-memory limit. Both methods return a new query builder, so configuring one query does not change another derived from the same base query.
 
 ## Atomic find-and-modify operations
 
@@ -164,6 +170,7 @@ stream.evalMap(doc => IO.println(doc)).compile.drain
 ```scala
 import mongo4cats.operations.{Filter, Update}
 import mongo4cats.models.collection.FindOneAndUpdateOptions
+import com.mongodb.client.model.ReturnDocument
 
 // Find the first matching document and update it, returning the document AFTER the update
 val updated: IO[Option[Document]] = collection.findOneAndUpdate(
@@ -184,10 +191,19 @@ val replaced: IO[Option[Document]] = collection.findOneAndReplace(
 
 ## Using with a client session (transactions)
 
-All find operations accept an optional `ClientSession[F]` as the first argument to run within a transaction:
+Find operations have overloads accepting `ClientSession[F]` as the first argument. Both `Filter` and raw `Bson` filters work with sessions:
 
 ```scala
 client.startSession.use { session =>
   collection.find(session, Filter.eq("status", "pending")).all
 }
+
+import org.bson.conversions.Bson
+
+val rawFilter: Bson = Document.parse("""{"status": "pending"}""")
+client.startSession.use { session =>
+  collection.find(session, rawFilter).batchSize(256).all
+}
 ```
+
+Passing a session does not start a transaction; see [Transactions](transactions) for the transaction lifecycle. Atomic find-and-modify operations also accept raw BSON with or without a session. `findOneAndUpdate` additionally accepts an [update pipeline](update#pipeline-based-updates-mongodb-42).

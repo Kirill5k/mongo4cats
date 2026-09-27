@@ -32,11 +32,15 @@ import mongo4cats.operations.{Aggregate, Filter, Index, Update}
 import mongo4cats.{AsJava, Clazz}
 import org.bson.conversions.Bson
 
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     val underlying: JMongoCollection[T]
 ) extends MongoCollection[F, T] with AsJava {
+
+  def withTimeout(timeout: FiniteDuration): MongoCollection[F, T] =
+    new LiveMongoCollection[F, T](underlying.withTimeout(timeout.length, timeout.unit))
 
   def withReadPreference(readPreference: ReadPreference): MongoCollection[F, T] =
     new LiveMongoCollection[F, T](underlying.withReadPreference(readPreference))
@@ -59,6 +63,9 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def aggregate[Y: ClassTag](pipeline: Aggregate): Queries.Aggregate[F, Y] =
     Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(pipeline.toBson))
 
+  def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Seq[Bson]): Queries.Aggregate[F, Y] =
+    Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, asJava(pipeline)))
+
   def aggregate[Y: ClassTag](cs: ClientSession[F], pipeline: Aggregate): Queries.Aggregate[F, Y] =
     Queries.aggregate(withNewDocumentClass[Y](underlying).aggregate(cs.underlying, pipeline.toBson))
 
@@ -68,11 +75,17 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def watch(pipeline: Aggregate): Queries.Watch[F, T] =
     Queries.watch(underlying.watch(pipeline.toBson, Clazz.tag[T]))
 
+  def watch(cs: ClientSession[F], pipeline: Seq[Bson]): Queries.Watch[F, T] =
+    Queries.watch(underlying.watch(cs.underlying, asJava(pipeline), Clazz.tag[T]))
+
   def watch(cs: ClientSession[F], pipeline: Aggregate): Queries.Watch[F, T] =
     Queries.watch(underlying.watch(cs.underlying, pipeline.toBson, Clazz.tag[T]))
 
   def distinct[Y: ClassTag](fieldName: String, filter: Bson): Queries.Distinct[F, Y] =
     Queries.distinct(underlying.distinct(fieldName, filter, Clazz.tag[Y]))
+
+  def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Bson): Queries.Distinct[F, Y] =
+    Queries.distinct(underlying.distinct(cs.underlying, fieldName, filter, Clazz.tag[Y]))
 
   def distinct[Y: ClassTag](cs: ClientSession[F], fieldName: String, filter: Filter): Queries.Distinct[F, Y] =
     Queries.distinct(underlying.distinct(cs.underlying, fieldName, filter.toBson, Clazz.tag[Y]))
@@ -80,8 +93,14 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def find(filter: Bson): Queries.Find[F, T] =
     Queries.find(underlying.find(filter))
 
+  def find(cs: ClientSession[F], filter: Bson): Queries.Find[F, T] =
+    Queries.find(underlying.find(cs.underlying, filter))
+
   def find(cs: ClientSession[F], filter: Filter): Queries.Find[F, T] =
     Queries.find(underlying.find(cs.underlying, filter.toBson))
+
+  def findOneAndDelete(cs: ClientSession[F], filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndDelete(cs.underlying, filter, options).asyncSingle[F])
 
   def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): F[Option[T]] =
     Async[F].defer(underlying.findOneAndDelete(filter, options).asyncSingle[F])
@@ -89,11 +108,29 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def findOneAndDelete(cs: ClientSession[F], filter: Filter, options: FindOneAndDeleteOptions): F[Option[T]] =
     Async[F].defer(underlying.findOneAndDelete(cs.underlying, filter.toBson, options).asyncSingle[F])
 
+  def findOneAndUpdate(cs: ClientSession[F], filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndUpdate(cs.underlying, filter, update, options).asyncSingle[F])
+
+  def findOneAndUpdate(filter: Bson, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndUpdate(filter, asJava(update), options).asyncSingle[F])
+
+  def findOneAndUpdate(filter: Filter, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndUpdate(filter.toBson, asJava(update), options).asyncSingle[F])
+
+  def findOneAndUpdate(cs: ClientSession[F], filter: Bson, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndUpdate(cs.underlying, filter, asJava(update), options).asyncSingle[F])
+
+  def findOneAndUpdate(cs: ClientSession[F], filter: Filter, update: Seq[Bson], options: FindOneAndUpdateOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndUpdate(cs.underlying, filter.toBson, asJava(update), options).asyncSingle[F])
+
   def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): F[Option[T]] =
     Async[F].defer(underlying.findOneAndUpdate(filter, update, options).asyncSingle[F])
 
   def findOneAndUpdate(cs: ClientSession[F], filter: Filter, update: Update, options: FindOneAndUpdateOptions): F[Option[T]] =
     Async[F].defer(underlying.findOneAndUpdate(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F])
+
+  def findOneAndReplace(cs: ClientSession[F], filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
+    Async[F].defer(underlying.findOneAndReplace(cs.underlying, filter, replacement, options).asyncSingle[F])
 
   def findOneAndReplace(filter: Bson, replacement: T, options: FindOneAndReplaceOptions): F[Option[T]] =
     Async[F].defer(underlying.findOneAndReplace(filter, replacement, options).asyncSingle[F])
@@ -105,6 +142,9 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     Async[F].defer(underlying.dropIndex(name, options).asyncVoid[F])
   def dropIndex(cs: ClientSession[F], name: String, options: DropIndexOptions): F[Unit] =
     Async[F].defer(underlying.dropIndex(cs.underlying, name, options).asyncVoid[F])
+  def dropIndex(cs: ClientSession[F], keys: Bson, options: DropIndexOptions): F[Unit] =
+    Async[F].defer(underlying.dropIndex(cs.underlying, keys, options).asyncVoid[F])
+
   def dropIndex(keys: Bson, options: DropIndexOptions): F[Unit] =
     Async[F].defer(underlying.dropIndex(keys, options).asyncVoid[F])
   def dropIndex(cs: ClientSession[F], index: Index, options: DropIndexOptions): F[Unit] =
@@ -119,6 +159,9 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
     Async[F].defer(underlying.drop().asyncVoid[F])
   def drop(cs: ClientSession[F]): F[Unit] =
     Async[F].defer(underlying.drop(cs.underlying).asyncVoid[F])
+
+  def createIndex(cs: ClientSession[F], key: Bson, options: IndexOptions): F[String] =
+    Async[F].defer(underlying.createIndex(cs.underlying, key, options).asyncSingle[F].unNone)
 
   def createIndex(key: Bson, options: IndexOptions): F[String] =
     Async[F].defer(underlying.createIndex(key, options).asyncSingle[F].unNone)
@@ -161,6 +204,18 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def dropSearchIndex(name: String): F[Unit] =
     Async[F].defer(underlying.dropSearchIndex(name).asyncVoid[F])
 
+  def updateMany(cs: ClientSession[F], filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateMany(cs.underlying, filter, update, options).asyncSingle[F].unNone)
+
+  def updateMany(filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateMany(filter.toBson, asJava(update), options).asyncSingle[F].unNone)
+
+  def updateMany(cs: ClientSession[F], filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateMany(cs.underlying, filter, asJava(update), options).asyncSingle[F].unNone)
+
+  def updateMany(cs: ClientSession[F], filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateMany(cs.underlying, filter.toBson, asJava(update), options).asyncSingle[F].unNone)
+
   def updateMany(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     Async[F].defer(underlying.updateMany(filter, update, options).asyncSingle[F].unNone)
 
@@ -169,6 +224,18 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
 
   def updateMany(cs: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
     Async[F].defer(underlying.updateMany(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F].unNone)
+
+  def updateOne(cs: ClientSession[F], filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateOne(cs.underlying, filter, update, options).asyncSingle[F].unNone)
+
+  def updateOne(filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateOne(filter.toBson, asJava(update), options).asyncSingle[F].unNone)
+
+  def updateOne(cs: ClientSession[F], filter: Bson, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateOne(cs.underlying, filter, asJava(update), options).asyncSingle[F].unNone)
+
+  def updateOne(cs: ClientSession[F], filter: Filter, update: Seq[Bson], options: UpdateOptions): F[UpdateResult] =
+    Async[F].defer(underlying.updateOne(cs.underlying, filter.toBson, asJava(update), options).asyncSingle[F].unNone)
 
   def updateOne(filter: Bson, update: Bson, options: UpdateOptions): F[UpdateResult] =
     Async[F].defer(underlying.updateOne(filter, update, options).asyncSingle[F].unNone)
@@ -179,16 +246,25 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def updateOne(cs: ClientSession[F], filter: Filter, update: Update, options: UpdateOptions): F[UpdateResult] =
     Async[F].defer(underlying.updateOne(cs.underlying, filter.toBson, update.toBson, options).asyncSingle[F].unNone)
 
+  def replaceOne(cs: ClientSession[F], filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult] =
+    Async[F].defer(underlying.replaceOne(cs.underlying, filter, replacement, options).asyncSingle[F].unNone)
+
   def replaceOne(filter: Bson, replacement: T, options: ReplaceOptions): F[UpdateResult] =
     Async[F].defer(underlying.replaceOne(filter, replacement, options).asyncSingle[F].unNone)
 
   def replaceOne(cs: ClientSession[F], filter: Filter, replacement: T, options: ReplaceOptions): F[UpdateResult] =
     Async[F].defer(underlying.replaceOne(cs.underlying, filter.toBson, replacement, options).asyncSingle[F].unNone)
 
+  def deleteOne(cs: ClientSession[F], filter: Bson, options: DeleteOptions): F[DeleteResult] =
+    Async[F].defer(underlying.deleteOne(cs.underlying, filter, options).asyncSingle[F].unNone)
+
   def deleteOne(filter: Bson, options: DeleteOptions): F[DeleteResult] =
     Async[F].defer(underlying.deleteOne(filter, options).asyncSingle[F].unNone)
   def deleteOne(cs: ClientSession[F], filter: Filter, options: DeleteOptions): F[DeleteResult] =
     Async[F].defer(underlying.deleteOne(cs.underlying, filter.toBson, options).asyncSingle[F].unNone)
+
+  def deleteMany(cs: ClientSession[F], filter: Bson, options: DeleteOptions): F[DeleteResult] =
+    Async[F].defer(underlying.deleteMany(cs.underlying, filter, options).asyncSingle[F].unNone)
 
   def deleteMany(filter: Bson, options: DeleteOptions): F[DeleteResult] =
     Async[F].defer(underlying.deleteMany(filter, options).asyncSingle[F].unNone)
@@ -205,10 +281,16 @@ final private class LiveMongoCollection[F[_]: Async, T: ClassTag](
   def insertMany(cs: ClientSession[F], docs: Seq[T], options: InsertManyOptions): F[InsertManyResult] =
     Async[F].defer(underlying.insertMany(cs.underlying, asJava(docs), options).asyncSingle[F].unNone)
 
+  def count(cs: ClientSession[F], filter: Bson, options: CountOptions): F[Long] =
+    Async[F].defer(underlying.countDocuments(cs.underlying, filter, options).asyncSingle[F].unNone.map(_.longValue()))
+
   def count(filter: Bson, options: CountOptions): F[Long] =
     Async[F].defer(underlying.countDocuments(filter, options).asyncSingle[F].unNone.map(_.longValue()))
   def count(cs: ClientSession[F], filter: Filter, options: CountOptions): F[Long] =
     Async[F].defer(underlying.countDocuments(cs.underlying, filter.toBson, options).asyncSingle[F].unNone.map(_.longValue()))
+
+  def estimatedDocumentCount(options: EstimatedDocumentCountOptions): F[Long] =
+    Async[F].defer(underlying.estimatedDocumentCount(options).asyncSingle[F].unNone.map(_.longValue()))
 
   def bulkWrite[T1 <: T](commands: Seq[WriteCommand[T1]], options: BulkWriteOptions): F[BulkWriteResult] =
     Async[F].defer(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)

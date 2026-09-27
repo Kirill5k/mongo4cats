@@ -51,6 +51,18 @@ object QueriesSpec extends ZIOSpecDefault {
   )
 
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("Query publishers")(
+    test("isolates find batch size and disk use settings with the last setting taking precedence") {
+      val driver = new MutableQueryPublisher
+      val base   = Queries.find(driver.find())
+      checkIsolation(
+        driver,
+        base.batchSize(1).batchSize(7).allowDiskUse(true).allowDiskUse(false).all,
+        base.all,
+        base.batchSize(3).allowDiskUse(true).all,
+        Map[String, Any]("batchSize" -> 7, "allowDiskUse" -> false),
+        Map[String, Any]("batchSize" -> 3, "allowDiskUse" -> true)
+      )
+    },
     test("keeps assembled find effects and their base independent") {
       val driver                 = new MutableQueryPublisher
       val base                   = Queries.find(driver.find())

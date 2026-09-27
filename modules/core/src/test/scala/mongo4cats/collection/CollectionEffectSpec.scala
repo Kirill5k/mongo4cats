@@ -29,12 +29,16 @@ import java.util.concurrent.atomic.AtomicInteger
 class CollectionEffectSpec extends AsyncWordSpec with Matchers {
   private val clientSession = session[IO]
 
-  operations[IO, Stream[IO, *]](clientSession).foreach { operation =>
+  private val checkedOperations = operations[IO, Stream[IO, *]](clientSession) ++
+    queryOperations[IO, Stream[IO, *]](clientSession, _.compile.drain)
+
+  checkedOperations.foreach { operation =>
     s"Collection ${operation.label}" should {
       "defer invocation, create a new publisher on each execution and preserve results" in {
         val calls = new AtomicInteger()
         val coll  = new LiveMongoCollection[IO, Document](collection { (method, arguments) =>
           method mustBe operation.method
+          operation.verifyArguments(arguments)
           if (operation.hasSession) {
             arguments(0) must be theSameInstanceAs clientSession.underlying
             ()

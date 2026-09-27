@@ -42,6 +42,9 @@ final private class ZMongoClientLive(
   def listDatabaseNames: Task[Iterable[String]] =
     underlying.listDatabaseNames().asyncIterable
 
+  def listDatabaseNames(session: ZClientSession): Task[Iterable[String]] =
+    ZIO.attempt(underlying.listDatabaseNames(session.underlying)).flatMap(_.asyncIterable)
+
   def listDatabases: Task[Iterable[Document]] =
     underlying.listDatabases().asyncIterableF(Document.fromJava)
 
