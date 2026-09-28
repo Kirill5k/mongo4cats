@@ -22,7 +22,7 @@ import fs2.Stream
 import mongo4cats.errors.MongoEmptyStreamException
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.collection.mutable.{ListBuffer, Queue}
 import scala.util.control.NonFatal
 
@@ -59,10 +59,26 @@ private[mongo4cats] object syntax {
     def asyncIterableF[F[_]: Async, Y](f: T => Y): F[Iterable[Y]] =
       subscribe[F, Iterable[Y]] { k =>
         new CancelableSubscriber[T](Long.MaxValue) {
-          private val results: ListBuffer[Y]       = ListBuffer.empty[Y]
-          override def onNext(result: T): Unit     = results += f(result)
-          override def onError(e: Throwable): Unit = k(Left(e))
-          override def onComplete(): Unit          = k(Right(results.toList))
+          private val results: ListBuffer[Y] = ListBuffer.empty[Y]
+          private val done                   = new AtomicBoolean(false)
+
+          // done claims terminal delivery; isCanceled records subscription cancellation (external or after a mapping failure).
+          override def onNext(result: T): Unit =
+            if (!done.get() && !isCanceled)
+              try results += f(result)
+              catch {
+                case NonFatal(error) =>
+                  if (done.compareAndSet(false, true)) {
+                    try cancel()
+                    finally k(Left(error))
+                  }
+              }
+
+          override def onError(e: Throwable): Unit =
+            if (done.compareAndSet(false, true)) k(Left(e))
+
+          override def onComplete(): Unit =
+            if (done.compareAndSet(false, true)) k(Right(results.toList))
         }
       }
 

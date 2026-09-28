@@ -85,6 +85,30 @@ object PublisherSyntaxSpec extends ZIOSpecDefault {
     test("maps iterable results in order") {
       assertZIO(publisher(List(1, 2, 3)).asyncIterableF(_.toString).map(_.toList))(equalTo(List("1", "2", "3")))
     },
+    test("returns synchronous transformation errors as failures") {
+      val error = new RuntimeException("transformation failed")
+      assertZIO(publisher(List(1, 2, 3)).asyncIterableF[Int](_ => throw error).exit)(fails(equalTo(error)))
+    },
+    test("returns asynchronous transformation failures and ignores subsequent signals") {
+      val error = new RuntimeException("asynchronous transformation failed")
+      for {
+        source      <- ZIO.succeed(new ControlledPublisher(immediate = true))
+        mappedCount <- ZIO.succeed(new AtomicInteger())
+        fiber <- source.asyncIterableF { value =>
+          mappedCount.incrementAndGet()
+          if (value == 2) throw error else value.toString
+        }.either.fork
+        subscriber <- ZIO.fromCompletionStage(source.subscribed)
+        callbacks <- ZIO.attempt {
+          subscriber.onNext(1)
+          subscriber.onNext(2)
+          subscriber.onNext(3)
+          subscriber.onError(new RuntimeException("late failure"))
+          subscriber.onComplete()
+        }.either
+        result <- fiber.join
+      } yield assertTrue(callbacks == Right(()), result == Left(error), mappedCount.get() == 2, source.cancelCount.get() == 1)
+    },
     test("allocates a new result buffer for each execution") {
       val task = publisher(List(1, 2, 3)).asyncIterable.map(_.toList)
       assertZIO(task *> task)(equalTo(List(1, 2, 3)))

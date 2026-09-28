@@ -181,6 +181,35 @@ class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
             source.cancelCalls.get() mustBe 1
           }
       }
+
+      "return asynchronous transformation failures and ignore subsequent signals" in {
+        val error       = new RuntimeException("asynchronous transformation failed")
+        val source      = new ControlledPublisher(delayedSubscription = false)
+        val mappedCount = new AtomicInteger(0)
+
+        (for {
+          fiber <- source.asyncIterableF[IO, Int] { value =>
+            mappedCount.incrementAndGet()
+            if (value == "bad") throw error else value.length
+          }.attempt.start
+          result <- (for {
+            _ <- source.awaitRequest
+            callbacks <- IO {
+              source.emit("good")
+              source.emit("bad")
+              source.emit("late")
+              source.fail(new RuntimeException("late failure"))
+              source.complete()
+            }.attempt
+            result <- fiber.joinWithNever.timeout(2.seconds)
+          } yield {
+            callbacks mustBe Right(())
+            result mustBe Left(error)
+            mappedCount.get() mustBe 2
+            source.cancelCalls.get() mustBe 1
+          }).guarantee(fiber.cancel)
+        } yield result).unsafeToFuture()
+      }
     }
 
     "stream" should {
@@ -426,6 +455,10 @@ class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
     def deliverAdditionalSubscription(subscription: Subscription): Unit = subscriber.get().onSubscribe(subscription)
 
     def emit(value: String): Unit = subscriber.get().onNext(value)
+
+    def fail(error: Throwable): Unit = subscriber.get().onError(error)
+
+    def complete(): Unit = subscriber.get().onComplete()
 
     def finish(): Unit =
       if (subscriber.get() != null) {

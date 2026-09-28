@@ -38,9 +38,8 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
       case j if j.isNumber      => j.asNumber.get.toBsonValue
       case j if j.isDate        => BsonValue.instant(jsonToDate(j))
       case j if j.isDecimal     => BsonValue.bigDecimal(jsonToDecimal(j))
-      case j if j.isId          => BsonValue.objectId(ObjectId(jsonToObjectIdString(json).get))
-      case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
-      case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get), jsonToBinarySubtype(j).get)
+      case j if j.isId          => BsonValue.objectId(jsonToObjectId(j))
+      case j if j.isBinary      => jsonToBinary(j)
       case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
@@ -86,24 +85,36 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     }
   }
 
+  private def jsonToObjectId(json: Json): ObjectId = parseWrapper(json) {
+    val id = wrapperValue(json, Tag.id).asString
+      .getOrElse(throw MongoJsonParsingException("$oid must contain a string", Some(json.toString)))
+    ObjectId(id)
+  }
+
+  private def jsonToBinary(json: Json): BsonValue = parseWrapper(json) {
+    val (base64, subtype) = binaryParts(wrapperValue(json, Tag.binary)).getOrElse {
+      throw MongoJsonParsingException(
+        "$binary must contain only base64 and subType strings, with a two-digit hexadecimal subtype",
+        Some(json.toString)
+      )
+    }
+    val bytes = Base64.getDecoder.decode(base64)
+    if (subtype == "04") {
+      if (bytes.length != 16) throw MongoJsonParsingException("UUID binary data must contain exactly 16 bytes", Some(json.toString))
+      BsonValue.uuid(Uuid.fromBase64(base64))
+    } else BsonValue.binary(bytes, Integer.parseInt(subtype, 16).toByte)
+  }
+
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
     def isNull: Boolean    = json.asNull.nonEmpty
     def isArray: Boolean   = json.asArray.nonEmpty
     def isBoolean: Boolean = json.asBoolean.nonEmpty
     def isString: Boolean  = json.asString.nonEmpty
     def isNumber: Boolean  = json.asNumber.nonEmpty
-    def isId: Boolean      = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.id))
-    def isDate: Boolean    = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.date))
-    def isDecimal: Boolean = json.asObject.nonEmpty && json.asObject.exists(_.contains(Tag.numberDecimal))
-
-    private def isBinary(subTypeMatch: String): Boolean = json.asObject.nonEmpty && json.asObject.exists { o =>
-      o.asObject.exists(_.contains(Tag.binary)) && o.asObject.get.get(Tag.binary).get.asObject.exists { b =>
-        b.contains("base64") && b.contains("subType") && b.get("subType").exists(st => st.isString && st.asString.get.matches(subTypeMatch))
-      }
-    }
-
-    def isBinaryArray: Boolean = isBinary("[0-9a-fA-F]{2}")
-    def isUuid: Boolean        = isBinary("04")
+    def isId: Boolean      = json.asObject.exists(_.contains(Tag.id))
+    def isDate: Boolean    = json.asObject.exists(_.contains(Tag.date))
+    def isDecimal: Boolean = json.asObject.exists(_.contains(Tag.numberDecimal))
+    def isBinary: Boolean  = json.asObject.exists(_.contains(Tag.binary))
   }
 
   implicit final private class JsonNumSyntax(private val jNumber: Json.Num) extends AnyVal {
@@ -168,22 +179,16 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
     binaryBase64ToJson(Base64.getEncoder.encodeToString(binary), f"${subtype & 0xff}%02x")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
+    json.asObject.filter(_.fields.size == 1).flatMap(_.get(Tag.binary)).flatMap(binaryParts).map(_._1)
+
+  private def binaryParts(json: Json): Option[(String, String)] =
     for {
-      obj       <- json.asObject
-      bin       <- obj.get(Tag.binary)
-      binObj    <- bin.asObject
+      binObj    <- json.asObject.filter(_.fields.size == 2)
       base64    <- binObj.get("base64")
       base64Str <- base64.asString
-    } yield base64Str
-
-  private def jsonToBinarySubtype(json: Json): Option[Byte] =
-    for {
-      obj     <- json.asObject
-      bin     <- obj.get(Tag.binary)
-      binObj  <- bin.asObject
-      subtype <- binObj.get("subType")
-      hex     <- subtype.asString
-    } yield Integer.parseInt(hex, 16).toByte
+      subtype   <- binObj.get("subType").flatMap(_.asString)
+      if subtype.matches("[0-9a-fA-F]{2}")
+    } yield (base64Str, subtype)
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(jsonToBinaryBase64(json).get)
@@ -193,7 +198,7 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
   def jsonToObjectIdString(json: Json): Option[String] =
     for {
-      obj <- json.asObject
+      obj <- json.asObject.filter(_.fields.size == 1)
       id  <- obj.get(Tag.id)
       hex <- id.asString
     } yield hex

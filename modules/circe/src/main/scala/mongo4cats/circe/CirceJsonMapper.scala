@@ -60,24 +60,13 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
             .getOrElse(throw MongoJsonParsingException("$numberDecimal must contain a string"))
           BsonValue.bigDecimal(ExtendedJson.parseDecimal(decimal))
         }
-      case j if j.isId          => BsonValue.objectId(ObjectId(jsonToObjectIdString(j).get))
-      case j if j.isUuid        => BsonValue.uuid(jsonToUuid(j))
-      case j if j.isBinaryArray => BsonValue.binary(Base64.getDecoder.decode(jsonToBinaryBase64(j).get), jsonToBinarySubtype(j).get)
-      case j                    => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
+      case j if j.hasTag(Tag.id)     => BsonValue.objectId(jsonToObjectId(j))
+      case j if j.hasTag(Tag.binary) => jsonToBinary(j)
+      case j                        => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {
     def hasTag(tag: String): Boolean = json.asObject.exists(_.contains(tag))
-    def isId: Boolean                = hasTag(Tag.id)
-
-    private def isBinary(subTypeMatch: String): Boolean = json.isObject && json.asObject.exists { o =>
-      o(Tag.binary).exists(_.isObject) && o(Tag.binary).get.asObject.exists { b =>
-        b("base64").exists(_.isString) && b("subType").exists(_.isString) && b("subType").get.asString.get.matches(subTypeMatch)
-      }
-    }
-
-    def isBinaryArray: Boolean = isBinary("[0-9a-fA-F]{2}")
-    def isUuid: Boolean        = isBinary("04")
   }
 
   private def wrapperValue(json: Json, tag: String): Json =
@@ -86,12 +75,29 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
       .flatMap(_(tag))
       .getOrElse(throw MongoJsonParsingException(s"Extended JSON $tag must be an object containing only $tag"))
 
-  private def parseExtendedJson(tag: String, json: Json)(parse: => BsonValue): BsonValue =
+  private def parseExtendedJson[A](tag: String, json: Json)(parse: => A): A =
     try parse
     catch {
       case error: MongoJsonParsingException => throw error
       case NonFatal(error) => throw MongoJsonParsingException(s"Invalid $tag value: ${error.getMessage}", Some(json.noSpaces))
     }
+
+  private def jsonToObjectId(json: Json): ObjectId = parseExtendedJson(Tag.id, json) {
+    val id = wrapperValue(json, Tag.id).asString
+      .getOrElse(throw MongoJsonParsingException("$oid must contain a string"))
+    ObjectId(id)
+  }
+
+  private def jsonToBinary(json: Json): BsonValue = parseExtendedJson(Tag.binary, json) {
+    val (base64, subtype) = binaryParts(wrapperValue(json, Tag.binary)).getOrElse {
+      throw MongoJsonParsingException("$binary must contain only base64 and subType strings, with a two-digit hexadecimal subtype")
+    }
+    val bytes = Base64.getDecoder.decode(base64)
+    if (subtype == "04") {
+      if (bytes.length != 16) throw MongoJsonParsingException("UUID binary data must contain exactly 16 bytes")
+      BsonValue.uuid(Uuid.fromBase64(base64))
+    } else BsonValue.binary(bytes, Integer.parseInt(subtype, 16).toByte)
+  }
 
   implicit final private class JsonNumberSyntax(private val jNumber: JsonNumber) extends AnyVal {
     def toBsonValue: BsonValue =
@@ -173,22 +179,16 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     binaryBase64ToJson(Uuid.toBase64(uuid), "04")
 
   def jsonToBinaryBase64(json: Json): Option[String] =
+    json.asObject.filter(_.size == 1).flatMap(_(Tag.binary)).flatMap(binaryParts).map(_._1)
+
+  private def binaryParts(json: Json): Option[(String, String)] =
     for {
-      obj       <- json.asObject
-      bin       <- obj(Tag.binary)
-      binObj    <- bin.asObject
+      binObj    <- json.asObject.filter(_.size == 2)
       base64    <- binObj("base64")
       base64Str <- base64.asString
-    } yield base64Str
-
-  private def jsonToBinarySubtype(json: Json): Option[Byte] =
-    for {
-      obj     <- json.asObject
-      bin     <- obj(Tag.binary)
-      binObj  <- bin.asObject
-      subtype <- binObj("subType")
-      hex     <- subtype.asString
-    } yield Integer.parseInt(hex, 16).toByte
+      subtype   <- binObj("subType").flatMap(_.asString)
+      if subtype.matches("[0-9a-fA-F]{2}")
+    } yield (base64Str, subtype)
 
   def jsonToUuid(json: Json): UUID =
     Uuid.fromBase64(jsonToBinaryBase64(json).get)
@@ -197,7 +197,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
     Json.obj(Tag.id -> Json.fromString(id.toHexString))
 
   def jsonToObjectIdString(json: Json): Option[String] =
-    json.asObject.get(Tag.id).flatMap(_.asString)
+    json.asObject.filter(_.size == 1).flatMap(_(Tag.id)).flatMap(_.asString)
 
   def instantToJson(instant: Instant): Json =
     Json.obj(Tag.date -> Json.fromString(instant.toString))

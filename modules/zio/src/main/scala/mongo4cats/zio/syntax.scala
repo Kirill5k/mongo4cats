@@ -22,7 +22,7 @@ import zio.interop.reactivestreams._
 import zio.stream.Stream
 import zio.{Task, ZIO}
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 
@@ -47,6 +47,8 @@ private[zio] object syntax {
           if (subscription.get() != CancelledSubscription) s.request(demand)
         }
       } else subscriptionLock.synchronized(s.cancel())
+
+    final protected def isCanceled: Boolean = subscription.get() eq CancelledSubscription
 
     final def cancel(): Unit = {
       // Keep the cancelled state even when onSubscribe has not arrived yet.
@@ -89,10 +91,26 @@ private[zio] object syntax {
 
     def asyncIterableF[Y](f: T => Y): Task[Iterable[Y]] = ZIO.asyncInterrupt { callback =>
       val subscriber = new CancelableSubscriber[T](Long.MaxValue) {
-        private val result: ListBuffer[Y]        = ListBuffer.empty
-        override def onNext(t: T): Unit          = result += f(t)
-        override def onError(t: Throwable): Unit = callback(ZIO.fail(t))
-        override def onComplete(): Unit          = callback(ZIO.succeed(result.toList))
+        private val result: ListBuffer[Y] = ListBuffer.empty
+        private val done                  = new AtomicBoolean(false)
+
+        // done claims terminal delivery; isCanceled records subscription cancellation (external or after a mapping failure).
+        override def onNext(t: T): Unit =
+          if (!done.get() && !isCanceled)
+            try result += f(t)
+            catch {
+              case NonFatal(error) =>
+                if (done.compareAndSet(false, true)) {
+                  try cancel()
+                  finally callback(ZIO.fail(error))
+                }
+            }
+
+        override def onError(t: Throwable): Unit =
+          if (done.compareAndSet(false, true)) callback(ZIO.fail(t))
+
+        override def onComplete(): Unit =
+          if (done.compareAndSet(false, true)) callback(ZIO.succeed(result.toList))
       }
       subscribe(publisher, subscriber)
       Left(ZIO.succeed(subscriber.cancel()))

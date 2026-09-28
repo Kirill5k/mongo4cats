@@ -38,6 +38,25 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
       oid.asJson.noSpaces mustBe json
       decode[ObjectId](json) mustBe Right(oid)
     }
+
+    "return decoding failures for non-object and malformed ObjectId values" in
+      List(
+        "42",
+        "null",
+        "true",
+        "[]",
+        "[{}]",
+        "\"507f1f77bcf86cd799439011\"",
+        "{}",
+        """{"$oid":42}""",
+        """{"$oid":null}""",
+        """{"$oid":[]}""",
+        """{"$oid":{}}""",
+        """{"$oid":"invalid"}""",
+        """{"$oid":"507f1f77bcf86cd799439011","extra":true}"""
+      ).foreach { json =>
+        withClue(json)(decode[ObjectId](json).isLeft mustBe true)
+      }
   }
 
   "Instant codec" should {
@@ -103,6 +122,65 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
   }
 
   "Document codec" should {
+    "preserve valid nested ObjectId, UUID and binary wrappers" in {
+      val json = """{
+                   |  "values":[
+                   |    {"$oid":"507f1f77bcf86cd799439011"},
+                   |    {"$binary":{"base64":"AQID","subType":"00"}},
+                   |    {"$binary":{"base64":"AQID","subType":"FF"}},
+                   |    {"$binary":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"03"}},
+                   |    {"$binary":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"04"}}
+                   |  ],
+                   |  "extra":true
+                   |}""".stripMargin
+      val uuid = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
+      val expected = Document(
+        "values" -> BsonValue.array(
+          BsonValue.objectId(ObjectId("507f1f77bcf86cd799439011")),
+          BsonValue.binary(Array[Byte](1, 2, 3)),
+          BsonValue.binary(Array[Byte](1, 2, 3), 255.toByte),
+          BsonValue.binary(java.util.Base64.getDecoder.decode("z7ynKE45RhOWvPkgtcN+Fg=="), 3.toByte),
+          BsonValue.uuid(uuid)
+        ),
+        "extra" -> BsonValue.True
+      )
+
+      decode[Document](json) mustBe Right(expected)
+    }
+
+    "reject malformed binary and ObjectId wrappers without discarding fields" in
+      List(
+        """{"$oid":"507f1f77bcf86cd799439011","extra":true}""",
+        """{"$oid":null}""",
+        """{"$oid":42}""",
+        """{"$oid":[]}""",
+        """{"$oid":{}}""",
+        """{"$oid":"invalid"}""",
+        """{"$binary":{"base64":"AQID","subType":"00"},"extra":true}""",
+        """{"$binary":{"base64":"AQID","subType":"ff"},"extra":true}""",
+        """{"$binary":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"04"},"extra":true}""",
+        """{"$binary":{"base64":"AQID","subType":"ff","extra":true}}""",
+        """{"$binary":{"base64":"z7ynKE45RhOWvPkgtcN+Fg==","subType":"04","extra":true}}""",
+        """{"$binary":null}""",
+        """{"$binary":[]}""",
+        """{"$binary":"AQID"}""",
+        """{"$binary":{}}""",
+        """{"$binary":{"base64":"AQID"}}""",
+        """{"$binary":{"subType":"00"}}""",
+        """{"$binary":{"base64":1,"subType":"00"}}""",
+        """{"$binary":{"base64":"AQID","subType":0}}""",
+        """{"$binary":{"base64":"AQID","subType":"0"}}""",
+        """{"$binary":{"base64":"AQID","subType":"100"}}""",
+        """{"$binary":{"base64":"AQID","subType":"gg"}}""",
+        """{"$binary":{"base64":"!","subType":"00"}}""",
+        """{"$binary":{"base64":"AQID","subType":"04"}}""",
+        """{"$binary":{"base64":"AAAAAAAAAAAAAAAAAAAAAAA=","subType":"04"}}"""
+      ).foreach { wrapper =>
+        List(s"""{"value":$wrapper}""", s"""{"values":[$wrapper]}""").foreach { json =>
+          withClue(json)(decode[Document](json).isLeft mustBe true)
+        }
+      }
+
     "fail explicitly when encoding unsupported BSON values" in {
       val document = Document("timestamp" -> BsonValue.timestamp(4294967295L))
 
