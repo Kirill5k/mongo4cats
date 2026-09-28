@@ -21,7 +21,7 @@ mongo4cats is a Scala wrapper around the [MongoDB Java Reactive Streams driver](
 
 ### Supported Scala versions
 
-Scala 2.12, 2.13, and 3 are all supported.
+Scala 2.12, Scala 2.13, and Scala 3.9.0 or later are supported.
 
 ### Dependencies
 

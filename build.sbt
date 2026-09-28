@@ -36,17 +36,18 @@ crossScalaVersions := supportedScalaVersions
 Compile / doc / scalacOptions ++= Seq(
   "-no-link-warnings" // Suppresses problems with Scaladoc links
 )
-mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "0.5.0")
+mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "0.8.0")
 scalacOptions ++= partialUnificationOption(scalaVersion.value)
 // Retain the shared Scala 2 source syntax when compiling with Scala 3.
 scalacOptions ++= (if (scalaBinaryVersion.value == "3") Seq("-source:3.3") else Nil)
 scalacOptions ~= { (options: Seq[String]) => options.filterNot(Set("-Wnonunit-statement")) }
 
 val noPublish = Seq(
-  publish         := {},
-  publishLocal    := {},
-  publishArtifact := false,
-  publish / skip  := true
+  publish               := {},
+  publishLocal          := {},
+  publishArtifact       := false,
+  publish / skip        := true,
+  mimaPreviousArtifacts := Set.empty
 )
 
 val embedded = project

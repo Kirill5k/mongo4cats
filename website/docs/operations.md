@@ -3,7 +3,7 @@ id: operations
 title: Operations
 ---
 
-Operations listed in this section describe the procedures that can be executed on a `MongoCollection[F, T]` instance. All operations return values wrapped in the effect type `F[_]` (typically `IO` for Cats Effect or `Task` for ZIO). Long-running queries can alternatively be consumed as a stream.
+This section covers operations on collections, databases, and clients. Most reads and writes use a collection; change streams can watch a collection, a database, or the deployment through a client, and client-level bulk writes can span collections and databases. Results are returned in the effect type `F[_]` (typically `IO` for Cats Effect or `Task` for ZIO), or consumed as streams where supported.
 
 - *[Indexes](operations/indexes)* — Create and manage indexes for efficient querying
 - *[Find](operations/find)* — Query documents with filters, sorting, pagination, and projections
