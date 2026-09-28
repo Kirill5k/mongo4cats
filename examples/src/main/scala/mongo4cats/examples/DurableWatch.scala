@@ -36,7 +36,8 @@ object DurableWatch extends IOApp.Simple {
         .withReadPreference(ReadPreference.primary())
         .withReadConcern(ReadConcern.MAJORITY)
         .withWriteConcern(WriteConcern.MAJORITY.withJournal(true))
-      val load = checkpoints.find(DurableWatchCheckpoint.filter).first.flatMap(_.traverse(record => IO(DurableWatchCheckpoint.token(record))))
+      val load =
+        checkpoints.find(DurableWatchCheckpoint.filter).first.flatMap(_.traverse(record => IO(DurableWatchCheckpoint.token(record))))
       def save(token: Document): IO[Unit] =
         checkpoints.replaceOne(DurableWatchCheckpoint.filter, DurableWatchCheckpoint.record(token), ReplaceOptions(upsert = true)).void
       def open(token: Option[Document]): Stream[IO, ChangeStreamDocument[Document]] = {

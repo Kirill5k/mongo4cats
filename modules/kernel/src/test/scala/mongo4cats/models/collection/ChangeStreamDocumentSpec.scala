@@ -68,8 +68,8 @@ class ChangeStreamDocumentSpec extends AnyWordSpec with Matchers {
         "smallLong": {"$numberLong": "1"},
         "nested": {"values": [{"$numberInt": "1"}, {"$numberLong": "1"}]}
       }""")
-      val raw = BsonDocument.parse("""{"operationType":"insert"}""").append("_id", token)
-      val event = decode(raw)
+      val raw      = BsonDocument.parse("""{"operationType":"insert"}""").append("_id", token)
+      val event    = decode(raw)
       val restored = Document.parse(event.resumeToken.toJson(BsonJsonMode.Canonical))
 
       event.resumeToken.toBsonDocument mustBe token

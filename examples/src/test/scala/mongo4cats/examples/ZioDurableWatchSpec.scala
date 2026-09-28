@@ -26,7 +26,7 @@ class ZioDurableWatchSpec extends AnyWordSpec with Matchers {
   import DurableWatchTestData._
 
   private def run[A](task: Task[A]): A =
-    Unsafe.unsafe { implicit unsafe => Runtime.default.unsafe.run(task).getOrThrowFiberFailure() }
+    Unsafe.unsafe(implicit unsafe => Runtime.default.unsafe.run(task).getOrThrowFiberFailure())
 
   "The ZIO durable watch example" should {
     "save only after processing and reload the last checkpoint on a new invocation" in {
@@ -35,8 +35,9 @@ class ZioDurableWatchSpec extends AnyWordSpec with Matchers {
         calls <- Ref.make(Vector.empty[String])
         consume = ZioDurableWatch.runWithCheckpoint(
           saved.get,
-          token => ZStream.fromZIO(calls.update(_ :+ s"open:${token.flatMap(_.getString("_data"))}")).drain ++
-            ZStream.fromIterable(if (token.isEmpty) List(event("one"), event("two")) else List(event("three"))),
+          token =>
+            ZStream.fromZIO(calls.update(_ :+ s"open:${token.flatMap(_.getString("_data"))}")).drain ++
+              ZStream.fromIterable(if (token.isEmpty) List(event("one"), event("two")) else List(event("three"))),
           token => calls.update(_ :+ s"save:${token.getString("_data").get}") *> saved.set(Some(token))
         )(change => calls.update(_ :+ s"process:${change.resumeToken.getString("_data").get}"))
         _     <- consume
@@ -55,14 +56,16 @@ class ZioDurableWatchSpec extends AnyWordSpec with Matchers {
 
     "leave the checkpoint unchanged when processing fails and stop before the next event" in {
       val failure = new RuntimeException("handler failed")
-      val result = run(for {
-        saved <- Ref.make(List.empty[Document])
-        seen  <- Ref.make(List.empty[Document])
-        outcome <- ZioDurableWatch.runWithCheckpoint(
-          ZIO.succeed(None),
-          _ => ZStream.fromIterable(List(event("one"), event("two"))),
-          token => saved.update(_ :+ token)
-        )(change => seen.update(_ :+ change.resumeToken) *> ZIO.fail(failure)).either
+      val result  = run(for {
+        saved   <- Ref.make(List.empty[Document])
+        seen    <- Ref.make(List.empty[Document])
+        outcome <- ZioDurableWatch
+          .runWithCheckpoint(
+            ZIO.succeed(None),
+            _ => ZStream.fromIterable(List(event("one"), event("two"))),
+            token => saved.update(_ :+ token)
+          )(change => seen.update(_ :+ change.resumeToken) *> ZIO.fail(failure))
+          .either
         checkpoints <- saved.get
         processed   <- seen.get
       } yield (outcome, checkpoints, processed))
@@ -72,13 +75,15 @@ class ZioDurableWatchSpec extends AnyWordSpec with Matchers {
 
     "propagate failed checkpoint writes before processing another event" in {
       val failure = new RuntimeException("checkpoint write failed")
-      val result = run(for {
-        seen <- Ref.make(List.empty[Document])
-        outcome <- ZioDurableWatch.runWithCheckpoint(
-          ZIO.succeed(None),
-          _ => ZStream.fromIterable(List(event("one"), event("two"))),
-          _ => ZIO.fail(failure)
-        )(change => seen.update(_ :+ change.resumeToken)).either
+      val result  = run(for {
+        seen    <- Ref.make(List.empty[Document])
+        outcome <- ZioDurableWatch
+          .runWithCheckpoint(
+            ZIO.succeed(None),
+            _ => ZStream.fromIterable(List(event("one"), event("two"))),
+            _ => ZIO.fail(failure)
+          )(change => seen.update(_ :+ change.resumeToken))
+          .either
         processed <- seen.get
       } yield (outcome, processed))
 
@@ -87,11 +92,15 @@ class ZioDurableWatchSpec extends AnyWordSpec with Matchers {
 
     "fail before opening a stream when loading the checkpoint fails" in {
       val failure = new RuntimeException("checkpoint load failed")
-      val result = run(ZioDurableWatch.runWithCheckpoint(
-        ZIO.fail(failure),
-        _ => throw new AssertionError("The stream must not open"),
-        _ => ZIO.unit
-      )(_ => ZIO.unit).either)
+      val result  = run(
+        ZioDurableWatch
+          .runWithCheckpoint(
+            ZIO.fail(failure),
+            _ => throw new AssertionError("The stream must not open"),
+            _ => ZIO.unit
+          )(_ => ZIO.unit)
+          .either
+      )
 
       result mustBe Left(failure)
     }

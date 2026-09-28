@@ -94,12 +94,15 @@ object PublisherSyntaxSpec extends ZIOSpecDefault {
       for {
         source      <- ZIO.succeed(new ControlledPublisher(immediate = true))
         mappedCount <- ZIO.succeed(new AtomicInteger())
-        fiber <- source.asyncIterableF { value =>
-          mappedCount.incrementAndGet()
-          if (value == 2) throw error else value.toString
-        }.either.fork
+        fiber       <- source
+          .asyncIterableF { value =>
+            mappedCount.incrementAndGet()
+            if (value == 2) throw error else value.toString
+          }
+          .either
+          .fork
         subscriber <- ZIO.fromCompletionStage(source.subscribed)
-        callbacks <- ZIO.attempt {
+        callbacks  <- ZIO.attempt {
           subscriber.onNext(1)
           subscriber.onNext(2)
           subscriber.onNext(3)

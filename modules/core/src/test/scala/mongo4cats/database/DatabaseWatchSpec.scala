@@ -62,17 +62,24 @@ class DatabaseWatchSpec extends AsyncWordSpec with Matchers {
         val effect = operation.query(source).stream.compile.toList
 
         driver.calls.get() mustBe 0
-        effect.attempt.map { result =>
-          result.swap.toOption.get must be theSameInstanceAs error
-          driver.calls.get() mustBe 1
-        }.unsafeToFuture()
+        effect.attempt
+          .map { result =>
+            result.swap.toOption.get must be theSameInstanceAs error
+            driver.calls.get() mustBe 1
+          }
+          .unsafeToFuture()
       }
 
       "preserve asynchronous publisher failures" in {
         val error  = new IllegalStateException("watch subscription failed")
         val driver = new Driver(publisherFailure = Some(error))
         val source = new LiveMongoDatabase[IO](driver.database)
-        operation.query(source).boundedStream(2).compile.toList.attempt
+        operation
+          .query(source)
+          .boundedStream(2)
+          .compile
+          .toList
+          .attempt
           .map(_.swap.toOption.get must be theSameInstanceAs error)
           .unsafeToFuture()
       }
@@ -81,18 +88,20 @@ class DatabaseWatchSpec extends AsyncWordSpec with Matchers {
 
   "Database watch codecs" should {
     "honor an explicitly configured Document codec for both images" in {
-      val custom = new DocumentOverride
-      val driver = new Driver(initialRegistry = custom.registry)
+      val custom                    = new DocumentOverride
+      val driver                    = new Driver(initialRegistry = custom.registry)
       val source: MongoDatabase[IO] = new LiveMongoDatabase[IO](driver.database)
-      val effect = source.watch.stream.compile.toList
+      val effect                    = source.watch.stream.compile.toList
 
       custom.decoded.get() mustBe 0
-      effect.map { events =>
-        events mustBe List(custom.expected)
-        custom.decoded.get() mustBe 2
-        driver.invocations.head.registry.get(classOf[mongo4cats.bson.Document]) must be theSameInstanceAs custom.codec
-        source.underlying.getCodecRegistry must be theSameInstanceAs custom.registry
-      }.unsafeToFuture()
+      effect
+        .map { events =>
+          events mustBe List(custom.expected)
+          custom.decoded.get() mustBe 2
+          driver.invocations.head.registry.get(classOf[mongo4cats.bson.Document]) must be theSameInstanceAs custom.codec
+          source.underlying.getCodecRegistry must be theSameInstanceAs custom.registry
+        }
+        .unsafeToFuture()
     }
   }
 

@@ -31,16 +31,16 @@ private[json] object ZioJsonMapper extends JsonMapper[Json] {
 
   def toBson(json: Json): BsonValue =
     json match {
-      case j if j.isNull        => BsonValue.Null
-      case j if j.isArray       => BsonValue.array(j.asArray.get.map(toBson))
-      case j if j.isBoolean     => BsonValue.boolean(j.asBoolean.get)
-      case j if j.isString      => BsonValue.string(j.asString.get)
-      case j if j.isNumber      => j.asNumber.get.toBsonValue
-      case j if j.isDate        => BsonValue.instant(jsonToDate(j))
-      case j if j.isDecimal     => BsonValue.bigDecimal(jsonToDecimal(j))
-      case j if j.isId          => BsonValue.objectId(jsonToObjectId(j))
-      case j if j.isBinary      => jsonToBinary(j)
-      case j => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
+      case j if j.isNull    => BsonValue.Null
+      case j if j.isArray   => BsonValue.array(j.asArray.get.map(toBson))
+      case j if j.isBoolean => BsonValue.boolean(j.asBoolean.get)
+      case j if j.isString  => BsonValue.string(j.asString.get)
+      case j if j.isNumber  => j.asNumber.get.toBsonValue
+      case j if j.isDate    => BsonValue.instant(jsonToDate(j))
+      case j if j.isDecimal => BsonValue.bigDecimal(jsonToDecimal(j))
+      case j if j.isId      => BsonValue.objectId(jsonToObjectId(j))
+      case j if j.isBinary  => jsonToBinary(j)
+      case j                => BsonValue.document(Document(j.asObject.get.fields.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
   private def wrapperValue(json: Json, tag: String): Json =

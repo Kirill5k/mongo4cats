@@ -188,12 +188,15 @@ class PublisherSyntaxSpec extends AsyncWordSpec with Matchers {
         val mappedCount = new AtomicInteger(0)
 
         (for {
-          fiber <- source.asyncIterableF[IO, Int] { value =>
-            mappedCount.incrementAndGet()
-            if (value == "bad") throw error else value.length
-          }.attempt.start
+          fiber <- source
+            .asyncIterableF[IO, Int] { value =>
+              mappedCount.incrementAndGet()
+              if (value == "bad") throw error else value.length
+            }
+            .attempt
+            .start
           result <- (for {
-            _ <- source.awaitRequest
+            _         <- source.awaitRequest
             callbacks <- IO {
               source.emit("good")
               source.emit("bad")

@@ -35,8 +35,8 @@ import java.lang.reflect.{InvocationHandler, Method, Proxy}
 import java.util.concurrent.atomic.AtomicInteger
 
 object WatchFixture extends AsScala {
-  val markerCodec = CodecInheritanceFixture.codec[CodecInheritanceFixture.Marker]
-  val stringCodec = new org.bson.codecs.StringCodec()
+  val markerCodec                   = CodecInheritanceFixture.codec[CodecInheritanceFixture.Marker]
+  val stringCodec                   = new org.bson.codecs.StringCodec()
   val clientRegistry: CodecRegistry = CodecRegistry.merge(
     CodecInheritanceFixture.registry(markerCodec, stringCodec),
     com.mongodb.MongoClientSettings.getDefaultCodecRegistry
@@ -61,13 +61,13 @@ object WatchFixture extends AsScala {
   val expectedEvent: ChangeStreamDocument[Document] = ChangeStreamDocument.fromJava(decodeEvent(CodecRegistry.Default))
 
   final class DocumentOverride {
-    val decoded = new AtomicInteger()
+    val decoded              = new AtomicInteger()
     private val defaultCodec = CodecRegistry.Default.get(classOf[Document])
 
     private def mark(document: Document): Document = document.add("decodedBy", BsonValue.string("custom"))
 
     val codec: Codec[Document] = new Codec[Document] {
-      override def getEncoderClass: Class[Document] = classOf[Document]
+      override def getEncoderClass: Class[Document]                                              = classOf[Document]
       override def encode(writer: BsonWriter, document: Document, context: EncoderContext): Unit =
         defaultCodec.encode(writer, document, context)
       override def decode(reader: BsonReader, context: DecoderContext): Document = {
@@ -76,7 +76,7 @@ object WatchFixture extends AsScala {
       }
     }
 
-    val registry: CodecRegistry = CodecRegistry.merge(CodecInheritanceFixture.registry(codec), clientRegistry)
+    val registry: CodecRegistry                  = CodecRegistry.merge(CodecInheritanceFixture.registry(codec), clientRegistry)
     val expected: ChangeStreamDocument[Document] = expectedEvent.copy(
       fullDocument = expectedEvent.fullDocument.map(mark),
       fullDocumentBeforeChange = expectedEvent.fullDocumentBeforeChange.map(mark)
@@ -147,7 +147,7 @@ object WatchFixture extends AsScala {
             synchronousFailure.foreach(throw _)
             val normalized = arguments.toList.map {
               case list: java.util.List[_] => asScala(list).toList
-              case other                  => other
+              case other                   => other
             }
             synchronized { seen = Invocation(scope, normalized, registry, id) :: seen }
             val source = SearchIndexFixture.publisher(

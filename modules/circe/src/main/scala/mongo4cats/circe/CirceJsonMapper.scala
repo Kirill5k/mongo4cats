@@ -62,7 +62,7 @@ private[circe] object CirceJsonMapper extends JsonMapper[Json] {
         }
       case j if j.hasTag(Tag.id)     => BsonValue.objectId(jsonToObjectId(j))
       case j if j.hasTag(Tag.binary) => jsonToBinary(j)
-      case j                        => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
+      case j => BsonValue.document(Document(j.asObject.get.toList.map { case (key, value) => key -> toBson(value) }))
     }
 
   implicit final private class JsonSyntax(private val json: Json) extends AnyVal {

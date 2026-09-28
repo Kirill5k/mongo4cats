@@ -37,8 +37,9 @@ class DurableWatchSpec extends AnyWordSpec with Matchers {
         calls <- Ref.of[IO, Vector[String]](Vector.empty)
         run = DurableWatch.runWithCheckpoint(
           saved.get,
-          token => Stream.eval(calls.update(_ :+ s"open:${token.flatMap(_.getString("_data"))}")).drain ++
-            Stream.emits(if (token.isEmpty) List(event("one"), event("two")) else List(event("three"))),
+          token =>
+            Stream.eval(calls.update(_ :+ s"open:${token.flatMap(_.getString("_data"))}")).drain ++
+              Stream.emits(if (token.isEmpty) List(event("one"), event("two")) else List(event("three"))),
           token => calls.update(_ :+ s"save:${token.getString("_data").get}") *> saved.set(Some(token))
         )(change => calls.update(_ :+ s"process:${change.resumeToken.getString("_data").get}"))
         _     <- run
@@ -57,14 +58,16 @@ class DurableWatchSpec extends AnyWordSpec with Matchers {
 
     "leave the checkpoint unchanged when processing fails and stop before the next event" in {
       val failure = new RuntimeException("handler failed")
-      val result = (for {
-        saved <- Ref.of[IO, List[Document]](Nil)
-        seen  <- Ref.of[IO, List[Document]](Nil)
-        outcome <- DurableWatch.runWithCheckpoint(
-          IO.pure(None),
-          _ => Stream.emits(List(event("one"), event("two"))),
-          token => saved.update(_ :+ token)
-        )(change => seen.update(_ :+ change.resumeToken) *> IO.raiseError[Unit](failure)).attempt
+      val result  = (for {
+        saved   <- Ref.of[IO, List[Document]](Nil)
+        seen    <- Ref.of[IO, List[Document]](Nil)
+        outcome <- DurableWatch
+          .runWithCheckpoint(
+            IO.pure(None),
+            _ => Stream.emits(List(event("one"), event("two"))),
+            token => saved.update(_ :+ token)
+          )(change => seen.update(_ :+ change.resumeToken) *> IO.raiseError[Unit](failure))
+          .attempt
         checkpoints <- saved.get
         processed   <- seen.get
       } yield (outcome, checkpoints, processed)).unsafeRunSync()
@@ -74,13 +77,15 @@ class DurableWatchSpec extends AnyWordSpec with Matchers {
 
     "propagate failed checkpoint writes before processing another event" in {
       val failure = new RuntimeException("checkpoint write failed")
-      val result = (for {
-        seen <- Ref.of[IO, List[Document]](Nil)
-        outcome <- DurableWatch.runWithCheckpoint(
-          IO.pure(None),
-          _ => Stream.emits(List(event("one"), event("two"))),
-          _ => IO.raiseError[Unit](failure)
-        )(change => seen.update(_ :+ change.resumeToken)).attempt
+      val result  = (for {
+        seen    <- Ref.of[IO, List[Document]](Nil)
+        outcome <- DurableWatch
+          .runWithCheckpoint(
+            IO.pure(None),
+            _ => Stream.emits(List(event("one"), event("two"))),
+            _ => IO.raiseError[Unit](failure)
+          )(change => seen.update(_ :+ change.resumeToken))
+          .attempt
         processed <- seen.get
       } yield (outcome, processed)).unsafeRunSync()
 
@@ -89,11 +94,14 @@ class DurableWatchSpec extends AnyWordSpec with Matchers {
 
     "fail before opening a stream when loading the checkpoint fails" in {
       val failure = new RuntimeException("checkpoint load failed")
-      val result = DurableWatch.runWithCheckpoint(
-        IO.raiseError(failure),
-        _ => throw new AssertionError("The stream must not open"),
-        _ => IO.unit
-      )(_ => IO.unit).attempt.unsafeRunSync()
+      val result  = DurableWatch
+        .runWithCheckpoint(
+          IO.raiseError(failure),
+          _ => throw new AssertionError("The stream must not open"),
+          _ => IO.unit
+        )(_ => IO.unit)
+        .attempt
+        .unsafeRunSync()
 
       result mustBe Left(failure)
     }
@@ -101,7 +109,8 @@ class DurableWatchSpec extends AnyWordSpec with Matchers {
 
   "The shared checkpoint representation" should {
     "preserve the complete BSON token in storage and canonical Extended JSON" in {
-      val original = BsonDocument.parse("""{"_data":"opaque","_typeBits":{"$binary":{"base64":"AQI=","subType":"80"}},"count":{"$numberLong":"7"}}""")
+      val original =
+        BsonDocument.parse("""{"_data":"opaque","_typeBits":{"$binary":{"base64":"AQI=","subType":"80"}},"count":{"$numberLong":"7"}}""")
       val token    = Document.fromJava(original)
       val saved    = DurableWatchCheckpoint.record(token)
       val restored = DurableWatchCheckpoint.token(Document.parse(saved.toJson(BsonJsonMode.Canonical)))
@@ -109,9 +118,8 @@ class DurableWatchSpec extends AnyWordSpec with Matchers {
       restored.toBsonDocument mustBe original
     }
 
-    "reject malformed saved checkpoints instead of treating them as missing" in {
+    "reject malformed saved checkpoints instead of treating them as missing" in
       intercept[IllegalArgumentException](DurableWatchCheckpoint.token(Document("resumeToken" := "invalid")))
-    }
   }
 }
 

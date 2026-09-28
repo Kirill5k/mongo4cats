@@ -30,11 +30,11 @@ object ZClientWatchSpec extends ZIOSpecDefault {
     clientOperations[Task, Stream[Throwable, *], RIO[Scope, *]](clientSession).map { operation =>
       suite(operation.label)(
         test("defer publisher creation, preserve codecs and arguments, and emit events on every execution") {
-          val driver = new Driver(initialRegistry = clientRegistry)
-          val source = new ZMongoClientLive(driver.client)
-          val query  = operation.query(source)
-          val effect = query.stream.runCollect
-          val before = driver.calls.get()
+          val driver         = new Driver(initialRegistry = clientRegistry)
+          val source         = new ZMongoClientLive(driver.client)
+          val query          = operation.query(source)
+          val effect         = query.stream.runCollect
+          val before         = driver.calls.get()
           val registryBefore = driver.registryCalls.get()
 
           for {
@@ -69,16 +69,20 @@ object ZClientWatchSpec extends ZIOSpecDefault {
           val driver = new Driver(publisherFailure = Some(error))
           val source = new ZMongoClientLive(driver.client)
 
-          operation.query(source).boundedStream(2).runCollect.either
+          operation
+            .query(source)
+            .boundedStream(2)
+            .runCollect
+            .either
             .map(result => assertTrue(result.left.exists(_ eq error)))
         }
       )
     } :+ test("honor an explicitly configured Document codec for both images") {
-      val custom = new DocumentOverride
-      val driver = new Driver(initialRegistry = custom.registry)
+      val custom               = new DocumentOverride
+      val driver               = new Driver(initialRegistry = custom.registry)
       val source: ZMongoClient = new ZMongoClientLive(driver.client)
-      val effect = source.watch.stream.runCollect
-      val before = custom.decoded.get()
+      val effect               = source.watch.stream.runCollect
+      val before               = custom.decoded.get()
 
       effect.map { events =>
         assertTrue(

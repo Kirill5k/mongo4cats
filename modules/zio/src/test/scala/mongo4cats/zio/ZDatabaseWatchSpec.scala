@@ -30,11 +30,11 @@ object ZDatabaseWatchSpec extends ZIOSpecDefault {
     databaseOperations[Task, Stream[Throwable, *]](clientSession).map { operation =>
       suite(operation.label)(
         test("defer publisher creation, preserve codecs and arguments, and emit events on every execution") {
-          val driver = new Driver(initialRegistry = databaseRegistry)
-          val source = new ZMongoDatabaseLive(driver.database)
-          val query  = operation.query(source)
-          val effect = query.stream.runCollect
-          val before = driver.calls.get()
+          val driver         = new Driver(initialRegistry = databaseRegistry)
+          val source         = new ZMongoDatabaseLive(driver.database)
+          val query          = operation.query(source)
+          val effect         = query.stream.runCollect
+          val before         = driver.calls.get()
           val registryBefore = driver.registryCalls.get()
 
           for {
@@ -69,16 +69,20 @@ object ZDatabaseWatchSpec extends ZIOSpecDefault {
           val driver = new Driver(publisherFailure = Some(error))
           val source = new ZMongoDatabaseLive(driver.database)
 
-          operation.query(source).boundedStream(2).runCollect.either
+          operation
+            .query(source)
+            .boundedStream(2)
+            .runCollect
+            .either
             .map(result => assertTrue(result.left.exists(_ eq error)))
         }
       )
     } :+ test("honor an explicitly configured Document codec for both images") {
-      val custom = new DocumentOverride
-      val driver = new Driver(initialRegistry = custom.registry)
+      val custom                 = new DocumentOverride
+      val driver                 = new Driver(initialRegistry = custom.registry)
       val source: ZMongoDatabase = new ZMongoDatabaseLive(driver.database)
-      val effect = source.watch.stream.runCollect
-      val before = custom.decoded.get()
+      val effect                 = source.watch.stream.runCollect
+      val before                 = custom.decoded.get()
 
       effect.map { events =>
         assertTrue(

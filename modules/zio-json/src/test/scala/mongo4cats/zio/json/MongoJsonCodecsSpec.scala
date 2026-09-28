@@ -133,7 +133,7 @@ class MongoJsonCodecsSpec extends AnyWordSpec with Matchers with MongoJsonCodecs
                    |  ],
                    |  "extra":true
                    |}""".stripMargin
-      val uuid = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
+      val uuid     = UUID.fromString("cfbca728-4e39-4613-96bc-f920b5c37e16")
       val expected = Document(
         "values" -> BsonValue.array(
           BsonValue.objectId(ObjectId("507f1f77bcf86cd799439011")),

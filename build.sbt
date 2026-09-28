@@ -1,4 +1,4 @@
-import sbtghactions.JavaSpec
+import sbtghactions.{JavaSpec, WorkflowStep}
 import org.typelevel.scalacoptions.ScalacOptions
 import Utils.*
 
@@ -18,6 +18,8 @@ ThisBuild / testFrameworks ++= Seq(new TestFramework("zio.test.sbt.ZTestFramewor
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowScalaVersions         := supportedScalaVersions
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
+ThisBuild / githubWorkflowUseSbtThinClient      := true
+ThisBuild / githubWorkflowBuild                 := Seq(WorkflowStep.Sbt(List("testFull"), name = Some("Build project")))
 
 // sbt-ci-release uses sbt-dynver for versioning, leaving these sbt-git metadata keys unused.
 Global / excludeLintKeys ++= Set(git.gitDescribedVersion, git.gitUncommittedChanges)
