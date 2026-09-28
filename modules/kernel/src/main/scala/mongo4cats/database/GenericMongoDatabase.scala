@@ -24,6 +24,8 @@ import mongo4cats.client.ClientSession
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
 import mongo4cats.collection.GenericMongoCollection
 import mongo4cats.models.database.CreateCollectionOptions
+import mongo4cats.operations.Aggregate
+import mongo4cats.queries.WatchQueryBuilder
 import org.bson.conversions.Bson
 
 import java.util.concurrent.TimeUnit
@@ -59,6 +61,15 @@ abstract class GenericMongoDatabase[F[_], S[_]] {
 
   def listCollections: F[Iterable[Document]]
   def listCollections(session: ClientSession[F]): F[Iterable[Document]]
+
+  /** Creates a change stream for this database using its codec registry. Requires MongoDB 4.0 or later on a replica set or sharded cluster.
+    */
+  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document, S]
+  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document, S]
+  def watch(session: ClientSession[F], pipeline: Seq[Bson]): WatchQueryBuilder[F, Document, S]
+  def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document, S]
+  def watch: WatchQueryBuilder[F, Document, S]                            = watch(Aggregate.empty)
+  def watch(session: ClientSession[F]): WatchQueryBuilder[F, Document, S] = watch(session, Aggregate.empty)
 
   def createCollection(name: String, options: CreateCollectionOptions): F[Unit]
   def createCollection(name: String): F[Unit] = createCollection(name, CreateCollectionOptions())

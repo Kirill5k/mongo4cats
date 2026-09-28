@@ -17,6 +17,7 @@
 package mongo4cats.zio
 
 import com.mongodb.ExplainVerbosity
+import com.mongodb.client.model.changestream.FullDocumentBeforeChange
 import mongo4cats.queries.MutableQueryPublisher
 import org.bson.BsonDocument
 import zio.{durationInt, Scope, Task, ZIO}
@@ -51,6 +52,52 @@ object QueriesSpec extends ZIOSpecDefault {
   )
 
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("Query publishers")(
+    test("isolates watch pre-images, expanded events and both comment forms with the last setting taking precedence") {
+      val driver  = new MutableQueryPublisher
+      val base    = Queries.watch(driver.watch())
+      val comment = BsonDocument.parse("""{"consumer":"orders"}""")
+      val derived = base
+        .fullDocumentBeforeChange(FullDocumentBeforeChange.WHEN_AVAILABLE)
+        .fullDocumentBeforeChange(FullDocumentBeforeChange.REQUIRED)
+        .showExpandedEvents(false)
+        .showExpandedEvents(true)
+        .comment("initial")
+        .comment(comment)
+      val sibling = base
+        .fullDocumentBeforeChange(FullDocumentBeforeChange.OFF)
+        .showExpandedEvents(false)
+        .comment(comment)
+        .comment("sibling")
+      val runs = List(
+        derived.stream.runDrain,
+        base.stream.runDrain,
+        sibling.boundedStream(2).runDrain,
+        derived.boundedStream(2).runDrain,
+        base.boundedStream(2).runDrain,
+        sibling.stream.runDrain
+      )
+      val derivedOptions = Map[String, Any](
+        "fullDocumentBeforeChange" -> FullDocumentBeforeChange.REQUIRED,
+        "showExpandedEvents"       -> true,
+        "comment"                  -> comment
+      )
+      val siblingOptions = Map[String, Any](
+        "fullDocumentBeforeChange" -> FullDocumentBeforeChange.OFF,
+        "showExpandedEvents"       -> false,
+        "comment"                  -> "sibling"
+      )
+      val createdBeforeExecution    = driver.created.get()
+      val configuredBeforeExecution = driver.configured.get()
+
+      ZIO.foreachDiscard(runs)(identity).map { _ =>
+        assertTrue(
+          createdBeforeExecution == 0,
+          configuredBeforeExecution == 0,
+          driver.snapshots.map(_.options) == List(derivedOptions, Map.empty, siblingOptions, derivedOptions, Map.empty, siblingOptions),
+          driver.snapshots.map(_.id).distinct.size == runs.size
+        )
+      }
+    },
     test("isolates find batch size and disk use settings with the last setting taking precedence") {
       val driver = new MutableQueryPublisher
       val base   = Queries.find(driver.find())

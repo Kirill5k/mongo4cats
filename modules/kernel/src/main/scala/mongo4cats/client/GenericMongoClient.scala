@@ -28,6 +28,9 @@ import mongo4cats.models.client.{
   TransactionRetryPolicy
 }
 import mongo4cats.database.GenericMongoDatabase
+import mongo4cats.operations.Aggregate
+import mongo4cats.queries.WatchQueryBuilder
+import org.bson.conversions.Bson
 
 abstract class GenericMongoClient[F[_], S[_], R[_]] {
   def underlying: JMongoClient
@@ -37,6 +40,16 @@ abstract class GenericMongoClient[F[_], S[_], R[_]] {
   def listDatabaseNames(session: ClientSession[F]): F[Iterable[String]]
   def listDatabases: F[Iterable[Document]]
   def listDatabases(session: ClientSession[F]): F[Iterable[Document]]
+
+  /** Creates a change stream for this client. Documents use the client's codecs with library codecs available as a fallback. Requires
+    * MongoDB 4.0 or later on a replica set or sharded cluster.
+    */
+  def watch(pipeline: Seq[Bson]): WatchQueryBuilder[F, Document, S]
+  def watch(pipeline: Aggregate): WatchQueryBuilder[F, Document, S]
+  def watch(session: ClientSession[F], pipeline: Seq[Bson]): WatchQueryBuilder[F, Document, S]
+  def watch(session: ClientSession[F], pipeline: Aggregate): WatchQueryBuilder[F, Document, S]
+  def watch: WatchQueryBuilder[F, Document, S]                            = watch(Aggregate.empty)
+  def watch(session: ClientSession[F]): WatchQueryBuilder[F, Document, S] = watch(session, Aggregate.empty)
 
   /** Writes to multiple collections and databases in the same cluster. Requires MongoDB 8.0 or later.
     *

@@ -21,12 +21,13 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.mongodb.reactivestreams.client.{MongoDatabase => JMongoDatabase}
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
-import mongo4cats.Clazz
+import mongo4cats.{AsJava, Clazz}
 import mongo4cats.bson.Document
 import mongo4cats.client.ClientSession
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
-import mongo4cats.collection.MongoCollection
+import mongo4cats.collection.{MongoCollection, Queries}
 import mongo4cats.models.database.CreateCollectionOptions
+import mongo4cats.operations.Aggregate
 import mongo4cats.syntax._
 import org.bson.conversions.Bson
 
@@ -37,7 +38,7 @@ final private class LiveMongoDatabase[F[_]](
     val underlying: JMongoDatabase
 )(implicit
     val F: Async[F]
-) extends MongoDatabase[F] {
+) extends MongoDatabase[F] with AsJava {
   def withTimeout(timeout: FiniteDuration): MongoDatabase[F] =
     new LiveMongoDatabase[F](underlying.withTimeout(timeout.length, timeout.unit))
 
@@ -62,6 +63,34 @@ final private class LiveMongoDatabase[F[_]](
     F.defer(underlying.listCollections().asyncIterableF[F, Document](Document.fromJava))
   def listCollections(cs: ClientSession[F]): F[Iterable[Document]] =
     F.defer(underlying.listCollections(cs.underlying).asyncIterableF[F, Document](Document.fromJava))
+
+  def watch(pipeline: Seq[Bson]): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(pipeline: Aggregate): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(pipeline.toBson, Clazz.tag[Document])
+    )
+
+  def watch(cs: ClientSession[F], pipeline: Seq[Bson]): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(cs.underlying, asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(cs: ClientSession[F], pipeline: Aggregate): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(cs.underlying, pipeline.toBson, Clazz.tag[Document])
+    )
 
   override def getCollection(name: String): F[MongoCollection[F, Document]] =
     F.defer(super.getCollection(name))

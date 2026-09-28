@@ -20,8 +20,10 @@ import cats.effect.{Async, Resource, Sync}
 import cats.syntax.flatMap._
 import com.mongodb.client.model.bulk.ClientBulkWriteResult
 import com.mongodb.reactivestreams.client.{ClientSession => JClientSession, MongoClient => JMongoClient, MongoClients}
-import mongo4cats.AsJava
+import mongo4cats.{AsJava, Clazz}
 import mongo4cats.bson.Document
+import mongo4cats.codecs.CodecRegistry
+import mongo4cats.collection.Queries
 import mongo4cats.database.MongoDatabase
 import mongo4cats.syntax._
 import mongo4cats.models.client.{
@@ -36,7 +38,9 @@ import mongo4cats.models.client.{
   TransactionOptions,
   TransactionRetryPolicy
 }
+import mongo4cats.operations.Aggregate
 import org.bson.UuidRepresentation
+import org.bson.conversions.Bson
 
 final private class LiveClientSession[F[_]](
     val underlying: JClientSession
@@ -70,6 +74,34 @@ final private class LiveMongoClient[F[_]](
 
   def listDatabases(cs: ClientSession[F]): F[Iterable[Document]] =
     F.defer(underlying.listDatabases(cs.underlying).asyncIterableF[F, Document](Document.fromJava))
+
+  def watch(pipeline: Seq[Bson]): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(pipeline: Aggregate): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(pipeline.toBson, Clazz.tag[Document])
+    )
+
+  def watch(cs: ClientSession[F], pipeline: Seq[Bson]): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(cs.underlying, asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(cs: ClientSession[F], pipeline: Aggregate): Queries.Watch[F, Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(cs.underlying, pipeline.toBson, Clazz.tag[Document])
+    )
 
   def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): F[ClientBulkWriteResult] =
     F.defer(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options).asyncSingle[F].unNone)

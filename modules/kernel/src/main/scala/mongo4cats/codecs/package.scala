@@ -17,8 +17,10 @@
 package mongo4cats
 
 import com.mongodb.MongoClientSettings
+import mongo4cats.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry => JCodecRegistry}
+import org.bson.conversions.Bson
 
 package object codecs {
 
@@ -39,5 +41,12 @@ package object codecs {
 
     def merge(registry: CodecRegistry, registries: CodecRegistry*): CodecRegistry = fromRegistries(asJava(registry :: registries.toList))
     def mergeWithDefault(registry: CodecRegistry): CodecRegistry                  = merge(registry, Default)
+
+    private[mongo4cats] def withDocumentDecoder(registry: CodecRegistry): CodecRegistry = {
+      val merged = mergeWithDefault(registry)
+      // The driver's generic Bson codec claims Document but only supports encoding. Retain an explicitly configured Document codec.
+      if (merged.get(classOf[Document]).getEncoderClass == classOf[Bson]) merge(from(DocumentCodecProvider), merged)
+      else merged
+    }
   }
 }

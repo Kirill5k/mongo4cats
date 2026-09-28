@@ -25,6 +25,8 @@ import mongo4cats.models.client.{
   TransactionOptions,
   TransactionRetryPolicy
 }
+import mongo4cats.operations.Aggregate
+import org.bson.conversions.Bson
 import zio.{Cause, Promise, RIO, Scope, Task, ZIO, ZLayer}
 import zio.test._
 
@@ -118,6 +120,10 @@ object ZTransactionsSpec extends ZIOSpecDefault {
         def listDatabaseNames(session: ZClientSession)                                    = live.listDatabaseNames(session)
         def listDatabases                                                                 = live.listDatabases
         def listDatabases(session: ZClientSession)                                        = live.listDatabases(session)
+        def watch(pipeline: Seq[Bson])                                                    = live.watch(pipeline)
+        def watch(pipeline: Aggregate)                                                    = live.watch(pipeline)
+        def watch(session: ZClientSession, pipeline: Seq[Bson])                           = live.watch(session, pipeline)
+        def watch(session: ZClientSession, pipeline: Aggregate)                           = live.watch(session, pipeline)
         def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions) = live.bulkWrite(commands, options)
         def bulkWrite(session: ZClientSession, commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions) =
           live.bulkWrite(session, commands, options)

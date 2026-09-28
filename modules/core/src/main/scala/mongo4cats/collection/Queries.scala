@@ -28,7 +28,7 @@ import mongo4cats.models.collection.ChangeStreamDocument
 
 import scala.reflect.ClassTag
 
-private[collection] object Queries {
+private[mongo4cats] object Queries {
   type Aggregate[F[_], T] = AggregateQueryBuilder[F, T, Stream[F, *]]
   type Watch[F[_], T]     = WatchQueryBuilder[F, T, Stream[F, *]]
   type Find[F[_], T]      = FindQueryBuilder[F, T, Stream[F, *]]

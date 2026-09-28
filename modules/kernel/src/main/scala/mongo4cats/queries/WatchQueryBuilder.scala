@@ -17,10 +17,10 @@
 package mongo4cats.queries
 
 import com.mongodb.client.model
-import com.mongodb.client.model.changestream.FullDocument
+import com.mongodb.client.model.changestream.{FullDocument, FullDocumentBeforeChange}
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher
 import mongo4cats.models.collection.ChangeStreamDocument
-import org.bson.{BsonDocument, BsonTimestamp}
+import org.bson.{BsonDocument, BsonTimestamp, BsonValue}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
@@ -57,6 +57,21 @@ private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamP
     *   WatchQueryBuilder
     */
   def fullDocument(fullDocument: FullDocument): QB = withQuery(QueryCommand.FullDocument(fullDocument))
+
+  /** Requests document pre-images. Requires MongoDB 6.0 or later and changeStreamPreAndPostImages enabled on the collection. WHEN_AVAILABLE
+    * permits a missing pre-image; REQUIRED fails the stream when the pre-image is unavailable.
+    */
+  def fullDocumentBeforeChange(fullDocument: FullDocumentBeforeChange): QB =
+    withQuery(QueryCommand.FullDocumentBeforeChange(fullDocument))
+
+  /** Includes expanded events, such as collection and index changes. Requires MongoDB 6.0 or later. */
+  def showExpandedEvents(showExpandedEvents: Boolean): QB = withQuery(QueryCommand.ShowExpandedEvents(showExpandedEvents))
+
+  /** Attaches a comment to the change-stream operation for server logs, profiling, and currentOp. */
+  def comment(comment: String): QB = withQuery(QueryCommand.Comment(comment))
+
+  /** Attaches a BSON comment. Non-string BSON values require MongoDB 4.4 or later. */
+  def comment(comment: BsonValue): QB = withQuery(QueryCommand.BsonComment(comment))
 
   /** Sets the maximum await execution time on the server for this operation.
     *
@@ -107,14 +122,18 @@ private[mongo4cats] trait WatchQueries[T, QB] extends QueryBuilder[ChangeStreamP
   override protected def applyQueries(): ChangeStreamPublisher[T] =
     queries.reverse.foldLeft(observable) { case (obs, command) =>
       command match {
-        case QueryCommand.FullDocument(fullDocument)          => obs.fullDocument(fullDocument)
-        case QueryCommand.Collation(collation)                => obs.collation(collation)
-        case QueryCommand.MaxAwaitTime(duration)              => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
-        case QueryCommand.BatchSize(size)                     => obs.batchSize(size)
-        case QueryCommand.ResumeAfter(after)                  => obs.resumeAfter(after)
-        case QueryCommand.StartAfter(after)                   => obs.startAfter(after)
-        case QueryCommand.StartAtOperationTime(operationTime) => obs.startAtOperationTime(operationTime)
-        case _                                                => obs
+        case QueryCommand.FullDocument(fullDocument)             => obs.fullDocument(fullDocument)
+        case QueryCommand.FullDocumentBeforeChange(fullDocument) => obs.fullDocumentBeforeChange(fullDocument)
+        case QueryCommand.ShowExpandedEvents(showExpandedEvents) => obs.showExpandedEvents(showExpandedEvents)
+        case QueryCommand.Comment(comment)                       => obs.comment(comment)
+        case QueryCommand.BsonComment(comment)                   => obs.comment(comment)
+        case QueryCommand.Collation(collation)                   => obs.collation(collation)
+        case QueryCommand.MaxAwaitTime(duration)                 => obs.maxAwaitTime(duration.toNanos, TimeUnit.NANOSECONDS)
+        case QueryCommand.BatchSize(size)                        => obs.batchSize(size)
+        case QueryCommand.ResumeAfter(after)                     => obs.resumeAfter(after)
+        case QueryCommand.StartAfter(after)                      => obs.startAfter(after)
+        case QueryCommand.StartAtOperationTime(operationTime)    => obs.startAtOperationTime(operationTime)
+        case _                                                   => obs
       }
     }
 }

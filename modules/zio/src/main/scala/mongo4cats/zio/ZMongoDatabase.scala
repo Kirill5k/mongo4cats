@@ -18,10 +18,11 @@ package mongo4cats.zio
 
 import com.mongodb.{ReadConcern, ReadPreference, WriteConcern}
 import com.mongodb.reactivestreams.client.MongoDatabase
-import mongo4cats.Clazz
+import mongo4cats.{AsJava, Clazz}
 import mongo4cats.bson.Document
 import mongo4cats.codecs.{CodecRegistry, MongoCodecProvider}
 import mongo4cats.models.database.CreateCollectionOptions
+import mongo4cats.operations.Aggregate
 import mongo4cats.zio.syntax._
 import org.bson.conversions.Bson
 import zio.{Task, ZIO}
@@ -31,7 +32,7 @@ import scala.reflect.ClassTag
 
 final private class ZMongoDatabaseLive(
     val underlying: MongoDatabase
-) extends ZMongoDatabase {
+) extends ZMongoDatabase with AsJava {
   def withTimeout(timeout: FiniteDuration): ZMongoDatabase =
     new ZMongoDatabaseLive(underlying.withTimeout(timeout.length, timeout.unit))
 
@@ -56,6 +57,34 @@ final private class ZMongoDatabaseLive(
     ZIO.attempt(underlying.listCollections()).flatMap(_.asyncIterableF(Document.fromJava))
   def listCollections(session: ZClientSession): Task[Iterable[Document]] =
     ZIO.attempt(underlying.listCollections(session.underlying)).flatMap(_.asyncIterableF(Document.fromJava))
+
+  def watch(pipeline: Seq[Bson]): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(pipeline: Aggregate): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(pipeline.toBson, Clazz.tag[Document])
+    )
+
+  def watch(session: ZClientSession, pipeline: Seq[Bson]): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(session.underlying, asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(session: ZClientSession, pipeline: Aggregate): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(session.underlying, pipeline.toBson, Clazz.tag[Document])
+    )
 
   def createCollection(name: String, options: CreateCollectionOptions): Task[Unit] =
     ZIO.attempt(underlying.createCollection(name, options)).flatMap(_.asyncVoid)

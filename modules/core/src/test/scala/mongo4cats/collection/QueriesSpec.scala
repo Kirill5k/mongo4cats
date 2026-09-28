@@ -21,6 +21,7 @@ import cats.effect.unsafe.implicits.global
 import cats.syntax.parallel._
 import cats.syntax.traverse._
 import com.mongodb.ExplainVerbosity
+import com.mongodb.client.model.changestream.FullDocumentBeforeChange
 import mongo4cats.queries.MutableQueryPublisher
 import org.bson.BsonDocument
 import org.scalatest.matchers.must.Matchers
@@ -53,6 +54,50 @@ class QueriesSpec extends AsyncWordSpec with Matchers {
   )
 
   "Query definitions" should {
+    "isolate watch pre-images, expanded events and both comment forms with the last setting taking precedence" in {
+      val source  = new MutableQueryPublisher
+      val base    = Queries.watch[IO, String](source.watch())
+      val comment = BsonDocument.parse("""{"consumer":"orders"}""")
+      val derived = base
+        .fullDocumentBeforeChange(FullDocumentBeforeChange.WHEN_AVAILABLE)
+        .fullDocumentBeforeChange(FullDocumentBeforeChange.REQUIRED)
+        .showExpandedEvents(false)
+        .showExpandedEvents(true)
+        .comment("initial")
+        .comment(comment)
+      val sibling = base
+        .fullDocumentBeforeChange(FullDocumentBeforeChange.OFF)
+        .showExpandedEvents(false)
+        .comment(comment)
+        .comment("sibling")
+      val runs = List(
+        derived.stream.compile.drain,
+        base.stream.compile.drain,
+        sibling.boundedStream(2).compile.drain,
+        derived.boundedStream(2).compile.drain,
+        base.boundedStream(2).compile.drain,
+        sibling.stream.compile.drain
+      )
+      val derivedOptions = Map[String, Any](
+        "fullDocumentBeforeChange" -> FullDocumentBeforeChange.REQUIRED,
+        "showExpandedEvents"       -> true,
+        "comment"                  -> comment
+      )
+      val siblingOptions = Map[String, Any](
+        "fullDocumentBeforeChange" -> FullDocumentBeforeChange.OFF,
+        "showExpandedEvents"       -> false,
+        "comment"                  -> "sibling"
+      )
+
+      source.created.get() mustBe 0
+      source.configured.get() mustBe 0
+
+      runs.sequence.unsafeToFuture().map { _ =>
+        source.snapshots.map(_.options) mustBe List(derivedOptions, Map.empty, siblingOptions, derivedOptions, Map.empty, siblingOptions)
+        source.snapshots.map(_.id).distinct.size mustBe runs.size
+      }
+    }
+
     "isolate find batch size and disk use settings with the last setting taking precedence" in {
       val source  = new MutableQueryPublisher
       val base    = Queries.find[IO, String](source.find())

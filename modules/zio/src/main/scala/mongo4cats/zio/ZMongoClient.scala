@@ -18,11 +18,14 @@ package mongo4cats.zio
 
 import com.mongodb.reactivestreams.client.{ClientSession, MongoClient, MongoClients}
 import com.mongodb.client.model.bulk.ClientBulkWriteResult
-import mongo4cats.AsJava
+import mongo4cats.{AsJava, Clazz}
 import mongo4cats.bson.Document
+import mongo4cats.codecs.CodecRegistry
 import mongo4cats.models.client._
+import mongo4cats.operations.Aggregate
 import mongo4cats.zio.syntax._
 import org.bson.UuidRepresentation
+import org.bson.conversions.Bson
 import zio.{RIO, Scope, Task, ZIO}
 
 final private class ZClientSessionLive(
@@ -52,6 +55,34 @@ final private class ZMongoClientLive(
 
   def listDatabases(session: ZClientSession): Task[Iterable[Document]] =
     underlying.listDatabases(session.underlying).asyncIterableF(Document.fromJava)
+
+  def watch(pipeline: Seq[Bson]): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(pipeline: Aggregate): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(pipeline.toBson, Clazz.tag[Document])
+    )
+
+  def watch(session: ZClientSession, pipeline: Seq[Bson]): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(session.underlying, asJava(pipeline), Clazz.tag[Document])
+    )
+
+  def watch(session: ZClientSession, pipeline: Aggregate): Queries.Watch[Document] =
+    Queries.watch(
+      underlying
+        .withCodecRegistry(CodecRegistry.withDocumentDecoder(underlying.getCodecRegistry))
+        .watch(session.underlying, pipeline.toBson, Clazz.tag[Document])
+    )
 
   def bulkWrite(commands: Seq[ClientWriteCommand], options: ClientBulkWriteOptions): Task[ClientBulkWriteResult] =
     ZIO.attempt(underlying.bulkWrite(asJava(commands.map(_.writeModel)), options)).flatMap(_.asyncSingle.unNone)

@@ -68,7 +68,7 @@ object UpdateDescription {
   *   the full document before change. Contains the pre-image of the modified or deleted document if the pre-image is available for the
   *   change event and either {@link FullDocumentBeforeChange# REQUIRED} or {@link FullDocumentBeforeChange# WHEN_AVAILABLE} was specified
   *   for the {@code fullDocumentBeforeChange} option when creating the change stream. If {@link FullDocumentBeforeChange# WHEN_AVAILABLE}
-  *   was specified but the pre-image is unavailable, the value will be null.
+  *   was specified but the pre-image is unavailable, the value will be None.
   * @param documentKey
   *   a document containing the _id of the changed document
   * @param updateDescription
