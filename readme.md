@@ -8,7 +8,7 @@ Scala library that provides a functional and idiomatic interface for working wit
 Built on top of the official MongoDB Java driver, mongo4cats integrates seamlessly with functional programming libraries like [Cats-Effect](https://typelevel.org/cats-effect/)/[FS2](http://fs2.io/) and [ZIO](http://zio.dev/),
 making it a great choice for Scala developers who prefer functional programming paradigms.
 
-Available for Scala 2.12, 2.13 and 3.3.
+Available for Scala 2.12, Scala 2.13, and Scala 3.9.0 or later.
 
 Documentation is available on the [mongo4cats microsite](https://kirill5k.github.io/mongo4cats/docs/).
 
@@ -17,24 +17,24 @@ Documentation is available on the [mongo4cats microsite](https://kirill5k.github
 Add this to your `build.sbt` (depends on `cats-effect` and `FS2`):
 
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "<version>"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "<version>" % Test
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-core" % "0.8.0"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-embedded" % "0.8.0" % Test
 ```
 
 Alternatively, for `ZIO 2`, add this:
 
 ```scala
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio" % "<version>"
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "<version>" % Test
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio" % "0.8.0"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-embedded" % "0.8.0" % Test
 ```
 
 Optional support for `circe` or `zio-json` can be enabled with:
 
 ```scala
 // circe
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "<version>"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-circe" % "0.8.0"
 // zio-json
-libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "<version>"
+libraryDependencies += "io.github.kirill5k" %% "mongo4cats-zio-json" % "0.8.0"
 ```
 
 ### Quick start with Cats Effect
